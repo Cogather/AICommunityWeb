@@ -3,8 +3,8 @@
       <el-carousel
         :interval="4000"
         type="card"
-        height="420px"
-        indicator-position="outside"
+        height="500px"
+        indicator-position="inside"
         :arrow="'always'"
         class="ai-carousel"
       >
@@ -87,9 +87,98 @@
     max-width: 100%;
     position: relative;
     overflow: hidden; 
-    padding: 20px 0 30px 0; /* 减少上边距，靠近导航栏，减少下边距，靠近下方内容 */
+    padding: 0; /* 去掉所有padding，与导航栏无缝连接 */
     margin: 0;
+    margin-bottom: -50px; /* 负边距让底部渐消区域与下方内容重叠 */
     box-sizing: border-box;
+    z-index: 1; /* 确保在背景上层，但在内容下层 */
+    
+    /* 上下渐显渐消模糊效果 - 使用 mask-image 实现更明显的渐显渐消 */
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.2) 3%,
+      rgba(0, 0, 0, 0.5) 8%,
+      rgba(0, 0, 0, 0.75) 12%,
+      rgba(0, 0, 0, 0.9) 16%,
+      black 25%,
+      black 70%,
+      rgba(0, 0, 0, 0.95) 78%,
+      rgba(0, 0, 0, 0.85) 82%,
+      rgba(0, 0, 0, 0.7) 86%,
+      rgba(0, 0, 0, 0.5) 90%,
+      rgba(0, 0, 0, 0.3) 94%,
+      rgba(0, 0, 0, 0.15) 97%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.2) 3%,
+      rgba(0, 0, 0, 0.5) 8%,
+      rgba(0, 0, 0, 0.75) 12%,
+      rgba(0, 0, 0, 0.9) 16%,
+      black 25%,
+      black 70%,
+      rgba(0, 0, 0, 0.95) 78%,
+      rgba(0, 0, 0, 0.85) 82%,
+      rgba(0, 0, 0, 0.7) 86%,
+      rgba(0, 0, 0, 0.5) 90%,
+      rgba(0, 0, 0, 0.3) 94%,
+      rgba(0, 0, 0, 0.15) 97%,
+      transparent 100%
+    );
+  }
+  
+  /* 为轮播图容器添加上下模糊层 */
+  :deep(.el-carousel__container) {
+    position: relative;
+    
+    /* 顶部模糊层 - 增强效果 */
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 120px;
+      background: linear-gradient(
+        to bottom,
+        rgba(106, 17, 203, 0.5) 0%,
+        rgba(106, 17, 203, 0.3) 30%,
+        rgba(106, 17, 203, 0.15) 60%,
+        rgba(106, 17, 203, 0.05) 85%,
+        transparent 100%
+      );
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    /* 底部模糊层 - 增强效果，扩大范围 */
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 150px;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(106, 17, 203, 0.05) 10%,
+        rgba(106, 17, 203, 0.12) 25%,
+        rgba(106, 17, 203, 0.2) 40%,
+        rgba(106, 17, 203, 0.3) 60%,
+        rgba(106, 17, 203, 0.4) 80%,
+        rgba(106, 17, 203, 0.5) 100%
+      );
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      pointer-events: none;
+      z-index: 1;
+    }
   }
   
   /* 覆盖 Element Plus 样式 */
@@ -128,14 +217,14 @@
     transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1); /* 平滑的贝塞尔曲线 */
     box-sizing: border-box !important;
     /* 调整卡片宽度，确保三张图能在一行显示 */
-    width: 60% !important;
-    max-width: 60% !important;
+    width: 55% !important;
+    max-width: 55% !important;
   }
   
   /* 激活卡片保持相同宽度，并确保居中 */
   :deep(.el-carousel__item.is-active) {
-    width: 60% !important;
-    max-width: 60% !important;
+    width: 55% !important;
+    max-width: 55% !important;
     /* 确保激活卡片居中 */
     margin-left: auto !important;
     margin-right: auto !important;
@@ -221,7 +310,7 @@
   ----------------------------------- */
   .glass-panel {
     position: absolute;
-    bottom: 40px;
+    bottom: 60px; /* 增加底部距离，为指示器留出空间 */
     left: 40px;
     right: 40px; 
     max-width: 460px;
@@ -302,16 +391,29 @@
     right: 20px;
   }
 
-  /* 指示器微调 */
-  :deep(.el-carousel__indicators--outside) {
-    margin-top: 20px;
-  }
-  :deep(.el-carousel__indicators--outside button) {
-    background-color: rgba(255, 255, 255, 0.4);
-    height: 4px;
-  }
-  :deep(.el-carousel__indicator.is-active button) {
-    background-color: #00C6FF;
-    width: 50px;
+  /* 指示器微调 - 放在图片上 */
+  :deep(.el-carousel__indicators) {
+    bottom: 20px !important;
+    left: 50%;
+    transform: translateX(-50%);
+    
+    .el-carousel__indicator {
+      margin: 0 4px;
+      
+      button {
+        background-color: rgba(255, 255, 255, 0.5);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        border: none;
+      }
+      
+      &.is-active button {
+        background-color: #fff;
+        width: 24px;
+        border-radius: 4px;
+      }
+    }
   }
   </style>
