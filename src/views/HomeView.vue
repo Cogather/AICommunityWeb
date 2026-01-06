@@ -15,7 +15,20 @@
       <el-row :gutter="24" class="section-row">
         <el-col :xs="24" :md="16">
           <div class="glass-card honor-section">
-            <div class="honor-split-container">
+            <!-- 顶部标题条 -->
+            <div class="honor-header-bar">
+              <h3 class="header-title">AI使用达人·荣誉殿堂</h3>
+              <el-button 
+                text 
+                size="small" 
+                class="more-btn-pill"
+                @click="router.push('/honor')"
+              >
+                更多
+              </el-button>
+            </div>
+            
+            <div class="honor-split-container" style="padding: 20px;">
               <!-- 左边：荣誉殿堂 -->
               <div class="honor-hall">
                 <!-- 荣誉殿堂 Banner -->
@@ -76,11 +89,10 @@
                 <el-button 
                   text 
                   size="small" 
-                  class="more-btn"
+                  class="more-btn-pill"
                   @click="router.push('/news')"
                 >
                   更多
-                  <el-icon><ArrowRight /></el-icon>
                 </el-button>
               </div>
             </div>
@@ -182,11 +194,10 @@
               <el-button 
                 text 
                 size="small" 
-                class="more-btn"
+                class="more-btn-pill"
                 @click="router.push('/practices')"
               >
                 更多
-                <el-icon><ArrowRight /></el-icon>
               </el-button>
             </div>
             <div class="text-list">
@@ -209,11 +220,10 @@
               <el-button 
                 text 
                 size="small" 
-                class="more-btn"
+                class="more-btn-pill"
                 @click="router.push('/empowerment')"
               >
                 更多
-                <el-icon><ArrowRight /></el-icon>
               </el-button>
             </div>
             <div class="text-list">
@@ -242,7 +252,13 @@
             同时，AI 在软件工程中的实际落地效果获得更多量化验证...
           </p>
         </div>
-        <el-button round>阅读更多</el-button>
+        <el-button 
+          text 
+          size="small" 
+          class="more-btn-pill"
+        >
+          阅读更多
+        </el-button>
       </div>
       </section>
     </main>
@@ -414,9 +430,13 @@ const getColSpan = (count: number) => {
 
 // 处理工具点击跳转
 const handleToolClick = (tool: any) => {
-  if (tool.link) {
-    router.push(tool.link)
-  }
+  // 跳转到工具专区页面，并传递toolId参数
+  router.push({
+    path: '/tools',
+    query: {
+      toolId: tool.id
+    }
+  })
 }
 
 // AI工具专区轮播图数据
@@ -450,7 +470,16 @@ const toolZoneBanners = ref([
   font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, 'Hiragino Sans GB', Arial, sans-serif;
   overflow-x: hidden;
   overflow-y: auto;
-  color: #fff;
+  color: #000000; /* 改为黑色 */
+  width: 100%;
+  box-sizing: border-box;
+  
+  /* 小屏设备：确保占满宽度 */
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
 }
 
 /* 背景已移至 App.vue 统一管理 */
@@ -466,16 +495,39 @@ const toolZoneBanners = ref([
 
 .main-content {
   width: 100%;
-  max-width: 1280px; /* 内容宽度限制 */
+  max-width: 1600px; /* 增加内容宽度限制，让模块更宽 */
   margin: 0 auto;
   padding: 20px;
   padding-top: 0; /* 减少顶部间距，让内容更靠近轮播图 */
+  
+  /* 小屏设备：占满屏幕宽度，减少内边距 */
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 12px;
+    padding-top: 0;
+  }
+  
+  /* 中等屏幕：适中的宽度 */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    max-width: 100%;
+    padding: 16px;
+    padding-top: 0;
+  }
 }
 
 /* 间距控制 */
 .section-row,
 .section-block {
   margin-bottom: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  
+  /* 小屏设备：确保占满宽度 */
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 /* 确保AI优秀实践和赋能交流同高 */
@@ -524,7 +576,7 @@ const toolZoneBanners = ref([
     0 8px 32px 0 rgba(31, 38, 135, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: #000000; /* 改为黑色 */
   transition: all 0.3s ease;
   position: relative;
   width: 100%; /* 占满父元素宽度 */
@@ -566,7 +618,83 @@ const toolZoneBanners = ref([
 
 .honor-section {
   min-height: auto;
-  padding: 20px;
+  padding: 0; /* 移除内边距，让标题条占满 */
+  overflow: hidden; /* 确保圆角正确显示 */
+}
+
+/* 顶部标题条 - AI使用达人·荣誉殿堂 */
+.honor-header-bar {
+  background: #4C85FA; /* 中高饱和度蓝色 */
+  position: relative;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 16px 16px 0 0; /* 顶部圆角 */
+  overflow: hidden;
+  
+  /* 城市/楼宇线稿纹理 - 使用 SVG 图案 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      /* 城市轮廓线稿纹理 - 模拟楼宇剪影 */
+      url("data:image/svg+xml,%3Csvg width='200' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 60 L10 45 L15 50 L25 35 L35 40 L45 30 L55 35 L65 25 L75 30 L85 20 L95 25 L105 15 L115 20 L125 10 L135 15 L145 5 L155 10 L165 0 L175 5 L185 0 L200 0 L200 60 Z' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='1'/%3E%3C/svg%3E"),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 20px,
+        rgba(255, 255, 255, 0.02) 20px,
+        rgba(255, 255, 255, 0.02) 22px
+      );
+    background-size: 200px 60px, 40px 40px;
+    background-position: 0 100%, 0 0;
+    background-repeat: repeat-x, repeat;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  
+  /* 标题文字 */
+  .header-title {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600; /* Semibold */
+    color: #ffffff; /* 标题条内保持白色，因为背景是蓝色 */
+    letter-spacing: 0.3px;
+  }
+  
+  /* 标题条内的更多按钮 - 特殊定位 */
+  .more-btn-pill {
+    position: relative;
+    z-index: 1;
+    border-radius: 999px; /* 完全圆角 pill */
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #000000; /* 改为黑色 */
+    font-size: 13px;
+    padding: 6px 16px;
+    height: auto;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
 }
 
 .card-header {
@@ -574,7 +702,7 @@ const toolZoneBanners = ref([
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* 改为黑色边框，适应浅色背景 */
   padding-bottom: 10px;
 
   h3 {
@@ -584,6 +712,7 @@ const toolZoneBanners = ref([
     display: flex;
     align-items: center;
     gap: 8px;
+    color: #000000; /* 黑色，只有 section-title-center 的 h2 是深蓝色 */
   }
 
   .header-icon {
@@ -597,21 +726,35 @@ const toolZoneBanners = ref([
     gap: 8px;
   }
   
-  .more-btn {
-    color: rgba(255, 255, 255, 0.8);
+  /* 通用胶囊按钮样式 - 适用于所有模块的"更多"按钮 */
+  .more-btn-pill {
+    border-radius: 999px; /* 完全圆角 pill */
+    background: rgba(30, 58, 138, 0.1); /* 深蓝色半透明背景 */
+    border: 1px solid rgba(30, 58, 138, 0.3); /* 深蓝色边框 */
+    color: #1e3a8a; /* 深蓝色文字 */
     font-size: 13px;
-    padding: 4px 8px;
+    padding: 6px 16px;
+    height: auto;
+    font-weight: 500;
     transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
     
     &:hover {
-      color: #409eff;
-      background: rgba(64, 158, 255, 0.1);
+      background: rgba(30, 58, 138, 0.2);
+      border-color: rgba(30, 58, 138, 0.5);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(30, 58, 138, 0.2);
+      color: #1e40af; /* 稍亮的深蓝色 */
     }
     
-    :deep(.el-icon) {
-      margin-left: 4px;
-      font-size: 12px;
+    &:active {
+      transform: translateY(0);
     }
+  }
+  
+  /* 保留旧的 more-btn 样式以兼容（如果还有使用） */
+  .more-btn {
+    @extend .more-btn-pill;
   }
 }
 
@@ -668,7 +811,7 @@ const toolZoneBanners = ref([
   
   .banner-content {
     text-align: center;
-    color: #fff;
+    color: #000000; /* 改为黑色 */
     
     h3 {
       margin: 0 0 8px 0;
@@ -732,7 +875,7 @@ const toolZoneBanners = ref([
       margin: 0 0 4px 0;
       font-size: 14px;
       font-weight: 600;
-      color: #fff;
+      color: #000000; /* 黑色 */
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -741,7 +884,7 @@ const toolZoneBanners = ref([
     p {
       margin: 0;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(0, 0, 0, 0.7); /* 黑色，70% 透明度 */
     }
   }
 }
@@ -751,8 +894,8 @@ const toolZoneBanners = ref([
   width: 1px;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.3) 0,
-    rgba(255, 255, 255, 0.3) 8px,
+    rgba(0, 0, 0, 0.2) 0,
+    rgba(0, 0, 0, 0.2) 8px,
     transparent 8px,
     transparent 16px
   );
@@ -776,6 +919,7 @@ const toolZoneBanners = ref([
     margin: 0;
     font-size: 18px;
     font-weight: 700;
+    color: #000000; /* 黑色 */
   }
 }
 
@@ -790,8 +934,8 @@ const toolZoneBanners = ref([
   width: 1px;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.3) 0,
-    rgba(255, 255, 255, 0.3) 8px,
+    rgba(0, 0, 0, 0.2) 0,
+    rgba(0, 0, 0, 0.2) 8px,
     transparent 8px,
     transparent 16px
   );
@@ -815,6 +959,7 @@ const toolZoneBanners = ref([
     margin: 0;
     font-size: 18px;
     font-weight: 700;
+    color: #000000; /* 黑色 */
   }
 }
 
@@ -845,12 +990,14 @@ const toolZoneBanners = ref([
     font-size: 13px;
     font-weight: 600;
     text-align: center;
+    color: #000000; /* 黑色 */
   }
   
   .user-level {
     font-size: 11px;
     opacity: 0.7;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.7); /* 黑色，70% 透明度 */
     padding: 2px 8px;
     border-radius: 10px;
   }
@@ -908,7 +1055,7 @@ const toolZoneBanners = ref([
       margin: 0;
       font-size: 13px;
       font-weight: 600;
-      color: #fff;
+      color: #000000; /* 黑色 */
       display: -webkit-box;
       -webkit-line-clamp: 3; /* 显示更多标题内容 */
       line-clamp: 3;
@@ -921,7 +1068,7 @@ const toolZoneBanners = ref([
     
     .news-date {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.6);
+      color: rgba(0, 0, 0, 0.6); /* 黑色，60% 透明度 */
       margin-top: 6px;
     }
   }
@@ -935,13 +1082,16 @@ const toolZoneBanners = ref([
   h2 {
     font-size: 28px;
     margin: 0;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    color: #1e3a8a; /* 深蓝色标题 */
+    font-weight: 700;
+    text-shadow: none; /* 移除阴影，深色背景不需要 */
   }
   p {
     margin: 5px 0 0;
     letter-spacing: 4px;
     opacity: 0.7;
     font-size: 12px;
+    color: #000000; /* 黑色 */
   }
 }
 
@@ -966,7 +1116,7 @@ const toolZoneBanners = ref([
     background: rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.4);
-    color: #fff;
+    color: #000000; /* 改为黑色 */
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -1038,7 +1188,7 @@ const toolZoneBanners = ref([
         margin: 0 0 8px 0;
         font-size: 24px;
         font-weight: 700;
-        color: #fff;
+        color: #000000; /* 改为黑色 */
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
       }
       
@@ -1053,13 +1203,53 @@ const toolZoneBanners = ref([
 }
 
 @media (max-width: 768px) {
+  /* 小屏设备：确保所有模块占满宽度 */
+  .page-container {
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .main-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+  
+  .glass-card {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
   .tool-zone-carousel-wrapper {
     margin: 20px 0 0 0; /* 底部margin为0，使工具列表紧挨着轮播图 */
+    width: 100%;
   }
   
   /* 荣誉殿堂响应式 */
+  .honor-header-bar {
+    padding: 12px 16px;
+    
+    .header-title {
+      font-size: 14px;
+    }
+    
+    .more-btn-pill {
+      padding: 5px 12px;
+      font-size: 12px;
+    }
+  }
+  
+  /* 所有模块的胶囊按钮响应式 */
+  .more-btn-pill {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+  
   .honor-split-container {
     flex-direction: column;
+    width: 100%;
+    padding: 16px !important;
   }
   
   .awards-grid {
@@ -1148,7 +1338,7 @@ const toolZoneBanners = ref([
       justify-content: center;
       font-weight: bold;
       font-size: 20px;
-      color: #fff;
+      color: #000000; /* 改为黑色 */
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
   }
@@ -1160,7 +1350,7 @@ const toolZoneBanners = ref([
     h4 {
       margin: 0 0 4px;
       font-size: 16px;
-      color: #fff;
+      color: #000000; /* 黑色 */
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1169,7 +1359,7 @@ const toolZoneBanners = ref([
     p {
       margin: 0;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(0, 0, 0, 0.7); /* 黑色，70% 透明度 */
       line-height: 1.4;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -1185,7 +1375,7 @@ const toolZoneBanners = ref([
 .text-list .list-row {
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
   
@@ -1199,7 +1389,7 @@ const toolZoneBanners = ref([
     padding-left: 8px;
     
     .practice-title {
-      color: #409eff;
+      color: #1e3a8a; /* 深蓝色悬停效果 */
     }
   }
   
@@ -1212,7 +1402,7 @@ const toolZoneBanners = ref([
   .practice-title {
     font-size: 15px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: #000000; /* 黑色 */
     margin: 0;
     line-height: 1.5;
     display: -webkit-box;
@@ -1229,7 +1419,7 @@ const toolZoneBanners = ref([
     align-items: center;
     gap: 12px;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(0, 0, 0, 0.6); /* 黑色，60% 透明度 */
   }
   
   .practice-author {
@@ -1262,12 +1452,13 @@ const toolZoneBanners = ref([
   .info-content {
     h3 {
       margin: 0 0 8px;
-      color: #d9ecff;
+      color: #000000; /* 黑色 */
+      font-weight: 700;
     }
     p {
       margin: 0;
       font-size: 13px;
-      opacity: 0.8;
+      color: rgba(0, 0, 0, 0.8); /* 黑色，80% 透明度 */
       max-width: 800px;
     }
   }

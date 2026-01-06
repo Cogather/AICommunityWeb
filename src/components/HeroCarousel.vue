@@ -134,14 +134,14 @@
   :deep(.el-carousel__container) {
     position: relative;
     
-    /* 顶部模糊层 - 增强效果 */
+    /* 顶部模糊层 - 减小模糊范围 */
     &::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 120px;
+      height: 60px;
       background: linear-gradient(
         to bottom,
         rgba(106, 17, 203, 0.5) 0%,
@@ -150,8 +150,8 @@
         rgba(106, 17, 203, 0.05) 85%,
         transparent 100%
       );
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
       pointer-events: none;
       z-index: 1;
     }

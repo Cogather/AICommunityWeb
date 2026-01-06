@@ -88,11 +88,11 @@ import { RouterLink } from 'vue-router'
   position: relative;
 
   &:hover {
-    color: #409eff;
+    color: #1e40af; /* 深蓝色悬停 */
   }
 
   &.router-link-active {
-    color: #409eff;
+    color: #1e3a8a; /* 深蓝色选中，不那么刺眼 */
     font-weight: 700;
     
     &::after {
@@ -102,7 +102,7 @@ import { RouterLink } from 'vue-router'
       left: 16px;
       right: 16px;
       height: 2px;
-      background-color: #409eff;
+      background-color: #1e3a8a; /* 深蓝色下划线 */
       border-radius: 2px 2px 0 0;
     }
   }
@@ -115,12 +115,12 @@ import { RouterLink } from 'vue-router'
 }
 
 .login-btn {
-  color: #ffffff;
+  color: #000000; /* 黑色字体 */
   font-weight: 500;
 
   &:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.2);
+    color: #000000; /* 悬停时保持黑色 */
+    background: rgba(0, 0, 0, 0.05);
   }
 }
 

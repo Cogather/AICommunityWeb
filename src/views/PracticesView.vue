@@ -3,152 +3,40 @@
     <div class="posts-container">
       <el-row :gutter="24">
         <!-- 左侧：帖子列表 -->
-        <el-col :xs="24" :md="16">
+        <el-col :xs="24" :md="17">
           <div class="posts-content">
             <!-- 头部操作栏 -->
-            <div class="posts-header">
-              <div class="header-left">
-                <el-button-group v-if="isAdmin">
-                  <el-button :type="activeTab === 'all' ? 'primary' : ''" @click="activeTab = 'all'">全部帖子</el-button>
-                  <el-button :type="activeTab === 'my' ? 'primary' : ''" @click="activeTab = 'my'">我的帖子</el-button>
-                </el-button-group>
-                <el-input
-                  v-model="searchKeyword"
-                  placeholder="搜索作者、关键词"
-                  class="search-input"
-                  clearable
-                >
-                  <template #prefix>
-                    <el-icon><Search /></el-icon>
-                  </template>
-                </el-input>
-                <el-select v-model="sortBy" placeholder="按最新排序" style="width: 150px">
-                  <el-option label="按最新排序" value="newest" />
-                  <el-option label="按热度排序" value="hot" />
-                  <el-option label="按评论数排序" value="comments" />
-                </el-select>
-                <el-button type="primary" v-if="isAdmin">发布帖子</el-button>
-              </div>
-            </div>
+            <PostHeader
+              :show-tabs="true"
+              :default-tab="activeTab"
+              :default-sort="sortBy"
+              @tab-change="handleTabChange"
+              @search="handleSearch"
+              @sort="handleSort"
+              @post-click="handlePostCreate"
+            />
 
             <!-- 帖子列表 -->
-            <div class="posts-list">
-              <!-- 精华帖（置顶） -->
-              <div 
-                v-for="post in featuredPosts" 
-                :key="post.id" 
-                class="post-item featured"
-                @click="handlePostClick(post)"
-              >
-                <div class="post-image" v-if="post.image">
-                  <img :src="post.image" :alt="post.title" />
-                </div>
-                <div class="post-content">
-                  <div class="post-header">
-                    <el-tag type="success" size="small">精华</el-tag>
-                    <h3 class="post-title">{{ post.title }}</h3>
-                  </div>
-                  <p class="post-description" v-if="post.description">{{ post.description }}</p>
-                  <div class="post-tags" v-if="post.tags && post.tags.length > 0">
-                    <el-tag
-                      v-for="tag in post.tags"
-                      :key="tag"
-                      :type="getTagType(tag)"
-                      size="small"
-                      class="post-tag"
-                    >
-                      {{ tag }}
-                    </el-tag>
-                  </div>
-                  <div class="post-meta">
-                    <span class="meta-item">
-                      <el-icon><User /></el-icon>
-                      {{ post.author }}
-                    </span>
-                    <span class="meta-item">
-                      <el-icon><Clock /></el-icon>
-                      {{ post.createTime }}
-                    </span>
-                    <span class="meta-item">
-                      <el-icon><View /></el-icon>
-                      {{ post.views }}
-                    </span>
-                    <span class="meta-item">
-                      <el-icon><ChatDotRound /></el-icon>
-                      {{ post.comments }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 普通帖子 -->
-              <div 
-                v-for="post in filteredPosts" 
-                :key="post.id" 
-                class="post-item"
-                @click="handlePostClick(post)"
-              >
-                <div class="post-image" v-if="post.image">
-                  <img :src="post.image" :alt="post.title" />
-                </div>
-                <div class="post-content">
-                  <div class="post-header">
-                    <h3 class="post-title">{{ post.title }}</h3>
-                  </div>
-                  <p class="post-description" v-if="post.description">{{ post.description }}</p>
-                  <div class="post-tags" v-if="post.tags && post.tags.length > 0">
-                    <el-tag
-                      v-for="tag in post.tags"
-                      :key="tag"
-                      :type="getTagType(tag)"
-                      size="small"
-                      class="post-tag"
-                    >
-                      {{ tag }}
-                    </el-tag>
-                  </div>
-                  <div class="post-meta">
-                    <span class="meta-item">
-                      <el-icon><User /></el-icon>
-                      {{ post.author }}
-                    </span>
-                    <span class="meta-item">
-                      <el-icon><Clock /></el-icon>
-                      {{ post.createTime }}
-                    </span>
-                    <span class="meta-item">
-                      <el-icon><View /></el-icon>
-                      {{ post.views }}
-                    </span>
-                    <span class="meta-item">
-                      <el-icon><ChatDotRound /></el-icon>
-                      {{ post.comments }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PostList
+              :posts="filteredPosts"
+              :featured-posts="featuredPosts"
+              :show-featured-tag="true"
+              @post-click="handlePostClick"
+            />
           </div>
         </el-col>
 
         <!-- 右侧：标签栏 -->
-        <el-col :xs="24" :md="8">
+        <el-col :xs="24" :md="7">
           <div class="sidebar">
             <!-- 所有标签 -->
             <div class="sidebar-section">
-              <h3>所有标签</h3>
-              <div class="tags-list">
-                <el-tag
-                  v-for="tag in allTags"
-                  :key="tag.name"
-                  :type="selectedTag === tag.name ? 'primary' : ''"
-                  :effect="selectedTag === tag.name ? 'dark' : 'plain'"
-                  class="tag-item"
-                  @click="handleTagClick(tag.name)"
-                >
-                  #{{ tag.name }} ({{ tag.count }})
-                </el-tag>
-              </div>
+              <TagFilter
+                :tags="allTags"
+                :selected-tag="selectedTag"
+                title="所有标签"
+                @tag-click="handleTagClick"
+              />
             </div>
 
             <!-- 部门分类 -->
@@ -209,16 +97,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, User, Clock, View, ChatDotRound } from '@element-plus/icons-vue'
+import PostHeader from '../components/PostHeader.vue'
+import PostList from '../components/PostList.vue'
+import TagFilter from '../components/TagFilter.vue'
 
 const router = useRouter()
 
 // 模拟管理员状态，实际应该从用户信息中获取
 const isAdmin = ref(false)
 
-const activeTab = ref('all')
+const activeTab = ref<'all' | 'my'>('all')
 const searchKeyword = ref('')
-const sortBy = ref('newest')
+const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 const selectedContributor = ref<string | null>(null)
@@ -393,6 +283,27 @@ const getTagType = (tag: string) => {
   return typeMap[tag] || 'info'
 }
 
+// 处理标签切换
+const handleTabChange = (tab: 'all' | 'my') => {
+  activeTab.value = tab
+}
+
+// 处理搜索
+const handleSearch = (keyword: string) => {
+  searchKeyword.value = keyword
+}
+
+// 处理排序
+const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
+  sortBy.value = sort
+}
+
+// 处理发帖
+const handlePostCreate = () => {
+  console.log('创建新帖子')
+  // 可以跳转到发帖页面
+}
+
 // 处理标签点击
 const handleTagClick = (tagName: string) => {
   if (selectedTag.value === tagName) {
@@ -447,132 +358,24 @@ const getRankClass = (index: number) => {
 }
 
 .posts-content {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 24px;
   min-height: 600px;
   color: #333;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.posts-header {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e0e0e0;
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .search-input {
-      width: 250px;
-    }
-  }
-}
-
-.posts-list {
-  .post-item {
-    padding: 20px;
-    border-bottom: 1px solid #e0e0e0;
-    cursor: pointer;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: #f9f9f9;
-    }
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    &.featured {
-      background-color: #f0f9ff;
-      border-left: 4px solid #409eff;
-    }
-
-    .post-image {
-      width: 100%;
-      height: 200px;
-      margin-bottom: 16px;
-      border-radius: 8px;
-      overflow: hidden;
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-    }
-
-    .post-content {
-      .post-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
-
-        .post-title {
-          margin: 0;
-          font-size: 20px;
-          font-weight: 600;
-          color: #333;
-          flex: 1;
-        }
-      }
-
-      .post-description {
-        margin: 0 0 16px 0;
-        font-size: 14px;
-        color: #666;
-        line-height: 1.6;
-      }
-
-      .post-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 12px;
-
-        .post-tag {
-          cursor: pointer;
-          transition: all 0.2s;
-
-          &:hover {
-            transform: translateY(-2px);
-          }
-        }
-      }
-
-      .post-meta {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        font-size: 13px;
-        color: #999;
-
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-
-          .el-icon {
-            font-size: 14px;
-          }
-        }
-      }
-    }
-  }
-}
 
 .sidebar {
   .sidebar-section {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
     border-radius: 16px;
     padding: 20px;
     margin-bottom: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
 
     h3 {
       margin: 0 0 16px 0;
@@ -581,20 +384,6 @@ const getRankClass = (index: number) => {
       color: #333;
     }
 
-    .tags-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-
-      .tag-item {
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          transform: translateY(-2px);
-        }
-      }
-    }
 
     .department-rankings {
       display: flex;
@@ -602,23 +391,29 @@ const getRankClass = (index: number) => {
 
       .department-item {
         padding: 12px;
-        border-radius: 8px;
+        border-radius: 0;
         transition: all 0.2s;
         cursor: pointer;
-        border: 1px solid transparent;
-        border-bottom: 1px solid #e0e0e0;
+        border: none;
+        margin-bottom: 0;
+        position: relative;
+
+        &:not(:last-child) {
+          border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+          margin-bottom: 0;
+        }
 
         &:last-child {
           border-bottom: none;
         }
 
         &:hover {
-          background-color: #f5f5f5;
+          background-color: rgba(0, 0, 0, 0.02);
         }
 
         &.active {
-          background-color: #e6f4ff;
-          border-color: #409eff;
+          background-color: rgba(64, 158, 255, 0.1);
+          border-left: 3px solid #409eff;
         }
 
         .department-info {

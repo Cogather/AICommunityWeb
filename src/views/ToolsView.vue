@@ -1,63 +1,249 @@
 <template>
   <div class="tools-view">
-    <div class="page-header">
-      <h1>AI 工具专区</h1>
-      <p>发现最新、最强大的 AI 工具，提升你的工作效率和创造力</p>
+    <!-- 工具按钮组 -->
+    <div class="tools-buttons">
+      <div
+        v-for="tool in tools"
+        :key="tool.id"
+        :class="{ 'tool-card-btn': true, 'tool-card-btn-active': selectedToolId === tool.id }"
+        @click="selectTool(tool.id)"
+      >
+        <div class="tool-card-icon">
+          <img v-if="tool.logo" :src="tool.logo" :alt="tool.name" />
+          <div v-else class="tool-icon-placeholder" :style="{ background: tool.color || '#409eff' }">
+            {{ tool.name[0] }}
+          </div>
+        </div>
+        <span class="tool-card-name">{{ tool.name }}</span>
+      </div>
+      
+      <!-- 其他工具按钮 -->
+      <div
+        :class="{ 'tool-card-btn': true, 'tool-card-btn-active': selectedToolId === 'other', 'tool-card-btn-other': true }"
+        @click="selectTool('other')"
+      >
+        <div class="tool-card-icon">
+          <el-icon class="other-icon"><More /></el-icon>
+        </div>
+        <span class="tool-card-name">其他工具</span>
+      </div>
     </div>
     
-    <div class="tools-grid">
-      <el-row :gutter="20">
-        <el-col 
-          :xs="12" 
-          :sm="6" 
-          :md="getColSpan(tools.length)"
-          v-for="tool in tools" 
-          :key="tool.id" 
-          style="margin-bottom: 20px;"
-        >
-          <div 
-            class="tool-card glass-card hover-effect" 
-            @click="handleToolClick(tool)"
-          >
-            <div class="tool-logo-wrapper">
-              <img 
-                v-if="tool.logo" 
-                :src="tool.logo" 
-                :alt="tool.name" 
-                class="tool-logo"
-              />
-              <div 
-                v-else 
-                class="tool-icon" 
-                :style="{ background: tool.color || '#409eff' }"
-              >
-                {{ tool.name[0] }}
+    <!-- 内容区域 -->
+    <div class="content-area" v-if="selectedToolId">
+      <el-row :gutter="24">
+        <!-- 左侧：帖子列表 -->
+        <el-col :xs="24" :md="16">
+          <div class="posts-section">
+            <!-- 帖子分类标签和发帖按钮 -->
+            <div class="post-tabs-header">
+              <div class="post-tabs">
+                <el-tag
+                  :type="activePostTab === 'guide' ? 'primary' : 'info'"
+                  :effect="activePostTab === 'guide' ? 'dark' : 'plain'"
+                  size="large"
+                  class="post-tab-tag"
+                  @click="activePostTab = 'guide'"
+                >
+                  操作指导
+                </el-tag>
+                <el-tag
+                  :type="activePostTab === 'excellent' ? 'primary' : 'info'"
+                  :effect="activePostTab === 'excellent' ? 'dark' : 'plain'"
+                  size="large"
+                  class="post-tab-tag"
+                  @click="activePostTab = 'excellent'"
+                >
+                  优秀使用
+                </el-tag>
+              </div>
+              <el-button type="primary" @click="handlePostCreate">我要发帖</el-button>
+            </div>
+
+            <!-- 帖子列表 -->
+            <PostList
+              :posts="filteredPosts"
+              :featured-posts="[]"
+              :show-featured-tag="false"
+              @post-click="handlePostClick"
+            />
+          </div>
+        </el-col>
+
+        <!-- 右侧：赋能/培训活动宣传 或 其他工具的标签/部门分类 -->
+        <el-col :xs="24" :md="8">
+          <!-- 其他工具：标签和部门分类 -->
+          <div v-if="selectedToolId === 'other'" class="sidebar-section">
+            <!-- 标签选择 -->
+            <div class="sidebar-block">
+              <h3 class="sidebar-title">标签选择</h3>
+              <div class="tags-list">
+                <el-tag
+                  v-for="tag in allTags"
+                  :key="tag.name"
+                  :type="selectedTag === tag.name ? 'primary' : 'info'"
+                  :effect="selectedTag === tag.name ? 'dark' : 'plain'"
+                  class="tag-item"
+                  @click="handleTagClick(tag.name)"
+                >
+                  #{{ tag.name }} ({{ tag.count }})
+                </el-tag>
               </div>
             </div>
-            <div class="tool-info">
-              <h4>{{ tool.name }}</h4>
-              <p>{{ tool.desc }}</p>
+
+            <!-- 部门归类 -->
+            <div class="sidebar-block">
+              <h3 class="sidebar-title">部门归类</h3>
+              <div class="department-list">
+                <div
+                  v-for="dept in departmentRankings"
+                  :key="dept.id"
+                  class="department-item"
+                  :class="{ active: selectedDepartment === dept.name }"
+                  @click="handleDepartmentClick(dept.name)"
+                >
+                  <div class="department-info">
+                    <div class="department-name">{{ dept.name }}</div>
+                    <div class="department-stats">
+                      <span class="stat-item">发帖数: {{ dept.postCount }}</span>
+                      <span class="stat-item">贡献者: {{ dept.contributorCount }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 普通工具：活动宣传 -->
+          <div v-else class="activities-section">
+            <h3 class="section-title">近期活动</h3>
+            
+            <!-- 活动轮播 -->
+            <el-carousel
+              :interval="5000"
+              height="400px"
+              indicator-position="outside"
+              :arrow="'hover'"
+              class="activities-carousel"
+            >
+              <el-carousel-item
+                v-for="activity in currentToolActivities"
+                :key="activity.id"
+              >
+                <div class="activity-card">
+                  <div class="activity-image">
+                    <img :src="activity.image" :alt="activity.title" />
+                    <div class="activity-badge" v-if="activity.type">
+                      {{ activity.type === 'training' ? '培训' : '赋能' }}
+                    </div>
+                  </div>
+                  <div class="activity-content">
+                    <h4 class="activity-title">{{ activity.title }}</h4>
+                    <p class="activity-desc">{{ activity.desc }}</p>
+                    <div class="activity-meta">
+                      <span class="activity-date">
+                        <el-icon><Calendar /></el-icon>
+                        {{ activity.date }}
+                      </span>
+                      <span class="activity-location" v-if="activity.location">
+                        <el-icon><Location /></el-icon>
+                        {{ activity.location }}
+                      </span>
+                    </div>
+                    <el-button type="primary" class="activity-btn" @click="handleActivityClick(activity)">
+                      了解详情
+                    </el-button>
+                  </div>
+                </div>
+              </el-carousel-item>
+            </el-carousel>
+
+            <!-- 空状态 -->
+            <div v-if="currentToolActivities.length === 0" class="empty-state">
+              <el-empty description="暂无近期活动" />
             </div>
           </div>
         </el-col>
       </el-row>
     </div>
+
+    <!-- 未选择工具时的提示 -->
+    <div v-else class="empty-tool-selection">
+      <el-empty description="请选择一个工具查看相关内容" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { User, Clock, View, Calendar, Location, More } from '@element-plus/icons-vue'
+import PostHeader from '../components/PostHeader.vue'
+import PostList from '../components/PostList.vue'
+import TagFilter from '../components/TagFilter.vue'
+import ActivityCarousel from '../components/ActivityCarousel.vue'
 
 const router = useRouter()
+const route = useRoute()
 
+// 选中的工具ID
+const selectedToolId = ref<number | string | null>(null)
+
+// 标签和部门选择
+const selectedTag = ref<string | null>(null)
+const selectedDepartment = ref<string | null>(null)
+
+// 所有标签
+const allTags = ref([
+  { name: '新手', count: 120 },
+  { name: '进阶', count: 95 },
+  { name: '最佳实践', count: 80 },
+  { name: '技巧', count: 75 },
+  { name: '案例', count: 110 },
+  { name: '优化', count: 60 },
+  { name: '通用', count: 50 }
+])
+
+// 部门排名统计
+const departmentRankings = ref([
+  { id: 1, name: '研发部', postCount: 156, contributorCount: 28 },
+  { id: 2, name: '产品部', postCount: 132, contributorCount: 22 },
+  { id: 3, name: '技术部', postCount: 98, contributorCount: 18 },
+  { id: 4, name: '数据部', postCount: 87, contributorCount: 15 },
+  { id: 5, name: '算法部', postCount: 76, contributorCount: 12 },
+  { id: 6, name: '运营部', postCount: 65, contributorCount: 10 },
+  { id: 7, name: '设计部', postCount: 54, contributorCount: 8 },
+  { id: 8, name: '测试部', postCount: 43, contributorCount: 7 }
+])
+
+// 页面加载时检查路由参数
+onMounted(() => {
+  const toolId = route.query.toolId
+  if (toolId) {
+    const id = Number(toolId)
+    if (!isNaN(id) && tools.value.some(t => t.id === id)) {
+      selectedToolId.value = id
+    } else if (toolId === 'other') {
+      selectedToolId.value = 'other'
+    }
+  } else {
+    // 如果没有toolId参数，默认选择第一个工具
+    if (tools.value.length > 0) {
+      selectedToolId.value = tools.value[0].id
+    }
+  }
+})
+
+// 当前激活的帖子分类
+const activePostTab = ref<'guide' | 'excellent'>('guide')
+
+// 工具列表
 const tools = ref([
   { 
     id: 1,
     name: 'TestMate', 
     desc: '自动化测试助手', 
     logo: 'https://picsum.photos/80/80?random=1',
-    link: '/tools/testmate',
     color: '#36cfc9' 
   },
   { 
@@ -65,7 +251,6 @@ const tools = ref([
     name: 'CodeMate', 
     desc: '智能代码补全', 
     logo: 'https://picsum.photos/80/80?random=2',
-    link: '/tools/codemate',
     color: '#9254de' 
   },
   { 
@@ -73,7 +258,6 @@ const tools = ref([
     name: '云集', 
     desc: '云端计算集群', 
     logo: 'https://picsum.photos/80/80?random=3',
-    link: '/tools/yunji',
     color: '#597ef7' 
   },
   { 
@@ -81,7 +265,6 @@ const tools = ref([
     name: '云见', 
     desc: '智能监控平台', 
     logo: 'https://picsum.photos/80/80?random=4',
-    link: '/tools/yunjian',
     color: '#ff9c6e' 
   },
   { 
@@ -89,7 +272,6 @@ const tools = ref([
     name: '扶摇', 
     desc: 'Agent编排引擎', 
     logo: 'https://picsum.photos/80/80?random=5',
-    link: '/tools/fuyao',
     color: '#4096ff' 
   },
   { 
@@ -97,7 +279,6 @@ const tools = ref([
     name: '纠错Agent', 
     desc: '智能代码纠错工具', 
     logo: 'https://picsum.photos/80/80?random=6',
-    link: '/tools/correction-agent',
     color: '#ffc53d' 
   },
   { 
@@ -105,19 +286,143 @@ const tools = ref([
     name: 'DT', 
     desc: '数据转换工具', 
     logo: 'https://picsum.photos/80/80?random=7',
-    link: '/tools/dt',
     color: '#73d13d' 
   },
 ])
 
-const getColSpan = (count: number) => {
-  if (count <= 4) return 24 / count
-  return 6
+// 所有帖子数据（模拟）
+const allPosts = ref([
+  // TestMate 相关
+  { id: 1, toolId: 1, category: 'guide', title: 'TestMate 快速入门指南', description: '从零开始学习 TestMate 的基本使用方法，快速上手自动化测试。', author: '张工程师', createTime: '2024年4月10日', views: 1250, tag: '新手', image: 'https://picsum.photos/400/300?random=1' },
+  { id: 2, toolId: 1, category: 'excellent', title: 'TestMate 在企业级项目中的最佳实践', description: '分享如何在实际项目中高效使用 TestMate 提升测试效率。', author: '李开发者', createTime: '2024年4月8日', views: 890, tag: '最佳实践', image: 'https://picsum.photos/400/300?random=2' },
+  { id: 3, toolId: 1, category: 'guide', title: 'TestMate 高级功能详解', description: '深入探讨 TestMate 的高级功能和配置选项。', author: '王测试', createTime: '2024年4月5日', views: 650, tag: '进阶', image: 'https://picsum.photos/400/300?random=3' },
+  
+  // CodeMate 相关
+  { id: 4, toolId: 2, category: 'guide', title: 'CodeMate 代码补全技巧', description: '掌握 CodeMate 的智能代码补全功能，提升编码效率。', author: '赵医生', createTime: '2024年4月12日', views: 720, tag: '技巧', image: 'https://picsum.photos/400/300?random=4' },
+  { id: 5, toolId: 2, category: 'excellent', title: 'CodeMate 在大型项目中的应用', description: '介绍 CodeMate 在大型软件开发项目中的实际应用案例。', author: '陈架构师', createTime: '2024年4月9日', views: 520, tag: '案例', image: 'https://picsum.photos/400/300?random=5' },
+  
+  // 云集相关
+  { id: 6, toolId: 3, category: 'guide', title: '云集集群管理入门', description: '学习如何使用云集进行云端计算集群的管理和调度。', author: '刘设计师', createTime: '2024年4月11日', views: 450, tag: '入门', image: 'https://picsum.photos/400/300?random=6' },
+  { id: 7, toolId: 3, category: 'excellent', title: '云集性能优化实战', description: '分享云集集群性能优化的实战经验和技巧。', author: '张工程师', createTime: '2024年4月7日', views: 380, tag: '优化', image: 'https://picsum.photos/400/300?random=7' },
+  
+  // 其他工具
+  { id: 8, toolId: 0, category: 'guide', title: 'AI工具使用通用指南', description: '介绍AI工具使用的一般方法和注意事项。', author: '系统管理员', createTime: '2024年4月13日', views: 1200, tag: '通用', image: 'https://picsum.photos/400/300?random=8' },
+  { id: 9, toolId: 0, category: 'excellent', title: 'AI工具优秀案例集锦', description: '收集整理各类AI工具的优秀使用案例。', author: '社区编辑', createTime: '2024年4月6日', views: 950, tag: '案例', image: 'https://picsum.photos/400/300?random=9' },
+])
+
+// 活动数据（模拟）
+const allActivities = ref([
+  { id: 1, toolId: 1, type: 'training', title: 'TestMate 培训课程', desc: '深入学习 TestMate 的高级功能和应用场景，提升测试自动化能力。', date: '2024年4月20日', location: '线上', image: 'https://picsum.photos/600/400?random=10' },
+  { id: 2, toolId: 1, type: 'empowerment', title: 'TestMate 赋能工作坊', desc: '实战演练 TestMate 在企业项目中的应用，现场答疑解惑。', date: '2024年4月25日', location: '北京', image: 'https://picsum.photos/600/400?random=11' },
+  { id: 3, toolId: 2, type: 'training', title: 'CodeMate 开发培训', desc: '掌握 CodeMate 的核心功能，提升代码开发效率和质量。', date: '2024年4月22日', location: '线上', image: 'https://picsum.photos/600/400?random=12' },
+  { id: 4, toolId: 3, type: 'empowerment', title: '云集技术分享会', desc: '分享云集集群管理的最佳实践和最新功能。', date: '2024年4月28日', location: '上海', image: 'https://picsum.photos/600/400?random=13' },
+  { id: 5, toolId: 5, type: 'training', title: '扶摇 Agent 训练营', desc: '系统学习扶摇 Agent 编排引擎的使用方法和实战技巧。', date: '2024年5月5日', location: '线上', image: 'https://picsum.photos/600/400?random=14' },
+])
+
+// 选择工具
+const selectTool = (toolId: number | string) => {
+  selectedToolId.value = toolId
+  activePostTab.value = 'guide' // 重置为操作指导
 }
 
-const handleToolClick = (tool: any) => {
-  if (tool.link) {
-    router.push(tool.link)
+// 当前工具的帖子
+const currentToolPosts = computed(() => {
+  let posts = []
+  
+  if (selectedToolId.value === 'other') {
+    posts = allPosts.value.filter(post => post.toolId === 0)
+  } else if (selectedToolId.value) {
+    posts = allPosts.value.filter(post => post.toolId === selectedToolId.value)
+  } else {
+    return []
+  }
+
+  // 按标签过滤
+  if (selectedTag.value) {
+    posts = posts.filter(post => post.tag === selectedTag.value)
+  }
+
+  // 按部门过滤（这里简化处理，实际应该从帖子数据中获取部门信息）
+  // if (selectedDepartment.value) {
+  //   posts = posts.filter(post => post.department === selectedDepartment.value)
+  // }
+
+  return posts
+})
+
+// 过滤后的帖子（根据分类）
+const filteredPosts = computed(() => {
+  return currentToolPosts.value.filter(post => post.category === activePostTab.value)
+})
+
+// 当前工具的活动
+const currentToolActivities = computed(() => {
+  if (selectedToolId.value === 'other' || !selectedToolId.value) {
+    return []
+  }
+  return allActivities.value.filter(activity => activity.toolId === selectedToolId.value)
+})
+
+// 获取标签类型
+const getTagType = (tag: string) => {
+  const typeMap: Record<string, string> = {
+    '新手': 'info',
+    '进阶': 'warning',
+    '最佳实践': 'success',
+    '技巧': 'primary',
+    '案例': 'success',
+    '入门': 'info',
+    '优化': 'warning',
+    '通用': 'info'
+  }
+  return typeMap[tag] || 'info'
+}
+
+// 处理帖子点击
+const handlePostClick = (post: any) => {
+  console.log('点击帖子:', post)
+  // 可以跳转到帖子详情页
+}
+
+// 处理发帖
+const handlePostCreate = () => {
+  console.log('创建新帖子')
+  // 可以跳转到发帖页面
+}
+
+// 处理搜索
+const handleSearch = (keyword: string) => {
+  // 可以在这里实现搜索逻辑
+  console.log('搜索关键词:', keyword)
+}
+
+// 处理排序
+const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
+  // 可以在这里实现排序逻辑
+  console.log('排序方式:', sort)
+}
+
+// 处理活动点击
+const handleActivityClick = (activity: any) => {
+  console.log('点击活动:', activity)
+  // 可以跳转到活动详情页
+}
+
+// 处理标签点击
+const handleTagClick = (tagName: string) => {
+  if (selectedTag.value === tagName) {
+    selectedTag.value = null
+  } else {
+    selectedTag.value = tagName
+  }
+}
+
+// 处理部门点击
+const handleDepartmentClick = (departmentName: string) => {
+  if (selectedDepartment.value === departmentName) {
+    selectedDepartment.value = null
+  } else {
+    selectedDepartment.value = departmentName
   }
 }
 </script>
@@ -125,101 +430,466 @@ const handleToolClick = (tool: any) => {
 <style scoped lang="scss">
 .tools-view {
   min-height: 100vh;
-  padding: 40px 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  text-align: center;
-  margin-bottom: 40px;
-  
-  h1 {
-    font-size: 32px;
-    color: #fff;
-    margin-bottom: 10px;
-  }
-  
-  p {
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.7);
-  }
-}
-
-.tools-grid {
-  margin-top: 30px;
-}
-
-.tool-card {
-  display: flex;
-  align-items: center;
-  gap: 15px;
   padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  max-width: 1600px;
+  margin: 0 auto;
+  color: #000;
+}
 
-  &.hover-effect:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+/* 工具按钮组 */
+.tools-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 30px;
+  padding: 20px 0;
+}
+
+.tool-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  min-width: 100px;
+  border-radius: 16px;
+  background: transparent;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    border-color: rgba(64, 158, 255, 0.5);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(64, 158, 255, 0.15);
   }
 
-  .tool-logo-wrapper {
-    flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    
-    .tool-logo {
+  &.tool-card-btn-active {
+    background: transparent;
+    border-color: #409eff;
+    box-shadow: 0 8px 24px rgba(64, 158, 255, 0.2);
+
+    .tool-card-name {
+      color: #409eff;
+      font-weight: 600;
+    }
+
+    .tool-card-icon {
+      transform: scale(1.1);
+      border-color: #409eff;
+    }
+  }
+
+  .tool-card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+
+    img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
-    
-    .tool-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+
+    .tool-icon-placeholder {
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 20px;
-      color: #fff;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      color: #333;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .other-icon {
+      font-size: 28px;
+      color: #666;
     }
   }
 
-  .tool-info {
-    flex: 1;
-    min-width: 0;
-    
-    h4 {
-      margin: 0 0 4px;
-      font-size: 16px;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+  .tool-card-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+  }
+
+  &.tool-card-btn-other {
+    .tool-card-icon {
+      border-color: rgba(0, 0, 0, 0.15);
     }
-    
-    p {
-      margin: 0;
+
+    &.tool-card-btn-active {
+      .tool-card-icon {
+        border-color: #909399;
+      }
+
+      .tool-card-name {
+        color: #909399;
+      }
+    }
+  }
+}
+
+/* 内容区域 */
+.content-area {
+  margin-top: 20px;
+}
+
+/* 帖子区域 */
+.posts-section {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.post-tabs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.post-tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.post-tab-tag {
+  cursor: pointer;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.posts-list {
+  .post-item {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .post-image {
+      flex-shrink: 0;
+      width: 200px;
+      height: 120px;
+      border-radius: 8px;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .post-content {
+      flex: 1;
+      min-width: 0;
+
+      .post-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+
+        .post-title {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #000;
+          flex: 1;
+        }
+      }
+
+      .post-description {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        color: #666;
+        line-height: 1.6;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        font-size: 13px;
+        color: #999;
+
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .el-icon {
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+/* 活动区域 */
+.activities-section {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+}
+
+.activities-carousel {
+  :deep(.el-carousel__item) {
+    padding: 0;
+  }
+}
+
+.activity-card {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .activity-image {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .activity-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 4px 12px;
+      background: rgba(64, 158, 255, 0.9);
+      color: #fff;
+      border-radius: 12px;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
-      line-height: 1.4;
+      font-weight: 500;
+    }
+  }
+
+  .activity-content {
+    padding: 16px;
+
+    .activity-title {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #000;
+    }
+
+    .activity-desc {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+
+    .activity-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #999;
+
+      .activity-date,
+      .activity-location {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        .el-icon {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .activity-btn {
+      width: 100%;
+    }
+  }
+}
+
+.empty-tool-selection {
+  padding: 100px 20px;
+  text-align: center;
+}
+
+/* 侧边栏（其他工具） */
+.sidebar-section {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-block {
+  margin-bottom: 24px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.sidebar-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .tag-item {
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+}
+
+.department-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .department-item {
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    &.active {
+      background: rgba(64, 158, 255, 0.1);
+      border-color: #409eff;
+    }
+
+    .department-info {
+      .department-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #000;
+        margin-bottom: 4px;
+      }
+
+      .department-stats {
+        display: flex;
+        gap: 12px;
+        font-size: 12px;
+        color: #999;
+
+        .stat-item {
+          display: flex;
+          align-items: center;
+        }
+      }
+    }
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .post-item {
+    flex-direction: column;
+
+    .post-image {
+      width: 100%;
+      height: 180px;
+    }
+  }
+
+  .tools-buttons {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 10px;
+
+    .tool-btn {
+      flex-shrink: 0;
+    }
   }
 }
 </style>
-

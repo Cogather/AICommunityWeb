@@ -35,7 +35,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/honor',
     name: 'Honor',
-    component: () => import('../views/HonorView.vue')
+    component: () => import('../views/UsersView.vue')
   },
   {
     path: '/news',
@@ -46,7 +46,15 @@ const routes: Array<RouteRecordRaw> = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    // 如果有保存的位置（比如浏览器前进后退），则使用保存的位置
+    if (savedPosition) {
+      return savedPosition
+    }
+    // 否则滚动到顶部
+    return { top: 0 }
+  }
 })
 
 export default router
