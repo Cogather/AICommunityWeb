@@ -1,14 +1,6 @@
 <template>
   <div class="posts-header">
     <div class="header-left">
-      <el-button-group v-if="showTabs">
-        <el-button :type="activeTab === 'all' ? 'primary' : ''" @click="handleTabChange('all')">
-          全部帖子
-        </el-button>
-        <el-button :type="activeTab === 'my' ? 'primary' : ''" @click="handleTabChange('my')">
-          我的帖子
-        </el-button>
-      </el-button-group>
       <el-input
         v-model="searchKeyword"
         placeholder="搜索作者、关键词"
@@ -24,8 +16,8 @@
         <el-option label="按最新排序" value="newest" />
         <el-option label="按热度排序" value="hot" />
         <el-option label="按评论数排序" value="comments" />
+        <el-option label="按点赞数排序" value="likes" />
       </el-select>
-      <el-button type="primary" @click="handlePostClick">我要发帖</el-button>
     </div>
   </div>
 </template>
@@ -35,32 +27,19 @@ import { ref, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 
 interface Props {
-  showTabs?: boolean
-  defaultTab?: 'all' | 'my'
-  defaultSort?: 'newest' | 'hot' | 'comments'
+  defaultSort?: 'newest' | 'hot' | 'comments' | 'likes'
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showTabs: false,
-  defaultTab: 'all',
   defaultSort: 'newest'
 })
 
 const emit = defineEmits<{
-  tabChange: [tab: 'all' | 'my']
   search: [keyword: string]
-  sort: [sortBy: 'newest' | 'hot' | 'comments']
-  postClick: []
+  sort: [sortBy: 'newest' | 'hot' | 'comments' | 'likes']
 }>()
-
-const activeTab = ref<'all' | 'my'>(props.defaultTab)
 const searchKeyword = ref('')
-const sortBy = ref<'newest' | 'hot' | 'comments'>(props.defaultSort)
-
-const handleTabChange = (tab: 'all' | 'my') => {
-  activeTab.value = tab
-  emit('tabChange', tab)
-}
+const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>(props.defaultSort as 'newest' | 'hot' | 'comments' | 'likes')
 
 const handleSearch = () => {
   emit('search', searchKeyword.value)
@@ -70,15 +49,10 @@ const handleSort = () => {
   emit('sort', sortBy.value)
 }
 
-const handlePostClick = () => {
-  emit('postClick')
-}
-
 // 暴露方法供父组件调用
 defineExpose({
   searchKeyword,
-  sortBy,
-  activeTab
+  sortBy
 })
 </script>
 

@@ -46,6 +46,21 @@ const routes: Array<RouteRecordRaw> = [
     path: '/post/create',
     name: 'PostCreate',
     component: () => import('../views/PostCreateView.vue')
+  },
+  {
+    path: '/post/:id',
+    name: 'PostDetail',
+    component: () => import('../views/PostDetailView.vue')
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/ProfileView.vue')
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFoundView.vue')
   }
 ]
 

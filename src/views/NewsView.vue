@@ -20,7 +20,13 @@
                 <p>{{ news.content }}</p>
                 <div class="news-footer">
                   <el-tag :type="news.type">{{ news.category }}</el-tag>
-                  <el-button text type="primary">阅读全文 →</el-button>
+                  <el-button 
+                    text 
+                    type="primary"
+                    @click="handleReadMore(news)"
+                  >
+                    阅读全文 →
+                  </el-button>
                 </div>
               </el-card>
             </el-timeline-item>
@@ -73,8 +79,16 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const activeTab = ref('latest')
+
+// 处理阅读全文
+const handleReadMore = (news: any) => {
+  ElMessage.info('文章详情功能开发中')
+  // 这里可以跳转到文章详情页
+  // router.push(`/news/${news.id}`)
+}
 
 const latestNews = ref([
   {

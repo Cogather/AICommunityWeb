@@ -2,6 +2,7 @@
 import { RouterView } from 'vue-router'
 import AppNavbar from './components/AppNavbar.vue'
 import AppFooter from './components/AppFooter.vue'
+import PostFab from './components/PostFab.vue'
 </script>
 
 <template>
@@ -27,6 +28,7 @@ import AppFooter from './components/AppFooter.vue'
     <!-- 页面内容 -->
     <main class="page-content">
       <RouterView />
+      <PostFab />
     </main>
 
     <!-- Footer -->

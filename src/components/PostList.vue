@@ -47,6 +47,10 @@
             <el-icon><ChatDotRound /></el-icon>
             {{ post.comments }}
           </span>
+          <span class="meta-item" v-if="post.likes !== undefined">
+            <HeartIcon :filled="false" :size="16" color="#f56c6c" />
+            {{ post.likes }}
+          </span>
         </div>
       </div>
     </div>
@@ -97,6 +101,10 @@
             <el-icon><ChatDotRound /></el-icon>
             {{ post.comments }}
           </span>
+          <span class="meta-item" v-if="post.likes !== undefined">
+            <HeartIcon :filled="false" :size="16" color="#f56c6c" />
+            {{ post.likes }}
+          </span>
         </div>
       </div>
     </div>
@@ -109,7 +117,8 @@
 </template>
 
 <script setup lang="ts">
-import { User, Clock, View, ChatDotRound } from '@element-plus/icons-vue'
+import { User, Clock, View, ChatDotRound, Star } from '@element-plus/icons-vue'
+import HeartIcon from './HeartIcon.vue'
 
 interface Post {
   id: number
@@ -119,6 +128,7 @@ interface Post {
   createTime: string
   views: number
   comments?: number
+  likes?: number
   image?: string
   tag?: string
   tags?: string[]
@@ -272,6 +282,10 @@ const handlePostClick = (post: Post) => {
 
           .el-icon {
             font-size: 14px;
+          }
+
+          .heart-icon {
+            flex-shrink: 0;
           }
         }
       }

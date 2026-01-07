@@ -17,15 +17,82 @@
         <RouterLink to="/news" class="nav-item">AI资讯</RouterLink>
       </nav>
       <div class="nav-actions">
-        <el-button text class="login-btn">登录</el-button>
-        <el-button type="primary" class="join-btn">加入社区</el-button>
+        <!-- 未登录状态 -->
+        <template v-if="!isLoggedIn">
+          <el-button text class="login-btn" @click="handleLogin">登录</el-button>
+          <el-button type="primary" class="join-btn">加入社区</el-button>
+        </template>
+        <!-- 已登录状态 -->
+        <template v-else>
+          <el-dropdown @command="handleCommand" trigger="hover" placement="bottom-end">
+            <div class="user-dropdown-trigger">
+              <el-avatar :size="36" :src="userInfo.avatar" class="user-avatar">
+                {{ userInfo.name?.charAt(0) || 'U' }}
+              </el-avatar>
+              <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>
+                  <span>个人中心</span>
+                </el-dropdown-item>
+                <el-dropdown-item command="settings" divided>
+                  <el-icon><Setting /></el-icon>
+                  <span>设置</span>
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon>
+                  <span>退出登录</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { User, Setting, SwitchButton, ArrowDown } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+
+const router = useRouter()
+
+// 登录状态（实际应该从 store 或 API 获取）
+const isLoggedIn = ref(true) // 暂时设为 true 用于测试
+
+// 用户信息（实际应该从 store 或 API 获取）
+const userInfo = ref({
+  name: '张三',
+  avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+})
+
+// 处理登录
+const handleLogin = () => {
+  // 这里应该跳转到登录页面或显示登录对话框
+  ElMessage.info('登录功能开发中')
+}
+
+// 处理下拉菜单命令
+const handleCommand = (command: string) => {
+  switch (command) {
+    case 'profile':
+      router.push('/profile')
+      break
+    case 'settings':
+      ElMessage.info('设置功能开发中')
+      break
+    case 'logout':
+      // 这里应该调用登出API
+      isLoggedIn.value = false
+      ElMessage.success('已退出登录')
+      break
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -112,6 +179,36 @@ import { RouterLink } from 'vue-router'
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.user-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .user-avatar {
+    flex-shrink: 0;
+  }
+
+  .dropdown-icon {
+    font-size: 12px;
+    color: #666;
+    transition: transform 0.3s ease;
+  }
+}
+
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .login-btn {

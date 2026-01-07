@@ -309,21 +309,21 @@ const tools = ref([
 // 所有帖子数据（模拟）
 const allPosts = ref([
   // TestMate 相关
-  { id: 1, toolId: 1, category: 'guide', title: 'TestMate 快速入门指南', description: '从零开始学习 TestMate 的基本使用方法，快速上手自动化测试。', author: '张工程师', createTime: '2024年4月10日', views: 1250, tag: '新手', image: 'https://picsum.photos/400/300?random=1' },
-  { id: 2, toolId: 1, category: 'excellent', title: 'TestMate 在企业级项目中的最佳实践', description: '分享如何在实际项目中高效使用 TestMate 提升测试效率。', author: '李开发者', createTime: '2024年4月8日', views: 890, tag: '最佳实践', image: 'https://picsum.photos/400/300?random=2' },
-  { id: 3, toolId: 1, category: 'guide', title: 'TestMate 高级功能详解', description: '深入探讨 TestMate 的高级功能和配置选项。', author: '王测试', createTime: '2024年4月5日', views: 650, tag: '进阶', image: 'https://picsum.photos/400/300?random=3' },
+  { id: 1, toolId: 1, category: 'guide', title: 'TestMate 快速入门指南', description: '从零开始学习 TestMate 的基本使用方法，快速上手自动化测试。', author: '张工程师', createTime: '2024年4月10日', views: 1250, comments: 45, likes: 128, tag: '新手', image: 'https://picsum.photos/400/300?random=1' },
+  { id: 2, toolId: 1, category: 'excellent', title: 'TestMate 在企业级项目中的最佳实践', description: '分享如何在实际项目中高效使用 TestMate 提升测试效率。', author: '李开发者', createTime: '2024年4月8日', views: 890, comments: 32, likes: 95, tag: '最佳实践', image: 'https://picsum.photos/400/300?random=2' },
+  { id: 3, toolId: 1, category: 'guide', title: 'TestMate 高级功能详解', description: '深入探讨 TestMate 的高级功能和配置选项。', author: '王测试', createTime: '2024年4月5日', views: 650, comments: 18, likes: 52, tag: '进阶', image: 'https://picsum.photos/400/300?random=3' },
   
   // CodeMate 相关
-  { id: 4, toolId: 2, category: 'guide', title: 'CodeMate 代码补全技巧', description: '掌握 CodeMate 的智能代码补全功能，提升编码效率。', author: '赵医生', createTime: '2024年4月12日', views: 720, tag: '技巧', image: 'https://picsum.photos/400/300?random=4' },
-  { id: 5, toolId: 2, category: 'excellent', title: 'CodeMate 在大型项目中的应用', description: '介绍 CodeMate 在大型软件开发项目中的实际应用案例。', author: '陈架构师', createTime: '2024年4月9日', views: 520, tag: '案例', image: 'https://picsum.photos/400/300?random=5' },
+  { id: 4, toolId: 2, category: 'guide', title: 'CodeMate 代码补全技巧', description: '掌握 CodeMate 的智能代码补全功能，提升编码效率。', author: '赵医生', createTime: '2024年4月12日', views: 720, comments: 28, likes: 78, tag: '技巧', image: 'https://picsum.photos/400/300?random=4' },
+  { id: 5, toolId: 2, category: 'excellent', title: 'CodeMate 在大型项目中的应用', description: '介绍 CodeMate 在大型软件开发项目中的实际应用案例。', author: '陈架构师', createTime: '2024年4月9日', views: 520, comments: 15, likes: 42, tag: '案例', image: 'https://picsum.photos/400/300?random=5' },
   
   // 云集相关
-  { id: 6, toolId: 3, category: 'guide', title: '云集集群管理入门', description: '学习如何使用云集进行云端计算集群的管理和调度。', author: '刘设计师', createTime: '2024年4月11日', views: 450, tag: '入门', image: 'https://picsum.photos/400/300?random=6' },
-  { id: 7, toolId: 3, category: 'excellent', title: '云集性能优化实战', description: '分享云集集群性能优化的实战经验和技巧。', author: '张工程师', createTime: '2024年4月7日', views: 380, tag: '优化', image: 'https://picsum.photos/400/300?random=7' },
+  { id: 6, toolId: 3, category: 'guide', title: '云集集群管理入门', description: '学习如何使用云集进行云端计算集群的管理和调度。', author: '刘设计师', createTime: '2024年4月11日', views: 450, comments: 12, likes: 35, tag: '入门', image: 'https://picsum.photos/400/300?random=6' },
+  { id: 7, toolId: 3, category: 'excellent', title: '云集性能优化实战', description: '分享云集集群性能优化的实战经验和技巧。', author: '张工程师', createTime: '2024年4月7日', views: 380, comments: 10, likes: 28, tag: '优化', image: 'https://picsum.photos/400/300?random=7' },
   
   // 其他工具
-  { id: 8, toolId: 0, category: 'guide', title: 'AI工具使用通用指南', description: '介绍AI工具使用的一般方法和注意事项。', author: '系统管理员', createTime: '2024年4月13日', views: 1200, tag: '通用', image: 'https://picsum.photos/400/300?random=8' },
-  { id: 9, toolId: 0, category: 'excellent', title: 'AI工具优秀案例集锦', description: '收集整理各类AI工具的优秀使用案例。', author: '社区编辑', createTime: '2024年4月6日', views: 950, tag: '案例', image: 'https://picsum.photos/400/300?random=9' },
+  { id: 8, toolId: 0, category: 'guide', title: 'AI工具使用通用指南', description: '介绍AI工具使用的一般方法和注意事项。', author: '系统管理员', createTime: '2024年4月13日', views: 1200, comments: 58, likes: 156, tag: '通用', image: 'https://picsum.photos/400/300?random=8' },
+  { id: 9, toolId: 0, category: 'excellent', title: 'AI工具优秀案例集锦', description: '收集整理各类AI工具的优秀使用案例。', author: '社区编辑', createTime: '2024年4月6日', views: 950, comments: 42, likes: 112, tag: '案例', image: 'https://picsum.photos/400/300?random=9' },
 ])
 
 // 活动数据（模拟）
@@ -476,8 +476,7 @@ const getTagType = (tag: string) => {
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  console.log('点击帖子:', post)
-  // 可以跳转到帖子详情页
+  router.push(`/post/${post.id}`)
 }
 
 // 处理发帖

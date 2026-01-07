@@ -68,40 +68,62 @@
 
         <!-- 标签选择 -->
         <el-form-item label="标签" prop="tags">
-          <div class="tags-section">
-            <!-- 已选标签显示 -->
-            <div class="tags-display">
+          <div class="tags-container">
+            <!-- 已选标签 -->
+            <div class="tags-section" v-if="formData.tags.length > 0">
+              <div class="tags-label">已选标签：</div>
+              <div class="tags-list">
               <el-tag
-                v-for="(tag, index) in formData.tags"
-                :key="index"
+                  v-for="tag in formData.tags"
+                  :key="tag"
                 :closable="!isPresetTag(tag)"
-                @close="removeTag(index)"
-                class="tag-item"
+                  :disable-transitions="false"
                 size="small"
                 :style="getTagStyle(tag)"
+                  @close="handleTagClose(tag)"
               >
                 {{ tag }}
               </el-tag>
             </div>
-            <!-- 标签选择输入 -->
-            <div class="tags-input-section">
-              <el-select
-                v-model="selectedTag"
-                placeholder="选择已有标签或输入新标签"
-                filterable
-                allow-create
-                default-first-option
-                size="small"
-                style="width: 100%"
-                @change="handleTagAdd"
-              >
-                <el-option
+            </div>
+            
+            <!-- 可选标签 -->
+            <div class="tags-section" v-if="availableTags.length > 0">
+              <div class="tags-label">可选标签：</div>
+              <div class="tags-list">
+                <el-tag
                   v-for="tag in availableTags"
                   :key="tag"
-                  :label="tag"
-                  :value="tag"
-                />
-              </el-select>
+                  :class="{ 'tag-selected': formData.tags.includes(tag) }"
+                  size="small"
+                  :style="getTagStyle(tag)"
+                  @click="handleTagSelect(tag)"
+                >
+                  {{ tag }}
+                </el-tag>
+              </div>
+            </div>
+            
+            <!-- 新增标签 -->
+            <div class="tags-section">
+              <el-input
+                v-if="tagInputVisible"
+                ref="tagInputRef"
+                v-model="tagInputValue"
+                class="tag-input"
+                size="small"
+                placeholder="输入新标签"
+                @keyup.enter="handleTagInputConfirm"
+                @blur="handleTagInputConfirm"
+              />
+              <el-button
+                v-else
+                class="button-new-tag"
+                size="small"
+                @click="showTagInput"
+              >
+                + 新增标签
+              </el-button>
             </div>
           </div>
         </el-form-item>
@@ -109,6 +131,7 @@
         <!-- 帖子封面 -->
         <el-form-item label="帖子封面" prop="cover">
           <div class="cover-upload-section">
+            <div class="cover-row">
             <div class="cover-options">
               <el-upload
                 class="cover-uploader"
@@ -118,20 +141,42 @@
                 :before-upload="beforeCoverUpload"
                 accept="image/*"
               >
-                <img v-if="formData.cover" :src="formData.cover" class="cover-image" />
-                <el-icon v-else class="cover-uploader-icon"><Plus /></el-icon>
-              </el-upload>
+                  <div v-if="formData.cover" class="cover-image-wrapper">
+                    <img :src="formData.cover" class="cover-image" />
+                    <div class="cover-delete-overlay">
               <el-button
-                type="primary"
-                plain
+                        type="danger"
+                        :icon="Delete"
+                        circle
                 size="small"
-                @click="handleRecommendCover"
-                :loading="recommending"
-                style="margin-left: 12px"
-              >
-                推荐封面
-              </el-button>
+                        @click.stop="handleCoverDelete"
+                      />
+                    </div>
+                  </div>
+                  <el-icon v-else class="cover-uploader-icon"><Plus /></el-icon>
+                </el-upload>
+              </div>
+              
+              <!-- 推荐封面 -->
+              <div class="recommended-covers">
+                <span class="recommended-covers-title">推荐封面</span>
+                <div class="recommended-covers-list">
+                  <div
+                    v-for="(cover, index) in recommendedCovers"
+                    :key="index"
+                    class="recommended-cover-item"
+                    :class="{ 'cover-selected': formData.cover === cover }"
+                    @click="handleSelectRecommendedCover(cover)"
+                  >
+                    <img :src="cover" alt="推荐封面" />
+                    <div class="cover-overlay">
+                      <el-icon class="cover-check-icon"><Check /></el-icon>
             </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div class="cover-tips">
               <p>支持 JPG、PNG 格式，建议尺寸 800x400，大小不超过 2MB</p>
             </div>
@@ -141,11 +186,19 @@
         <!-- 内容编辑（富文本编辑器） -->
         <el-form-item label="帖子内容" prop="content">
           <div class="editor-wrapper">
-            <QuillEditor
-              v-model:content="formData.content"
-              contentType="html"
-              :options="editorOptions"
-              @update:content="handleEditorChange"
+            <Toolbar
+              :editor="editorRef"
+              :defaultConfig="toolbarConfig"
+              :mode="editorMode"
+              class="editor-toolbar"
+            />
+            <Editor
+              v-model="formData.content"
+              :defaultConfig="editorConfig"
+              :mode="editorMode"
+              class="editor-content"
+              @onCreated="handleEditorCreated"
+              @onChange="handleEditorChange"
             />
             <div class="editor-footer">
               <span class="word-count">字数：{{ wordCount }}</span>
@@ -169,23 +222,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { QuillEditor } from '@vueup/vue-quill'
-import 'quill/dist/quill.snow.css'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { InputInstance } from 'element-plus'
+import '@wangeditor/editor/dist/css/style.css'
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
+import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
 import {
   Plus,
-  Picture as PictureIcon
+  Delete,
+  Check
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const formRef = ref()
+const tagInputRef = ref<InputInstance>()
 const publishing = ref(false)
 const recommending = ref(false)
-const selectedTag = ref('')
+const tagInputVisible = ref(false)
+const tagInputValue = ref('')
 const lastSaveTime = ref('')
+const editorRef = shallowRef<IDomEditor>()
+const editorMode = 'default'
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+// 推荐封面列表
+const recommendedCovers = ref([
+  'https://picsum.photos/800/400?random=1',
+  'https://picsum.photos/800/400?random=2',
+  'https://picsum.photos/800/400?random=3'
+])
 
 // 预设标签（不可删除）
 const presetTags = ref<string[]>([])
@@ -222,9 +289,7 @@ const zoneTags = {
 
 // 当前可用的标签
 const availableTags = computed(() => {
-  if (formData.value.zone === 'tools' && formData.value.toolId) {
-    return zoneTags.tools
-  } else if (formData.value.zone) {
+  if (formData.value.zone) {
     return zoneTags[formData.value.zone as keyof typeof zoneTags] || []
   }
   return []
@@ -255,13 +320,245 @@ const rules = {
   content: [{ required: true, message: '请输入帖子内容', trigger: 'blur' }]
 }
 
-// 字数统计
-const wordCount = computed(() => {
-  if (!formData.value.content) return 0
-  // 移除HTML标签后计算字数
-  const text = formData.value.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')
-  return text.length
-})
+// wangeditor 工具栏配置
+const toolbarConfig: Partial<IToolbarConfig> = {
+  excludeKeys: []
+}
+
+// wangeditor 编辑器配置
+const editorConfig: Partial<IEditorConfig> = {
+  placeholder: '请输入帖子内容...',
+  // 启用粘贴功能，支持带格式、表格、图片
+  readOnly: false,
+  // 粘贴配置
+  pasteIgnoreImg: false, // 不忽略图片，允许粘贴图片
+  pasteFilterStyle: false, // 不过滤样式，保留粘贴内容的样式
+  MENU_CONF: {
+    // 图片上传配置
+    uploadImage: {
+      maxFileSize: 5 * 1024 * 1024, // 5MB
+      maxNumberOfFiles: 10,
+      allowedFileTypes: ['image/*'],
+      // 自定义上传
+      async customUpload(file: File, insertFn: (url: string, alt?: string, href?: string) => void) {
+        // 验证文件类型和大小
+        const isImage = file.type.startsWith('image/')
+        const isLt5M = file.size / 1024 / 1024 < 5
+
+        if (!isImage) {
+          ElMessage.error('只能上传图片文件！')
+          return
+        }
+        if (!isLt5M) {
+          ElMessage.error('图片大小不能超过 5MB！')
+          return
+        }
+
+        try {
+          // 这里应该调用后端API上传图片
+          // const imageUrl = await uploadImage(file)
+          
+          // 临时使用本地预览（实际应该使用上传后的URL）
+          const imageUrl = URL.createObjectURL(file)
+          insertFn(imageUrl, file.name)
+          ElMessage.success('图片插入成功')
+        } catch (error) {
+          ElMessage.error('图片上传失败')
+        }
+      }
+    },
+    // 视频上传配置
+    uploadVideo: {
+      maxFileSize: 50 * 1024 * 1024, // 50MB
+      allowedFileTypes: ['video/*'],
+      // 自定义上传
+      async customUpload(file: File, insertFn: (url: string, poster?: string) => void) {
+        // 验证文件类型和大小
+        const isVideo = file.type.startsWith('video/')
+        const isLt50M = file.size / 1024 / 1024 < 50
+
+        if (!isVideo) {
+          ElMessage.error('只能上传视频文件！')
+          return
+        }
+        if (!isLt50M) {
+          ElMessage.error('视频大小不能超过 50MB！')
+          return
+        }
+
+        try {
+          // 这里应该调用后端API上传视频
+          // const videoUrl = await uploadVideo(file)
+          
+          // 临时使用本地预览（实际应该使用上传后的URL）
+          const videoUrl = URL.createObjectURL(file)
+          insertFn(videoUrl)
+          ElMessage.success('视频插入成功')
+        } catch (error) {
+          ElMessage.error('视频上传失败')
+        }
+      }
+    },
+    // 代码块配置
+    codeSelectLang: {
+      codeLangs: [
+        { text: 'CSS', value: 'css' },
+        { text: 'HTML', value: 'html' },
+        { text: 'XML', value: 'xml' },
+        { text: 'JavaScript', value: 'javascript' },
+        { text: 'TypeScript', value: 'typescript' },
+        { text: 'Java', value: 'java' },
+        { text: 'Python', value: 'python' },
+        { text: 'Go', value: 'go' },
+        { text: 'C', value: 'c' },
+        { text: 'C#', value: 'csharp' },
+        { text: 'C++', value: 'cpp' },
+        { text: 'PHP', value: 'php' },
+        { text: 'Ruby', value: 'ruby' },
+        { text: 'Swift', value: 'swift' },
+        { text: 'Kotlin', value: 'kotlin' },
+        { text: 'Rust', value: 'rust' },
+        { text: 'SQL', value: 'sql' },
+        { text: 'JSON', value: 'json' },
+        { text: 'Markdown', value: 'markdown' },
+        { text: 'Bash', value: 'bash' },
+        { text: 'Shell', value: 'shell' }
+      ]
+    },
+    // 表格配置
+    insertTable: {
+      maxRow: 20,
+      maxCol: 10
+    }
+  }
+}
+
+// 编辑器创建回调
+const handleEditorCreated = (editor: IDomEditor) => {
+  editorRef.value = editor
+  
+  // 添加粘贴事件监听，支持带格式、表格、图片的粘贴
+  const editorDom = editor.getEditableContainer()
+  if (editorDom) {
+    editorDom.addEventListener('paste', (event: ClipboardEvent) => {
+      handleEditorPaste(editor, event)
+      // 粘贴后更新字数
+      setTimeout(() => {
+        updateWordCount()
+      }, 100)
+    })
+    
+    // 监听输入事件，实时更新字数
+    editorDom.addEventListener('input', () => {
+      updateWordCount()
+    })
+    
+    // 监听键盘事件（包括删除、退格等）
+    editorDom.addEventListener('keyup', () => {
+      updateWordCount()
+    })
+    
+    // 监听删除事件
+    editorDom.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        setTimeout(() => {
+          updateWordCount()
+        }, 10)
+      }
+    })
+  }
+  
+  // 如果有草稿内容，设置到编辑器
+  nextTick(() => {
+    if (formData.value.content) {
+      editor.setHtml(formData.value.content)
+      updateWordCount()
+    }
+  })
+  
+  // 初始化字数统计
+  updateWordCount()
+}
+
+// 字数统计（响应式）
+const wordCount = ref(0)
+
+// 更新字数统计
+const updateWordCount = () => {
+  if (editorRef.value) {
+    try {
+      const text = editorRef.value.getText()
+      // 计算所有字符数（包括空格）
+      wordCount.value = text.length
+    } catch (error) {
+      console.error('字数统计失败:', error)
+      // 降级方案：从 HTML 内容提取
+      if (formData.value.content) {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = formData.value.content
+        const text = tempDiv.textContent || tempDiv.innerText || ''
+        wordCount.value = text.length
+      } else {
+        wordCount.value = 0
+      }
+    }
+  } else if (formData.value.content) {
+    // 如果编辑器未初始化，从 HTML 内容中提取文本
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = formData.value.content
+    const text = tempDiv.textContent || tempDiv.innerText || ''
+    wordCount.value = text.length
+  } else {
+    wordCount.value = 0
+  }
+}
+
+// 监听编辑器内容变化，实时更新字数
+watch(() => formData.value.content, () => {
+  nextTick(() => {
+    updateWordCount()
+  })
+}, { deep: true })
+
+// 编辑器内容变化回调
+const handleEditorChange = (editor: IDomEditor) => {
+  formData.value.content = editor.getHtml()
+  updateWordCount()
+  handleAutoSave()
+}
+
+// 粘贴事件处理（支持带格式、表格、图片）
+const handleEditorPaste = (editor: IDomEditor, event: ClipboardEvent) => {
+  const clipboardData = event.clipboardData
+  if (!clipboardData) return
+
+  // 检查是否有图片文件
+  const items = Array.from(clipboardData.items)
+  const imageItem = items.find(item => item.type.startsWith('image/'))
+  
+  if (imageItem) {
+    // 处理粘贴的图片
+    event.preventDefault()
+    const file = imageItem.getAsFile()
+    if (file) {
+      // 验证文件大小
+      const isLt5M = file.size / 1024 / 1024 < 5
+      if (!isLt5M) {
+        ElMessage.error('图片大小不能超过 5MB！')
+        return
+      }
+      
+      // 插入图片到编辑器
+      const imageUrl = URL.createObjectURL(file)
+      editor.dangerouslyInsertHtml(`<img src="${imageUrl}" alt="粘贴的图片" style="max-width: 100%;" />`)
+      ElMessage.success('图片已粘贴')
+    }
+    return
+  }
+
+  // wangeditor 会自动处理 HTML 和纯文本的粘贴
+  // 包括表格、样式等，不需要额外处理
+}
 
 // 标签颜色样式
 const getTagStyle = (tag: string) => {
@@ -289,7 +586,6 @@ const handleZoneChange = () => {
   // 保留预设标签，清除自定义标签
   formData.value.tags = formData.value.tags.filter(tag => isPresetTag(tag))
   presetTags.value = []
-  selectedTag.value = ''
   handleAutoSave()
 }
 
@@ -298,54 +594,59 @@ const handleToolChange = () => {
   // 保留预设标签，清除自定义标签
   formData.value.tags = formData.value.tags.filter(tag => isPresetTag(tag))
   presetTags.value = []
-  selectedTag.value = ''
   handleAutoSave()
 }
 
-// 添加标签
-const handleTagAdd = (tag: string) => {
+// 选择标签（从可选标签中点击）
+const handleTagSelect = (tag: string) => {
+  if (!formData.value.tags.includes(tag)) {
+    formData.value.tags.push(tag)
+    // 标记为预设标签
+    if (!presetTags.value.includes(tag)) {
+      presetTags.value.push(tag)
+    }
+    handleAutoSave()
+  }
+}
+
+// 显示标签输入框
+const showTagInput = () => {
+  tagInputVisible.value = true
+  nextTick(() => {
+    tagInputRef.value?.input?.focus()
+  })
+}
+
+// 确认添加标签
+const handleTagInputConfirm = () => {
+  if (tagInputValue.value) {
+    const tag = tagInputValue.value.trim()
   if (tag && !formData.value.tags.includes(tag)) {
     formData.value.tags.push(tag)
     // 如果是已有标签，标记为预设标签
     if (availableTags.value.includes(tag)) {
+        if (!presetTags.value.includes(tag)) {
       presetTags.value.push(tag)
     }
-    selectedTag.value = ''
+      }
     handleAutoSave()
   }
+  }
+  tagInputVisible.value = false
+  tagInputValue.value = ''
 }
 
 // 移除标签（只能移除自定义标签）
-const removeTag = (index: number) => {
-  const tag = formData.value.tags[index]
-  if (tag && !isPresetTag(tag)) {
+const handleTagClose = (tag: string) => {
+  if (!isPresetTag(tag)) {
+    const index = formData.value.tags.indexOf(tag)
+    if (index > -1) {
     formData.value.tags.splice(index, 1)
     handleAutoSave()
+    }
   }
 }
 
-// Quill编辑器配置
-const editorOptions = {
-  theme: 'snow',
-  placeholder: '请输入帖子内容...',
-  modules: {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'align': [] }],
-      ['link', 'image'],
-      ['clean'],
-      ['code-block']
-    ]
-  }
-}
-
-// 编辑器内容变化
-const handleEditorChange = () => {
-  handleAutoSave()
-}
 
 // 封面上传成功
 const handleCoverSuccess = (response: any, file: File) => {
@@ -354,6 +655,12 @@ const handleCoverSuccess = (response: any, file: File) => {
     formData.value.cover = URL.createObjectURL(file)
     handleAutoSave()
   }
+}
+
+// 删除封面
+const handleCoverDelete = () => {
+  formData.value.cover = ''
+  handleAutoSave()
 }
 
 // 封面上传前验证
@@ -372,37 +679,11 @@ const beforeCoverUpload = (file: File) => {
   return true
 }
 
-// 推荐封面
-const handleRecommendCover = async () => {
-  recommending.value = true
-  try {
-    // 这里应该调用后端API获取推荐封面
-    // const response = await getRecommendedCover(formData.value.title, formData.value.summary)
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 模拟推荐封面URL
-    const recommendedCovers = [
-      'https://picsum.photos/800/400?random=1',
-      'https://picsum.photos/800/400?random=2',
-      'https://picsum.photos/800/400?random=3',
-      'https://picsum.photos/800/400?random=4',
-      'https://picsum.photos/800/400?random=5'
-    ]
-    const randomIndex = Math.floor(Math.random() * recommendedCovers.length)
-    const randomCover = recommendedCovers[randomIndex]
-    
-    if (randomCover) {
-      formData.value.cover = randomCover
-    }
-    ElMessage.success('已推荐封面')
+// 选择推荐封面
+const handleSelectRecommendedCover = (coverUrl: string) => {
+  formData.value.cover = coverUrl
     handleAutoSave()
-  } catch (error) {
-    ElMessage.error('获取推荐封面失败')
-  } finally {
-    recommending.value = false
-  }
+  ElMessage.success('已选择推荐封面')
 }
 
 // 自动保存草稿
@@ -446,6 +727,11 @@ const handlePublish = async () => {
   try {
     await formRef.value.validate()
     
+    // 获取编辑器内容
+    if (editorRef.value) {
+      formData.value.content = editorRef.value.getHtml()
+    }
+    
     if (!formData.value.content || wordCount.value === 0) {
       ElMessage.error('请输入帖子内容')
       return
@@ -462,48 +748,196 @@ const handlePublish = async () => {
     // 清除草稿
     localStorage.removeItem('post_draft')
     
-    ElMessage.success('帖子发布成功！')
+    publishing.value = false
     
-    // 根据专区跳转到对应页面
-    const routeMap: Record<string, string> = {
-      practices: '/practices',
-      tools: '/tools',
-      agent: '/agent',
-      empowerment: '/empowerment'
-    }
-    router.push(routeMap[formData.value.zone] || '/practices')
+    // 发布成功后询问用户
+    ElMessageBox.confirm(
+      '帖子发布成功！',
+      '提示',
+      {
+        confirmButtonText: '返回上一页',
+        cancelButtonText: '留在当前页',
+        type: 'success',
+        distinguishCancelAndClose: true
+      }
+    ).then(() => {
+      // 用户选择返回上一页
+      if (window.history.length > 1) {
+        router.back()
+      } else {
+        // 如果没有历史记录，跳转到对应专区
+        const routeMap: Record<string, string> = {
+          practices: '/practices',
+          tools: '/tools',
+          agent: '/agent',
+          empowerment: '/empowerment'
+        }
+        router.push(routeMap[formData.value.zone] || '/practices')
+      }
+    }).catch((action) => {
+      // 用户选择留在当前页，清空表单
+      if (action === 'cancel') {
+        // 清空表单
+        formData.value = {
+          title: '',
+          summary: '',
+          content: '',
+          zone: 'practices',
+          tags: [],
+          cover: ''
+        }
+        if (editorRef.value) {
+          editorRef.value.setHtml('')
+        }
+        updateWordCount()
+        // 清除表单验证状态
+        if (formRef.value) {
+          formRef.value.clearValidate()
+        }
+      }
+    })
   } catch (error) {
     console.error('发布失败:', error)
     ElMessage.error('发布失败，请检查表单')
-  } finally {
     publishing.value = false
   }
 }
 
-// 加载草稿
-const loadDraft = () => {
+// 检查并加载草稿
+const checkAndLoadDraft = () => {
   const draftStr = localStorage.getItem('post_draft')
   if (draftStr) {
     try {
       const draft = JSON.parse(draftStr)
-      formData.value = { ...draft }
-      ElMessage.info('已加载草稿')
+      // 检查草稿是否有内容
+      const hasDraftContent = draft.title || 
+                              draft.summary || 
+                              (draft.content && draft.content !== '<p><br></p>')
+      
+      if (hasDraftContent) {
+        // 询问用户是否继续编辑草稿
+        ElMessageBox.confirm(
+          '检测到您有未完成的草稿，是否继续编辑？',
+          '草稿提示',
+          {
+            confirmButtonText: '继续编辑',
+            cancelButtonText: '重新开始',
+            type: 'info',
+            distinguishCancelAndClose: true
+          }
+        ).then(() => {
+          // 用户选择继续编辑
+          loadDraft(draft)
+        }        ).catch((action) => {
+          // 用户选择重新开始
+          if (action === 'cancel') {
+            // 清除草稿
+            localStorage.removeItem('post_draft')
+            // 清空表单
+            formData.value = {
+              zone: 'practices',
+              toolId: null,
+              title: '',
+              summary: '',
+              tags: [],
+              cover: '',
+              content: ''
+            }
+            // 清空编辑器内容
+            if (editorRef.value) {
+              editorRef.value.setHtml('')
+            }
+            updateWordCount()
+            // 清除表单验证状态
+            if (formRef.value) {
+              formRef.value.clearValidate()
+            }
+            ElMessage.info('已清除草稿，开始新的编辑')
+          }
+        })
+      }
     } catch (error) {
-      console.error('加载草稿失败:', error)
+      console.error('检查草稿失败:', error)
+      // 如果解析失败，清除无效的草稿
+      localStorage.removeItem('post_draft')
     }
   }
+}
+
+// 加载草稿内容
+const loadDraft = (draft?: any) => {
+  let draftData = draft
+  if (!draftData) {
+    const draftStr = localStorage.getItem('post_draft')
+    if (!draftStr) return
+    
+    try {
+      draftData = JSON.parse(draftStr)
+    } catch (error) {
+      console.error('加载草稿失败:', error)
+      return
+    }
+  }
+  
+  formData.value = { ...draftData }
+  // 如果编辑器已创建，设置内容
+  if (editorRef.value && draftData.content) {
+    editorRef.value.setHtml(draftData.content)
+    updateWordCount()
+  } else if (draftData.content) {
+    // 如果编辑器未创建，先更新字数（从 HTML 提取）
+    updateWordCount()
+  }
+  ElMessage.success('已加载草稿')
 }
 
 // 上传地址（实际应该配置为真实的上传接口）
 const uploadAction = '#'
 
-onMounted(() => {
-  loadDraft()
+// 检查是否有未保存的内容
+const hasUnsavedContent = computed(() => {
+  return formData.value.title || 
+         formData.value.summary || 
+         (formData.value.content && formData.value.content !== '<p><br></p>')
 })
 
-onUnmounted(() => {
+// 路由离开前确认（草稿会自动保存，这里只提示用户）
+onBeforeRouteLeave((to, from, next) => {
+  if (hasUnsavedContent.value) {
+    ElMessageBox.confirm(
+      '您有未保存的内容，草稿已自动保存。确定要离开吗？',
+      '提示',
+      {
+        confirmButtonText: '确定离开',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    ).then(() => {
+      next()
+    }).catch(() => {
+      next(false)
+    })
+  } else {
+    next()
+  }
+})
+
+onMounted(() => {
+  // 延迟检查草稿，确保编辑器已创建
+  nextTick(() => {
+    // 等待编辑器完全初始化后再检查草稿
+    setTimeout(() => {
+      checkAndLoadDraft()
+    }, 500)
+  })
+})
+
+onBeforeUnmount(() => {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
+  }
+  if (editorRef.value) {
+    editorRef.value.destroy()
   }
 })
 </script>
@@ -537,35 +971,66 @@ onUnmounted(() => {
   }
 }
 
-.tags-section {
+.tags-container {
   width: 100%;
+}
 
-  .tags-display {
+.tags-section {
+  margin-bottom: 12px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .tags-label {
+    font-size: 12px;
+    color: #909399;
+    margin-bottom: 8px;
+  }
+
+  .tags-list {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 12px;
-    min-height: 32px;
-    padding: 8px;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    background: #fff;
+    align-items: center;
 
-    .tag-item {
-      margin: 0;
+    .el-tag {
+      cursor: pointer;
+      transition: all 0.3s;
+
+      &.tag-selected {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &:not(.tag-selected):hover {
+        transform: scale(1.05);
+      }
     }
   }
 
-  .tags-input-section {
-    width: 100%;
+  .tag-input {
+    width: 150px;
+  }
+
+  .button-new-tag {
+    height: 24px;
+    line-height: 24px;
+    padding: 0 12px;
+    font-size: 12px;
   }
 }
 
 .cover-upload-section {
-  .cover-options {
+  .cover-row {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .cover-options {
+    flex-shrink: 0;
   }
 
   .cover-uploader {
@@ -582,11 +1047,37 @@ onUnmounted(() => {
       }
     }
 
-    .cover-image {
+    .cover-image-wrapper {
+      position: relative;
       width: 200px;
       height: 120px;
+      overflow: hidden;
+      border-radius: 6px;
+
+      .cover-image {
+        width: 100%;
+        height: 100%;
       object-fit: cover;
       display: block;
+      }
+
+      .cover-delete-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
     }
 
     .cover-uploader-icon {
@@ -599,8 +1090,89 @@ onUnmounted(() => {
     }
   }
 
+  .recommended-covers {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .recommended-covers-title {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .recommended-covers-list {
+      display: flex;
+      gap: 12px;
+      flex-wrap: nowrap;
+      align-items: center;
+    }
+
+    .recommended-cover-item {
+      position: relative;
+      width: 150px;
+      height: 90px;
+      flex-shrink: 0;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.3s;
+
+      &:hover {
+        border-color: #409eff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+      }
+
+      &.cover-selected {
+        border-color: #67c23a;
+        border-width: 3px;
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .cover-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+
+        .cover-check-icon {
+          font-size: 24px;
+          color: #fff;
+        }
+      }
+
+      &:hover .cover-overlay {
+        opacity: 1;
+      }
+
+      &.cover-selected .cover-overlay {
+        opacity: 1;
+        background: rgba(103, 194, 58, 0.3);
+      }
+    }
+  }
+
   .cover-tips {
-    margin-top: 8px;
+    margin-top: 12px;
     font-size: 12px;
     color: #909399;
 
@@ -612,38 +1184,111 @@ onUnmounted(() => {
 
 .editor-wrapper {
   width: 100%;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
 
-  :deep(.quill-editor) {
-    .ql-container {
-      min-height: 400px;
-      font-size: 14px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  .editor-toolbar {
+    border-bottom: 1px solid #e4e7ed;
+  }
+
+  .editor-content {
+    height: 500px !important;
+    overflow-y: auto;
+
+    :deep(.w-e-text-container) {
+      height: 500px !important;
     }
 
-    .ql-editor {
-      min-height: 400px;
-    }
-
-    .ql-toolbar {
-      border-top: 1px solid #dcdfe6;
-      border-left: 1px solid #dcdfe6;
-      border-right: 1px solid #dcdfe6;
-      border-bottom: none;
-      border-radius: 4px 4px 0 0;
-      background: #fafafa;
-    }
-
-    .ql-container {
-      border-bottom: 1px solid #dcdfe6;
-      border-left: 1px solid #dcdfe6;
-      border-right: 1px solid #dcdfe6;
-      border-top: none;
-      border-radius: 0 0 4px 4px;
-    }
-
-    .ql-editor.ql-blank::before {
+    :deep(.w-e-text-placeholder) {
       color: #c0c4cc;
-      font-style: normal;
+    }
+
+    :deep(.w-e-text) {
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #333;
+      min-height: 468px;
+
+      p {
+        margin: 0.5em 0;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        margin: 1em 0 0.5em;
+        font-weight: 600;
+      }
+
+      h1 { font-size: 2em; }
+      h2 { font-size: 1.5em; }
+      h3 { font-size: 1.25em; }
+
+      ul, ol {
+        padding-left: 1.5em;
+        margin: 0.5em 0;
+      }
+
+      blockquote {
+        border-left: 4px solid #ddd;
+        padding-left: 1em;
+        margin: 1em 0;
+        color: #666;
+      }
+
+      code {
+        background: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+
+      pre {
+        background: #f4f4f4;
+        padding: 1em;
+        border-radius: 4px;
+        overflow-x: auto;
+        margin: 1em 0;
+
+        code {
+          background: none;
+          padding: 0;
+        }
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        margin: 1em 0;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1em 0;
+
+        td, th {
+          border: 1px solid #ddd;
+          padding: 8px;
+          min-width: 100px;
+        }
+
+        th {
+          background: #f5f5f5;
+          font-weight: 600;
+        }
+      }
+
+      a {
+        color: #409eff;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
     }
   }
 
@@ -651,9 +1296,11 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
+    padding: 8px 16px;
+    border-top: 1px solid #e4e7ed;
     font-size: 12px;
     color: #909399;
+    background: #fafafa;
 
     .word-count {
       font-weight: 500;
@@ -687,3 +1334,4 @@ onUnmounted(() => {
   background: #fff;
 }
 </style>
+

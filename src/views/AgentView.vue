@@ -203,6 +203,7 @@ const allPosts = ref([
     createTime: '2024年4月12日',
     views: 890,
     comments: 45,
+    likes: 98,
     tag: 'Agent应用',
     image: 'https://picsum.photos/400/300?random=21'
   },
@@ -214,6 +215,7 @@ const allPosts = ref([
     createTime: '2024年4月10日',
     views: 720,
     comments: 32,
+    likes: 75,
     tag: '工作流',
     image: 'https://picsum.photos/400/300?random=22'
   },
@@ -225,6 +227,7 @@ const allPosts = ref([
     createTime: '2024年4月8日',
     views: 650,
     comments: 28,
+    likes: 62,
     tag: '自动化',
     image: 'https://picsum.photos/400/300?random=23'
   },
@@ -236,6 +239,7 @@ const allPosts = ref([
     createTime: '2024年4月6日',
     views: 580,
     comments: 25,
+    likes: 48,
     tag: '智能编排',
     image: 'https://picsum.photos/400/300?random=24'
   },
@@ -247,6 +251,7 @@ const allPosts = ref([
     createTime: '2024年4月5日',
     views: 520,
     comments: 20,
+    likes: 38,
     tag: '案例分享',
     image: 'https://picsum.photos/400/300?random=25'
   }
@@ -275,7 +280,9 @@ const filteredPosts = computed(() => {
   if (sortBy.value === 'hot') {
     posts.sort((a, b) => b.views - a.views)
   } else if (sortBy.value === 'comments') {
-    posts.sort((a, b) => b.comments - a.comments)
+    posts.sort((a, b) => (b.comments || 0) - (a.comments || 0))
+  } else if (sortBy.value === 'likes') {
+    posts.sort((a, b) => (b.likes || 0) - (a.likes || 0))
   } else {
     // 按最新排序（这里简化处理，按id倒序）
     posts.sort((a, b) => b.id - a.id)
@@ -323,7 +330,7 @@ const handleSearch = (keyword: string) => {
 }
 
 // 处理排序
-const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
+const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
   sortBy.value = sort
   currentPage.value = 1 // 重置到第一页
 }
@@ -343,8 +350,7 @@ const handleCurrentChange = (val: number) => {
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  console.log('点击帖子:', post)
-  // 可以跳转到帖子详情页
+  router.push(`/post/${post.id}`)
 }
 
 // 处理活动点击

@@ -7,10 +7,7 @@
           <div class="posts-content">
             <!-- 头部操作栏 -->
             <PostHeader
-              :show-tabs="true"
-              :default-tab="activeTab"
-              :default-sort="sortBy"
-              @tab-change="handleTabChange"
+              :default-sort="sortBy as 'newest' | 'hot' | 'comments' | 'likes'"
               @search="handleSearch"
               @sort="handleSort"
               @post-click="handlePostCreate"
@@ -119,9 +116,8 @@ const router = useRouter()
 // 模拟管理员状态，实际应该从用户信息中获取
 const isAdmin = ref(false)
 
-const activeTab = ref<'all' | 'my'>('all')
 const searchKeyword = ref('')
-const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
+const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>('newest')
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 const selectedContributor = ref<string | null>(null)
@@ -154,6 +150,7 @@ const featuredPosts = ref([
     createTime: '2024年4月10日',
     views: 1250,
     comments: 45,
+    likes: 128,
     tags: ['活动', 'AI大会'],
     image: 'https://picsum.photos/800/400?random=1',
     featured: true,
@@ -171,6 +168,7 @@ const posts = ref([
     createTime: '2024年4月',
     views: 890,
     comments: 32,
+    likes: 56,
     tags: ['项目', 'AI应用'],
     image: 'https://picsum.photos/400/300?random=2',
     department: '研发部'
@@ -183,6 +181,7 @@ const posts = ref([
     createTime: '60分钟前',
     views: 650,
     comments: 18,
+    likes: 42,
     tags: ['效率', '自动化'],
     image: 'https://picsum.photos/400/300?random=3',
     department: '技术部'
@@ -195,6 +194,7 @@ const posts = ref([
     createTime: '2024年4月20日',
     views: 520,
     comments: 15,
+    likes: 28,
     tags: ['实践', 'AI应用'],
     department: '数据部'
   },
@@ -206,6 +206,7 @@ const posts = ref([
     createTime: '2024年4月20日',
     views: 720,
     comments: 28,
+    likes: 65,
     tags: ['已解决', '机器学习'],
     department: '算法部'
   },
@@ -217,6 +218,7 @@ const posts = ref([
     createTime: '2024年4月19日',
     views: 450,
     comments: 12,
+    likes: 19,
     tags: ['已解决', '部署'],
     department: '测试部'
   }
@@ -278,7 +280,9 @@ const filteredPosts = computed(() => {
   if (sortBy.value === 'hot') {
     result.sort((a, b) => b.views - a.views)
   } else if (sortBy.value === 'comments') {
-    result.sort((a, b) => b.comments - a.comments)
+    result.sort((a, b) => (b.comments || 0) - (a.comments || 0))
+  } else if (sortBy.value === 'likes') {
+    result.sort((a, b) => (b.likes || 0) - (a.likes || 0))
   } else {
     // 按时间排序（这里简化处理）
     result.sort((a, b) => b.id - a.id)
@@ -307,10 +311,6 @@ const getTagType = (tag: string) => {
   return typeMap[tag] || 'info'
 }
 
-// 处理标签切换
-const handleTabChange = (tab: 'all' | 'my') => {
-  activeTab.value = tab
-}
 
 // 处理搜索
 const handleSearch = (keyword: string) => {
@@ -374,8 +374,7 @@ const handleContributorClick = (contributorName: string) => {
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  // 可以跳转到帖子详情页
-  console.log('点击帖子:', post)
+  router.push(`/post/${post.id}`)
 }
 
 // 获取排名样式类

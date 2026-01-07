@@ -98,7 +98,12 @@
             </div>
             <!-- 社区头条 - 四个帖子，两两并排 -->
             <div class="news-grid">
-              <div class="news-card" v-for="(news, idx) in newsList" :key="idx">
+              <div 
+                class="news-card" 
+                v-for="(news, idx) in newsList" 
+                :key="idx"
+                @click="router.push('/news')"
+              >
                 <div class="news-image-wrapper">
                   <img :src="news.image" :alt="news.title" class="news-image" />
                 </div>
@@ -201,7 +206,12 @@
               </el-button>
             </div>
             <div class="text-list">
-              <div v-for="practice in practices" :key="practice.id" class="list-row">
+              <div 
+                v-for="practice in practices" 
+                :key="practice.id" 
+                class="list-row"
+                @click="handlePracticeClick(practice)"
+              >
                 <div class="practice-content">
                   <h4 class="practice-title">{{ practice.title }}</h4>
                   <div class="practice-meta">
@@ -437,6 +447,12 @@ const handleToolClick = (tool: any) => {
       toolId: tool.id
     }
   })
+}
+
+// 处理实践点击
+const handlePracticeClick = (practice: any) => {
+  // 跳转到实践详情或列表页
+  router.push('/practices')
 }
 
 // AI工具专区轮播图数据
@@ -1448,18 +1464,75 @@ const toolZoneBanners = ref([
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 32px 40px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  border: 2px solid rgba(102, 126, 234, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.4);
+
+    &::before {
+      opacity: 1;
+    }
+  }
 
   .info-content {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+
     h3 {
-      margin: 0 0 8px;
-      color: #000000; /* 黑色 */
-      font-weight: 700;
+      margin: 0 0 16px;
+      color: #1e3a8a; /* 深蓝色 */
+      font-weight: 800;
+      font-size: 24px;
+      line-height: 1.4;
+      text-shadow: 0 2px 4px rgba(30, 58, 138, 0.1);
+      letter-spacing: 0.5px;
     }
     p {
       margin: 0;
-      font-size: 13px;
-      color: rgba(0, 0, 0, 0.8); /* 黑色，80% 透明度 */
-      max-width: 800px;
+      font-size: 16px;
+      color: #333; /* 深灰色，更易读 */
+      max-width: 900px;
+      line-height: 1.8;
+      font-weight: 500;
+    }
+  }
+
+  .more-btn-pill {
+    position: relative;
+    z-index: 1;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+      background: linear-gradient(135deg, #5568d3, #6a3f91);
     }
   }
 }
