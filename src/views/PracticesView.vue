@@ -3,7 +3,7 @@
     <div class="posts-container">
       <el-row :gutter="24">
         <!-- 左侧：帖子列表 -->
-        <el-col :xs="24" :md="17">
+        <el-col :xs="24" :md="16">
           <div class="posts-content">
             <!-- 头部操作栏 -->
             <PostHeader
@@ -18,16 +18,29 @@
 
             <!-- 帖子列表 -->
             <PostList
-              :posts="filteredPosts"
+              :posts="paginatedPosts"
               :featured-posts="featuredPosts"
               :show-featured-tag="true"
               @post-click="handlePostClick"
             />
+
+            <!-- 分页 -->
+            <div class="pagination-wrapper">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 15, 20, 30, 50]"
+                :total="filteredPosts.length"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
           </div>
         </el-col>
 
         <!-- 右侧：标签栏 -->
-        <el-col :xs="24" :md="7">
+        <el-col :xs="24" :md="8">
           <div class="sidebar">
             <!-- 所有标签 -->
             <div class="sidebar-section">
@@ -42,7 +55,7 @@
             <!-- 部门分类 -->
             <div class="sidebar-section">
               <h3>部门分类</h3>
-              <div class="department-list">
+              <div class="department-rankings">
                 <div 
                   v-for="dept in departmentRankings" 
                   :key="dept.id"
@@ -112,6 +125,10 @@ const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 const selectedContributor = ref<string | null>(null)
+
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(15)
 
 // 所有标签
 const allTags = ref([
@@ -270,6 +287,13 @@ const filteredPosts = computed(() => {
   return result
 })
 
+// 分页后的帖子
+const paginatedPosts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredPosts.value.slice(start, end)
+})
+
 // 获取标签类型
 const getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
@@ -291,17 +315,34 @@ const handleTabChange = (tab: 'all' | 'my') => {
 // 处理搜索
 const handleSearch = (keyword: string) => {
   searchKeyword.value = keyword
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理排序
 const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
   sortBy.value = sort
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理分页大小变化
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理当前页变化
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // 处理发帖
 const handlePostCreate = () => {
-  console.log('创建新帖子')
-  // 可以跳转到发帖页面
+  console.log('点击发布帖子，准备跳转到 /post/create')
+  router.push('/post/create').catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 
 // 处理标签点击
@@ -353,8 +394,16 @@ const getRankClass = (index: number) => {
 }
 
 .posts-container {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
+}
+
+/* 分页 */
+.pagination-wrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 0;
 }
 
 .posts-content {
@@ -388,32 +437,29 @@ const getRankClass = (index: number) => {
     .department-rankings {
       display: flex;
       flex-direction: column;
+      gap: 0;
 
       .department-item {
         padding: 12px;
-        border-radius: 0;
+        border-radius: 8px;
         transition: all 0.2s;
         cursor: pointer;
-        border: none;
+        border: 1px solid transparent;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         margin-bottom: 0;
         position: relative;
-
-        &:not(:last-child) {
-          border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-          margin-bottom: 0;
-        }
 
         &:last-child {
           border-bottom: none;
         }
 
         &:hover {
-          background-color: rgba(0, 0, 0, 0.02);
+          background: rgba(0, 0, 0, 0.02);
         }
 
         &.active {
-          background-color: rgba(64, 158, 255, 0.1);
-          border-left: 3px solid #409eff;
+          background: rgba(64, 158, 255, 0.1);
+          border-color: #409eff;
         }
 
         .department-info {

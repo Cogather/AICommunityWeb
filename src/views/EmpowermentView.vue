@@ -3,7 +3,7 @@
     <div class="posts-container">
       <el-row :gutter="24">
         <!-- 左侧：帖子列表 -->
-        <el-col :xs="24" :md="17">
+        <el-col :xs="24" :md="16">
           <div class="posts-content">
             <!-- 头部操作栏 -->
             <PostHeader
@@ -18,16 +18,29 @@
 
             <!-- 帖子列表 -->
             <PostList
-              :posts="filteredPosts"
+              :posts="paginatedPosts"
               :featured-posts="featuredPosts"
               :show-featured-tag="true"
               @post-click="handlePostClick"
             />
+
+            <!-- 分页 -->
+            <div class="pagination-wrapper">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 15, 20, 30, 50]"
+                :total="filteredPosts.length"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
           </div>
         </el-col>
 
         <!-- 右侧：标签栏 -->
-        <el-col :xs="24" :md="7">
+        <el-col :xs="24" :md="8">
           <div class="sidebar">
             <!-- 所有标签 -->
             <div class="sidebar-section">
@@ -71,6 +84,10 @@ const activeTab = ref<'all' | 'my'>('all')
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
 const selectedTag = ref<string | null>(null)
+
+// 分页
+const currentPage = ref(1)
+const pageSize = ref(15)
 
 // 所有标签
 const allTags = ref([
@@ -195,6 +212,13 @@ const filteredPosts = computed(() => {
   return result
 })
 
+// 分页后的帖子
+const paginatedPosts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredPosts.value.slice(start, end)
+})
+
 // 获取标签类型
 const getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
@@ -219,22 +243,27 @@ const getTagType = (tag: string) => {
 // 处理标签切换
 const handleTabChange = (tab: 'all' | 'my') => {
   activeTab.value = tab
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理搜索
 const handleSearch = (keyword: string) => {
   searchKeyword.value = keyword
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理排序
 const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
   sortBy.value = sort
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理发帖
 const handlePostCreate = () => {
-  console.log('创建新帖子')
-  // 可以跳转到发帖页面
+  console.log('点击发布帖子，准备跳转到 /post/create')
+  router.push('/post/create').catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 
 // 处理标签点击
@@ -244,6 +273,20 @@ const handleTagClick = (tagName: string) => {
   } else {
     selectedTag.value = tagName
   }
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理分页大小变化
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理当前页变化
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // 处理帖子点击
@@ -260,8 +303,16 @@ const handlePostClick = (post: any) => {
 }
 
 .posts-container {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
+}
+
+/* 分页 */
+.pagination-wrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 0;
 }
 
 .posts-content {

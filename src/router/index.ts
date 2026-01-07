@@ -35,12 +35,17 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/honor',
     name: 'Honor',
-    component: () => import('../views/UsersView.vue')
+    component: () => import('../views/HonorView.vue')
   },
   {
     path: '/news',
     name: 'News',
     component: () => import('../views/NewsView.vue')
+  },
+  {
+    path: '/post/create',
+    name: 'PostCreate',
+    component: () => import('../views/PostCreateView.vue')
   }
 ]
 

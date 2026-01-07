@@ -61,11 +61,24 @@
 
           <!-- 帖子列表 -->
           <PostList
-            :posts="filteredPosts"
+            :posts="paginatedPosts"
             :featured-posts="[]"
             :show-featured-tag="false"
             @post-click="handlePostClick"
           />
+
+          <!-- 分页 -->
+          <div class="pagination-wrapper">
+            <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :page-sizes="[10, 15, 20, 30, 50]"
+              :total="filteredPosts.length"
+              layout="total, sizes, prev, pager, next, jumper"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
+          </div>
         </div>
       </el-col>
 
@@ -107,6 +120,10 @@ const router = useRouter()
 
 // 选中的标签
 const selectedTag = ref<string | null>(null)
+
+// 分页
+const currentPage = ref(1)
+const pageSize = ref(15)
 
 // 搜索关键词和排序
 const searchKeyword = ref('')
@@ -267,6 +284,13 @@ const filteredPosts = computed(() => {
   return posts
 })
 
+// 分页后的帖子
+const paginatedPosts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredPosts.value.slice(start, end)
+})
+
 // 获取标签类型
 const getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
@@ -289,6 +313,32 @@ const handleTagClick = (tagName: string) => {
   } else {
     selectedTag.value = tagName
   }
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理搜索
+const handleSearch = (keyword: string) => {
+  searchKeyword.value = keyword
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理排序
+const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
+  sortBy.value = sort
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理分页大小变化
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理当前页变化
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // 处理帖子点击
@@ -303,20 +353,13 @@ const handleActivityClick = (activity: any) => {
   // 可以跳转到活动详情页
 }
 
-// 处理搜索
-const handleSearch = (keyword: string) => {
-  searchKeyword.value = keyword
-}
-
-// 处理排序
-const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
-  sortBy.value = sort
-}
 
 // 处理发帖
 const handlePostCreate = () => {
-  console.log('创建新帖子')
-  // 可以跳转到发帖页面
+  console.log('点击发布帖子，准备跳转到 /post/create')
+  router.push('/post/create').catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 </script>
 
@@ -446,6 +489,14 @@ const handlePostCreate = () => {
   font-size: 18px;
   font-weight: 600;
   color: #000;
+}
+
+/* 分页 */
+.pagination-wrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 0;
 }
 
 /* 标签选择 */

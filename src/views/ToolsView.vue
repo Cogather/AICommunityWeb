@@ -43,7 +43,7 @@
                   :effect="activePostTab === 'guide' ? 'dark' : 'plain'"
                   size="large"
                   class="post-tab-tag"
-                  @click="activePostTab = 'guide'"
+                  @click="handleTabChange('guide')"
                 >
                   操作指导
                 </el-tag>
@@ -52,7 +52,7 @@
                   :effect="activePostTab === 'excellent' ? 'dark' : 'plain'"
                   size="large"
                   class="post-tab-tag"
-                  @click="activePostTab = 'excellent'"
+                  @click="handleTabChange('excellent')"
                 >
                   优秀使用
                 </el-tag>
@@ -62,11 +62,24 @@
 
             <!-- 帖子列表 -->
             <PostList
-              :posts="filteredPosts"
+              :posts="paginatedPosts"
               :featured-posts="[]"
               :show-featured-tag="false"
               @post-click="handlePostClick"
             />
+
+            <!-- 分页 -->
+            <div class="pagination-wrapper">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 15, 20, 30, 50]"
+                :total="filteredPosts.length"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
           </div>
         </el-col>
 
@@ -81,9 +94,8 @@
                 <el-tag
                   v-for="tag in allTags"
                   :key="tag.name"
-                  :type="selectedTag === tag.name ? 'primary' : 'info'"
-                  :effect="selectedTag === tag.name ? 'dark' : 'plain'"
-                  class="tag-item"
+                  :class="['tag-item', { 'tag-item-active': selectedTag === tag.name }]"
+                  :style="getTagStyle(tag.name)"
                   @click="handleTagClick(tag.name)"
                 >
                   #{{ tag.name }} ({{ tag.count }})
@@ -193,6 +205,10 @@ const selectedToolId = ref<number | string | null>(null)
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 
+// 分页
+const currentPage = ref(1)
+const pageSize = ref(15)
+
 // 所有标签
 const allTags = ref([
   { name: '新手', count: 120 },
@@ -228,7 +244,7 @@ onMounted(() => {
     }
   } else {
     // 如果没有toolId参数，默认选择第一个工具
-    if (tools.value.length > 0) {
+    if (tools.value.length > 0 && tools.value[0]) {
       selectedToolId.value = tools.value[0].id
     }
   }
@@ -352,7 +368,47 @@ const currentToolPosts = computed(() => {
 
 // 过滤后的帖子（根据分类）
 const filteredPosts = computed(() => {
-  return currentToolPosts.value.filter(post => post.category === activePostTab.value)
+  let posts = currentToolPosts.value.filter(post => post.category === activePostTab.value)
+
+  // 按标签过滤
+  if (selectedTag.value) {
+    posts = posts.filter(post => post.tag === selectedTag.value)
+  }
+
+  // 按部门过滤（这里简化处理，实际应该从帖子数据中获取部门信息）
+  // if (selectedDepartment.value) {
+  //   posts = posts.filter(post => post.department === selectedDepartment.value)
+  // }
+
+  // 搜索过滤
+  if (searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase()
+    posts = posts.filter(post => 
+      post.title.toLowerCase().includes(keyword) ||
+      post.author.toLowerCase().includes(keyword) ||
+      (post.description && post.description.toLowerCase().includes(keyword))
+    )
+  }
+
+  // 排序
+  if (sortBy.value === 'hot') {
+    posts.sort((a, b) => b.views - a.views)
+  } else if (sortBy.value === 'comments') {
+    // 如果帖子没有comments属性，使用views作为替代
+    posts.sort((a, b) => (b.views || 0) - (a.views || 0))
+  } else {
+    // 按时间排序（这里简化处理）
+    posts.sort((a, b) => b.id - a.id)
+  }
+
+  return posts
+})
+
+// 分页后的帖子
+const paginatedPosts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredPosts.value.slice(start, end)
 })
 
 // 当前工具的活动
@@ -363,7 +419,47 @@ const currentToolActivities = computed(() => {
   return allActivities.value.filter(activity => activity.toolId === selectedToolId.value)
 })
 
-// 获取标签类型
+// 颜色池 - 为不同标签提供不同颜色
+const colorPalette = [
+  { bg: 'rgba(64, 158, 255, 0.15)', border: '#409eff', text: '#409eff' },      // 蓝色
+  { bg: 'rgba(103, 194, 58, 0.15)', border: '#67c23a', text: '#67c23a' },      // 绿色
+  { bg: 'rgba(230, 162, 60, 0.15)', border: '#e6a23c', text: '#e6a23c' },      // 橙色
+  { bg: 'rgba(245, 108, 108, 0.15)', border: '#f56c6c', text: '#f56c6c' },    // 红色
+  { bg: 'rgba(144, 147, 153, 0.15)', border: '#909399', text: '#909399' },    // 灰色
+  { bg: 'rgba(156, 39, 176, 0.15)', border: '#9c27b0', text: '#9c27b0' },      // 紫色
+  { bg: 'rgba(0, 188, 212, 0.15)', border: '#00bcd4', text: '#00bcd4' },       // 青色
+  { bg: 'rgba(255, 152, 0, 0.15)', border: '#ff9800', text: '#ff9800' },       // 深橙色
+]
+
+// 根据标签名称生成哈希值，用于分配颜色
+const getTagColorIndex = (tagName: string): number => {
+  let hash = 0
+  for (let i = 0; i < tagName.length; i++) {
+    hash = tagName.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return Math.abs(hash) % colorPalette.length
+}
+
+// 获取标签样式
+const getTagStyle = (tagName: string) => {
+  const colorIndex = getTagColorIndex(tagName)
+  const colors = colorPalette[colorIndex] || colorPalette[0]
+  const finalColors: { bg: string; border: string; text: string } = (colors || colorPalette[0]) as { bg: string; border: string; text: string }
+  const isActive = selectedTag.value === tagName
+
+  return {
+    '--tag-bg': isActive ? finalColors.bg.replace('0.15', '0.25') : finalColors.bg,
+    '--tag-border': finalColors.border,
+    '--tag-color': finalColors.text,
+    backgroundColor: isActive ? finalColors.bg.replace('0.15', '0.25') : finalColors.bg,
+    borderColor: finalColors.border,
+    color: finalColors.text,
+    borderWidth: '1px',
+    borderStyle: 'solid'
+  }
+}
+
+// 获取标签类型（保留用于帖子中的标签）
 const getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
     '新手': 'info',
@@ -386,20 +482,32 @@ const handlePostClick = (post: any) => {
 
 // 处理发帖
 const handlePostCreate = () => {
-  console.log('创建新帖子')
-  // 可以跳转到发帖页面
+  console.log('点击发布帖子，准备跳转到 /post/create')
+  router.push('/post/create').catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
+}
+
+// 搜索关键词和排序
+const searchKeyword = ref('')
+const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
+
+// 处理标签切换
+const handleTabChange = (tab: 'guide' | 'excellent') => {
+  activePostTab.value = tab
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理搜索
 const handleSearch = (keyword: string) => {
-  // 可以在这里实现搜索逻辑
-  console.log('搜索关键词:', keyword)
+  searchKeyword.value = keyword
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理排序
 const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
-  // 可以在这里实现排序逻辑
-  console.log('排序方式:', sort)
+  sortBy.value = sort
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理活动点击
@@ -415,6 +523,7 @@ const handleTagClick = (tagName: string) => {
   } else {
     selectedTag.value = tagName
   }
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理部门点击
@@ -424,6 +533,20 @@ const handleDepartmentClick = (departmentName: string) => {
   } else {
     selectedDepartment.value = departmentName
   }
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理分页大小变化
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理当前页变化
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
 
@@ -783,6 +906,14 @@ const handleDepartmentClick = (departmentName: string) => {
   text-align: center;
 }
 
+/* 分页 */
+.pagination-wrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 0;
+}
+
 /* 侧边栏（其他工具） */
 .sidebar-section {
   background: rgba(255, 255, 255, 0.6);
@@ -815,10 +946,25 @@ const handleDepartmentClick = (departmentName: string) => {
   .tag-item {
     cursor: pointer;
     transition: all 0.2s;
+    font-weight: 500;
 
     &:hover {
       transform: translateY(-2px);
+      opacity: 0.8;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+
+    &.tag-item-active {
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  // 使用全局样式覆盖 Element Plus 标签样式
+  :deep(.el-tag.tag-item) {
+    background-color: var(--tag-bg, transparent) !important;
+    border-color: var(--tag-border, currentColor) !important;
+    color: var(--tag-color, inherit) !important;
   }
 }
 

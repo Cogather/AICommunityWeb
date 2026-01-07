@@ -138,16 +138,18 @@
         </div>
 
         <div 
-          v-if="currentViewMode !== 'timeline' && processedList.length > pageSize" 
+          v-if="currentViewMode !== 'timeline' && processedList.length > 0" 
           class="pagination-bar"
         >
           <el-pagination
             background
-            layout="prev, pager, next"
+            layout="total, sizes, prev, pager, next, jumper"
+            :page-sizes="[10, 12, 20, 30, 50]"
             :page-size="pageSize"
             :current-page="currentPage"
             :total="processedList.length"
-            @current-change="(p: number) => currentPage = p"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
           />
         </div>
       </div>
@@ -245,7 +247,7 @@ const filterScope = ref<'all' | 'mine'>('all');
 const searchQuery = ref('');
 const activeSubFilter = ref<string>('全部'); 
 const currentPage = ref(1);
-const pageSize = ref(9);
+const pageSize = ref(12);
 
 // --- Computed Logic ---
 const processedList = computed(() => {
@@ -333,6 +335,19 @@ const switchMode = (mode: string) => {
   currentViewMode.value = mode as ViewMode;
   activeSubFilter.value = '全部'; 
 };
+
+// 处理分页大小变化
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 处理当前页变化
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 </script>
 
 <style scoped lang="scss">
@@ -343,6 +358,8 @@ const switchMode = (mode: string) => {
   width: 100%;
   min-height: 100vh;
   padding: 30px;
+  max-width: 1600px;
+  margin: 0 auto;
   background:
     radial-gradient(120% 140% at 18% 95%, #d1ebff 0%, #c1e5ff 28%, rgba(193, 229, 255, 0) 70%),
     radial-gradient(110% 130% at 85% 10%, #c2c7ef 0%, #c5cbf0 35%, rgba(194, 199, 239, 0) 72%),
@@ -749,7 +766,12 @@ const switchMode = (mode: string) => {
 .t-info { .t-title { font-weight: 700; color: #1e293b; margin-bottom: 4px; } .t-meta { font-size: 12px; color: #64748b; } }
 
 /* --- Pagination --- */
-.pagination-bar { display: flex; justify-content: center; margin-top: 30px; }
+.pagination-bar { 
+  display: flex; 
+  justify-content: center; 
+  margin-top: 30px; 
+  padding: 20px 0;
+}
 :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
   background-color: #4f46e5;
 }
