@@ -23,8 +23,8 @@
           
           <div class="post-info">
             <div class="author-info">
-              <div class="avatar-wrapper">
-                <el-avatar :src="postData.authorAvatar" :size="40">
+              <div class="avatar-wrapper" @click="handleAuthorClick">
+                <el-avatar :src="postData.authorAvatar" :size="40" class="author-avatar-clickable">
                   {{ postData.authorName?.charAt(0) || 'U' }}
                 </el-avatar>
                 <el-tag v-if="postData.isAuthor" type="success" size="small" class="author-badge">
@@ -32,7 +32,7 @@
                 </el-tag>
               </div>
               <div class="author-details">
-                <span class="author-name">{{ postData.authorName }}</span>
+                <span class="author-name author-name-clickable" @click="handleAuthorClick">{{ postData.authorName }}</span>
                 <span class="post-time">{{ postData.createTime }}</span>
               </div>
             </div>
@@ -78,32 +78,50 @@
 
         <!-- 操作按钮 -->
         <div class="post-actions">
-          <el-button
-            :type="postData.isLiked ? 'primary' : 'default'"
-            @click="handleLike"
-            :loading="liking"
-          >
-            <template #icon>
-              <HeartIcon :filled="postData.isLiked" :size="16" :color="postData.isLiked ? '#fff' : '#f56c6c'" />
-            </template>
-            {{ postData.isLiked ? '已点赞' : '点赞' }} ({{ postData.likes }})
-          </el-button>
-          <el-button
-            type="default"
-            :icon="Share"
-            @click="handleShare"
-          >
-            分享
-          </el-button>
-          <el-button
-            type="default"
-            @click="handleCollect"
-          >
-            <template #icon>
-              <el-icon><Star /></el-icon>
-            </template>
-            收藏
-          </el-button>
+          <div class="actions-left">
+            <el-button
+              :type="postData.isLiked ? 'primary' : 'default'"
+              @click="handleLike"
+              :loading="liking"
+            >
+              <template #icon>
+                <HeartIcon :filled="postData.isLiked" :size="16" :color="postData.isLiked ? '#fff' : '#f56c6c'" />
+              </template>
+              {{ postData.isLiked ? '已点赞' : '点赞' }} ({{ postData.likes }})
+            </el-button>
+            <el-button
+              type="default"
+              :icon="Share"
+              @click="handleShare"
+            >
+              分享
+            </el-button>
+            <el-button
+              :type="isCollected ? 'warning' : 'default'"
+              @click="handleCollect"
+            >
+              <template #icon>
+                <el-icon><Star /></el-icon>
+              </template>
+              {{ isCollected ? '已收藏' : '收藏' }}
+            </el-button>
+          </div>
+          <div class="actions-right" v-if="canEditPost">
+            <el-button
+              type="warning"
+              :icon="Edit"
+              @click="handleEdit"
+            >
+              编辑
+            </el-button>
+            <el-button
+              type="danger"
+              :icon="Delete"
+              @click="handleDelete"
+            >
+              删除
+            </el-button>
+          </div>
         </div>
       </div>
 
@@ -213,18 +231,18 @@
                       <el-avatar :src="reply.userAvatar" :size="32">
                         {{ reply.userName?.charAt(0) || 'U' }}
                       </el-avatar>
-                      <el-tag
-                        v-if="isAuthor(reply.userName)"
-                        type="success"
-                        size="small"
-                        class="author-badge-small"
-                      >
-                        楼主
-                      </el-tag>
                     </div>
                     <div class="reply-content">
                       <div class="reply-header">
                         <span class="reply-author">{{ reply.userName }}</span>
+                        <el-tag
+                          v-if="isAuthor(reply.userName)"
+                          type="success"
+                          size="small"
+                          class="author-tag-inline"
+                        >
+                          楼主
+                        </el-tag>
                         <span v-if="reply.replyTo" class="reply-to">
                           回复
                           <span class="reply-to-name">{{ reply.replyTo }}</span>
@@ -276,8 +294,11 @@ import {
   ChatDotRound,
   Star,
   Share,
-  ArrowLeft
+  ArrowLeft,
+  Edit,
+  Delete
 } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
 import HeartIcon from '../components/HeartIcon.vue'
 
 // 路由
@@ -309,6 +330,17 @@ const liking = ref(false)
 const loading = ref(true)
 const commentCount = computed(() => comments.value.length)
 
+// 收藏状态
+const isCollected = ref(false)
+
+// 模拟管理员状态（实际应该从用户信息中获取）
+const isAdmin = ref(false)
+
+// 是否可以编辑帖子（作者或管理员）
+const canEditPost = computed(() => {
+  return postData.value.isAuthor || isAdmin.value
+})
+
 // 标签类型映射
 const getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
@@ -325,6 +357,16 @@ const getTagType = (tag: string) => {
 // 判断是否是楼主
 const isAuthor = (userName: string) => {
   return userName === postData.value.authorName
+}
+
+// 点击作者头像或姓名，跳转到用户信息中心
+const handleAuthorClick = () => {
+  router.push({
+    path: '/profile',
+    query: {
+      user: postData.value.authorName
+    }
+  })
 }
 
 // 返回上一页
@@ -467,9 +509,125 @@ const handleShare = () => {
   })
 }
 
-// 收藏
+// 收藏/取消收藏
 const handleCollect = () => {
-  ElMessage.info('收藏功能开发中')
+  try {
+    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
+    const favoritesKey = `user_${currentUserId}_favorites`
+    
+    // 从localStorage读取收藏列表
+    const favoritesStr = localStorage.getItem(favoritesKey)
+    let favorites: any[] = []
+    
+    if (favoritesStr) {
+      try {
+        favorites = JSON.parse(favoritesStr)
+      } catch (e) {
+        console.warn('解析收藏列表失败:', e)
+        favorites = []
+      }
+    }
+    
+    if (isCollected.value) {
+      // 取消收藏：从列表中移除
+      favorites = favorites.filter((fav: any) => fav.id !== postData.value.id)
+      isCollected.value = false
+      ElMessage.success('已取消收藏')
+    } else {
+      // 添加收藏：将帖子信息添加到列表
+      const postToFavorite = {
+        id: postData.value.id,
+        title: postData.value.title,
+        description: postData.value.content?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
+        author: postData.value.authorName,
+        createTime: postData.value.createTime,
+        views: postData.value.views,
+        comments: commentCount.value,
+        likes: postData.value.likes,
+        tags: postData.value.tags || [],
+        image: postData.value.cover || '',
+        favoriteTime: new Date().toISOString() // 收藏时间
+      }
+      
+      // 检查是否已存在
+      const exists = favorites.some((fav: any) => fav.id === postData.value.id)
+      if (!exists) {
+        favorites.unshift(postToFavorite) // 添加到开头
+        isCollected.value = true
+        ElMessage.success('收藏成功')
+      } else {
+        ElMessage.warning('该帖子已在收藏列表中')
+      }
+    }
+    
+    // 保存到localStorage
+    localStorage.setItem(favoritesKey, JSON.stringify(favorites))
+    
+    // 触发收藏更新事件（用于更新个人中心的收藏数量）
+    window.dispatchEvent(new CustomEvent('favoritesUpdated', {
+      detail: { userId: currentUserId, favorites }
+    }))
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    ElMessage.error('操作失败，请稍后重试')
+  }
+}
+
+// 检查是否已收藏
+const checkIfCollected = () => {
+  try {
+    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
+    const favoritesKey = `user_${currentUserId}_favorites`
+    const favoritesStr = localStorage.getItem(favoritesKey)
+    
+    if (favoritesStr) {
+      try {
+        const favorites = JSON.parse(favoritesStr)
+        isCollected.value = favorites.some((fav: any) => fav.id === postData.value.id)
+      } catch (e) {
+        console.warn('检查收藏状态失败:', e)
+      }
+    }
+  } catch (error) {
+    console.error('检查收藏状态失败:', error)
+  }
+}
+
+// 编辑帖子
+const handleEdit = () => {
+  router.push({
+    path: '/post/create',
+    query: {
+      id: postData.value.id,
+      edit: 'true'
+    }
+  })
+}
+
+// 删除帖子
+const handleDelete = () => {
+  ElMessageBox.confirm('确定要删除这个帖子吗？删除后无法恢复。', '警告', {
+    confirmButtonText: '确定删除',
+    cancelButtonText: '取消',
+    type: 'warning',
+    distinguishCancelAndClose: true
+  }).then(async () => {
+    try {
+      // 这里应该调用API删除帖子
+      // await deletePost(postData.value.id)
+      
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      ElMessage.success('帖子已删除')
+      router.push('/practices')
+    } catch (error) {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
+  }).catch(() => {
+    // 用户取消
+  })
 }
 
 // 提交评论
@@ -600,6 +758,7 @@ onMounted(async () => {
   await loadPostDetail()
   if (postData.value.id) {
     await loadComments()
+    checkIfCollected() // 检查收藏状态
   }
 })
 </script>
@@ -685,6 +844,21 @@ onMounted(async () => {
       .avatar-wrapper {
         position: relative;
         display: inline-block;
+        cursor: pointer;
+        transition: transform 0.2s;
+
+        &:hover {
+          transform: scale(1.05);
+        }
+
+        .author-avatar-clickable {
+          cursor: pointer;
+          transition: all 0.2s;
+          
+          &:hover {
+            box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+          }
+        }
 
         .author-badge {
           position: absolute;
@@ -708,6 +882,15 @@ onMounted(async () => {
           font-size: 16px;
           font-weight: 500;
           color: #333;
+          
+          &.author-name-clickable {
+            cursor: pointer;
+            transition: color 0.2s;
+            
+            &:hover {
+              color: #409eff;
+            }
+          }
         }
 
         .post-time {
@@ -763,9 +946,6 @@ onMounted(async () => {
 
 .post-tags-section {
   margin-bottom: 24px;
-  padding: 16px 20px;
-  background: #fafafa;
-  border-radius: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -843,9 +1023,21 @@ onMounted(async () => {
 
 .post-actions {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   padding-top: 20px;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+  .actions-left {
+    display: flex;
+    gap: 12px;
+  }
+
+  .actions-right {
+    display: flex;
+    gap: 12px;
+  }
 }
 
 .comments-section {
@@ -929,9 +1121,11 @@ onMounted(async () => {
             }
 
             .author-tag-inline {
-              font-size: 10px;
-              padding: 2px 6px;
+              font-size: 11px;
+              padding: 2px 8px;
               font-weight: 600;
+              border-radius: 4px;
+              margin-left: 4px;
             }
 
             .comment-time {
@@ -992,18 +1186,6 @@ onMounted(async () => {
                 position: relative;
                 display: inline-block;
                 flex-shrink: 0;
-
-                .author-badge-small {
-                  position: absolute;
-                  bottom: -3px;
-                  right: -3px;
-                  font-size: 9px;
-                  padding: 1px 5px;
-                  border-radius: 6px;
-                  font-weight: 600;
-                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                  z-index: 1;
-                }
               }
 
               .reply-content {
@@ -1023,9 +1205,11 @@ onMounted(async () => {
                   }
 
                   .author-tag-inline {
-                    font-size: 9px;
-                    padding: 1px 5px;
+                    font-size: 11px;
+                    padding: 2px 8px;
                     font-weight: 600;
+                    border-radius: 4px;
+                    margin-left: 4px;
                   }
 
                   .reply-to {

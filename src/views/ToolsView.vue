@@ -35,8 +35,18 @@
         <!-- 左侧：帖子列表 -->
         <el-col :xs="24" :md="16">
           <div class="posts-section">
-            <!-- 帖子分类标签和发帖按钮 -->
-            <div class="post-tabs-header">
+            <!-- 其他工具：搜索框和排序 -->
+            <div v-if="selectedToolId === 'other'">
+              <PostHeader
+                :default-sort="sortBy as 'newest' | 'hot' | 'comments' | 'likes'"
+                @search="handleSearch"
+                @sort="handleSort"
+                @post-click="handlePostCreate"
+              />
+            </div>
+            
+            <!-- 普通工具：帖子分类标签 -->
+            <div v-else class="post-tabs-header">
               <div class="post-tabs">
                 <el-tag
                   :type="activePostTab === 'guide' ? 'primary' : 'info'"
@@ -86,28 +96,34 @@
         <el-col :xs="24" :md="8">
           <!-- 其他工具：标签和部门分类 -->
           <div v-if="selectedToolId === 'other'" class="sidebar-section">
-            <!-- 标签选择 -->
+            <!-- 标签筛选 -->
             <div class="sidebar-block">
-              <h3 class="sidebar-title">标签选择</h3>
-              <div class="tags-list">
-                <el-tag
-                  v-for="tag in allTags"
-                  :key="tag.name"
-                  :class="['tag-item', { 'tag-item-active': selectedTag === tag.name }]"
-                  :style="getTagStyle(tag.name)"
-                  @click="handleTagClick(tag.name)"
-                >
-                  #{{ tag.name }} ({{ tag.count }})
-                </el-tag>
-              </div>
+              <TagFilter
+                :tags="displayedTags"
+                :selected-tag="selectedTag"
+                title="标签筛选"
+                @tag-click="handleTagClick"
+              />
             </div>
 
             <!-- 部门归类 -->
             <div class="sidebar-block">
-              <h3 class="sidebar-title">部门归类</h3>
+              <div class="section-header-with-reset">
+                <h3 class="sidebar-title">部门归类</h3>
+                <el-button 
+                  v-if="selectedDepartment" 
+                  text 
+                  size="small" 
+                  class="reset-btn"
+                  @click="handleResetDepartment"
+                >
+                  <el-icon><Refresh /></el-icon>
+                  重置
+                </el-button>
+              </div>
               <div class="department-list">
                 <div
-                  v-for="dept in departmentRankings"
+                  v-for="dept in displayedDepartments"
                   :key="dept.id"
                   class="department-item"
                   :class="{ active: selectedDepartment === dept.name }"
@@ -186,9 +202,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { User, Clock, View, Calendar, Location, More } from '@element-plus/icons-vue'
+import { User, Clock, View, Calendar, Location, More, Refresh } from '@element-plus/icons-vue'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
@@ -208,35 +224,99 @@ const selectedDepartment = ref<string | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(15)
 
-// 所有标签
-const allTags = ref([
-  { name: '新手', count: 120 },
-  { name: '进阶', count: 95 },
-  { name: '最佳实践', count: 80 },
-  { name: '技巧', count: 75 },
-  { name: '案例', count: 110 },
-  { name: '优化', count: 60 },
-  { name: '通用', count: 50 }
-])
+// 所有标签（动态计算，包含"全部"选项）
+const displayedTags = computed(() => {
+  // 获取所有帖子（其他工具的帖子）
+  const allPosts = currentToolPosts.value
+  
+  // 根据当前选择的部门过滤帖子
+  let filteredPosts = allPosts
+  if (selectedDepartment.value) {
+    // 这里需要从帖子数据中获取部门信息，暂时简化处理
+    // filteredPosts = filteredPosts.filter(post => post.department === selectedDepartment.value)
+  }
+  
+  // 统计每个标签的数量
+  const tagCountMap = new Map<string, number>()
+  filteredPosts.forEach(post => {
+    if (post.tag) {
+      tagCountMap.set(post.tag, (tagCountMap.get(post.tag) || 0) + 1)
+    }
+  })
+  
+  // 构建标签列表，包含"全部"
+  const tags: Array<{ name: string; count: number }> = [
+    { name: '全部', count: filteredPosts.length }
+  ]
+  
+  // 添加其他标签
+  const tagNames = ['新手', '进阶', '最佳实践', '技巧', '案例', '优化', '通用', '入门']
+  tagNames.forEach(tagName => {
+    const count = tagCountMap.get(tagName) || 0
+    if (count > 0 || !selectedDepartment.value) {
+      tags.push({ name: tagName, count })
+    }
+  })
+  
+  return tags
+})
 
-// 部门排名统计
-const departmentRankings = ref([
-  { id: 1, name: '研发部', postCount: 156, contributorCount: 28 },
-  { id: 2, name: '产品部', postCount: 132, contributorCount: 22 },
-  { id: 3, name: '技术部', postCount: 98, contributorCount: 18 },
-  { id: 4, name: '数据部', postCount: 87, contributorCount: 15 },
-  { id: 5, name: '算法部', postCount: 76, contributorCount: 12 },
-  { id: 6, name: '运营部', postCount: 65, contributorCount: 10 },
-  { id: 7, name: '设计部', postCount: 54, contributorCount: 8 },
-  { id: 8, name: '测试部', postCount: 43, contributorCount: 7 }
-])
+// 部门排名统计（动态计算）
+const displayedDepartments = computed(() => {
+  // 获取所有帖子（其他工具的帖子）
+  const allPosts = currentToolPosts.value
+  
+  // 根据当前选择的标签过滤帖子
+  let filteredPosts = allPosts
+  if (selectedTag.value && selectedTag.value !== '全部') {
+    filteredPosts = filteredPosts.filter(post => post.tag === selectedTag.value)
+  }
+  
+  // 统计每个部门的发帖数和贡献者
+  const deptMap = new Map<string, { postCount: number; contributors: Set<string> }>()
+  
+  filteredPosts.forEach(post => {
+    // 这里需要从帖子数据中获取部门信息，暂时简化处理
+    // 假设所有帖子都属于某个部门，这里用模拟数据
+    const deptName = '研发部' // 实际应该从post.department获取
+    if (!deptMap.has(deptName)) {
+      deptMap.set(deptName, { postCount: 0, contributors: new Set() })
+    }
+    const dept = deptMap.get(deptName)!
+    dept.postCount++
+    if (post.author) {
+      dept.contributors.add(post.author)
+    }
+  })
+  
+  // 获取所有部门名称（从所有帖子中提取，这里简化处理）
+  const allDepts = new Set<string>(['研发部', '产品部', '技术部', '数据部', '算法部', '运营部', '设计部', '测试部'])
+  
+  // 构建部门列表
+  const departments = Array.from(allDepts).map((name, index) => {
+    const stats = deptMap.get(name) || { postCount: 0, contributors: new Set() }
+    return {
+      id: index + 1,
+      name,
+      postCount: stats.postCount,
+      contributorCount: stats.contributors.size
+    }
+  })
+  
+  // 按发帖数排序
+  return departments.sort((a, b) => b.postCount - a.postCount)
+})
 
 // 页面加载时检查路由参数
 onMounted(() => {
+  // 监听配置更新
+  window.addEventListener('adminConfigUpdated', handleConfigUpdate)
+  
+  // 检查路由参数
   const toolId = route.query.toolId
   if (toolId) {
     const id = Number(toolId)
-    if (!isNaN(id) && tools.value.some(t => t.id === id)) {
+    if (!isNaN(id) && tools.value.some((t: any) => t.id === id)) {
       selectedToolId.value = id
     } else if (toolId === 'other') {
       selectedToolId.value = 'other'
@@ -249,61 +329,90 @@ onMounted(() => {
   }
 })
 
+onUnmounted(() => {
+  window.removeEventListener('adminConfigUpdated', handleConfigUpdate)
+})
+
 // 当前激活的帖子分类
 const activePostTab = ref<'guide' | 'excellent'>('guide')
 
-// 工具列表
-const tools = ref([
-  { 
-    id: 1,
-    name: 'TestMate', 
-    desc: '自动化测试助手', 
-    logo: 'https://picsum.photos/80/80?random=1',
-    color: '#36cfc9' 
-  },
-  { 
-    id: 2,
-    name: 'CodeMate', 
-    desc: '智能代码补全', 
-    logo: 'https://picsum.photos/80/80?random=2',
-    color: '#9254de' 
-  },
-  { 
-    id: 3,
-    name: '云集', 
-    desc: '云端计算集群', 
-    logo: 'https://picsum.photos/80/80?random=3',
-    color: '#597ef7' 
-  },
-  { 
-    id: 4,
-    name: '云见', 
-    desc: '智能监控平台', 
-    logo: 'https://picsum.photos/80/80?random=4',
-    color: '#ff9c6e' 
-  },
-  { 
-    id: 5,
-    name: '扶摇', 
-    desc: 'Agent编排引擎', 
-    logo: 'https://picsum.photos/80/80?random=5',
-    color: '#4096ff' 
-  },
-  { 
-    id: 6,
-    name: '纠错Agent', 
-    desc: '智能代码纠错工具', 
-    logo: 'https://picsum.photos/80/80?random=6',
-    color: '#ffc53d' 
-  },
-  { 
-    id: 7,
-    name: 'DT', 
-    desc: '数据转换工具', 
-    logo: 'https://picsum.photos/80/80?random=7',
-    color: '#73d13d' 
-  },
-])
+// 工具列表 - 从localStorage读取配置
+const loadTools = () => {
+  try {
+    const saved = localStorage.getItem('admin_tools_config')
+    if (saved) {
+      const config = JSON.parse(saved)
+      return config.map((item: any, index: number) => ({
+        id: item.id || index + 1,
+        name: item.name,
+        desc: item.desc || '',
+        logo: item.logo || '',
+        link: item.link || `/tools/${item.name.toLowerCase()}`,
+        color: item.color || '#409eff'
+      }))
+    }
+  } catch (e) {
+    console.error('加载工具配置失败:', e)
+  }
+  return [
+    { 
+      id: 1,
+      name: 'TestMate', 
+      desc: '自动化测试助手', 
+      logo: 'https://picsum.photos/80/80?random=1',
+      color: '#36cfc9' 
+    },
+    { 
+      id: 2,
+      name: 'CodeMate', 
+      desc: '智能代码补全', 
+      logo: 'https://picsum.photos/80/80?random=2',
+      color: '#9254de' 
+    },
+    { 
+      id: 3,
+      name: '云集', 
+      desc: '云端计算集群', 
+      logo: 'https://picsum.photos/80/80?random=3',
+      color: '#597ef7' 
+    },
+    { 
+      id: 4,
+      name: '云见', 
+      desc: '智能监控平台', 
+      logo: 'https://picsum.photos/80/80?random=4',
+      color: '#ff9c6e' 
+    },
+    { 
+      id: 5,
+      name: '扶摇', 
+      desc: 'Agent编排引擎', 
+      logo: 'https://picsum.photos/80/80?random=5',
+      color: '#4096ff' 
+    },
+    { 
+      id: 6,
+      name: '纠错Agent', 
+      desc: '智能代码纠错工具', 
+      logo: 'https://picsum.photos/80/80?random=6',
+      color: '#ffc53d' 
+    },
+    { 
+      id: 7,
+      name: 'DT', 
+      desc: '数据转换工具', 
+      logo: 'https://picsum.photos/80/80?random=7',
+      color: '#73d13d' 
+    },
+  ]
+}
+
+const tools = ref(loadTools())
+
+// 监听配置更新
+const handleConfigUpdate = () => {
+  tools.value = loadTools()
+}
 
 // 所有帖子数据（模拟）
 const allPosts = ref([
@@ -352,8 +461,8 @@ const currentToolPosts = computed(() => {
     return []
   }
 
-  // 按标签过滤
-  if (selectedTag.value) {
+  // 按标签过滤（排除"全部"）
+  if (selectedTag.value && selectedTag.value !== '全部') {
     posts = posts.filter(post => post.tag === selectedTag.value)
   }
 
@@ -367,10 +476,15 @@ const currentToolPosts = computed(() => {
 
 // 过滤后的帖子（根据分类）
 const filteredPosts = computed(() => {
-  let posts = currentToolPosts.value.filter(post => post.category === activePostTab.value)
+  let posts = currentToolPosts.value
+  
+  // 如果不是"其他"工具，按分类过滤
+  if (selectedToolId.value !== 'other') {
+    posts = posts.filter(post => post.category === activePostTab.value)
+  }
 
-  // 按标签过滤
-  if (selectedTag.value) {
+  // 按标签过滤（排除"全部"）
+  if (selectedTag.value && selectedTag.value !== '全部') {
     posts = posts.filter(post => post.tag === selectedTag.value)
   }
 
@@ -415,7 +529,24 @@ const currentToolActivities = computed(() => {
   if (selectedToolId.value === 'other' || !selectedToolId.value) {
     return []
   }
-  return allActivities.value.filter(activity => activity.toolId === selectedToolId.value)
+  
+  // 从localStorage加载发布的活动
+  const publishedActivities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
+  const publishedForTool = publishedActivities
+    .filter((a: any) => a.toolId === selectedToolId.value)
+    .map((a: any) => ({
+      id: a.id,
+      type: 'activity' as const,
+      title: a.title,
+      desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
+      date: a.date,
+      location: '',
+      image: a.cover
+    }))
+  
+  // 合并模拟活动和发布的活动
+  const mockActivities = allActivities.value.filter(activity => activity.toolId === selectedToolId.value)
+  return [...publishedForTool, ...mockActivities]
 })
 
 // 颜色池 - 为不同标签提供不同颜色
@@ -475,7 +606,14 @@ const getTagType = (tag: string) => {
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  router.push(`/post/${post.id}`)
+  console.log('ToolsView: 处理帖子点击', post)
+  if (!post || !post.id) {
+    console.error('帖子数据无效:', post)
+    return
+  }
+  router.push(`/post/${post.id}`).catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 
 // 搜索关键词和排序
@@ -495,20 +633,24 @@ const handleSearch = (keyword: string) => {
 }
 
 // 处理排序
-const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
-  sortBy.value = sort
+const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
+  sortBy.value = sort as 'newest' | 'hot' | 'comments'
   currentPage.value = 1 // 重置到第一页
 }
 
 // 处理活动点击
 const handleActivityClick = (activity: any) => {
-  console.log('点击活动:', activity)
-  // 可以跳转到活动详情页
+  // 跳转到活动详情页
+  router.push(`/activity/${activity.id}`)
 }
 
 // 处理标签点击
 const handleTagClick = (tagName: string) => {
-  if (selectedTag.value === tagName) {
+  if (tagName === '全部') {
+    // 点击"全部"时清除标签过滤
+    selectedTag.value = null
+  } else if (selectedTag.value === tagName) {
+    // 再次点击已选中的标签时清除
     selectedTag.value = null
   } else {
     selectedTag.value = tagName
@@ -524,6 +666,17 @@ const handleDepartmentClick = (departmentName: string) => {
     selectedDepartment.value = departmentName
   }
   currentPage.value = 1 // 重置到第一页
+}
+
+// 重置部门过滤
+const handleResetDepartment = () => {
+  selectedDepartment.value = null
+  currentPage.value = 1
+}
+
+// 处理发帖
+const handlePostCreate = () => {
+  router.push('/post/create')
 }
 
 // 处理分页大小变化
@@ -928,6 +1081,26 @@ const handleCurrentChange = (val: number) => {
   font-size: 18px;
   font-weight: 600;
   color: #000;
+}
+
+.section-header-with-reset {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  .sidebar-title {
+    margin: 0;
+  }
+
+  .reset-btn {
+    color: #909399;
+    font-size: 12px;
+
+    &:hover {
+      color: #409eff;
+    }
+  }
 }
 
 .tags-list {

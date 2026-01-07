@@ -39,7 +39,7 @@
 
       <!-- 标签页 -->
       <el-tabs v-model="activeTab" class="profile-tabs">
-        <el-tab-pane label="我发布的帖子" name="posts">
+        <el-tab-pane :label="isViewingOtherUser ? '发布的帖子' : '我发布的帖子'" name="posts">
           <div class="tab-content">
             <PostList
               :posts="myPosts"
@@ -62,7 +62,7 @@
           </div>
         </el-tab-pane>
 
-        <el-tab-pane label="我收藏的帖子" name="favorites">
+        <el-tab-pane :label="isViewingOtherUser ? '收藏的帖子' : '我收藏的帖子'" name="favorites">
           <div class="tab-content">
             <PostList
               :posts="favoritePosts"
@@ -85,7 +85,7 @@
           </div>
         </el-tab-pane>
 
-        <el-tab-pane label="我的评论" name="comments">
+        <el-tab-pane :label="isViewingOtherUser ? '评论' : '我的评论'" name="comments">
           <div class="tab-content">
             <div class="comments-list">
               <div
@@ -132,13 +132,15 @@
           </div>
         </el-tab-pane>
 
-        <el-tab-pane label="我参与的活动" name="activities">
+        <el-tab-pane :label="isViewingOtherUser ? '参与的活动' : '我参与的活动'" name="activities">
           <div class="tab-content">
             <div class="activities-list">
               <div
                 v-for="activity in paginatedActivities"
                 :key="activity.id"
                 class="activity-item glass-card"
+                @click="handleActivityClick(activity)"
+                style="cursor: pointer;"
               >
                 <div class="activity-image" v-if="activity.image">
                   <img :src="activity.image" :alt="activity.title" />
@@ -182,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Document, Star, Calendar, Location } from '@element-plus/icons-vue'
 import PostList from '../components/PostList.vue'
@@ -211,6 +213,11 @@ const getUserFlowersFromHonors = (userName: string): number => {
 
 // 当前标签页
 const activeTab = ref('posts')
+
+// 判断是否在查看其他用户
+const isViewingOtherUser = computed(() => {
+  return !!route.query.user && typeof route.query.user === 'string'
+})
 
 // 用户信息
 const userInfo = ref({
@@ -253,20 +260,45 @@ const myPosts = ref([
 ])
 
 // 我收藏的帖子
-const favoritePosts = ref([
-  {
-    id: 3,
-    title: 'AI辅助测试的最佳实践与经验总结',
-    description: '分享AI在测试领域的应用经验和最佳实践。',
-    author: '李四',
-    createTime: '2024年4月9日',
-    views: 720,
-    comments: 28,
-    likes: 78,
-    tags: ['测试', '最佳实践'],
-    image: 'https://picsum.photos/400/300?random=3'
+const favoritePosts = ref<any[]>([])
+
+// 加载收藏的帖子
+const loadFavoritePosts = () => {
+  try {
+    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
+    const favoritesKey = `user_${currentUserId}_favorites`
+    const favoritesStr = localStorage.getItem(favoritesKey)
+    
+    if (favoritesStr) {
+      try {
+        const favorites = JSON.parse(favoritesStr)
+        // 按收藏时间倒序排列（最新的在前）
+        favoritePosts.value = favorites.sort((a: any, b: any) => {
+          const timeA = new Date(a.favoriteTime || 0).getTime()
+          const timeB = new Date(b.favoriteTime || 0).getTime()
+          return timeB - timeA
+        })
+        // 更新收藏数量
+        userInfo.value.favoritesCount = favoritePosts.value.length
+      } catch (e) {
+        console.warn('解析收藏列表失败:', e)
+        favoritePosts.value = []
+      }
+    } else {
+      favoritePosts.value = []
+    }
+  } catch (error) {
+    console.error('加载收藏列表失败:', error)
+    favoritePosts.value = []
   }
-])
+}
+
+// 监听收藏更新事件
+const handleFavoritesUpdate = (event: CustomEvent) => {
+  if (event.detail.userId === 1) { // 当前用户ID
+    loadFavoritePosts()
+  }
+}
 
 // 我的评论
 const myComments = ref([
@@ -293,26 +325,45 @@ const myComments = ref([
 ])
 
 // 我参与的活动
-const myActivities = ref([
-  {
-    id: 1,
-    title: '2026 AI 开发者大会',
-    description: '深入学习 AI 技术的最新发展和应用场景，与行业专家面对面交流。',
-    date: '2026年3月15日',
-    location: '北京',
-    image: 'https://picsum.photos/600/400?random=10',
-    status: 'ongoing'
-  },
-  {
-    id: 2,
-    title: 'AI工具链构建工作坊',
-    description: '实战演练 AI 工具链的构建方法，提升团队协作效率。',
-    date: '2026年2月20日',
-    location: '上海',
-    image: 'https://picsum.photos/600/400?random=11',
-    status: 'ended'
+const myActivities = ref<any[]>([])
+
+// 加载报名的活动
+const loadRegisteredActivities = () => {
+  try {
+    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
+    const registeredKey = `user_${currentUserId}_registered_activities`
+    const registeredStr = localStorage.getItem(registeredKey)
+    
+    if (registeredStr) {
+      try {
+        const registered = JSON.parse(registeredStr)
+        // 按报名时间倒序排列（最新的在前）
+        myActivities.value = registered.sort((a: any, b: any) => {
+          const timeA = new Date(a.registerTime || 0).getTime()
+          const timeB = new Date(b.registerTime || 0).getTime()
+          return timeB - timeA
+        })
+        // 更新活动数量
+        userInfo.value.activitiesCount = myActivities.value.length
+      } catch (e) {
+        console.warn('解析报名活动列表失败:', e)
+        myActivities.value = []
+      }
+    } else {
+      myActivities.value = []
+    }
+  } catch (error) {
+    console.error('加载报名活动列表失败:', error)
+    myActivities.value = []
   }
-])
+}
+
+// 监听活动报名更新事件
+const handleActivityRegistered = (event: CustomEvent) => {
+  if (event.detail.userId === 1) { // 当前用户ID
+    loadRegisteredActivities()
+  }
+}
 
 // 分页
 const postsPage = ref(1)
@@ -337,22 +388,138 @@ const paginatedActivities = computed(() => {
   return myActivities.value.slice(start, end)
 })
 
+// 根据用户名加载用户数据
+const loadUserProfile = async (userName: string) => {
+  // 这里应该调用API获取用户信息
+  // 暂时使用mock数据
+  userInfo.value = {
+    ...userInfo.value,
+    name: userName,
+    avatar: getUserAvatar(userName),
+    bio: getUserBio(userName),
+    flowersCount: getUserFlowersFromHonors(userName)
+  }
+  
+  // 加载该用户的帖子
+  await loadUserPosts(userName)
+}
+
+// 获取用户头像（mock数据）
+const getUserAvatar = (userName: string): string => {
+  const avatarMap: Record<string, string> = {
+    '张三': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+    '李四': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+    '王五': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+    '赵六': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+  }
+  return avatarMap[userName] || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+}
+
+// 获取用户简介（mock数据）
+const getUserBio = (userName: string): string => {
+  const bioMap: Record<string, string> = {
+    '张三': 'AI技术爱好者，专注于机器学习和深度学习',
+    '李四': '前端开发工程师，热爱新技术',
+    '王五': '后端架构师，专注于系统设计',
+    '赵六': '全栈开发者，喜欢分享技术经验'
+  }
+  return bioMap[userName] || '这个人很懒，什么都没有留下'
+}
+
+// 根据用户名加载帖子列表
+const loadUserPosts = async (userName: string) => {
+  // 这里应该调用API获取该用户的帖子
+  // 暂时使用mock数据，根据用户名过滤
+  const allPosts = [
+    {
+      id: 1,
+      title: '大模型在工业设计中的落地应用案例分享',
+      description: '分享如何在实际项目中高效使用大模型提升设计效率。',
+      author: '张三',
+      createTime: '2024年4月10日',
+      views: 1250,
+      comments: 45,
+      likes: 128,
+      tags: ['讨论', 'AI应用'],
+      image: 'https://picsum.photos/400/300?random=1'
+    },
+    {
+      id: 2,
+      title: '如何利用AI提升代码质量和开发效率',
+      description: '介绍AI工具在代码开发中的实际应用经验。',
+      author: '张三',
+      createTime: '2024年4月8日',
+      views: 890,
+      comments: 32,
+      likes: 95,
+      tags: ['分享', '开发'],
+      image: 'https://picsum.photos/400/300?random=2'
+    },
+    {
+      id: 3,
+      title: 'AI辅助测试的最佳实践与经验总结',
+      description: '分享AI在测试领域的应用经验和最佳实践。',
+      author: '李四',
+      createTime: '2024年4月9日',
+      views: 720,
+      comments: 28,
+      likes: 78,
+      tags: ['测试', '最佳实践'],
+      image: 'https://picsum.photos/400/300?random=3'
+    },
+    {
+      id: 4,
+      title: '深度学习模型优化技巧分享',
+      description: '介绍如何优化深度学习模型的性能和效率。',
+      author: '张三',
+      createTime: '2024年4月5日',
+      views: 1100,
+      comments: 38,
+      likes: 102,
+      tags: ['深度学习', '优化'],
+      image: 'https://picsum.photos/400/300?random=4'
+    }
+  ]
+  
+  // 根据用户名过滤帖子
+  myPosts.value = allPosts.filter(post => post.author === userName)
+  
+  // 更新用户统计信息
+  userInfo.value.postsCount = myPosts.value.length
+}
+
 // 监听路由参数，支持查看其他用户
 watch(() => route.query.user, (userName) => {
   if (typeof userName === 'string' && userName) {
-    // 这里应该调用API获取用户信息
-    // 暂时使用mock数据
-    userInfo.value = {
-      ...userInfo.value,
-      name: userName,
-      flowersCount: getUserFlowersFromHonors(userName)
-    }
+    loadUserProfile(userName)
+  } else {
+    // 如果没有指定用户，加载当前用户的数据
+    loadUserData()
   }
 }, { immediate: true })
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  router.push(`/post/${post.id}`)
+  console.log('ProfileView: 处理帖子点击', post)
+  if (!post || !post.id) {
+    console.error('帖子数据无效:', post)
+    return
+  }
+  router.push(`/post/${post.id}`).catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
+}
+
+// 处理活动点击
+const handleActivityClick = (activity: any) => {
+  console.log('ProfileView: 处理活动点击', activity)
+  if (!activity || !activity.id) {
+    console.error('活动数据无效:', activity)
+    return
+  }
+  router.push(`/activity/${activity.id}`).catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 
 // 分页变化处理
@@ -376,17 +543,38 @@ const handleActivitiesPageChange = (page: number) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// 加载数据
+// 加载数据（当前用户）
 const loadUserData = async () => {
-  // 这里应该调用API获取用户数据
+  // 这里应该调用API获取当前用户数据
   // const response = await getUserProfile()
   // userInfo.value = response.data.userInfo
   // myPosts.value = response.data.posts
   // ...
+  
+  // 如果没有路由参数，使用默认用户数据
+  if (!route.query.user) {
+    await loadUserPosts(userInfo.value.name)
+    loadFavoritePosts() // 加载收藏的帖子
+    loadRegisteredActivities() // 加载报名的活动
+  }
 }
 
 onMounted(() => {
-  loadUserData()
+  // 如果路由中有用户参数，会在 watch 中处理
+  // 否则加载当前用户数据
+  if (!route.query.user) {
+    loadUserData()
+  }
+  
+  // 监听收藏更新事件
+  window.addEventListener('favoritesUpdated', handleFavoritesUpdate as EventListener)
+  // 监听活动报名更新事件
+  window.addEventListener('activityRegistered', handleActivityRegistered as EventListener)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('favoritesUpdated', handleFavoritesUpdate as EventListener)
+  window.removeEventListener('activityRegistered', handleActivityRegistered as EventListener)
 })
 </script>
 

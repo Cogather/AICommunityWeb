@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { Calendar, Location } from '@element-plus/icons-vue'
 
 interface Activity {
@@ -71,11 +72,15 @@ const props = withDefaults(defineProps<Props>(), {
   title: '近期活动与培训'
 })
 
+const router = useRouter()
+
 const emit = defineEmits<{
   activityClick: [activity: Activity]
 }>()
 
 const handleActivityClick = (activity: Activity) => {
+  // 跳转到活动详情页
+  router.push(`/activity/${activity.id}`)
   emit('activityClick', activity)
 }
 </script>

@@ -959,6 +959,8 @@ const handleCurrentChange = (val: number) => {
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  position: relative;
+  z-index: 10;
   
   .timeline-user-info {
     flex: 1;
@@ -999,7 +1001,7 @@ const handleCurrentChange = (val: number) => {
 .timeline-line {
   position: absolute;
   left: 60px;
-  top: 0;
+  top: 140px;
   bottom: 0;
   width: 4px;
   background: linear-gradient(

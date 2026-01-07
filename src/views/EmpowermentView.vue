@@ -38,12 +38,12 @@
         <!-- 右侧：标签栏 -->
         <el-col :xs="24" :md="8">
           <div class="sidebar">
-            <!-- 所有标签 -->
+            <!-- 标签筛选 -->
             <div class="sidebar-section">
               <TagFilter
-                :tags="allTags"
+                :tags="displayedTags"
                 :selected-tag="selectedTag"
-                title="所有标签"
+                title="标签筛选"
                 @tag-click="handleTagClick"
               />
             </div>
@@ -84,19 +84,37 @@ const selectedTag = ref<string | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(15)
 
-// 所有标签
-const allTags = ref([
-  { name: '讨论', count: 150 },
-  { name: '提问', count: 120 },
-  { name: '分享', count: 95 },
-  { name: '经验', count: 80 },
-  { name: '工具', count: 75 },
-  { name: '技巧', count: 60 },
-  { name: '案例', count: 50 },
-  { name: '教程', count: 45 },
-  { name: '最佳实践', count: 30 },
-  { name: '问题解决', count: 25 }
-])
+// 所有标签（包含"全部"选项）
+const displayedTags = computed(() => {
+  // 获取所有帖子（包括精华帖和普通帖子）
+  const allPosts = [...featuredPosts.value, ...posts.value]
+  
+  // 统计每个标签的数量
+  const tagCountMap = new Map<string, number>()
+  allPosts.forEach(post => {
+    if (post.tags && Array.isArray(post.tags)) {
+      post.tags.forEach(tag => {
+        tagCountMap.set(tag, (tagCountMap.get(tag) || 0) + 1)
+      })
+    }
+  })
+  
+  // 构建标签列表，包含"全部"
+  const tags: Array<{ name: string; count: number }> = [
+    { name: '全部', count: allPosts.length }
+  ]
+  
+  // 添加其他标签
+  const tagNames = ['讨论', '提问', '分享', '经验', '工具', '技巧', '案例', '教程', '最佳实践', '问题解决', 'Agent', 'Prompt', '微调']
+  tagNames.forEach(tagName => {
+    const count = tagCountMap.get(tagName) || 0
+    if (count > 0) {
+      tags.push({ name: tagName, count })
+    }
+  })
+  
+  return tags
+})
 
 // 精华帖（置顶）
 const featuredPosts = ref([
@@ -181,10 +199,11 @@ const posts = ref([
 
 // 过滤后的帖子
 const filteredPosts = computed(() => {
-  let result = [...posts.value]
+  // 合并精华帖和普通帖子
+  let result = [...featuredPosts.value, ...posts.value]
 
-  // 按标签过滤
-  if (selectedTag.value) {
+  // 按标签过滤（排除"全部"）
+  if (selectedTag.value && selectedTag.value !== '全部') {
     result = result.filter(post => 
       post.tags && post.tags.includes(selectedTag.value!)
     )
@@ -266,7 +285,11 @@ const handlePostCreate = () => {
 
 // 处理标签点击
 const handleTagClick = (tagName: string) => {
-  if (selectedTag.value === tagName) {
+  if (tagName === '全部') {
+    // 点击"全部"时清除标签过滤
+    selectedTag.value = null
+  } else if (selectedTag.value === tagName) {
+    // 再次点击已选中的标签时清除
     selectedTag.value = null
   } else {
     selectedTag.value = tagName
@@ -289,8 +312,14 @@ const handleCurrentChange = (val: number) => {
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  router.push(`/post/${post.id}`)
-  console.log('点击帖子:', post)
+  console.log('EmpowermentView: 处理帖子点击', post)
+  if (!post || !post.id) {
+    console.error('帖子数据无效:', post)
+    return
+  }
+  router.push(`/post/${post.id}`).catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 </script>
 

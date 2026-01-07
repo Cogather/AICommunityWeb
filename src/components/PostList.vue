@@ -65,6 +65,7 @@
       v-for="post in posts"
       :key="post.id"
       class="post-item"
+      :class="{ 'featured': post.featured }"
       @click="handlePostClick(post)"
     >
       <div class="post-image" v-if="post.image">
@@ -72,6 +73,7 @@
       </div>
       <div class="post-content">
         <div class="post-header">
+          <el-tag v-if="post.featured" type="success" size="small">精华</el-tag>
           <h3 class="post-title">{{ post.title }}</h3>
           <el-tag v-if="post.tag" :type="getTagType(post.tag)" size="small">
             {{ post.tag }}
@@ -191,6 +193,7 @@ const getTagType = (tag: string) => {
 
 // 处理帖子点击
 const handlePostClick = (post: Post) => {
+  console.log('PostList: 帖子被点击', post)
   emit('postClick', post)
 }
 </script>

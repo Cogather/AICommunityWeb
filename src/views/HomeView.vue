@@ -22,7 +22,7 @@
                 text 
                 size="small" 
                 class="more-btn-pill"
-                @click="router.push('/honor')"
+                @click="router.push('/users')"
               >
                 更多
               </el-button>
@@ -32,7 +32,7 @@
               <!-- 左边：荣誉殿堂 -->
               <div class="honor-hall">
                 <!-- 荣誉殿堂 Banner -->
-                <div class="honor-banner">
+                <div class="honor-banner" @click="router.push('/honor')" style="cursor: pointer;">
                   <img :src="honorBannerImage" alt="荣誉殿堂" class="banner-image" />
                   <div class="banner-overlay">
                     <div class="banner-content">
@@ -102,7 +102,7 @@
                 class="news-card" 
                 v-for="(news, idx) in newsList" 
                 :key="idx"
-                @click="router.push('/news')"
+                @click="handleNewsClick(news)"
               >
                 <div class="news-image-wrapper">
                   <img :src="news.image" :alt="news.title" class="news-image" />
@@ -237,7 +237,12 @@
               </el-button>
             </div>
             <div class="text-list">
-              <p v-for="n in 5" :key="n" class="list-row">
+              <p 
+                v-for="n in 5" 
+                :key="n" 
+                class="list-row"
+                @click="router.push('/empowerment')"
+              >
                 <span class="tag blue">讨论</span>
                 如何使用 Agent 提升代码开发效率？
               </p>
@@ -266,6 +271,7 @@
           text 
           size="small" 
           class="more-btn-pill"
+          @click="router.push('/news')"
         >
           阅读更多
         </el-button>
@@ -276,12 +282,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowRight, ChatDotRound, Bell } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 
 const router = useRouter()
+
+// 监听配置更新
+const handleConfigUpdate = () => {
+  newsList.value = loadNewsList()
+  honorBannerImage.value = loadHonorBanner()
+  tools.value = loadTools()
+}
+
+onMounted(() => {
+  window.addEventListener('adminConfigUpdated', handleConfigUpdate)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('adminConfigUpdated', handleConfigUpdate)
+})
 
 // AI优秀实践数据
 const practices = ref([
@@ -317,32 +338,67 @@ const practices = ref([
   }
 ])
 
-// Mock Data
-const newsList = ref([
-  { 
-    title: '【大模型专题】多模态模型在医疗影像中的最新应用突破', 
-    date: '刚刚',
-    image: 'https://picsum.photos/300/200?random=20'
-  },
-  { 
-    title: '【社区活动】2026 AI 开发者大会早鸟票开启预售', 
-    date: '1小时前',
-    image: 'https://picsum.photos/300/200?random=21'
-  },
-  { 
-    title: '【开源动态】轻量级 LLM 本地部署最佳实践指南', 
-    date: '昨天',
-    image: 'https://picsum.photos/300/200?random=22'
-  },
-  { 
-    title: '【深度解析】Agent 自主智能体的未来发展趋势', 
-    date: '昨天',
-    image: 'https://picsum.photos/300/200?random=23'
-  },
-])
+// Mock Data - 从localStorage读取配置，如果没有则使用默认值
+const loadNewsList = () => {
+  try {
+    const saved = localStorage.getItem('admin_news_config')
+    if (saved) {
+      const config = JSON.parse(saved)
+      return config.map((item: any) => ({
+        title: item.title,
+        date: item.date,
+        image: item.image,
+        link: item.link || '/news'
+      }))
+    }
+  } catch (e) {
+    console.error('加载头条配置失败:', e)
+  }
+  return [
+    { 
+      title: '【大模型专题】多模态模型在医疗影像中的最新应用突破', 
+      date: '刚刚',
+      image: 'https://picsum.photos/300/200?random=20',
+      link: '/news'
+    },
+    { 
+      title: '【社区活动】2026 AI 开发者大会早鸟票开启预售', 
+      date: '1小时前',
+      image: 'https://picsum.photos/300/200?random=21',
+      link: '/news'
+    },
+    { 
+      title: '【开源动态】轻量级 LLM 本地部署最佳实践指南', 
+      date: '昨天',
+      image: 'https://picsum.photos/300/200?random=22',
+      link: '/news'
+    },
+    { 
+      title: '【深度解析】Agent 自主智能体的未来发展趋势', 
+      date: '昨天',
+      image: 'https://picsum.photos/300/200?random=23',
+      link: '/news'
+    },
+  ]
+}
 
-// 荣誉殿堂数据
-const honorBannerImage = ref('https://picsum.photos/800/300?random=30')
+const newsList = ref(loadNewsList())
+
+// 荣誉殿堂数据 - 从localStorage读取配置
+const loadHonorBanner = () => {
+  try {
+    const saved = localStorage.getItem('admin_honor_config')
+    if (saved) {
+      const config = JSON.parse(saved)
+      return config.bannerImage || 'https://picsum.photos/800/300?random=30'
+    }
+  } catch (e) {
+    console.error('加载荣誉殿堂配置失败:', e)
+  }
+  return 'https://picsum.photos/800/300?random=30'
+}
+
+const honorBannerImage = ref(loadHonorBanner())
 
 const awards = ref([
   {
@@ -371,66 +427,85 @@ const awards = ref([
   }
 ])
 
-// AI工具列表配置
-// 可配置字段：id, name, desc, logo(可选), link(路由参数), color(备用，当没有logo时使用)
-const tools = ref([
-  { 
-    id: 1,
-    name: 'TestMate', 
-    desc: '自动化测试助手', 
-    logo: 'https://picsum.photos/80/80?random=1',
-    link: '/tools/testmate',
-    color: '#36cfc9' 
-  },
-  { 
-    id: 2,
-    name: 'CodeMate', 
-    desc: '智能代码补全', 
-    logo: 'https://picsum.photos/80/80?random=2',
-    link: '/tools/codemate',
-    color: '#9254de' 
-  },
-  { 
-    id: 3,
-    name: '云集', 
-    desc: '云端计算集群', 
-    logo: 'https://picsum.photos/80/80?random=3',
-    link: '/tools/yunji',
-    color: '#597ef7' 
-  },
-  { 
-    id: 4,
-    name: '云见', 
-    desc: '智能监控平台', 
-    logo: 'https://picsum.photos/80/80?random=4',
-    link: '/tools/yunjian',
-    color: '#ff9c6e' 
-  },
-  { 
-    id: 5,
-    name: '扶摇', 
-    desc: 'Agent编排引擎', 
-    logo: 'https://picsum.photos/80/80?random=5',
-    link: '/tools/fuyao',
-    color: '#4096ff' 
-  },
-  { 
-    id: 6,
-    name: '纠错Agent', 
-    desc: '智能代码纠错工具', 
-    logo: 'https://picsum.photos/80/80?random=6',
-    link: '/tools/correction-agent',
-    color: '#ffc53d' 
-  },
-  { 
-    id: 7,
-    name: 'DT', 
-    desc: '数据转换工具', 
-    logo: 'https://picsum.photos/80/80?random=7',
-    link: '/tools/dt',
-    color: '#73d13d' 
-  },
-])
+// AI工具列表配置 - 从localStorage读取配置
+const loadTools = () => {
+  try {
+    const saved = localStorage.getItem('admin_tools_config')
+    if (saved) {
+      const config = JSON.parse(saved)
+      return config.map((item: any, index: number) => ({
+        id: item.id || index + 1,
+        name: item.name,
+        desc: item.desc || '',
+        logo: item.logo || '',
+        link: item.link || `/tools/${item.name.toLowerCase()}`,
+        color: item.color || '#409eff'
+      }))
+    }
+  } catch (e) {
+    console.error('加载工具配置失败:', e)
+  }
+  return [
+    { 
+      id: 1,
+      name: 'TestMate', 
+      desc: '自动化测试助手', 
+      logo: 'https://picsum.photos/80/80?random=1',
+      link: '/tools/testmate',
+      color: '#36cfc9' 
+    },
+    { 
+      id: 2,
+      name: 'CodeMate', 
+      desc: '智能代码补全', 
+      logo: 'https://picsum.photos/80/80?random=2',
+      link: '/tools/codemate',
+      color: '#9254de' 
+    },
+    { 
+      id: 3,
+      name: '云集', 
+      desc: '云端计算集群', 
+      logo: 'https://picsum.photos/80/80?random=3',
+      link: '/tools/yunji',
+      color: '#597ef7' 
+    },
+    { 
+      id: 4,
+      name: '云见', 
+      desc: '智能监控平台', 
+      logo: 'https://picsum.photos/80/80?random=4',
+      link: '/tools/yunjian',
+      color: '#ff9c6e' 
+    },
+    { 
+      id: 5,
+      name: '扶摇', 
+      desc: 'Agent编排引擎', 
+      logo: 'https://picsum.photos/80/80?random=5',
+      link: '/tools/fuyao',
+      color: '#4096ff' 
+    },
+    { 
+      id: 6,
+      name: '纠错Agent', 
+      desc: '智能代码纠错工具', 
+      logo: 'https://picsum.photos/80/80?random=6',
+      link: '/tools/correction-agent',
+      color: '#ffc53d' 
+    },
+    { 
+      id: 7,
+      name: 'DT', 
+      desc: '数据转换工具', 
+      logo: 'https://picsum.photos/80/80?random=7',
+      link: '/tools/dt',
+      color: '#73d13d' 
+    },
+  ]
+}
+
+const tools = ref(loadTools())
 
 // 根据工具数量计算列宽（一行最多4个）
 const getColSpan = (count: number) => {
@@ -453,6 +528,19 @@ const handleToolClick = (tool: any) => {
 const handlePracticeClick = (practice: any) => {
   // 跳转到实践详情或列表页
   router.push('/practices')
+}
+
+// 处理头条点击
+const handleNewsClick = (news: any) => {
+  if (news.link) {
+    if (news.link.startsWith('http')) {
+      window.open(news.link, '_blank')
+    } else {
+      router.push(news.link)
+    }
+  } else {
+    router.push('/news')
+  }
 }
 
 // AI工具专区轮播图数据

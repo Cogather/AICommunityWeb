@@ -29,15 +29,16 @@
           </el-select>
         </el-form-item>
 
-        <!-- 工具选择（仅AI工具专区显示） -->
+        <!-- 工具选择（仅AI工具专区显示，必填） -->
         <el-form-item
           v-if="formData.zone === 'tools'"
           label="选择工具"
           prop="toolId"
+          :required="true"
         >
           <el-select
             v-model="formData.toolId"
-            placeholder="请选择工具"
+            placeholder="请选择工具（必填）"
             style="width: 100%"
             @change="handleToolChange"
           >
@@ -112,8 +113,8 @@
               </div>
             </div>
             
-            <!-- 新增标签 -->
-            <div class="tags-section">
+            <!-- 新增标签（仅当允许自定义时显示） -->
+            <div class="tags-section" v-if="canAddCustomTag">
               <el-input
                 v-if="tagInputVisible"
                 ref="tagInputRef"
@@ -230,8 +231,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef } from 'vue'
-import { useRouter, onBeforeRouteLeave } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, nextTick, watch, shallowRef } from 'vue'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { InputInstance } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
@@ -245,6 +246,7 @@ import {
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
+const route = useRoute()
 const formRef = ref()
 const tagInputRef = ref<InputInstance>()
 const publishing = ref(false)
@@ -255,6 +257,11 @@ const lastSaveTime = ref('')
 const editorRef = shallowRef<IDomEditor>()
 const editorMode = 'default'
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+// 是否为编辑模式
+const isEditMode = computed(() => {
+  return route.query.edit === 'true' && route.query.id
+})
 
 // 推荐封面列表
 const recommendedCovers = ref([
@@ -277,16 +284,43 @@ const formData = ref({
   content: ''
 })
 
-// 工具列表（AI工具专区）
-const tools = ref([
-  { id: 1, name: 'TestMate' },
-  { id: 2, name: 'CodeMate' },
-  { id: 3, name: '云集' },
-  { id: 4, name: '云见' },
-  { id: 5, name: '扶摇' },
-  { id: 6, name: '纠错Agent' },
-  { id: 7, name: 'DT' }
-])
+// 工具列表（AI工具专区）- 从localStorage读取配置
+const loadTools = () => {
+  try {
+    const saved = localStorage.getItem('admin_tools_config')
+    if (saved) {
+      const config = JSON.parse(saved)
+      const tools = config.map((item: any, index: number) => ({
+        id: item.id || index + 1,
+        name: item.name
+      }))
+      // 添加"其他"选项
+      tools.push({ id: -1, name: '其他' })
+      return tools
+    }
+  } catch (e) {
+    console.error('加载工具配置失败:', e)
+  }
+  return [
+    { id: 1, name: 'TestMate' },
+    { id: 2, name: 'CodeMate' },
+    { id: 3, name: '云集' },
+    { id: 4, name: '云见' },
+    { id: 5, name: '扶摇' },
+    { id: 6, name: '纠错Agent' },
+    { id: 7, name: 'DT' },
+    { id: -1, name: '其他' }
+  ]
+}
+
+const tools = ref(loadTools())
+
+// 监听配置更新
+const handleConfigUpdate = () => {
+  tools.value = loadTools()
+}
+
+// 监听配置更新（在现有的onMounted中添加）
 
 const handleBack = () => {
   if (window.history.length > 1) {
@@ -304,12 +338,38 @@ const zoneTags = {
   empowerment: ['讨论', '提问', '分享', '经验', '工具', '技巧', '案例', '教程', '最佳实践', '问题解决']
 }
 
+// AI工具专区的固定标签（非"其他"工具时只能选择这两个）
+const toolFixedTags = ['操作指导', '优秀使用']
+
 // 当前可用的标签
 const availableTags = computed(() => {
+  if (formData.value.zone === 'tools') {
+    // 如果选择了AI工具专区
+    if (formData.value.toolId !== null && formData.value.toolId !== -1) {
+      // 如果选择了非"其他"工具，只显示固定标签
+      return toolFixedTags
+    } else if (formData.value.toolId === -1) {
+      // 如果选择了"其他"工具，显示所有工具专区的标签
+      return zoneTags.tools
+    }
+    // 如果还没选择工具，不显示标签
+    return []
+  }
+  
+  // 其他专区正常显示标签
   if (formData.value.zone) {
     return zoneTags[formData.value.zone as keyof typeof zoneTags] || []
   }
   return []
+})
+
+// 是否允许自定义标签
+const canAddCustomTag = computed(() => {
+  // 如果选择了AI工具专区且选择了非"其他"工具，不允许自定义
+  if (formData.value.zone === 'tools' && formData.value.toolId !== null && formData.value.toolId !== -1) {
+    return false
+  }
+  return true
 })
 
 // 判断是否为预设标签
@@ -323,13 +383,17 @@ const rules = {
   toolId: [
     {
       validator: (rule: any, value: any, callback: any) => {
-        if (formData.value.zone === 'tools' && !value) {
-          callback(new Error('请选择工具'))
+        if (formData.value.zone === 'tools') {
+          if (!value && value !== 0) {
+            callback(new Error('请选择工具'))
+          } else {
+            callback()
+          }
         } else {
           callback()
         }
       },
-      trigger: 'change'
+      trigger: ['change', 'blur']
     }
   ],
   title: [{ required: true, message: '请输入帖子标题', trigger: 'blur' }],
@@ -603,14 +667,30 @@ const handleZoneChange = () => {
   // 保留预设标签，清除自定义标签
   formData.value.tags = formData.value.tags.filter(tag => isPresetTag(tag))
   presetTags.value = []
+  
+  // 如果切换到AI工具专区，需要验证工具选择
+  if (formData.value.zone === 'tools') {
+    nextTick(() => {
+      if (formRef.value) {
+        formRef.value.validateField('toolId')
+      }
+    })
+  }
+  
   handleAutoSave()
 }
 
 // 工具切换
 const handleToolChange = () => {
-  // 保留预设标签，清除自定义标签
-  formData.value.tags = formData.value.tags.filter(tag => isPresetTag(tag))
-  presetTags.value = []
+  // 如果选择了非"其他"工具，只保留固定标签（操作指导、优秀使用）
+  if (formData.value.toolId !== null && formData.value.toolId !== -1) {
+    formData.value.tags = formData.value.tags.filter(tag => toolFixedTags.includes(tag))
+    presetTags.value = formData.value.tags.filter(tag => toolFixedTags.includes(tag))
+  } else {
+    // 如果选择了"其他"或清空了工具选择，保留预设标签，清除自定义标签
+    formData.value.tags = formData.value.tags.filter(tag => isPresetTag(tag))
+    presetTags.value = []
+  }
   handleAutoSave()
 }
 
@@ -636,18 +716,25 @@ const showTagInput = () => {
 
 // 确认添加标签
 const handleTagInputConfirm = () => {
+  // 如果不允许自定义标签，直接返回
+  if (!canAddCustomTag.value) {
+    tagInputVisible.value = false
+    tagInputValue.value = ''
+    return
+  }
+  
   if (tagInputValue.value) {
     const tag = tagInputValue.value.trim()
-  if (tag && !formData.value.tags.includes(tag)) {
-    formData.value.tags.push(tag)
-    // 如果是已有标签，标记为预设标签
-    if (availableTags.value.includes(tag)) {
+    if (tag && !formData.value.tags.includes(tag)) {
+      formData.value.tags.push(tag)
+      // 如果是已有标签，标记为预设标签
+      if (availableTags.value.includes(tag)) {
         if (!presetTags.value.includes(tag)) {
-      presetTags.value.push(tag)
-    }
+          presetTags.value.push(tag)
+        }
       }
-    handleAutoSave()
-  }
+      handleAutoSave()
+    }
   }
   tagInputVisible.value = false
   tagInputValue.value = ''
@@ -742,6 +829,14 @@ const handlePublish = async () => {
   if (!formRef.value) return
 
   try {
+    // 如果选择了AI工具专区，确保工具已选择
+    if (formData.value.zone === 'tools' && (formData.value.toolId === null || formData.value.toolId === undefined)) {
+      ElMessage.error('请选择工具')
+      // 验证工具选择字段
+      formRef.value.validateField('toolId')
+      return
+    }
+    
     await formRef.value.validate()
     
     // 获取编辑器内容
@@ -796,12 +891,13 @@ const handlePublish = async () => {
       if (action === 'cancel') {
         // 清空表单
         formData.value = {
+          zone: 'practices',
+          toolId: null,
           title: '',
           summary: '',
-          content: '',
-          zone: 'practices',
           tags: [],
-          cover: ''
+          cover: '',
+          content: ''
         }
         if (editorRef.value) {
           editorRef.value.setHtml('')
@@ -939,14 +1035,77 @@ onBeforeRouteLeave((to, from, next) => {
   }
 })
 
+// 加载帖子数据用于编辑
+const loadPostForEdit = async () => {
+  const postId = route.query.id
+  if (!postId) return
+
+  try {
+    postLoading.value = true
+    // 这里应该调用API获取帖子数据
+    // const response = await getPost(postId)
+    
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // 模拟数据（实际应该从API获取）
+    const mockPostData = {
+      id: Number(postId),
+      zone: 'practices',
+      toolId: null,
+      title: '示例帖子标题',
+      summary: '这是帖子的简介内容',
+      tags: ['自然语言处理', '深度学习'],
+      cover: 'https://picsum.photos/800/400?random=1',
+      content: '<p>这是帖子的内容，支持富文本格式。</p><p>可以包含<strong>加粗</strong>、<em>斜体</em>等格式。</p>'
+    }
+    
+    // 填充表单数据
+    formData.value = {
+      zone: mockPostData.zone,
+      toolId: mockPostData.toolId,
+      title: mockPostData.title,
+      summary: mockPostData.summary,
+      tags: [...mockPostData.tags],
+      cover: mockPostData.cover,
+      content: mockPostData.content
+    }
+    
+    // 标记所有标签为预设标签
+    presetTags.value = [...mockPostData.tags]
+    
+    // 设置编辑器内容
+    if (editorRef.value) {
+      editorRef.value.setHtml(mockPostData.content)
+      updateWordCount()
+    }
+    
+  } catch (error) {
+    console.error('加载帖子失败:', error)
+    ElMessage.error('加载帖子失败')
+  }
+}
+
 onMounted(() => {
-  // 延迟检查草稿，确保编辑器已创建
-  nextTick(() => {
-    // 等待编辑器完全初始化后再检查草稿
-    setTimeout(() => {
-      checkAndLoadDraft()
-    }, 500)
-  })
+  // 监听配置更新
+  window.addEventListener('adminConfigUpdated', handleConfigUpdate)
+  
+  // 如果是编辑模式，加载帖子数据
+  if (isEditMode.value) {
+    nextTick(() => {
+      setTimeout(() => {
+        loadPostForEdit()
+      }, 500)
+    })
+  } else {
+    // 延迟检查草稿，确保编辑器已创建
+    nextTick(() => {
+      // 等待编辑器完全初始化后再检查草稿
+      setTimeout(() => {
+        checkAndLoadDraft()
+      }, 500)
+    })
+  }
 })
 
 onBeforeUnmount(() => {
@@ -956,6 +1115,7 @@ onBeforeUnmount(() => {
   if (editorRef.value) {
     editorRef.value.destroy()
   }
+  window.removeEventListener('adminConfigUpdated', handleConfigUpdate)
 })
 </script>
 

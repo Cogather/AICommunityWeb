@@ -15,6 +15,7 @@
         <RouterLink to="/empowerment" class="nav-item">赋能交流</RouterLink>
         <RouterLink to="/honor" class="nav-item">荣誉殿堂</RouterLink>
         <RouterLink to="/news" class="nav-item">AI资讯</RouterLink>
+        <RouterLink v-if="isAdmin" to="/admin" class="nav-item admin-link">管理</RouterLink>
       </nav>
       <div class="nav-actions">
         <!-- 未登录状态 -->
@@ -24,6 +25,13 @@
         </template>
         <!-- 已登录状态 -->
         <template v-else>
+          <!-- 消息提示 -->
+          <el-badge :value="unreadMessageCount" :hidden="unreadMessageCount === 0" :max="99">
+            <el-button text class="message-btn" @click="handleMessageClick">
+              <el-icon :size="20"><Bell /></el-icon>
+            </el-button>
+          </el-badge>
+          
           <el-dropdown @command="handleCommand" trigger="hover" placement="bottom-end">
             <div class="user-dropdown-trigger">
               <el-avatar :size="36" :src="userInfo.avatar" class="user-avatar">
@@ -32,14 +40,47 @@
               <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
             </div>
             <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="profile">
+              <el-dropdown-menu class="user-dropdown-menu">
+                <!-- 积分显示区域 -->
+                <div class="points-section">
+                  <div class="points-header">
+                    <el-icon class="points-icon"><Trophy /></el-icon>
+                    <span class="points-label">个人积分</span>
+                  </div>
+                  <div class="points-value">{{ userPoints }}</div>
+                  <div class="points-hint">积分高的用户可获得AI使用达人奖项</div>
+                </div>
+                
+                <!-- 积分规则 -->
+                <div class="points-rules-section">
+                  <div class="rules-title">积分规则</div>
+                  <div class="rules-list">
+                    <div class="rule-item">
+                      <el-icon class="rule-icon"><Document /></el-icon>
+                      <span class="rule-text">发布帖子</span>
+                      <span class="rule-points">+10</span>
+                    </div>
+                    <div class="rule-item">
+                      <el-icon class="rule-icon"><ChatDotRound /></el-icon>
+                      <span class="rule-text">发表评论</span>
+                      <span class="rule-points">+1</span>
+                    </div>
+                    <div class="rule-item">
+                      <el-icon class="rule-icon"><Star /></el-icon>
+                      <span class="rule-text">帖子被点赞</span>
+                      <span class="rule-points">+3</span>
+                    </div>
+                    <div class="rule-item">
+                      <el-icon class="rule-icon"><Collection /></el-icon>
+                      <span class="rule-text">帖子被收藏</span>
+                      <span class="rule-points">+5</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <el-dropdown-item command="profile" divided>
                   <el-icon><User /></el-icon>
                   <span>个人中心</span>
-                </el-dropdown-item>
-                <el-dropdown-item command="settings" divided>
-                  <el-icon><Setting /></el-icon>
-                  <span>设置</span>
                 </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>
                   <el-icon><SwitchButton /></el-icon>
@@ -55,10 +96,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { User, Setting, SwitchButton, ArrowDown } from '@element-plus/icons-vue'
+import { 
+  User, 
+  SwitchButton, 
+  ArrowDown, 
+  Trophy,
+  Document,
+  ChatDotRound,
+  Star,
+  Collection,
+  Bell
+} from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { getUnreadMessageCount } from '../utils/message'
 
 const router = useRouter()
 
@@ -68,7 +120,64 @@ const isLoggedIn = ref(true) // 暂时设为 true 用于测试
 // 用户信息（实际应该从 store 或 API 获取）
 const userInfo = ref({
   name: '张三',
-  avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+  avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+  role: 'admin' // 'admin' | 'user' - 实际应该从 store 或 API 获取
+})
+
+// 判断是否为管理员
+const isAdmin = computed(() => {
+  return userInfo.value.role === 'admin'
+})
+
+// 用户积分（实际应该从 store 或 API 获取）
+// 这里使用模拟数据，实际应该从后端获取
+const userPoints = computed(() => {
+  // 模拟计算积分：发帖数*10 + 评论数*1 + 被点赞数*3 + 被收藏数*5
+  // 实际应该从API获取
+  const mockData = {
+    postsCount: 12,      // 发帖数
+    commentsCount: 45,   // 评论数
+    likesReceived: 128,   // 帖子被点赞数
+    favoritesReceived: 8  // 帖子被收藏数
+  }
+  return mockData.postsCount * 10 + 
+         mockData.commentsCount * 1 + 
+         mockData.likesReceived * 3 + 
+         mockData.favoritesReceived * 5
+})
+
+// 当前用户ID（实际应该从登录状态获取）
+const currentUserId = ref(1)
+
+// 未读消息数量
+const unreadMessageCount = ref(0)
+
+// 加载未读消息数量
+const loadUnreadCount = () => {
+  if (isLoggedIn.value) {
+    unreadMessageCount.value = getUnreadMessageCount(currentUserId.value)
+  }
+}
+
+// 处理消息点击
+const handleMessageClick = () => {
+  router.push('/messages')
+}
+
+// 监听消息更新事件
+const handleMessageUpdate = (event: CustomEvent) => {
+  if (event.detail.userId === currentUserId.value) {
+    loadUnreadCount()
+  }
+}
+
+onMounted(() => {
+  loadUnreadCount()
+  window.addEventListener('messageUpdated', handleMessageUpdate as EventListener)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('messageUpdated', handleMessageUpdate as EventListener)
 })
 
 // 处理登录
@@ -79,12 +188,13 @@ const handleLogin = () => {
 
 // 处理下拉菜单命令
 const handleCommand = (command: string) => {
+  console.log('AppNavbar: 下拉菜单命令', command)
   switch (command) {
     case 'profile':
-      router.push('/profile')
-      break
-    case 'settings':
-      ElMessage.info('设置功能开发中')
+      console.log('AppNavbar: 跳转到个人中心')
+      router.push('/profile').catch((err) => {
+        console.error('路由跳转失败:', err)
+      })
       break
     case 'logout':
       // 这里应该调用登出API
@@ -173,12 +283,40 @@ const handleCommand = (command: string) => {
       border-radius: 2px 2px 0 0;
     }
   }
+
+  &.admin-link {
+    color: #f59e0b;
+    font-weight: 700;
+
+    &:hover {
+      color: #d97706;
+    }
+
+    &.router-link-active {
+      color: #d97706;
+      
+      &::after {
+        background-color: #f59e0b;
+      }
+    }
+  }
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.message-btn {
+  padding: 8px;
+  font-size: 20px;
+  color: #606266;
+  transition: color 0.3s;
+  
+  &:hover {
+    color: #4096ff;
+  }
 }
 
 .user-dropdown-trigger {
@@ -209,6 +347,97 @@ const handleCommand = (command: string) => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.user-dropdown-menu {
+  :deep(.el-dropdown-menu__item) {
+    padding: 12px 20px;
+  }
+}
+
+.points-section {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  min-width: 240px;
+
+  .points-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    .points-icon {
+      font-size: 18px;
+      color: #f59e0b;
+    }
+
+    .points-label {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  .points-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #667eea;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+
+  .points-hint {
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.4;
+  }
+}
+
+.points-rules-section {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.3);
+
+  .rules-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  .rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 12px;
+
+      .rule-icon {
+        font-size: 16px;
+        color: #667eea;
+        flex-shrink: 0;
+      }
+
+      .rule-text {
+        flex: 1;
+        color: #666;
+      }
+
+      .rule-points {
+        font-size: 13px;
+        font-weight: 700;
+        color: #f59e0b;
+        flex-shrink: 0;
+      }
+    }
+  }
 }
 
 .login-btn {

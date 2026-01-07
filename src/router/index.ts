@@ -5,62 +5,82 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('../views/HomeView.vue')
+    component: () => import('../views/HomeView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/practices',
     name: 'Practices',
-    component: () => import('../views/PracticesView.vue')
+    component: () => import('../views/PracticesView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/users',
     name: 'Users',
-    component: () => import('../views/UsersView.vue')
+    component: () => import('../views/UsersView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/tools',
     name: 'Tools',
-    component: () => import('../views/ToolsView.vue')
+    component: () => import('../views/ToolsView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/agent',
     name: 'Agent',
-    component: () => import('../views/AgentView.vue')
+    component: () => import('../views/AgentView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/empowerment',
     name: 'Empowerment',
-    component: () => import('../views/EmpowermentView.vue')
+    component: () => import('../views/EmpowermentView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/honor',
     name: 'Honor',
-    component: () => import('../views/HonorView.vue')
+    component: () => import('../views/HonorView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/award-rules',
     name: 'AwardRules',
-    component: () => import('../views/AwardRulesView.vue')
+    component: () => import('../views/AwardRulesView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/news',
     name: 'News',
-    component: () => import('../views/NewsView.vue')
+    component: () => import('../views/NewsView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/post/create',
     name: 'PostCreate',
-    component: () => import('../views/PostCreateView.vue')
+    component: () => import('../views/PostCreateView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/post/:id',
     name: 'PostDetail',
-    component: () => import('../views/PostDetailView.vue')
+    component: () => import('../views/PostDetailView.vue').catch(() => import('../views/NotFoundView.vue'))
+  },
+  {
+    path: '/activity/create',
+    name: 'ActivityCreate',
+    component: () => import('../views/ActivityCreateView.vue').catch(() => import('../views/NotFoundView.vue'))
+  },
+  {
+    path: '/activity/:id',
+    name: 'ActivityDetail',
+    component: () => import('../views/ActivityDetailView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: () => import('../views/ProfileView.vue')
+    component: () => import('../views/ProfileView.vue').catch(() => import('../views/NotFoundView.vue'))
+  },
+  {
+    path: '/messages',
+    name: 'Messages',
+    component: () => import('../views/MessageListView.vue').catch(() => import('../views/NotFoundView.vue'))
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('../views/AdminView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
     path: '/:pathMatch(.*)*',

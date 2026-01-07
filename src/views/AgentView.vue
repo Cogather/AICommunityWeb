@@ -129,56 +129,99 @@ const pageSize = ref(15)
 const searchKeyword = ref('')
 const sortBy = ref('newest')
 
-// 所有标签
-const allTags = ref([
-  { name: 'Agent应用', count: 150 },
-  { name: '工作流', count: 120 },
-  { name: '自动化', count: 95 },
-  { name: '智能编排', count: 80 },
-  { name: '最佳实践', count: 75 },
-  { name: '案例分享', count: 60 },
-  { name: '问题解决', count: 50 }
-])
+// 所有标签（包含"全部"选项）
+const allTags = computed(() => {
+  // 获取所有帖子（包括置顶帖和普通帖子）
+  const postsList = featuredPost.value ? [featuredPost.value, ...allPosts.value] : [...allPosts.value]
+  
+  // 统计每个标签的数量
+  const tagCountMap = new Map<string, number>()
+  postsList.forEach(post => {
+    if (post.tag) {
+      tagCountMap.set(post.tag, (tagCountMap.get(post.tag) || 0) + 1)
+    }
+    if (post.tags && Array.isArray(post.tags)) {
+      post.tags.forEach(tag => {
+        tagCountMap.set(tag, (tagCountMap.get(tag) || 0) + 1)
+      })
+    }
+  })
+  
+  // 构建标签列表，包含"全部"
+  const tags: Array<{ name: string; count: number }> = [
+    { name: '全部', count: postsList.length }
+  ]
+  
+  // 添加其他标签
+  const tagNames = ['Agent应用', '工作流', '自动化', '智能编排', '最佳实践', '案例分享', '问题解决', '开发指南']
+  tagNames.forEach(tagName => {
+    const count = tagCountMap.get(tagName) || 0
+    if (count > 0) {
+      tags.push({ name: tagName, count })
+    }
+  })
+  
+  return tags
+})
 
-// 近期活动和培训
-const activities = ref([
-  {
-    id: 1,
-    type: 'training',
-    title: '扶摇 Agent 开发训练营',
-    desc: '系统学习扶摇 Agent 编排引擎的使用方法和实战技巧，从入门到精通。',
-    date: '2024年5月10日',
-    location: '线上',
-    image: 'https://picsum.photos/600/400?random=30'
-  },
-  {
-    id: 2,
-    type: 'activity',
-    title: '扶摇 Agent 应用创新大赛',
-    desc: '展示你的 Agent 应用创意，赢取丰厚奖品和荣誉。',
-    date: '2024年5月15日',
-    location: '线上',
-    image: 'https://picsum.photos/600/400?random=31'
-  },
-  {
-    id: 3,
-    type: 'training',
-    title: 'Agent 工作流编排高级培训',
-    desc: '深入学习 Agent 工作流编排的高级技巧和最佳实践。',
-    date: '2024年5月20日',
-    location: '北京',
-    image: 'https://picsum.photos/600/400?random=32'
-  },
-  {
-    id: 4,
-    type: 'activity',
-    title: '扶摇 Agent 技术分享会',
-    desc: '与行业专家面对面交流，分享 Agent 应用开发经验。',
-    date: '2024年5月25日',
-    location: '上海',
-    image: 'https://picsum.photos/600/400?random=33'
-  }
-])
+// 近期活动和培训（从localStorage加载发布的活动）
+const activities = computed(() => {
+  // 从localStorage加载发布的活动（toolId为-1表示扶摇Agent应用）
+  const publishedActivities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
+  const publishedForAgent = publishedActivities
+    .filter((a: any) => a.toolId === -1)
+    .map((a: any) => ({
+      id: a.id,
+      type: 'activity' as const,
+      title: a.title,
+      desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
+      date: a.date,
+      location: '',
+      image: a.cover
+    }))
+  
+  // 模拟数据（作为默认数据）
+  const mockActivities = [
+    {
+      id: 1,
+      type: 'training' as const,
+      title: '扶摇 Agent 开发训练营',
+      desc: '系统学习扶摇 Agent 编排引擎的使用方法和实战技巧，从入门到精通。',
+      date: '2024年5月10日',
+      location: '线上',
+      image: 'https://picsum.photos/600/400?random=30'
+    },
+    {
+      id: 2,
+      type: 'activity' as const,
+      title: '扶摇 Agent 应用创新大赛',
+      desc: '展示你的 Agent 应用创意，赢取丰厚奖品和荣誉。',
+      date: '2024年5月15日',
+      location: '线上',
+      image: 'https://picsum.photos/600/400?random=31'
+    },
+    {
+      id: 3,
+      type: 'training' as const,
+      title: 'Agent 工作流编排高级培训',
+      desc: '深入学习 Agent 工作流编排的高级技巧和最佳实践。',
+      date: '2024年5月20日',
+      location: '北京',
+      image: 'https://picsum.photos/600/400?random=32'
+    },
+    {
+      id: 4,
+      type: 'activity' as const,
+      title: '扶摇 Agent 技术分享会',
+      desc: '与行业专家面对面交流，分享 Agent 应用开发经验。',
+      date: '2024年5月25日',
+      location: '上海',
+      image: 'https://picsum.photos/600/400?random=33'
+    }
+  ]
+  
+  return [...publishedForAgent, ...mockActivities]
+})
 
 // 置顶帖子
 const featuredPost = ref({
@@ -261,8 +304,8 @@ const allPosts = ref([
 const filteredPosts = computed(() => {
   let posts = [...allPosts.value]
 
-  // 按标签过滤
-  if (selectedTag.value) {
+  // 按标签过滤（排除"全部"）
+  if (selectedTag.value && selectedTag.value !== '全部') {
     posts = posts.filter(post => post.tag === selectedTag.value)
   }
 
@@ -315,7 +358,11 @@ const getTagType = (tag: string) => {
 
 // 处理标签点击
 const handleTagClick = (tagName: string) => {
-  if (selectedTag.value === tagName) {
+  if (tagName === '全部') {
+    // 点击"全部"时清除标签过滤
+    selectedTag.value = null
+  } else if (selectedTag.value === tagName) {
+    // 再次点击已选中的标签时清除
     selectedTag.value = null
   } else {
     selectedTag.value = tagName
@@ -350,13 +397,20 @@ const handleCurrentChange = (val: number) => {
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  router.push(`/post/${post.id}`)
+  console.log('AgentView: 处理帖子点击', post)
+  if (!post || !post.id) {
+    console.error('帖子数据无效:', post)
+    return
+  }
+  router.push(`/post/${post.id}`).catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 
 // 处理活动点击
 const handleActivityClick = (activity: any) => {
-  console.log('点击活动:', activity)
-  // 可以跳转到活动详情页
+  // 跳转到活动详情页
+  router.push(`/activity/${activity.id}`)
 }
 
 

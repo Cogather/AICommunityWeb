@@ -5,11 +5,16 @@
       <el-tag
         v-for="tag in tags"
         :key="tag.name"
-        :class="['tag-item', { 'tag-item-active': selectedTag === tag.name }]"
+        :class="['tag-item', { 
+          'tag-item-active': tag.name === '全部' 
+            ? (selectedTag === null || selectedTag === '全部')
+            : selectedTag === tag.name 
+        }]"
         :style="getTagStyle(tag.name)"
         @click="handleTagClick(tag.name)"
       >
-        #{{ tag.name }} ({{ tag.count }})
+        <span v-if="tag.name === '全部'">{{ tag.name }}</span>
+        <span v-else>#{{ tag.name }} ({{ tag.count }})</span>
       </el-tag>
     </div>
   </div>
@@ -100,6 +105,19 @@ const getTagColorIndex = (tagName: string): number => {
 
 // 获取标签颜色样式
 const getTagStyle = (tagName: string) => {
+  // "全部"标签使用特殊样式
+  if (tagName === '全部') {
+    const isActive = props.selectedTag === null || props.selectedTag === '全部'
+    return {
+      backgroundColor: isActive ? 'rgba(64, 158, 255, 0.2)' : 'rgba(64, 158, 255, 0.1)',
+      borderColor: '#409eff',
+      color: '#409eff',
+      borderWidth: isActive ? '2px' : '1px',
+      borderStyle: 'solid',
+      fontWeight: isActive ? '700' : '500'
+    }
+  }
+  
   const colorMap = { ...defaultColorMap, ...props.colorMap }
   let colors = colorMap[tagName]
   

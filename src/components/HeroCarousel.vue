@@ -10,18 +10,23 @@
       >
         <el-carousel-item v-for="(item, index) in slides" :key="item.id" class="ai-carousel-item">
           
-          <div class="slide-card">
+          <div class="slide-card" @click="handleSlideClick(item)" :style="{ cursor: item.link ? 'pointer' : 'default' }">
             <img :src="item.image" :alt="item.title" class="slide-bg" />
             
             <div class="slide-mask"></div>
   
-            <div class="glass-panel">
+            <div class="glass-panel" v-if="item.showContent">
               <div class="panel-content">
                 <h3 class="title">{{ item.title }}</h3>
                 <p class="desc">{{ item.desc }}</p>
                 
-                <el-button class="gradient-btn" round>
-                  立即体验
+                <el-button 
+                  class="gradient-btn" 
+                  round 
+                  v-if="item.link"
+                  @click.stop="handleSlideClick(item)"
+                >
+                  立即前往
                   <el-icon class="el-icon--right"><ArrowRight /></el-icon>
                 </el-button>
               </div>
@@ -34,7 +39,8 @@
   </template>
   
   <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, onMounted, onUnmounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import { ArrowRight } from '@element-plus/icons-vue';
   
   interface Slide {
@@ -43,39 +49,91 @@
     desc: string;
     image: string;
     link: string;
+    showContent: boolean;
   }
   
-  // 模拟数据：建议使用 16:9 或更宽的图片
-  const slides = ref<Slide[]>([
-    {
-      id: 1,
-      title: "AI 优秀实践",
-      desc: "探索大模型在企业级应用中的最佳落地场景，驱动业务数智化转型。",
-      image: "https://picsum.photos/1200/600?random=1", 
-      link: "/practice"
-    },
-    {
-      id: 2,
-      title: "智能算力引擎",
-      desc: "基于云原生的弹性算力调度，为 AI Agent 提供源源不断的动力。",
-      image: "https://picsum.photos/1200/600?random=2",
-      link: "/compute"
-    },
-    {
-      id: 3,
-      title: "多模态创作",
-      desc: "打破感官界限，融合视觉、听觉与文本，重塑数字内容生产流。",
-      image: "https://picsum.photos/1200/600?random=3",
-      link: "/create"
-    },
-    {
-      id: 4,
-      title: "未来社区",
-      desc: "连接千万开发者，共享 Prompt 灵感，构建共生共荣的 AI 生态。",
-      image: "https://picsum.photos/1200/600?random=4",
-      link: "/community"
+  const router = useRouter();
+  
+  // 从localStorage加载轮播图配置
+  const loadCarouselSlides = (): Slide[] => {
+    try {
+      const saved = localStorage.getItem('admin_carousel_config');
+      if (saved) {
+        const config = JSON.parse(saved);
+        return config.map((item: any) => ({
+          id: item.id,
+          title: item.title || '',
+          desc: item.desc || '',
+          image: item.image || '',
+          link: item.link || '/',
+          showContent: item.showContent || false
+        })).filter((item: Slide) => item.image); // 只显示有图片的
+      }
+    } catch (e) {
+      console.error('加载轮播图配置失败:', e);
     }
-  ]);
+    // 默认数据
+    return [
+      {
+        id: 1,
+        title: "AI 优秀实践",
+        desc: "探索大模型在企业级应用中的最佳落地场景，驱动业务数智化转型。",
+        image: "https://picsum.photos/1200/600?random=1", 
+        link: "/practice",
+        showContent: true
+      },
+      {
+        id: 2,
+        title: "智能算力引擎",
+        desc: "基于云原生的弹性算力调度，为 AI Agent 提供源源不断的动力。",
+        image: "https://picsum.photos/1200/600?random=2",
+        link: "/compute",
+        showContent: true
+      },
+      {
+        id: 3,
+        title: "多模态创作",
+        desc: "打破感官界限，融合视觉、听觉与文本，重塑数字内容生产流。",
+        image: "https://picsum.photos/1200/600?random=3",
+        link: "/create",
+        showContent: true
+      },
+      {
+        id: 4,
+        title: "未来社区",
+        desc: "连接千万开发者，共享 Prompt 灵感，构建共生共荣的 AI 生态。",
+        image: "https://picsum.photos/1200/600?random=4",
+        link: "/community",
+        showContent: true
+      }
+    ];
+  };
+  
+  const slides = ref<Slide[]>(loadCarouselSlides());
+  
+  // 监听配置更新
+  const handleConfigUpdate = () => {
+    slides.value = loadCarouselSlides();
+  };
+  
+  // 处理轮播图点击
+  const handleSlideClick = (slide: Slide) => {
+    if (slide.link) {
+      if (slide.link.startsWith('http')) {
+        window.open(slide.link, '_blank');
+      } else {
+        router.push(slide.link);
+      }
+    }
+  };
+  
+  onMounted(() => {
+    window.addEventListener('adminConfigUpdated', handleConfigUpdate);
+  });
+  
+  onUnmounted(() => {
+    window.removeEventListener('adminConfigUpdated', handleConfigUpdate);
+  });
   </script>
   
   <style scoped lang="scss">
@@ -354,10 +412,16 @@
     height: auto;
     box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
     transition: transform 0.2s;
+    color: #ffffff !important; /* 白色文字 */
     
     &:hover {
       transform: scale(1.05);
       background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: #ffffff !important; /* 悬停时保持白色 */
+    }
+    
+    :deep(.el-icon) {
+      color: #ffffff !important; /* 图标也改为白色 */
     }
   }
   

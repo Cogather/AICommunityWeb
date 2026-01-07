@@ -19,7 +19,10 @@ import { Edit } from '@element-plus/icons-vue'
 const router = useRouter()
 
 const goCreate = () => {
-  router.push('/post/create')
+  console.log('PostFab: 点击发帖按钮')
+  router.push('/post/create').catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 </script>
 

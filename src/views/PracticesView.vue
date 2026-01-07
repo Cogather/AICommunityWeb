@@ -39,22 +39,34 @@
         <!-- 右侧：标签栏 -->
         <el-col :xs="24" :md="8">
           <div class="sidebar">
-            <!-- 所有标签 -->
+            <!-- 标签筛选 -->
             <div class="sidebar-section">
               <TagFilter
-                :tags="allTags"
+                :tags="displayedTags"
                 :selected-tag="selectedTag"
-                title="所有标签"
+                title="标签筛选"
                 @tag-click="handleTagClick"
               />
             </div>
 
-            <!-- 部门分类 -->
+            <!-- 部门归类 -->
             <div class="sidebar-section">
-              <h3>部门分类</h3>
+              <div class="section-header-with-reset">
+                <h3>部门归类</h3>
+                <el-button 
+                  v-if="selectedDepartment" 
+                  text 
+                  size="small" 
+                  class="reset-btn"
+                  @click="handleResetDepartment"
+                >
+                  <el-icon><Refresh /></el-icon>
+                  重置
+                </el-button>
+              </div>
               <div class="department-rankings">
                 <div 
-                  v-for="dept in departmentRankings" 
+                  v-for="dept in displayedDepartments" 
                   :key="dept.id"
                   class="department-item"
                   :class="{ active: selectedDepartment === dept.name }"
@@ -88,13 +100,28 @@
               </div>
             </div>
 
-            <!-- 精选合集 -->
+            <!-- 最热帖子 -->
             <div class="sidebar-section">
-              <h3>精选合集</h3>
-              <div class="featured-collection">
-                <img src="https://picsum.photos/300/200?random=100" alt="精选合集" />
-                <h4>顶级AI研究论文</h4>
-                <el-button type="primary" size="small">最佳答案</el-button>
+              <h3>最热帖子</h3>
+              <div class="hot-posts-list">
+                <div 
+                  v-for="(post, index) in hotPosts" 
+                  :key="post.id"
+                  class="hot-post-item"
+                  @click="handlePostClick(post)"
+                >
+                  <div class="hot-post-rank">{{ index + 1 }}</div>
+                  <div class="hot-post-content">
+                    <div class="hot-post-title">{{ post.title }}</div>
+                    <div class="hot-post-meta">
+                      <span class="hot-post-views">
+                        <el-icon><View /></el-icon>
+                        {{ post.views }}
+                      </span>
+                      <span class="hot-post-author">{{ post.author }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -105,8 +132,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { View, Refresh } from '@element-plus/icons-vue'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
@@ -126,19 +154,48 @@ const selectedContributor = ref<string | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(15)
 
-// 所有标签
-const allTags = ref([
-  { name: '自然语言处理', count: 120 },
-  { name: '计算机视觉', count: 95 },
-  { name: '深度学习', count: 80 },
-  { name: 'AI伦理', count: 75 },
-  { name: '机器学习', count: 110 },
-  { name: '机器人', count: 60 },
-  { name: '数据科学', count: 50 },
-  { name: '生成式AI', count: 45 },
-  { name: 'PyTorch', count: 30 },
-  { name: 'TensorFlow', count: 25 }
-])
+// 所有标签（包含"全部"选项）
+const allTags = computed(() => {
+  // 获取所有帖子（包括精华帖和普通帖子）
+  const allPosts = [...featuredPosts.value, ...posts.value]
+  
+  // 根据当前选择的部门过滤帖子
+  let filteredPosts = allPosts
+  if (selectedDepartment.value) {
+    filteredPosts = filteredPosts.filter(post => post.department === selectedDepartment.value)
+  }
+  
+  // 统计每个标签的数量
+  const tagCountMap = new Map<string, number>()
+  filteredPosts.forEach(post => {
+    if (post.tags && Array.isArray(post.tags)) {
+      post.tags.forEach(tag => {
+        tagCountMap.set(tag, (tagCountMap.get(tag) || 0) + 1)
+      })
+    }
+  })
+  
+  // 构建标签列表，包含"全部"
+  const tags: Array<{ name: string; count: number }> = [
+    { name: '全部', count: filteredPosts.length }
+  ]
+  
+  // 添加其他标签
+  const tagNames = ['自然语言处理', '计算机视觉', '深度学习', 'AI伦理', '机器学习', '机器人', '数据科学', '生成式AI', 'PyTorch', 'TensorFlow', '项目', 'AI应用', '效率', '自动化', '实践', '已解决', '部署', '活动', 'AI大会']
+  tagNames.forEach(tagName => {
+    const count = tagCountMap.get(tagName) || 0
+    if (count > 0 || !selectedDepartment.value) {
+      tags.push({ name: tagName, count })
+    }
+  })
+  
+  return tags
+})
+
+// 显示的标签（根据部门过滤后）
+const displayedTags = computed(() => {
+  return allTags.value
+})
 
 // 精华帖（置顶）
 const featuredPosts = ref([
@@ -224,17 +281,57 @@ const posts = ref([
   }
 ])
 
-// 部门排名统计
-const departmentRankings = ref([
-  { id: 1, name: '研发部', postCount: 156, contributorCount: 28 },
-  { id: 2, name: '产品部', postCount: 132, contributorCount: 22 },
-  { id: 3, name: '技术部', postCount: 98, contributorCount: 18 },
-  { id: 4, name: '数据部', postCount: 87, contributorCount: 15 },
-  { id: 5, name: '算法部', postCount: 76, contributorCount: 12 },
-  { id: 6, name: '运营部', postCount: 65, contributorCount: 10 },
-  { id: 7, name: '设计部', postCount: 54, contributorCount: 8 },
-  { id: 8, name: '测试部', postCount: 43, contributorCount: 7 }
-])
+// 部门排名统计（动态计算）
+const displayedDepartments = computed(() => {
+  // 获取所有帖子（包括精华帖和普通帖子）
+  const allPosts = [...featuredPosts.value, ...posts.value]
+  
+  // 根据当前选择的标签过滤帖子
+  let filteredPosts = allPosts
+  if (selectedTag.value && selectedTag.value !== '全部') {
+    filteredPosts = filteredPosts.filter(post => 
+      post.tags && post.tags.includes(selectedTag.value!)
+    )
+  }
+  
+  // 统计每个部门的发帖数和贡献者
+  const deptMap = new Map<string, { postCount: number; contributors: Set<string> }>()
+  
+  filteredPosts.forEach(post => {
+    if (post.department) {
+      if (!deptMap.has(post.department)) {
+        deptMap.set(post.department, { postCount: 0, contributors: new Set() })
+      }
+      const dept = deptMap.get(post.department)!
+      dept.postCount++
+      if (post.author) {
+        dept.contributors.add(post.author)
+      }
+    }
+  })
+  
+  // 获取所有部门名称（从所有帖子中提取）
+  const allDepts = new Set<string>()
+  allPosts.forEach(post => {
+    if (post.department) {
+      allDepts.add(post.department)
+    }
+  })
+  
+  // 构建部门列表
+  const departments = Array.from(allDepts).map((name, index) => {
+    const stats = deptMap.get(name) || { postCount: 0, contributors: new Set() }
+    return {
+      id: index + 1,
+      name,
+      postCount: stats.postCount,
+      contributorCount: stats.contributors.size
+    }
+  })
+  
+  // 按发帖数排序
+  return departments.sort((a, b) => b.postCount - a.postCount)
+})
 
 // 热门贡献者
 const topContributors = ref([
@@ -247,10 +344,11 @@ const topContributors = ref([
 
 // 过滤后的帖子
 const filteredPosts = computed(() => {
-  let result = [...posts.value]
+  // 合并精华帖和普通帖子
+  let result = [...featuredPosts.value, ...posts.value]
 
-  // 按标签过滤
-  if (selectedTag.value) {
+  // 按标签过滤（排除"全部"）
+  if (selectedTag.value && selectedTag.value !== '全部') {
     result = result.filter(post => 
       post.tags && post.tags.includes(selectedTag.value!)
     )
@@ -298,6 +396,16 @@ const paginatedPosts = computed(() => {
   return filteredPosts.value.slice(start, end)
 })
 
+// 最热的5个帖子（按浏览量排序）
+const hotPosts = computed(() => {
+  // 合并所有帖子（包括精华帖和普通帖子）
+  const allPosts = [...featuredPosts.value, ...posts.value]
+  // 按浏览量降序排序，取前5个
+  return allPosts
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 5)
+})
+
 // 获取标签类型
 const getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
@@ -319,7 +427,7 @@ const handleSearch = (keyword: string) => {
 }
 
 // 处理排序
-const handleSort = (sort: 'newest' | 'hot' | 'comments') => {
+const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
   sortBy.value = sort
   currentPage.value = 1 // 重置到第一页
 }
@@ -347,11 +455,16 @@ const handlePostCreate = () => {
 
 // 处理标签点击
 const handleTagClick = (tagName: string) => {
-  if (selectedTag.value === tagName) {
+  if (tagName === '全部') {
+    // 点击"全部"时清除标签过滤
+    selectedTag.value = null
+  } else if (selectedTag.value === tagName) {
+    // 再次点击已选中的标签时清除
     selectedTag.value = null
   } else {
     selectedTag.value = tagName
   }
+  currentPage.value = 1 // 重置到第一页
 }
 
 // 处理部门点击
@@ -361,6 +474,13 @@ const handleDepartmentClick = (departmentName: string) => {
   } else {
     selectedDepartment.value = departmentName
   }
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 重置部门过滤
+const handleResetDepartment = () => {
+  selectedDepartment.value = null
+  currentPage.value = 1
 }
 
 // 处理贡献者点击
@@ -374,7 +494,14 @@ const handleContributorClick = (contributorName: string) => {
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {
-  router.push(`/post/${post.id}`)
+  console.log('PracticesView: 处理帖子点击', post)
+  if (!post || !post.id) {
+    console.error('帖子数据无效:', post)
+    return
+  }
+  router.push(`/post/${post.id}`).catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 
 // 获取排名样式类
@@ -430,6 +557,26 @@ const getRankClass = (index: number) => {
       font-size: 18px;
       font-weight: 600;
       color: #333;
+    }
+
+    .section-header-with-reset {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+
+      h3 {
+        margin: 0;
+      }
+
+      .reset-btn {
+        color: #909399;
+        font-size: 12px;
+
+        &:hover {
+          color: #409eff;
+        }
+      }
     }
 
 
@@ -515,20 +662,99 @@ const getRankClass = (index: number) => {
       }
     }
 
-    .featured-collection {
-      img {
-        width: 100%;
-        height: 150px;
-        object-fit: cover;
-        border-radius: 8px;
-        margin-bottom: 12px;
-      }
+    .hot-posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
 
-      h4 {
-        margin: 0 0 12px 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: #333;
+      .hot-post-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.5);
+
+        &:hover {
+          background: rgba(64, 158, 255, 0.08);
+          border-color: rgba(64, 158, 255, 0.2);
+          transform: translateX(4px);
+        }
+
+        .hot-post-rank {
+          flex-shrink: 0;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          font-weight: 700;
+          font-size: 12px;
+          color: #fff;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        &:nth-child(1) .hot-post-rank {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          width: 28px;
+          height: 28px;
+          font-size: 14px;
+        }
+
+        &:nth-child(2) .hot-post-rank {
+          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        &:nth-child(3) .hot-post-rank {
+          background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .hot-post-content {
+          flex: 1;
+          min-width: 0;
+
+          .hot-post-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .hot-post-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: #999;
+
+            .hot-post-views {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              color: #f56c6c;
+              font-weight: 600;
+
+              .el-icon {
+                font-size: 14px;
+              }
+            }
+
+            .hot-post-author {
+              color: #666;
+            }
+          }
+        }
       }
     }
   }
