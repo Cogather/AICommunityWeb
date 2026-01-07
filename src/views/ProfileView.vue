@@ -27,6 +27,11 @@
                 <span class="stat-value">{{ userInfo.activitiesCount || 0 }}</span>
                 <span class="stat-label">活动</span>
               </div>
+              <div class="stat-item">
+                <FlowerIcon :filled="true" :size="18" color="#f472b6" />
+                <span class="stat-value">{{ userInfo.flowersCount || 0 }}</span>
+                <span class="stat-label">花朵</span>
+              </div>
             </div>
           </div>
         </div>
@@ -177,13 +182,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Document, Star, Calendar, Location } from '@element-plus/icons-vue'
 import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'
+import FlowerIcon from '../components/FlowerIcon.vue'
 
 const router = useRouter()
+const route = useRoute()
+
+// 从UsersView获取用户花朵数量的辅助函数（这里需要共享数据或API调用）
+// 暂时使用mock数据，实际应该从API或store获取
+const getUserFlowersFromHonors = (userName: string): number => {
+  // 这里应该调用API或从共享store获取
+  // 暂时返回mock数据
+  const mockFlowers: Record<string, number> = {
+    '林星辰': 20,
+    'Sarah': 15,
+    '张伟': 55,
+    '王强': 18,
+    'Emily': 14,
+    '赵敏': 9,
+    '张三': 34
+  }
+  return mockFlowers[userName] || 0
+}
 
 // 当前标签页
 const activeTab = ref('posts')
@@ -196,7 +220,8 @@ const userInfo = ref({
   postsCount: 12,
   favoritesCount: 8,
   commentsCount: 45,
-  activitiesCount: 3
+  activitiesCount: 3,
+  flowersCount: 34
 })
 
 // 我发布的帖子
@@ -311,6 +336,19 @@ const paginatedActivities = computed(() => {
   const end = start + activitiesPageSize.value
   return myActivities.value.slice(start, end)
 })
+
+// 监听路由参数，支持查看其他用户
+watch(() => route.query.user, (userName) => {
+  if (typeof userName === 'string' && userName) {
+    // 这里应该调用API获取用户信息
+    // 暂时使用mock数据
+    userInfo.value = {
+      ...userInfo.value,
+      name: userName,
+      flowersCount: getUserFlowersFromHonors(userName)
+    }
+  }
+}, { immediate: true })
 
 // 处理帖子点击
 const handlePostClick = (post: any) => {

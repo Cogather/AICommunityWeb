@@ -57,7 +57,6 @@
                   优秀使用
                 </el-tag>
               </div>
-              <el-button type="primary" @click="handlePostCreate">我要发帖</el-button>
             </div>
 
             <!-- 帖子列表 -->
@@ -479,14 +478,6 @@ const handlePostClick = (post: any) => {
   router.push(`/post/${post.id}`)
 }
 
-// 处理发帖
-const handlePostCreate = () => {
-  console.log('点击发布帖子，准备跳转到 /post/create')
-  router.push('/post/create').catch((err) => {
-    console.error('路由跳转失败:', err)
-  })
-}
-
 // 搜索关键词和排序
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
@@ -679,8 +670,10 @@ const handleCurrentChange = (val: number) => {
 
 .post-tabs-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);

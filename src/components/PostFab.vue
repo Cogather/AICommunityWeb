@@ -26,43 +26,65 @@ const goCreate = () => {
 <style scoped lang="scss">
 .post-fab {
   position: fixed;
-  right: 36px;
-  bottom: 48px;
-  z-index: 1200;
-  box-shadow: 0 18px 40px rgba(64, 158, 255, 0.45), 0 0 0 6px rgba(64, 158, 255, 0.12);
-  transition: all 0.25s ease;
+  right: 24px;
+  bottom: 72px;
+  z-index: 1300;
+  box-shadow: 0 20px 50px rgba(64, 158, 255, 0.55), 0 0 0 8px rgba(64, 158, 255, 0.16);
+  transition: all 0.25s ease, transform 0.25s ease;
   border: none;
-  padding: 0 20px;
-  height: 52px;
+  padding: 0 26px;
+  height: 60px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #5bb0ff 0%, #409eff 55%, #1d7ef7 100%);
+  background: linear-gradient(135deg, #6ac4ff 0%, #409eff 50%, #1a74ea 100%);
   font-weight: 700;
   letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(6px);
+  transform: translateY(0);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: inherit;
+    background: radial-gradient(circle at 50% 50%, rgba(64, 158, 255, 0.35), rgba(64, 158, 255, 0));
+    z-index: -1;
+    opacity: 0.75;
+    filter: blur(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
 
   &__icon {
     font-size: 18px;
-    margin-right: 6px;
   }
 
   &__label {
-    font-size: 15px;
+    font-size: 16px;
+    letter-spacing: 0.6px;
   }
 
   &:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 22px 48px rgba(64, 158, 255, 0.55), 0 0 0 8px rgba(64, 158, 255, 0.16);
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 24px 58px rgba(64, 158, 255, 0.65), 0 0 0 10px rgba(64, 158, 255, 0.18);
+
+    &::after {
+      opacity: 1;
+      transform: scale(1.02);
+    }
   }
 }
 
 @media (max-width: 768px) {
   .post-fab {
-    right: 20px;
-    bottom: 28px;
-    height: 48px;
-    padding: 0 16px;
+    right: 16px;
+    bottom: 48px;
+    height: 52px;
+    padding: 0 18px;
 
     &__label {
-      font-size: 14px;
+      font-size: 15px;
     }
   }
 }

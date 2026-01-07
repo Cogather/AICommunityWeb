@@ -213,13 +213,18 @@
                       <el-avatar :src="reply.userAvatar" :size="32">
                         {{ reply.userName?.charAt(0) || 'U' }}
                       </el-avatar>
+                      <el-tag
+                        v-if="isAuthor(reply.userName)"
+                        type="success"
+                        size="small"
+                        class="author-badge-small"
+                      >
+                        楼主
+                      </el-tag>
                     </div>
                     <div class="reply-content">
                       <div class="reply-header">
                         <span class="reply-author">{{ reply.userName }}</span>
-                        <el-tag v-if="isAuthor(reply.userName)" type="success" size="small" class="author-tag-inline">
-                          楼主
-                        </el-tag>
                         <span v-if="reply.replyTo" class="reply-to">
                           回复
                           <span class="reply-to-name">{{ reply.replyTo }}</span>

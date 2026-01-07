@@ -48,7 +48,12 @@
             {{ post.comments }}
           </span>
           <span class="meta-item" v-if="post.likes !== undefined">
-            <HeartIcon :filled="false" :size="16" color="#f56c6c" />
+            <HeartIcon
+              :filled="!!post.isLiked"
+              :size="16"
+              :color="post.isLiked ? '#f56c6c' : '#f56c6c'"
+              :strokeColor="'#f56c6c'"
+            />
             {{ post.likes }}
           </span>
         </div>
@@ -102,7 +107,12 @@
             {{ post.comments }}
           </span>
           <span class="meta-item" v-if="post.likes !== undefined">
-            <HeartIcon :filled="false" :size="16" color="#f56c6c" />
+            <HeartIcon
+              :filled="!!post.isLiked"
+              :size="16"
+              :color="post.isLiked ? '#f56c6c' : '#f56c6c'"
+              :strokeColor="'#f56c6c'"
+            />
             {{ post.likes }}
           </span>
         </div>
@@ -129,6 +139,7 @@ interface Post {
   views: number
   comments?: number
   likes?: number
+  isLiked?: boolean
   image?: string
   tag?: string
   tags?: string[]

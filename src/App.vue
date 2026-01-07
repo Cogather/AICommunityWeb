@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { computed } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import AppNavbar from './components/AppNavbar.vue'
 import AppFooter from './components/AppFooter.vue'
 import PostFab from './components/PostFab.vue'
+
+const route = useRoute()
+const showPostFab = computed(() => route.name !== 'Home')
 </script>
 
 <template>
@@ -28,7 +32,7 @@ import PostFab from './components/PostFab.vue'
     <!-- 页面内容 -->
     <main class="page-content">
       <RouterView />
-      <PostFab />
+      <PostFab v-if="showPostFab" />
     </main>
 
     <!-- Footer -->

@@ -2,6 +2,14 @@
   <div class="post-create-view">
     <div class="create-container">
       <div class="create-header">
+        <el-button
+          class="back-button"
+          text
+          :icon="ArrowLeft"
+          @click="handleBack"
+        >
+          返回
+        </el-button>
         <h2>发布帖子</h2>
       </div>
 
@@ -232,7 +240,8 @@ import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/edit
 import {
   Plus,
   Delete,
-  Check
+  Check,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -278,6 +287,14 @@ const tools = ref([
   { id: 6, name: '纠错Agent' },
   { id: 7, name: 'DT' }
 ])
+
+const handleBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/practices')
+  }
+}
 
 // 不同专区的标签
 const zoneTags = {
@@ -962,12 +979,24 @@ onBeforeUnmount(() => {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 
   h2 {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
     color: #333;
+  }
+
+  .back-button {
+    color: #606266;
+    padding: 0;
+
+    &:hover {
+      color: #409eff;
+    }
   }
 }
 

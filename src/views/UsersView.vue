@@ -10,7 +10,7 @@
       <div class="hud-top-row">
         <div class="view-switcher glass-pill">
           <div 
-            v-for="mode in viewModes" 
+            v-for="mode in availableViewModes" 
             :key="mode.key"
             class="mode-tab"
             :class="{ active: currentViewMode === mode.key }"
@@ -68,7 +68,7 @@
           tag="div" 
           class="card-grid"
         >
-          <div 
+      <div 
             v-for="item in paginatedList" 
             :key="item.id" 
             class="honor-card-3d"
@@ -81,8 +81,8 @@
               </div>
 
               <div class="card-top">
-                <div class="avatar-halo">
-                  <el-avatar :size="60" :src="item.avatar" class="user-avatar" />
+                <div class="avatar-halo" @click.stop="handleUserClick(item.name)" role="button" aria-label="查看用户时间线">
+                  <el-avatar :size="50" :src="item.avatar" class="user-avatar" />
                   <div class="halo-ring"></div>
                 </div>
                 <div class="user-info">
@@ -95,8 +95,8 @@
               </div>
 
               <div class="award-center">
-                <h3 class="award-name">{{ item.awardName }}</h3>
-                <div class="category-tag">
+                <h3 class="award-name" @click.stop="handleAwardClick(item.awardName)">{{ item.awardName }}</h3>
+                <div class="category-tag" @click.stop="handleAwardClick(item.awardName)" role="button" aria-label="查看奖项规则">
                   <el-icon><component :is="getCategoryIcon(item.category)" /></el-icon>
                   {{ getCategoryLabel(item.category) }}
                 </div>
@@ -104,13 +104,35 @@
 
               <div class="card-bottom">
                 <span class="date-text">{{ item.awardDate }}</span>
-                <el-icon class="verified-icon"><CircleCheckFilled /></el-icon>
+                <div class="flower-section" @click.stop="handleGiveFlower(item)">
+                  <FlowerIcon 
+                    :filled="item.hasGivenFlower" 
+                    :size="18" 
+                    :color="item.hasGivenFlower ? '#f472b6' : '#9ca3af'"
+                    :strokeColor="'#6b7280'"
+                    class="flower-icon-clickable"
+                  />
+                  <span class="flower-count">{{ item.flowers || 0 }}</span>
+                </div>
               </div>
             </div>
           </div>
         </transition-group>
 
         <div v-else class="timeline-container">
+          <div v-if="currentTimelineUser" class="timeline-user-header glass-panel">
+            <el-avatar :size="60" :src="currentTimelineUser.avatar" />
+            <div class="timeline-user-info">
+              <h3 class="timeline-user-name">{{ currentTimelineUser.name }}</h3>
+              <div class="timeline-user-stats">
+                <span class="timeline-stat-item">
+                  <FlowerIcon :filled="true" :size="18" color="#f472b6" />
+                  <span class="stat-value">{{ currentTimelineUser.totalFlowers }}</span>
+                  <span class="stat-label">总花朵数</span>
+                </span>
+              </div>
+            </div>
+          </div>
           <div class="timeline-line"></div>
           <div v-for="block in timelineData" :key="block.year" class="timeline-group">
             <div class="year-header">
@@ -120,11 +142,11 @@
               <div v-for="item in block.items" :key="item.id" class="t-item">
                 <div class="t-node"></div>
                 <div class="t-card glass-panel" :class="item.category">
-                  <div class="t-avatar">
+                  <div class="t-avatar" @click.stop="handleUserClick(item.name)" role="button" aria-label="查看用户时间线">
                      <el-avatar :size="40" :src="item.avatar" />
                   </div>
                   <div class="t-info">
-                    <div class="t-title">{{ item.awardName }}</div>
+                    <div class="t-title" @click.stop="handleAwardClick(item.awardName)" role="button" aria-label="查看奖项规则">{{ item.awardName }}</div>
                     <div class="t-meta">{{ item.name }} · {{ item.awardDate }}</div>
                   </div>
                 </div>
@@ -178,7 +200,7 @@
                 <el-icon v-else><Medal /></el-icon>
               </div>
 
-              <el-avatar :size="44" :src="user.avatar" class="rank-avatar" />
+              <el-avatar :size="44" :src="user.avatar" class="rank-avatar" @click.stop="handleUserClick(user.name)" />
 
               <div class="rank-details">
                 <div class="r-name">{{ user.name }}</div>
@@ -196,14 +218,18 @@
 
     </div>
   </div>
+
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
 import { 
   Grid, Timer, Trophy, OfficeBuilding, Search, Filter, TrendCharts, Medal,
-  Cpu, Lightning, Star, UserFilled, CircleCheckFilled
+  Cpu, Lightning, Star, UserFilled
 } from '@element-plus/icons-vue';
+import FlowerIcon from '../components/FlowerIcon.vue';
 
 // --- Types ---
 type ViewMode = 'grid' | 'timeline' | 'category' | 'department';
@@ -218,27 +244,36 @@ interface HonorItem {
   category: 'innovation' | 'efficiency' | 'practice' | 'community';
   year: string;
   isMine?: boolean;
+  flowers?: number;
+  hasGivenFlower?: boolean;
 }
 
 // --- Configuration ---
+const router = useRouter();
+const route = useRoute();
+
 const viewModes = [
   { key: 'grid', label: '荣誉墙', icon: Grid },
   { key: 'timeline', label: '时光轴', icon: Timer },
   { key: 'category', label: '按奖项', icon: Trophy },
   { key: 'department', label: '按部门', icon: OfficeBuilding },
 ];
+const availableViewModes = computed(() => filterScope.value === 'mine'
+  ? [viewModes[0]]
+  : viewModes
+);
 
 // --- Mock Data ---
 const honorList = ref<HonorItem[]>([
-  { id: 1, name: '林星辰', department: '架构平台部', avatar: 'https://i.pravatar.cc/150?img=11', awardName: '2026年度 AI 技术突破奖', awardDate: '2026-01-05', category: 'innovation', year: '2026', isMine: true },
-  { id: 2, name: '林星辰', department: '架构平台部', avatar: 'https://i.pravatar.cc/150?img=11', awardName: '云原生架构奖', awardDate: '2025-06-15', category: 'innovation', year: '2025', isMine: true },
-  { id: 3, name: 'Sarah', department: 'UED 设计中心', avatar: 'https://i.pravatar.cc/150?img=5', awardName: '最佳 AI 辅助设计实践', awardDate: '2025-12-20', category: 'practice', year: '2025' },
-  { id: 4, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: 'Copilot 效能提升大师', awardDate: '2025-11-15', category: 'efficiency', year: '2025' },
-  { id: 5, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: 'DevOps 创新奖', awardDate: '2024-09-10', category: 'efficiency', year: '2024' },
-  { id: 6, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: '年度代码贡献王', awardDate: '2024-02-01', category: 'efficiency', year: '2024' },
-  { id: 7, name: '王强', department: '开源办公室', avatar: 'https://i.pravatar.cc/150?img=12', awardName: '社区布道师', awardDate: '2024-05-02', category: 'community', year: '2024' },
-  { id: 8, name: 'Emily', department: '数据智能部', avatar: 'https://i.pravatar.cc/150?img=9', awardName: 'RAG 知识库构建金奖', awardDate: '2025-08-01', category: 'innovation', year: '2025', isMine: true },
-  { id: 9, name: '赵敏', department: '移动端开发', avatar: 'https://i.pravatar.cc/150?img=24', awardName: '端侧模型落地先锋', awardDate: '2024-11-10', category: 'practice', year: '2024' },
+  { id: 1, name: '林星辰', department: '架构平台部', avatar: 'https://i.pravatar.cc/150?img=11', awardName: '2026年度 AI 技术突破奖', awardDate: '2026-01-05', category: 'innovation', year: '2026', isMine: true, flowers: 12, hasGivenFlower: false },
+  { id: 2, name: '林星辰', department: '架构平台部', avatar: 'https://i.pravatar.cc/150?img=11', awardName: '云原生架构奖', awardDate: '2025-06-15', category: 'innovation', year: '2025', isMine: true, flowers: 8, hasGivenFlower: true },
+  { id: 3, name: 'Sarah', department: 'UED 设计中心', avatar: 'https://i.pravatar.cc/150?img=5', awardName: '最佳 AI 辅助设计实践', awardDate: '2025-12-20', category: 'practice', year: '2025', flowers: 15, hasGivenFlower: false },
+  { id: 4, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: 'Copilot 效能提升大师', awardDate: '2025-11-15', category: 'efficiency', year: '2025', flowers: 20, hasGivenFlower: true },
+  { id: 5, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: 'DevOps 创新奖', awardDate: '2024-09-10', category: 'efficiency', year: '2024', flowers: 10, hasGivenFlower: false },
+  { id: 6, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: '年度代码贡献王', awardDate: '2024-02-01', category: 'efficiency', year: '2024', flowers: 25, hasGivenFlower: false },
+  { id: 7, name: '王强', department: '开源办公室', avatar: 'https://i.pravatar.cc/150?img=12', awardName: '社区布道师', awardDate: '2024-05-02', category: 'community', year: '2024', flowers: 18, hasGivenFlower: true },
+  { id: 8, name: 'Emily', department: '数据智能部', avatar: 'https://i.pravatar.cc/150?img=9', awardName: 'RAG 知识库构建金奖', awardDate: '2025-08-01', category: 'innovation', year: '2025', isMine: true, flowers: 14, hasGivenFlower: false },
+  { id: 9, name: '赵敏', department: '移动端开发', avatar: 'https://i.pravatar.cc/150?img=24', awardName: '端侧模型落地先锋', awardDate: '2024-11-10', category: 'practice', year: '2024', flowers: 9, hasGivenFlower: false },
 ]);
 
 // --- State ---
@@ -247,7 +282,7 @@ const filterScope = ref<'all' | 'mine'>('all');
 const searchQuery = ref('');
 const activeSubFilter = ref<string>('全部'); 
 const currentPage = ref(1);
-const pageSize = ref(12);
+const pageSize = ref(16);
 
 // --- Computed Logic ---
 const processedList = computed(() => {
@@ -290,7 +325,7 @@ const leaderboardData = computed(() => {
 
 const allDepartments = computed(() => ['全部', ...Array.from(new Set(honorList.value.map(i => i.department)))]);
 const allCategories = computed(() => ['全部', '技术创新', '效能提升', '最佳实践', '社区贡献']);
-const showSecondaryFilter = computed(() => currentViewMode.value === 'category' || currentViewMode.value === 'department');
+const showSecondaryFilter = computed(() => filterScope.value === 'all' && (currentViewMode.value === 'category' || currentViewMode.value === 'department'));
 const activeFilterOptions = computed(() => {
   if (currentViewMode.value === 'category') return allCategories.value;
   if (currentViewMode.value === 'department') return allDepartments.value;
@@ -310,6 +345,20 @@ const timelineData = computed(() => {
       year,
       items: groups[year].sort((a, b) => new Date(b.awardDate).getTime() - new Date(a.awardDate).getTime())
     }));
+});
+
+const currentTimelineUser = computed(() => {
+  if (currentViewMode.value !== 'timeline' || !searchQuery.value) return null;
+  const userItems = processedList.value.filter(item => item.name === searchQuery.value);
+  if (userItems.length === 0) return null;
+  const firstItem = userItems[0];
+  const totalFlowers = userItems.reduce((sum, item) => sum + (item.flowers || 0), 0);
+  return {
+    name: firstItem.name,
+    avatar: firstItem.avatar,
+    department: firstItem.department,
+    totalFlowers
+  };
 });
 
 watch(processedList, () => {
@@ -334,7 +383,66 @@ const getRankClass = (index: number) => {
 const switchMode = (mode: string) => {
   currentViewMode.value = mode as ViewMode;
   activeSubFilter.value = '全部'; 
+  if (mode !== 'timeline') {
+    searchQuery.value = '';
+    router.replace({ path: '/users' });
+  }
 };
+
+const handleUserClick = (userName: string) => {
+  router.push({
+    path: '/users',
+    query: {
+      user: userName,
+      view: 'timeline'
+    }
+  });
+};
+
+const handleAwardClick = (awardName: string) => {
+  router.push({
+    path: '/award-rules',
+    query: { award: awardName }
+  });
+};
+
+const handleGiveFlower = (item: HonorItem) => {
+  if (item.hasGivenFlower) {
+    ElMessage.warning('您已经送过花了');
+    return;
+  }
+  item.flowers = (item.flowers || 0) + 1;
+  item.hasGivenFlower = true;
+  ElMessage.success('送花成功！');
+};
+
+// 计算用户收到的总花朵数
+const getUserFlowersCount = (userName: string) => {
+  return honorList.value
+    .filter(item => item.name === userName)
+    .reduce((sum, item) => sum + (item.flowers || 0), 0);
+};
+
+watch(filterScope, (val) => {
+  if (val === 'mine') {
+    currentViewMode.value = 'grid';
+    activeSubFilter.value = '全部';
+  }
+});
+
+watch(() => route.query.user, (val) => {
+  if (typeof val === 'string' && val) {
+    searchQuery.value = val;
+    filterScope.value = 'all';
+    currentViewMode.value = 'timeline';
+  }
+}, { immediate: true });
+
+watch(() => route.query.view, (val) => {
+  if (val === 'timeline' && filterScope.value === 'all') {
+    currentViewMode.value = 'timeline';
+  }
+}, { immediate: true });
 
 // 处理分页大小变化
 const handleSizeChange = (val: number) => {
@@ -357,7 +465,7 @@ const handleCurrentChange = (val: number) => {
 .honor-wall-container {
   width: 100%;
   min-height: 100vh;
-  padding: 30px;
+  padding: 24px;
   max-width: 1600px;
   margin: 0 auto;
   background:
@@ -556,105 +664,223 @@ const handleCurrentChange = (val: number) => {
 .ranking-sidebar { width: 340px; flex-shrink: 0; position: sticky; top: 20px; }
 
 /* --- 3. 核心卡片 (Honor Card 3D) - 重头戏 --- */
-.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
 
 .honor-card-3d {
   position: relative;
-  height: 320px;
+  height: 280px;
   perspective: 1000px;
   
-  /* 分类颜色变量 */
-  &.innovation { --theme-color: #06b6d4; --bg-grad: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); }
-  &.efficiency { --theme-color: #8b5cf6; --bg-grad: linear-gradient(135deg, #f5f3ff 0%, #ddd6fe 100%); }
-  &.practice { --theme-color: #f59e0b; --bg-grad: linear-gradient(135deg, #fffbeb 0%, #fde68a 100%); }
-  &.community { --theme-color: #10b981; --bg-grad: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); }
+  /* 分类颜色变量 - 更鲜艳的背景 */
+  &.innovation { 
+    --theme-color: #06b6d4; 
+    --bg-grad: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 50%, #38bdf8 100%);
+    --trophy-color: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+  }
+  &.efficiency { 
+    --theme-color: #8b5cf6; 
+    --bg-grad: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 50%, #c084fc 100%);
+    --trophy-color: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  }
+  &.practice { 
+    --theme-color: #f59e0b; 
+    --bg-grad: linear-gradient(135deg, #fde68a 0%, #fcd34d 50%, #fbbf24 100%);
+    --trophy-color: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  }
+  &.community { 
+    --theme-color: #10b981; 
+    --bg-grad: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 50%, #34d399 100%);
+    --trophy-color: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  }
 
   &:hover .card-content-glass {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--theme-color);
   }
-  &:hover .bg-decoration-icon { transform: rotate(-10deg) scale(1.2); opacity: 0.15; }
+  &:hover .bg-decoration-icon { 
+    transform: rotate(-10deg) scale(1.25); 
+    opacity: 0.25; 
+    filter: drop-shadow(0 6px 12px rgba(255, 193, 7, 0.5));
+  }
   &:hover .halo-ring { transform: rotate(180deg) scale(1.1); border-color: var(--theme-color); }
 }
 
 .card-content-glass {
   height: 100%;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  padding: 24px;
+  background: linear-gradient(135deg, 
+    rgba(255, 240, 200, 0.85) 0%, 
+    rgba(255, 230, 180, 0.82) 25%,
+    rgba(255, 220, 160, 0.78) 50%,
+    rgba(200, 220, 255, 0.8) 75%,
+    rgba(180, 210, 255, 0.85) 100%);
+  backdrop-filter: blur(14px) saturate(120%);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 210, 120, 0.4);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
   position: relative;
   overflow: hidden;
+}
+
+.card-content-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 190, 92, 0.6);
+  box-shadow: inset 0 0 22px rgba(255, 190, 92, 0.3), inset 0 0 8px rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.card-content-glass::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.3), transparent 50%),
+    linear-gradient(120deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.4) 14%, rgba(255,255,255,0.05) 30%);
+  opacity: 0.4;
+  transform: translateX(-40%);
+  animation: shimmerSweep 3s linear infinite;
+  pointer-events: none;
 }
 
 /* 背景装饰 */
 .bg-decoration-circle {
   position: absolute; top: -50px; right: -50px; width: 200px; height: 200px;
   background: var(--bg-grad);
-  border-radius: 50%; filter: blur(40px); opacity: 0.6; z-index: 0;
+  border-radius: 50%; filter: blur(40px); opacity: 0.75; z-index: 0;
+  box-shadow: 0 0 60px rgba(255, 193, 7, 0.3);
 }
 .bg-decoration-icon {
-  position: absolute; bottom: -20px; right: -20px; font-size: 140px; color: var(--theme-color);
-  opacity: 0.05; z-index: 0; transition: all 0.5s;
+  position: absolute; bottom: -15px; right: -15px; font-size: 150px; 
+  opacity: 0.2; z-index: 0; transition: all 0.5s;
+  transform-origin: center;
+  color: var(--theme-color);
+  
+  :deep(svg) {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  }
+}
+
+.honor-card-3d.innovation .bg-decoration-icon {
+  color: #06b6d4;
+}
+
+.honor-card-3d.efficiency .bg-decoration-icon {
+  color: #8b5cf6;
+}
+
+.honor-card-3d.practice .bg-decoration-icon {
+  color: #f59e0b;
+}
+
+.honor-card-3d.community .bg-decoration-icon {
+  color: #10b981;
 }
 
 /* 卡片上部 */
-.card-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; z-index: 1; }
+.card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; z-index: 1; }
 
-.avatar-halo { position: relative; }
+.avatar-halo { position: relative; cursor: pointer; }
 .halo-ring {
   position: absolute; inset: -4px; border-radius: 50%;
   border: 2px dashed #cbd5e1;
   transition: all 0.8s ease;
 }
-.user-avatar { border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.user-avatar { border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; }
 
 .user-info { flex: 1; }
-.user-name { font-size: 18px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+.user-name { font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 2px; }
 .dept-badge {
-  display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 6px;
+  display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px;
   background: #f1f5f9; color: #64748b; font-weight: 600;
 }
 
 .year-ribbon {
   background: var(--theme-color); color: #fff;
-  padding: 4px 10px; border-radius: 8px 0 8px 0;
-  font-weight: 800; font-size: 12px;
+  padding: 4px 8px; border-radius: 8px 0 8px 0;
+  font-weight: 800; font-size: 11px;
   box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
 }
 
 /* 卡片中部（奖项） */
 .award-center {
-  flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; z-index: 1;
+  flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  text-align: left; z-index: 1;
 }
 .award-name {
-  font-size: 18px; line-height: 1.4; color: #0f172a; margin: 0 0 12px 0;
-  background: linear-gradient(45deg, #1e293b, #475569);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 16px; line-height: 1.3; color: #0f172a; margin: 0 0 10px 0;
+  font-weight: 900;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  cursor: pointer;
+}
+
+@keyframes shimmerSweep {
+  0% { transform: translateX(-50%); opacity: 0.25; }
+  50% { transform: translateX(10%); opacity: 0.45; }
+  100% { transform: translateX(60%); opacity: 0.25; }
 }
 .category-tag {
-  display: flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 600; color: var(--theme-color);
-  background: rgba(255,255,255,0.8); border: 1px solid var(--theme-color);
-  padding: 4px 12px; border-radius: 20px;
+  background: rgba(255,255,255,0.9); border: 1px solid var(--theme-color);
+  padding: 4px 10px; border-radius: 16px;
+  cursor: pointer;
 }
 
 /* 卡片底部 */
 .card-bottom {
-  border-top: 1px solid rgba(0,0,0,0.04);
-  padding-top: 16px; margin-top: 10px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  padding-top: 12px; margin-top: 8px;
   display: flex; justify-content: space-between; align-items: center;
-  color: #94a3b8; font-size: 13px; z-index: 1;
+  font-size: 12px; z-index: 1;
 }
-.verified-icon { color: var(--theme-color); font-size: 16px; }
+
+.date-text {
+  color: #1e293b;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 4px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+}
+
+.flower-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(244, 114, 182, 0.1);
+    transform: scale(1.05);
+  }
+  
+  .flower-icon-clickable {
+    transition: all 0.3s ease;
+  }
+  
+  .flower-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ec4899;
+    min-width: 20px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2px 6px;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+  }
+}
 
 
 /* --- 4. 排行榜 (Glory Sidebar) --- */
@@ -711,7 +937,7 @@ const handleCurrentChange = (val: number) => {
 }
 
 .rank-badge { width: 24px; font-weight: 800; font-style: italic; text-align: center; font-size: 16px; color: #cbd5e1; }
-.rank-avatar { margin: 0 12px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.rank-avatar { margin: 0 12px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; }
 .rank-details { flex: 1; }
 .r-name { font-weight: 700; color: #334155; font-size: 14px; }
 .r-dept { font-size: 11px; color: #94a3b8; }
@@ -721,6 +947,55 @@ const handleCurrentChange = (val: number) => {
 
 /* --- 5. Timeline (Glass) --- */
 .timeline-container { position: relative; padding: 20px; }
+
+.timeline-user-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(25px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  
+  .timeline-user-info {
+    flex: 1;
+    
+    .timeline-user-name {
+      margin: 0 0 12px 0;
+      font-size: 24px;
+      font-weight: 800;
+      color: #1e293b;
+    }
+    
+    .timeline-user-stats {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      
+      .timeline-stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        
+        .stat-value {
+          font-size: 20px;
+          font-weight: 800;
+          color: #ec4899;
+        }
+        
+        .stat-label {
+          font-size: 14px;
+          color: #64748b;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}
+
 .timeline-line {
   position: absolute;
   left: 60px;
@@ -763,6 +1038,7 @@ const handleCurrentChange = (val: number) => {
   &.practice { border-left: 4px solid #f59e0b; }
   &.community { border-left: 4px solid #10b981; }
 }
+.t-avatar { cursor: pointer; }
 .t-info { .t-title { font-weight: 700; color: #1e293b; margin-bottom: 4px; } .t-meta { font-size: 12px; color: #64748b; } }
 
 /* --- Pagination --- */
