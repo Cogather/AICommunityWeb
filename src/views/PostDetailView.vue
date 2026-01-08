@@ -190,6 +190,7 @@
                   >
                     回复
                   </el-button>
+                  <!-- 删除按钮：只有评论作者本人可以删除，删除评论会同时删除该评论下的所有回复 -->
                   <el-button
                     v-if="isMyComment(comment)"
                     type="text"
@@ -198,6 +199,7 @@
                     @click="handleDeleteComment(comment)"
                     :loading="deletingComment"
                     style="color: #f56c6c;"
+                    title="删除评论（将同时删除该评论下的所有回复）"
                   >
                     删除
                   </el-button>
@@ -231,12 +233,12 @@
                   </div>
                 </div>
 
-                <!-- 回复列表 -->
+                <!-- 回复列表（扁平化结构，所有回复同级） -->
                 <div class="replies-list" v-if="comment.replies && comment.replies.length > 0">
                   <div
                     v-for="reply in comment.replies"
                     :key="reply.id"
-                    class="reply-item"
+                    class="reply-item-flat"
                   >
                     <div class="avatar-wrapper-small">
                       <el-avatar :src="reply.userAvatar" :size="32">
@@ -276,10 +278,50 @@
                           type="text"
                           size="small"
                           :icon="ChatDotRound"
-                          @click="handleReplyToReply(comment, reply)"
+                          @click="handleReplyToReplyClick(comment, reply)"
                         >
                           回复
                         </el-button>
+                        <!-- 删除按钮：只有回复作者本人可以删除，只删除该条回复 -->
+                        <el-button
+                          v-if="isMyReply(reply)"
+                          type="text"
+                          size="small"
+                          :icon="Delete"
+                          @click="handleDeleteReply(comment, reply)"
+                          :loading="deletingComment"
+                          style="color: #f56c6c;"
+                          title="删除回复"
+                        >
+                          删除
+                        </el-button>
+                      </div>
+                      <!-- 回复输入框 -->
+                      <div class="reply-input" v-if="reply.showReplyInput">
+                        <el-input
+                          v-model="reply.replyText"
+                          type="textarea"
+                          :rows="2"
+                          :placeholder="`回复 ${reply.userName}...`"
+                          maxlength="200"
+                          show-word-limit
+                        />
+                        <div class="reply-actions">
+                          <el-button
+                            type="primary"
+                            size="small"
+                            @click="handleSubmitReplyToReply(comment, reply)"
+                            :loading="replying"
+                          >
+                            发表回复
+                          </el-button>
+                          <el-button
+                            size="small"
+                            @click="handleCancelReplyToReply(reply)"
+                          >
+                            取消
+                          </el-button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -341,7 +383,7 @@ const liking = ref(false)
 const deletingComment = ref(false)
 const loading = ref(true)
 const commentCount = computed(() => {
-  // 计算所有评论和回复的总数
+  // 计算所有评论和回复的总数（扁平化结构，直接计算 replies 长度）
   let total = comments.value.length
   comments.value.forEach(comment => {
     if (comment.replies && comment.replies.length > 0) {
@@ -357,9 +399,25 @@ const currentUser = ref({
   name: '当前用户' // 当前用户名
 })
 
+// 当前用户ID和用户名（用于评论和回复）
+const currentUserId = computed(() => currentUser.value.id)
+const currentUserName = computed(() => currentUser.value.name)
+
 // 判断是否是当前用户
 const isCurrentUser = (userName: string) => {
   return userName === currentUser.value.name
+}
+
+// 判断是否是自己的评论
+const isMyComment = (comment: any) => {
+  // 通过 userId 或 userName 判断是否是当前用户发布的评论
+  if (comment.userId && currentUserId.value) {
+    return comment.userId === currentUserId.value
+  }
+  if (comment.userName && currentUserName.value) {
+    return comment.userName === currentUserName.value
+  }
+  return false
 }
 
 // 收藏状态
@@ -413,8 +471,18 @@ const handleBack = () => {
 // 加载帖子详情
 const loadPostDetail = async () => {
   const postId = route.params.id
-  if (!postId) {
+  if (!postId || (Array.isArray(postId) && postId.length === 0)) {
     ElMessage.error('帖子ID不存在')
+    router.push('/practices')
+    return
+  }
+
+  // 确保 postId 是字符串
+  const postIdStr = Array.isArray(postId) ? postId[0] : postId
+  const postIdNum = Number(postIdStr)
+  
+  if (isNaN(postIdNum)) {
+    ElMessage.error('帖子ID格式错误')
     router.push('/practices')
     return
   }
@@ -422,7 +490,7 @@ const loadPostDetail = async () => {
   loading.value = true
   try {
     // 这里应该调用API获取帖子详情
-    // const response = await getPostDetail(postId)
+    // const response = await getPostDetail(postIdNum)
     // postData.value = response.data
     
     // 模拟API调用延迟
@@ -431,8 +499,8 @@ const loadPostDetail = async () => {
     // 模拟数据
     postData.value = {
       ...postData.value,
-      id: Number(postId),
-      title: `帖子标题 ${postId}`,
+      id: postIdNum,
+      title: `帖子标题 ${postIdStr}`,
       views: Math.floor(Math.random() * 5000) + 1000,
       likes: Math.floor(Math.random() * 200) + 10
     }
@@ -455,7 +523,7 @@ const loadComments = async () => {
     // 模拟API调用延迟
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    // 模拟数据
+    // 模拟数据（包含嵌套回复结构）
     comments.value = [
       {
         id: 1,
@@ -476,7 +544,23 @@ const loadComments = async () => {
             createTime: '2024-01-07 11:30:00',
             likes: 2,
             isLiked: false,
-            replyTo: '李四'
+            replyTo: '李四',
+            replyToId: 1,
+            replies: [
+              {
+                id: 3,
+                userId: 1,
+                userName: postData.value.authorName,
+                userAvatar: postData.value.authorAvatar,
+                content: '感谢支持！',
+                createTime: '2024-01-07 11:32:00',
+                likes: 1,
+                isLiked: false,
+                replyTo: '王五',
+                replyToId: 1,
+                replies: []
+              }
+            ]
           },
           {
             id: 2,
@@ -487,7 +571,9 @@ const loadComments = async () => {
             createTime: '2024-01-07 11:35:00',
             likes: 3,
             isLiked: false,
-            replyTo: '李四'
+            replyTo: '李四',
+            replyToId: 1,
+            replies: []
           }
         ],
         showReplyInput: false,
@@ -717,7 +803,7 @@ const handleCommentLike = async (comment: any) => {
   }
 }
 
-// 点击回复按钮
+// 点击回复按钮（回复评论）
 const handleReplyClick = (comment: any) => {
   comment.showReplyInput = !comment.showReplyInput
   if (comment.showReplyInput) {
@@ -725,7 +811,69 @@ const handleReplyClick = (comment: any) => {
   }
 }
 
-// 提交回复
+// 点击回复按钮（回复回复）
+const handleReplyToReplyClick = (comment: any, reply: any) => {
+  // 确保 reply 对象有 showReplyInput 属性
+  if (!reply.hasOwnProperty('showReplyInput')) {
+    reply.showReplyInput = false
+  }
+  reply.showReplyInput = !reply.showReplyInput
+  if (reply.showReplyInput) {
+    reply.replyText = `@${reply.userName} `
+  }
+}
+
+// 提交回复（回复回复）
+const handleSubmitReplyToReply = async (comment: any, targetReply: any) => {
+  if (!targetReply.replyText?.trim()) {
+    ElMessage.warning('请输入回复内容')
+    return
+  }
+
+  replying.value = true
+  try {
+    const newReply = {
+      id: Date.now(),
+      userId: currentUserId.value,
+      userName: currentUserName.value,
+      userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+      content: targetReply.replyText.replace(/^@\w+\s*/, ''),
+      createTime: new Date().toLocaleString('zh-CN'),
+      likes: 0,
+      isLiked: false,
+      replyTo: targetReply.userName,
+      replyToId: targetReply.id,
+    }
+    
+    if (!comment.replies) {
+      comment.replies = []
+    }
+    // 找到目标回复的位置，在其后插入
+    const targetIndex = comment.replies.findIndex((r: any) => r.id === targetReply.id)
+    if (targetIndex !== -1) {
+      comment.replies.splice(targetIndex + 1, 0, newReply)
+    } else {
+      comment.replies.push(newReply)
+    }
+    
+    targetReply.replyText = ''
+    targetReply.showReplyInput = false
+    ElMessage.success('回复发表成功')
+  } catch (error) {
+    console.error('发表回复失败:', error)
+    ElMessage.error('发表回复失败')
+  } finally {
+    replying.value = false
+  }
+}
+
+// 取消回复（回复回复）
+const handleCancelReplyToReply = (reply: any) => {
+  reply.showReplyInput = false
+  reply.replyText = ''
+}
+
+// 提交回复（回复评论）
 const handleSubmitReply = async (comment: any) => {
   if (!comment.replyText?.trim()) {
     ElMessage.warning('请输入回复内容')
@@ -742,11 +890,13 @@ const handleSubmitReply = async (comment: any) => {
       userId: currentUserId.value,
       userName: currentUserName.value,
       userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-      content: comment.replyText,
+      content: comment.replyText.replace(/^@\w+\s*/, ''), // 移除 @用户名 前缀
       createTime: new Date().toLocaleString('zh-CN'),
       likes: 0,
       isLiked: false,
-      replyTo: comment.userName
+      replyTo: comment.userName, // 回复的目标用户名
+      replyToId: comment.id, // 回复的目标评论ID
+      // 不再有 replies 数组，所有回复都是同级
     }
     
     if (!comment.replies) {
@@ -771,11 +921,6 @@ const handleCancelReply = (comment: any) => {
   comment.replyText = ''
 }
 
-// 回复回复（楼中楼）
-const handleReplyToReply = (comment: any, reply: any) => {
-  comment.showReplyInput = true
-  comment.replyText = `@${reply.userName} `
-}
 
 // 点赞回复
 const handleReplyLike = async (reply: any) => {
@@ -791,11 +936,23 @@ const handleReplyLike = async (reply: any) => {
   }
 }
 
-// 删除评论
+// 判断是否是自己的回复
+const isMyReply = (reply: any) => {
+  // 通过 userId 或 userName 判断是否是当前用户发布的回复
+  if (reply.userId && currentUserId.value) {
+    return reply.userId === currentUserId.value
+  }
+  if (reply.userName && currentUserName.value) {
+    return reply.userName === currentUserName.value
+  }
+  return false
+}
+
+// 删除评论（会删除该评论及其下所有回复）
 const handleDeleteComment = (comment: any) => {
-  const replyCount = comment.replies?.length || 0
-  const confirmMessage = replyCount > 0
-    ? `确定要删除这条评论吗？删除后该评论下的 ${replyCount} 条回复也会一并删除，且无法恢复。`
+  const totalReplies = comment.replies?.length || 0
+  const confirmMessage = totalReplies > 0
+    ? `确定要删除这条评论吗？删除后该评论下的 ${totalReplies} 条回复也会一并删除，且无法恢复。`
     : '确定要删除这条评论吗？删除后无法恢复。'
   
   ElMessageBox.confirm(
@@ -812,16 +969,19 @@ const handleDeleteComment = (comment: any) => {
     try {
       // 这里应该调用API删除评论
       // await deleteComment(comment.id)
-      // 注意：后端应该自动删除该评论下的所有回复
+      // 注意：后端应该自动删除该评论下的所有回复（包括嵌套回复）
       
       // 模拟API调用
       await new Promise(resolve => setTimeout(resolve, 300))
       
       // 从评论列表中移除该评论（包括其所有回复）
+      // 由于是扁平化结构，删除评论时会自动删除其下的所有回复
       const index = comments.value.findIndex(c => c.id === comment.id)
       if (index !== -1) {
         comments.value.splice(index, 1)
-        ElMessage.success(replyCount > 0 ? `评论及 ${replyCount} 条回复已删除` : '评论已删除')
+        ElMessage.success(totalReplies > 0 ? `评论及 ${totalReplies} 条回复已删除` : '评论已删除')
+      } else {
+        ElMessage.warning('未找到要删除的评论')
       }
     } catch (error) {
       console.error('删除评论失败:', error)
@@ -830,14 +990,14 @@ const handleDeleteComment = (comment: any) => {
       deletingComment.value = false
     }
   }).catch(() => {
-    // 用户取消
+    // 用户取消删除
   })
 }
 
-// 删除评论
-const handleDeleteComment = (comment: any) => {
+// 删除回复（只删除该条回复，不影响其他回复）
+const handleDeleteReply = (comment: any, reply: any) => {
   ElMessageBox.confirm(
-    `确定要删除这条评论吗？删除后该评论下的所有回复也会一并删除，且无法恢复。`,
+    '确定要删除这条回复吗？删除后无法恢复。',
     '确认删除',
     {
       confirmButtonText: '确定删除',
@@ -848,27 +1008,33 @@ const handleDeleteComment = (comment: any) => {
   ).then(async () => {
     deletingComment.value = true
     try {
-      // 这里应该调用API删除评论
-      // await deleteComment(comment.id)
-      // 注意：后端应该自动删除该评论下的所有回复
+      // 这里应该调用API删除回复
+      // await deleteReply(reply.id)
+      // 注意：只删除该条回复，不会删除其他回复
       
       // 模拟API调用
       await new Promise(resolve => setTimeout(resolve, 300))
       
-      // 从评论列表中移除该评论（包括其所有回复）
-      const index = comments.value.findIndex(c => c.id === comment.id)
-      if (index !== -1) {
-        comments.value.splice(index, 1)
-        ElMessage.success('评论已删除')
+      // 从评论的 replies 数组中删除该条回复（扁平化结构，只删除单条回复）
+      if (comment.replies && Array.isArray(comment.replies)) {
+        const index = comment.replies.findIndex((r: any) => r.id === reply.id)
+        if (index !== -1) {
+          comment.replies.splice(index, 1)
+          ElMessage.success('回复已删除')
+        } else {
+          ElMessage.warning('未找到要删除的回复')
+        }
+      } else {
+        ElMessage.warning('回复列表不存在')
       }
     } catch (error) {
-      console.error('删除评论失败:', error)
+      console.error('删除回复失败:', error)
       ElMessage.error('删除失败，请稍后重试')
     } finally {
       deletingComment.value = false
     }
   }).catch(() => {
-    // 用户取消
+    // 用户取消删除
   })
 }
 
@@ -1285,8 +1451,112 @@ onMounted(async () => {
 
             .replies-list {
             margin-top: 16px;
-            padding-left: 16px;
-            border-left: 2px solid #e4e7ed;
+            
+            .reply-item-flat {
+              display: flex;
+              gap: 12px;
+              margin-bottom: 16px;
+              padding-left: 24px; // 统一缩进
+              position: relative;
+              
+              &:last-child {
+                margin-bottom: 0;
+              }
+              
+              .avatar-wrapper-small {
+                position: relative;
+                display: inline-block;
+                flex-shrink: 0;
+              }
+              
+              .reply-content {
+                flex: 1;
+                background: rgba(250, 250, 250, 0.8);
+                padding: 10px 14px;
+                border-radius: 8px;
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                transition: all 0.2s;
+                
+                &:hover {
+                  background: rgba(255, 255, 255, 0.95);
+                  border-color: rgba(64, 158, 255, 0.2);
+                }
+                
+                .reply-header {
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  margin-bottom: 8px;
+                  font-size: 13px;
+                  flex-wrap: wrap;
+                  
+                  .reply-author {
+                    font-weight: 500;
+                    color: #333;
+                  }
+                  
+                  .author-tag-inline {
+                    font-size: 11px;
+                    padding: 2px 8px;
+                    font-weight: 600;
+                    border-radius: 4px;
+                    margin-left: 4px;
+                  }
+                  
+                  .reply-to {
+                    color: #909399;
+                    font-size: 12px;
+                    
+                    .reply-to-name {
+                      color: #409eff;
+                      cursor: pointer;
+                      font-weight: 500;
+                      
+                      &:hover {
+                        text-decoration: underline;
+                      }
+                    }
+                  }
+                  
+                  .reply-time {
+                    color: #909399;
+                    font-size: 12px;
+                    margin-left: auto;
+                  }
+                }
+                
+                .reply-text {
+                  font-size: 13px;
+                  line-height: 1.7;
+                  color: #555;
+                  margin-bottom: 10px;
+                  white-space: pre-wrap;
+                  word-break: break-word;
+                }
+                
+                .reply-actions {
+                  display: flex;
+                  gap: 12px;
+                  margin-bottom: 0;
+                }
+                
+                .reply-input {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: #fff;
+                  border-radius: 6px;
+                  border: 1px solid #e4e7ed;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                  
+                  .reply-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 8px;
+                    margin-top: 8px;
+                  }
+                }
+              }
+            }
 
             .reply-item {
               display: flex;

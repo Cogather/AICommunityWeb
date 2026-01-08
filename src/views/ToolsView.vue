@@ -11,7 +11,7 @@
       >
         <span class="tool-card-name">{{ tool.name }}</span>
       </div>
-      
+
       <!-- 其他工具按钮 -->
       <div
         :class="{ 'tool-card-btn': true, 'tool-card-btn-active': selectedToolId === 'other', 'tool-card-btn-other': true }"
@@ -21,7 +21,7 @@
         <span class="tool-card-name">其他工具</span>
       </div>
     </div>
-    
+
     <!-- 内容区域 -->
     <div class="content-area" v-if="selectedToolId">
       <el-row :gutter="24">
@@ -37,7 +37,7 @@
                 @post-click="handlePostCreate"
               />
             </div>
-            
+
             <!-- 普通工具：帖子分类标签 -->
             <div v-else class="post-tabs-header">
               <div class="post-tabs">
@@ -103,10 +103,10 @@
             <div class="sidebar-block">
               <div class="section-header-with-reset">
                 <h3 class="sidebar-title">部门归类</h3>
-                <el-button 
-                  v-if="selectedDepartment" 
-                  text 
-                  size="small" 
+                <el-button
+                  v-if="selectedDepartment"
+                  text
+                  size="small"
                   class="reset-btn"
                   @click="handleResetDepartment"
                 >
@@ -137,7 +137,7 @@
           <!-- 普通工具：活动宣传 -->
           <div v-else class="activities-section">
             <h3 class="section-title">近期活动</h3>
-            
+
             <!-- 活动轮播 -->
             <el-carousel
               :interval="5000"
@@ -193,9 +193,9 @@
     </div>
 
     <!-- 发布活动悬浮按钮（工具owner和管理员可见） -->
-    <el-tooltip 
+    <el-tooltip
       v-if="(isToolOwner || isAdmin) && selectedToolId && selectedToolId !== 'other' && typeof selectedToolId === 'number'"
-      content="发布活动" 
+      content="发布活动"
       placement="left"
     >
       <el-button
@@ -244,14 +244,14 @@ const pageSize = ref(15)
 const displayedTags = computed(() => {
   // 获取所有帖子（其他工具的帖子）
   const allPosts = currentToolPosts.value
-  
+
   // 根据当前选择的部门过滤帖子
   let filteredPosts = allPosts
   if (selectedDepartment.value) {
     // 这里需要从帖子数据中获取部门信息，暂时简化处理
     // filteredPosts = filteredPosts.filter(post => post.department === selectedDepartment.value)
   }
-  
+
   // 统计每个标签的数量
   const tagCountMap = new Map<string, number>()
   filteredPosts.forEach(post => {
@@ -259,12 +259,12 @@ const displayedTags = computed(() => {
       tagCountMap.set(post.tag, (tagCountMap.get(post.tag) || 0) + 1)
     }
   })
-  
+
   // 构建标签列表，包含"全部"
   const tags: Array<{ name: string; count: number }> = [
     { name: '全部', count: filteredPosts.length }
   ]
-  
+
   // 添加其他标签
   const tagNames = ['新手', '进阶', '最佳实践', '技巧', '案例', '优化', '通用', '入门']
   tagNames.forEach(tagName => {
@@ -273,7 +273,7 @@ const displayedTags = computed(() => {
       tags.push({ name: tagName, count })
     }
   })
-  
+
   return tags
 })
 
@@ -281,16 +281,16 @@ const displayedTags = computed(() => {
 const displayedDepartments = computed(() => {
   // 获取所有帖子（其他工具的帖子）
   const allPosts = currentToolPosts.value
-  
+
   // 根据当前选择的标签过滤帖子
   let filteredPosts = allPosts
   if (selectedTag.value && selectedTag.value !== '全部') {
     filteredPosts = filteredPosts.filter(post => post.tag === selectedTag.value)
   }
-  
+
   // 统计每个部门的发帖数和贡献者
   const deptMap = new Map<string, { postCount: number; contributors: Set<string> }>()
-  
+
   filteredPosts.forEach(post => {
     // 这里需要从帖子数据中获取部门信息，暂时简化处理
     // 假设所有帖子都属于某个部门，这里用模拟数据
@@ -304,10 +304,10 @@ const displayedDepartments = computed(() => {
       dept.contributors.add(post.author)
     }
   })
-  
+
   // 获取所有部门名称（从所有帖子中提取，这里简化处理）
   const allDepts = new Set<string>(['研发部', '产品部', '技术部', '数据部', '算法部', '运营部', '设计部', '测试部'])
-  
+
   // 构建部门列表
   const departments = Array.from(allDepts).map((name, index) => {
     const stats = deptMap.get(name) || { postCount: 0, contributors: new Set() }
@@ -318,7 +318,7 @@ const displayedDepartments = computed(() => {
       contributorCount: stats.contributors.size
     }
   })
-  
+
   // 按发帖数排序
   return departments.sort((a, b) => b.postCount - a.postCount)
 })
@@ -327,7 +327,7 @@ const displayedDepartments = computed(() => {
 onMounted(() => {
   // 监听配置更新
   window.addEventListener('adminConfigUpdated', handleConfigUpdate)
-  
+
   // 检查路由参数
   const toolId = route.query.toolId
   if (toolId) {
@@ -385,54 +385,54 @@ const loadTools = () => {
     console.error('加载工具配置失败:', e)
   }
   return [
-    { 
+    {
       id: 1,
-      name: 'TestMate', 
-      desc: '自动化测试助手', 
+      name: 'TestMate',
+      desc: '自动化测试助手',
       logo: 'https://picsum.photos/80/80?random=1',
-      color: '#36cfc9' 
+      color: '#36cfc9'
     },
-    { 
+    {
       id: 2,
-      name: 'CodeMate', 
-      desc: '智能代码补全', 
+      name: 'CodeMate',
+      desc: '智能代码补全',
       logo: 'https://picsum.photos/80/80?random=2',
-      color: '#9254de' 
+      color: '#9254de'
     },
-    { 
+    {
       id: 3,
-      name: '云集', 
-      desc: '云端计算集群', 
+      name: '云集',
+      desc: '云端计算集群',
       logo: 'https://picsum.photos/80/80?random=3',
-      color: '#597ef7' 
+      color: '#597ef7'
     },
-    { 
+    {
       id: 4,
-      name: '云见', 
-      desc: '智能监控平台', 
+      name: '云见',
+      desc: '智能监控平台',
       logo: 'https://picsum.photos/80/80?random=4',
-      color: '#ff9c6e' 
+      color: '#ff9c6e'
     },
-    { 
+    {
       id: 5,
-      name: '扶摇', 
-      desc: 'Agent编排引擎', 
+      name: '扶摇',
+      desc: 'Agent编排引擎',
       logo: 'https://picsum.photos/80/80?random=5',
-      color: '#4096ff' 
+      color: '#4096ff'
     },
-    { 
+    {
       id: 6,
-      name: '纠错Agent', 
-      desc: '智能代码纠错工具', 
+      name: '纠错Agent',
+      desc: '智能代码纠错工具',
       logo: 'https://picsum.photos/80/80?random=6',
-      color: '#ffc53d' 
+      color: '#ffc53d'
     },
-    { 
+    {
       id: 7,
-      name: 'DT', 
-      desc: '数据转换工具', 
+      name: 'DT',
+      desc: '数据转换工具',
       logo: 'https://picsum.photos/80/80?random=7',
-      color: '#73d13d' 
+      color: '#73d13d'
     },
   ]
 }
@@ -450,15 +450,15 @@ const allPosts = ref([
   { id: 1, toolId: 1, category: 'guide', title: 'TestMate 快速入门指南', description: '从零开始学习 TestMate 的基本使用方法，快速上手自动化测试。', author: '张工程师', createTime: '2024年4月10日', views: 1250, comments: 45, likes: 128, tag: '新手', image: 'https://picsum.photos/400/300?random=1' },
   { id: 2, toolId: 1, category: 'excellent', title: 'TestMate 在企业级项目中的最佳实践', description: '分享如何在实际项目中高效使用 TestMate 提升测试效率。', author: '李开发者', createTime: '2024年4月8日', views: 890, comments: 32, likes: 95, tag: '最佳实践', image: 'https://picsum.photos/400/300?random=2' },
   { id: 3, toolId: 1, category: 'guide', title: 'TestMate 高级功能详解', description: '深入探讨 TestMate 的高级功能和配置选项。', author: '王测试', createTime: '2024年4月5日', views: 650, comments: 18, likes: 52, tag: '进阶', image: 'https://picsum.photos/400/300?random=3' },
-  
+
   // CodeMate 相关
   { id: 4, toolId: 2, category: 'guide', title: 'CodeMate 代码补全技巧', description: '掌握 CodeMate 的智能代码补全功能，提升编码效率。', author: '赵医生', createTime: '2024年4月12日', views: 720, comments: 28, likes: 78, tag: '技巧', image: 'https://picsum.photos/400/300?random=4' },
   { id: 5, toolId: 2, category: 'excellent', title: 'CodeMate 在大型项目中的应用', description: '介绍 CodeMate 在大型软件开发项目中的实际应用案例。', author: '陈架构师', createTime: '2024年4月9日', views: 520, comments: 15, likes: 42, tag: '案例', image: 'https://picsum.photos/400/300?random=5' },
-  
+
   // 云集相关
   { id: 6, toolId: 3, category: 'guide', title: '云集集群管理入门', description: '学习如何使用云集进行云端计算集群的管理和调度。', author: '刘设计师', createTime: '2024年4月11日', views: 450, comments: 12, likes: 35, tag: '入门', image: 'https://picsum.photos/400/300?random=6' },
   { id: 7, toolId: 3, category: 'excellent', title: '云集性能优化实战', description: '分享云集集群性能优化的实战经验和技巧。', author: '张工程师', createTime: '2024年4月7日', views: 380, comments: 10, likes: 28, tag: '优化', image: 'https://picsum.photos/400/300?random=7' },
-  
+
   // 其他工具
   { id: 8, toolId: 0, category: 'guide', title: 'AI工具使用通用指南', description: '介绍AI工具使用的一般方法和注意事项。', author: '系统管理员', createTime: '2024年4月13日', views: 1200, comments: 58, likes: 156, tag: '通用', image: 'https://picsum.photos/400/300?random=8' },
   { id: 9, toolId: 0, category: 'excellent', title: 'AI工具优秀案例集锦', description: '收集整理各类AI工具的优秀使用案例。', author: '社区编辑', createTime: '2024年4月6日', views: 950, comments: 42, likes: 112, tag: '案例', image: 'https://picsum.photos/400/300?random=9' },
@@ -477,7 +477,7 @@ const allActivities = ref([
 const selectTool = (toolId: number | string) => {
   selectedToolId.value = toolId
   activePostTab.value = 'guide' // 重置为操作指导
-  
+
   // 检查是否为工具Owner（仅对普通工具检查，不包括"其他工具"）
   if (typeof toolId === 'number') {
     checkToolOwner(toolId)
@@ -493,26 +493,26 @@ const checkToolOwner = async (toolId: number) => {
     isAdmin.value = false
     return
   }
-  
+
   checkingOwner.value = true
   try {
     // 模拟API调用：GET /api/tools/:id/owner 和 GET /api/user/current
     // 实际应该调用真实API
     await new Promise(resolve => setTimeout(resolve, 300))
-    
+
     // 模拟数据：从localStorage或用户信息中获取
     // 实际应该从API获取
     const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    
+
     // 检查是否为管理员
     const savedAdmins = JSON.parse(localStorage.getItem('admin_users_list') || '[]')
     const admin = savedAdmins.find((u: any) => u.id === currentUserId && u.currentRole === 'admin')
     isAdmin.value = !!admin
-    
+
     // 检查是否为工具Owner
     const savedOwners = JSON.parse(localStorage.getItem('tool_owners') || '[]')
     const isOwner = savedOwners.some((owner: any) => owner.toolId === toolId && owner.userId === currentUserId)
-    
+
     isToolOwner.value = isOwner
   } catch (error) {
     console.error('检查工具Owner权限失败:', error)
@@ -529,14 +529,14 @@ const handlePublishActivity = () => {
     ElMessage.warning('请先选择一个工具')
     return
   }
-  
+
   router.push(`/activity/create?toolId=${selectedToolId.value}`)
 }
 
 // 当前工具的帖子
 const currentToolPosts = computed(() => {
   let posts = []
-  
+
   if (selectedToolId.value === 'other') {
     posts = allPosts.value.filter(post => post.toolId === 0)
   } else if (selectedToolId.value) {
@@ -561,7 +561,7 @@ const currentToolPosts = computed(() => {
 // 过滤后的帖子（根据分类）
 const filteredPosts = computed(() => {
   let posts = currentToolPosts.value
-  
+
   // 如果不是"其他"工具，按分类过滤
   if (selectedToolId.value !== 'other') {
     posts = posts.filter(post => post.category === activePostTab.value)
@@ -580,7 +580,7 @@ const filteredPosts = computed(() => {
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    posts = posts.filter(post => 
+    posts = posts.filter(post =>
       post.title.toLowerCase().includes(keyword) ||
       post.author.toLowerCase().includes(keyword) ||
       (post.description && post.description.toLowerCase().includes(keyword))
@@ -613,7 +613,7 @@ const currentToolActivities = computed(() => {
   if (selectedToolId.value === 'other' || !selectedToolId.value) {
     return []
   }
-  
+
   // 从localStorage加载发布的活动
   const publishedActivities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
   const publishedForTool = publishedActivities
@@ -627,7 +627,7 @@ const currentToolActivities = computed(() => {
       location: '',
       image: a.cover
     }))
-  
+
   // 合并模拟活动和发布的活动
   const mockActivities = allActivities.value.filter(activity => activity.toolId === selectedToolId.value)
   return [...publishedForTool, ...mockActivities]
@@ -808,10 +808,10 @@ const handleCurrentChange = (val: number) => {
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   // 基础背景色（使用工具颜色）
   background: var(--tool-color, #409eff);
-  
+
   // 流光扫过效果
   &::before {
     content: '';
@@ -829,7 +829,7 @@ const handleCurrentChange = (val: number) => {
     transition: left 0.6s;
     z-index: 1;
   }
-  
+
   // 彩色流光动画层
   &::after {
     content: '';

@@ -55,7 +55,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/post/:id',
     name: 'PostDetail',
-    component: () => import('../views/PostDetailView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/PostDetailView.vue')
   },
   {
     path: '/activity/create',

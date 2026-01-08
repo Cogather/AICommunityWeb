@@ -43,18 +43,161 @@
 
 ---
 
+## 快速参考：核心接口列表
+
+### 用户相关接口
+1. **用户登录** - `POST /api/auth/login`
+2. **用户登出** - `POST /api/auth/logout`
+3. **用户个人积分** - `GET /api/user/points/calculate`
+4. **用户个人中心** - `GET /api/user/current`
+
+### 首页相关接口
+1. **首页轮播图** - `GET /api/home/carousel`
+2. **AI使用达人（荣誉殿堂）** - `GET /api/home/honor` (包含topUsers)
+3. **社区头条** - `GET /api/home/honor` (包含news)
+4. **AI工具专区Banner和工具列表** - `GET /api/tools`
+5. **AI优秀实践帖子列表** - `GET /api/posts?zone=practices`
+6. **赋能交流帖子列表** - `GET /api/posts?zone=empowerment`
+
+### AI优秀实践页面接口
+1. **帖子列表（含搜索排序）** - `GET /api/posts?zone=practices&search=xxx&sort=xxx`
+2. **标签列表** - `GET /api/tags?zone=practices`
+3. **部门列表** - `GET /api/departments/stats?zone=practices`
+4. **热门贡献者** - `GET /api/users/top-contributors?zone=practices`
+5. **最热帖子** - `GET /api/posts/hot?zone=practices`
+
+### AI使用达人页面接口
+1. **荣誉列表（按类别筛选、查询、分页）** - `GET /api/honors?filterType=xxx&filterValue=xxx&search=xxx&page=xxx`
+2. **荣誉影响力** - `GET /api/honors/influence`
+3. **我的荣誉** - `GET /api/honors?scope=mine&page=xxx`
+4. **荣誉时光轴** - `GET /api/honors?view=timeline&page=xxx`
+5. **个人用户时光轴** - `GET /api/honors?view=timeline&user=xxx&page=xxx`
+6. **奖项规则** - `GET /api/awards/:id/rules`
+
+### AI工具专区页面接口
+1. **获取工具列表** - `GET /api/tools`
+2. **获取帖子列表（分页）** - `GET /api/posts?zone=tools&toolId=xxx&page=xxx`
+3. **获取活动列表** - `GET /api/activities?toolId=xxx`
+4. **其他工具标签列表** - `GET /api/tags?zone=tools&toolId=-1`
+5. **其他工具帖子列表（分页）** - `GET /api/posts?zone=tools&toolId=-1&page=xxx`
+6. **部门列表（可过滤）** - `GET /api/departments/stats?zone=tools`
+
+### 扶摇Agent应用页面接口
+1. **获取帖子列表（分页）** - `GET /api/posts?zone=agent&page=xxx`
+2. **获取标签列表（可过滤）** - `GET /api/tags?zone=agent`
+3. **获取活动列表** - `GET /api/activities?toolId=-1`
+
+### 赋能交流页面接口
+1. **获取帖子列表（分页）** - `GET /api/posts?zone=empowerment&page=xxx`
+2. **获取标签列表（可过滤）** - `GET /api/tags?zone=empowerment`
+3. **获取精选内容** - `GET /api/posts?zone=empowerment&isFeatured=true`
+
+### 发布帖子页面接口
+1. **获取工具选择列表** - `GET /api/tools` (当选择AI工具专区时)
+2. **获取标签列表** - `GET /api/tags?zone=xxx&toolId=xxx` (根据专区和工具获取)
+3. **获取推荐封面** - `GET /api/posts/recommended-covers`
+4. **保存草稿** - `POST /api/posts/draft`
+5. **发布帖子** - `POST /api/posts`
+
+### 个人中心相关接口
+1. **获取用户个人资料** - `GET /api/user/:userId/profile` 或 `GET /api/user/profile?name=xxx`
+2. **获取用户发布的帖子** - `GET /api/user/:userId/posts`
+3. **获取用户收藏的帖子** - `GET /api/user/:userId/favorites`
+4. **获取用户评论列表** - `GET /api/user/:userId/comments`
+5. **获取用户参与的活动** - `GET /api/user/:userId/activities`
+6. **获取用户发布的活动** - `GET /api/user/:userId/activities/created`
+7. **获取活动报名详情** - `GET /api/activities/:id/registrations` (用于查看报名用户列表)
+
+### 帖子详情页面接口
+1. **获取帖子详情** - `GET /api/posts/:id`
+2. **点赞/取消点赞** - `POST /api/posts/:id/like`
+3. **收藏/取消收藏** - `POST /api/posts/:id/collect`
+4. **更新帖子** - `PUT /api/posts/:id`
+5. **删除帖子** - `DELETE /api/posts/:id`
+6. **获取评论列表** - `GET /api/posts/:id/comments`
+7. **发表评论** - `POST /api/posts/:id/comments`
+8. **点赞评论** - `POST /api/comments/:id/like`
+9. **更新评论** - `PUT /api/comments/:id`
+10. **删除评论** - `DELETE /api/comments/:id`
+11. **删除回复** - `DELETE /api/replies/:id` 或 `DELETE /api/comments/:commentId/replies/:id`
+
+### 活动详情页面接口
+1. **获取活动详情** - `GET /api/activities/:id`
+2. **报名活动** - `POST /api/activities/:id/register`
+3. **取消报名** - `DELETE /api/activities/:id/register`
+4. **获取报名用户列表** - `GET /api/activities/:id/registrations`
+5. **更新活动** - `PUT /api/activities/:id`
+6. **删除活动** - `DELETE /api/activities/:id`
+
+### 发布活动页面接口
+1. **获取工具选择列表** - `GET /api/tools`
+2. **发布活动** - `POST /api/activities`
+
+### 管理后台接口
+1. **保存各个页面配置** - `PUT /api/admin/xxx` (轮播图、荣誉殿堂、工具配置等)
+2. **获取本月积分排行榜** - `GET /api/admin/honors/recommended-winners`
+3. **设置用户获奖** - `POST /api/admin/honors`
+4. **获取奖项列表** - `GET /api/awards?category=xxx` (用于获奖者推荐)
+5. **搜索管理员** - `GET /api/admin/users/search?name=xxx&role=admin`
+6. **通过工号搜索人员** - `GET /api/admin/users/search?employeeId=xxx`
+
+---
+
 ## 目录
 1. [用户认证与个人信息](#用户认证与个人信息)
+   - [用户登录](#1-用户登录)
+   - [用户登出](#2-用户登出)
+   - [用户个人积分](#用户个人积分接口)
+   - [用户个人中心](#3-获取当前用户信息)
 2. [首页](#首页)
-3. [帖子相关](#帖子相关)
-4. [活动相关](#活动相关)
-5. [荣誉系统](#荣誉系统)
-6. [消息系统](#消息系统)
-7. [工具专区](#工具专区)
-8. [管理后台](#管理后台)
-9. [数据交互流程](#数据交互流程)
-10. [积分系统](#积分系统)
-11. [用户角色与权限](#用户角色与权限)
+   - [首页轮播图](#1-获取首页轮播图管理后台配置)
+   - [AI使用达人（荣誉殿堂）](#2-获取荣誉殿堂和社区头条信息管理后台配置)
+   - [社区头条](#2-获取荣誉殿堂和社区头条信息管理后台配置)
+   - [AI工具专区（Banner和工具列表）](#3-获取ai工具列表管理后台配置)
+   - [AI优秀实践](#4-获取ai优秀实践帖子列表接口动态数据)
+   - [赋能交流](#5-获取赋能交流帖子列表接口动态数据)
+3. [AI优秀实践页面](#帖子相关)
+   - [帖子列表（含搜索排序）](#1-获取帖子列表)
+   - [标签列表](#18-获取标签列表)
+   - [部门列表](#19-获取部门统计)
+   - [热门贡献者](#20-获取热门贡献者)
+   - [最热帖子](#21-获取最热帖子)
+4. [帖子相关](#帖子相关)
+   - [获取帖子列表](#1-获取帖子列表ai优秀实践页面核心接口)
+   - [获取帖子详情](#2-获取帖子详情帖子详情页面)
+   - [创建帖子](#3-创建帖子发布帖子页面)
+   - [更新帖子](#4-更新帖子编辑帖子内容)
+   - [删除帖子](#5-删除帖子删除帖子内容)
+   - [点赞/取消点赞](#6-点赞取消点赞帖子帖子详情页面)
+   - [收藏/取消收藏](#7-收藏取消收藏帖子帖子详情页面)
+   - [获取评论列表](#8-获取帖子评论列表评论区接口)
+   - [发表评论](#9-发表评论评论区接口)
+   - [回复评论](#10-回复评论回复接口)
+   - [点赞评论](#11-点赞评论)
+   - [更新评论](#12-更新评论评论的更新接口)
+   - [删除评论](#13-删除评论评论的删除接口)
+   - [删除回复](#14-删除回复回复的删除接口)
+   - [获取用户发布的帖子](#15-获取用户发布的帖子)
+   - [获取用户收藏的帖子](#16-获取用户收藏的帖子)
+   - [获取用户评论列表](#17-获取用户评论列表)
+5. [活动相关](#活动相关)
+   - [获取活动列表](#1-获取活动列表)
+   - [获取活动详情](#2-获取活动详情活动详情页面)
+   - [创建活动](#3-创建活动发布活动接口)
+   - [更新活动](#4-更新活动编辑接口)
+   - [删除活动](#5-删除活动删除接口)
+   - [报名活动](#6-报名活动报名状态更新接口)
+   - [取消报名](#61-取消报名报名状态更新接口)
+   - [获取报名用户列表](#62-获取活动已报名用户列表该活动已报名用户名字列表的接口)
+   - [获取用户参与的活动](#8-获取用户参与的活动)
+   - [获取用户发布的活动](#9-获取用户发布的活动我发布的活动)
+6. [荣誉系统](#荣誉系统)
+7. [消息系统](#消息系统)
+8. [工具专区](#工具专区)
+9. [管理后台](#管理后台)
+10. [数据交互流程](#数据交互流程)
+11. [积分系统](#积分系统)
+12. [用户角色与权限](#用户角色与权限)
 
 ---
 
@@ -88,8 +231,9 @@
 - **接口**: `POST /api/auth/logout`
 - **使用页面**: `AppNavbar.vue`
 
-### 3. 获取当前用户信息
+### 3. 获取当前用户信息（用户个人中心）
 - **接口**: `GET /api/user/current`
+- **说明**: 获取当前登录用户的完整信息，包括个人资料、统计数据、积分等
 - **响应数据**:
   ```json
   {
@@ -104,7 +248,7 @@
     "commentsCount": "number",
     "activitiesCount": "number",
     "flowersCount": "number",
-    "points": "number",
+    "points": "number", // 用户个人积分
     "roles": ["admin" | "owner" | "user"], // 用户角色列表
     "ownedTools": [ // 如果是工具Owner，显示拥有的工具列表
       {
@@ -116,11 +260,51 @@
   ```
 - **使用页面**: `AppNavbar.vue`, `ProfileView.vue`
 
-### 4. 获取用户个人资料
-- **接口**: `GET /api/user/:userId/profile`
-- **查询参数**: `userId` (可选，不传则获取当前用户)
+### 3.1. 获取用户个人积分详情
+- **接口**: `GET /api/user/points/calculate`
+- **说明**: 获取用户个人积分的详细计算信息，包括积分总数和各项积分明细
+- **响应数据**:
+  ```json
+  {
+    "points": "number", // 总积分
+    "breakdown": {
+      "posts": "number", // 发帖获得的积分
+      "comments": "number", // 评论获得的积分
+      "likesReceived": "number", // 被点赞获得的积分
+      "favoritesReceived": "number", // 被收藏获得的积分
+      "activities": "number" // 参加活动获得的积分
+    }
+  }
+  ```
+- **使用页面**: `AppNavbar.vue`, `ProfileView.vue`
+- **积分规则**: 详见[积分系统](#积分系统)章节
+
+### 4. 获取用户个人资料（根据用户名或用户ID）
+- **接口**: `GET /api/user/:userId/profile` 或 `GET /api/user/profile?name=xxx`
+- **说明**: 获取指定用户的个人资料信息，用于个人中心页面（支持查看其他用户）
+- **路径参数**:
+  - `userId`: number (用户ID，可选)
+- **查询参数**: 
+  - `userId`: number (用户ID，可选，与路径参数二选一)
+  - `name`: string (用户名，可选，与userId二选一)
 - **响应数据**: 同"获取当前用户信息"
-- **使用页面**: `ProfileView.vue`
+  ```json
+  {
+    "id": "number",
+    "employeeId": "string",
+    "name": "string",
+    "avatar": "string",
+    "bio": "string",
+    "department": "string",
+    "postsCount": "number",
+    "favoritesCount": "number",
+    "commentsCount": "number",
+    "activitiesCount": "number",
+    "flowersCount": "number",
+    "points": "number"
+  }
+  ```
+- **使用页面**: `ProfileView.vue` (个人中心页面，支持查看其他用户)
 
 ### 5. 更新用户资料
 - **接口**: `PUT /api/user/profile`
@@ -305,18 +489,30 @@
 
 ## 帖子相关
 
-### 1. 获取帖子列表
+> **重要说明**: AI优秀实践页面（PracticesView）需要以下接口支持：
+> - 帖子列表接口（支持搜索、排序、筛选）
+> - 标签列表接口
+> - 部门统计接口
+> - 热门贡献者接口
+> - 最热帖子接口
+
+### 1. 获取帖子列表（AI优秀实践页面核心接口）
 - **接口**: `GET /api/posts`
+- **说明**: 支持搜索、排序、筛选功能的帖子列表接口，用于AI优秀实践页面展示帖子
 - **查询参数**:
-  - `zone`: "practices" | "tools" | "agent" | "empowerment" | "other"
-  - `toolId`: number (工具ID，可选)
-  - `tag`: string (标签，可选)
-  - `department`: string (部门，可选)
-  - `author`: string (作者，可选)
-  - `sort`: "newest" | "hot" | "comments" | "likes"
-  - `page`: number
-  - `pageSize`: number
-  - `search`: string (搜索关键词)
+  - `zone`: "practices" | "tools" | "agent" | "empowerment" | "other" (必填，指定专区)
+  - `toolId`: number (工具ID，可选，当zone为tools时使用)
+  - `tag`: string (标签，可选，筛选指定标签的帖子)
+  - `department`: string (部门，可选，筛选指定部门的帖子)
+  - `author`: string (作者，可选，筛选指定作者的帖子)
+  - `sort`: "newest" | "hot" | "comments" | "likes" (排序方式，默认"newest")
+    - `newest`: 最新发布
+    - `hot`: 最热门（综合浏览量、点赞数、评论数）
+    - `comments`: 评论数最多
+    - `likes`: 点赞数最多
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
+  - `search`: string (搜索关键词，可选，支持标题和内容搜索)
 - **响应数据**:
   ```json
   {
@@ -348,43 +544,52 @@
 - **使用页面**: `PracticesView.vue`, `ToolsView.vue`, `AgentView.vue`, `EmpowermentView.vue`, `HomeView.vue`
 - **注意**: 所有帖子列表接口返回的数据都包含封面图字段（`cover` 或 `image`）
 
-### 2. 获取帖子详情
+### 2. 获取帖子详情（帖子详情页面）
 - **接口**: `GET /api/posts/:id`
+- **说明**: 获取指定帖子的详细信息，用于帖子详情页面展示
+- **路径参数**:
+  - `id`: number (帖子ID)
 - **响应数据**:
   ```json
   {
     "id": "number",
     "title": "string",
-    "content": "string",
+    "summary": "string", // 内容简介
+    "content": "string", // 帖子内容（HTML格式）
     "authorName": "string",
     "authorAvatar": "string",
+    "authorId": "number", // 作者ID
     "createTime": "string",
+    "updateTime": "string", // 更新时间
     "views": "number",
     "likes": "number",
+    "comments": "number", // 评论总数
     "tags": ["string"],
-    "cover": "string",
-    "isLiked": "boolean",
-    "isCollected": "boolean",
-    "isAuthor": "boolean",
-    "canEdit": "boolean",
-    "zone": "string",
+    "cover": "string", // 封面图URL
+    "isLiked": "boolean", // 当前用户是否已点赞
+    "isCollected": "boolean", // 当前用户是否已收藏
+    "isAuthor": "boolean", // 当前用户是否是作者
+    "canEdit": "boolean", // 当前用户是否可以编辑（作者或管理员）
+    "canDelete": "boolean", // 当前用户是否可以删除（作者或管理员）
+    "zone": "practices" | "tools" | "agent" | "empowerment",
     "toolId": "number",
     "toolName": "string"
   }
   ```
-- **使用页面**: `PostDetailView.vue`
+- **使用页面**: `PostDetailView.vue` (帖子详情页面)
 
-### 3. 创建帖子
+### 3. 创建帖子（发布帖子页面）
 - **接口**: `POST /api/posts`
+- **说明**: 发布新帖子，用于发布帖子页面
 - **请求参数**:
   ```json
   {
-    "title": "string",
-    "summary": "string", // 内容简介
-    "content": "string",
-    "tags": ["string"],
-    "cover": "string",
-    "zone": "practices" | "tools" | "agent" | "empowerment",
+    "title": "string", // 帖子标题
+    "summary": "string", // 内容简介（必填）
+    "content": "string", // 帖子内容
+    "tags": ["string"], // 标签列表
+    "cover": "string", // 封面图URL
+    "zone": "practices" | "tools" | "agent" | "empowerment", // 专区
     "toolId": "number" // 当zone为tools时必填（从 GET /api/tools 获取）
   }
   ```
@@ -395,11 +600,66 @@
     "message": "string"
   }
   ```
-- **使用页面**: `PostCreateView.vue`
+- **使用页面**: `PostCreateView.vue` (发布帖子页面)
 - **数据依赖**:
-  - 工具列表: 通过 `GET /api/tools` 获取（当zone为tools时）
-  - 标签列表: 通过 `GET /api/tags?zone=xxx&toolId=xxx` 获取
+  - 工具列表: 通过 `GET /api/tools` 获取（当选择AI工具专区时）
+  - 标签列表: 通过 `GET /api/tags?zone=xxx&toolId=xxx` 获取（根据专区和工具选择）
   - 推荐封面: 通过 `GET /api/posts/recommended-covers` 获取
+
+### 3.0. 获取工具选择列表（发布帖子页面）
+- **接口**: `GET /api/tools`
+- **说明**: 当用户在发布帖子页面选择"AI工具专区"时，获取工具选择列表
+- **查询参数**: 无
+- **响应数据**: 同"首页-获取AI工具列表"
+- **使用页面**: `PostCreateView.vue` (发布帖子页面-工具选择)
+- **注意**: 
+  - 只有当用户选择"AI工具专区"（zone=tools）时才需要调用此接口
+  - 工具列表用于下拉选择框，用户必须选择一个工具（必填）
+
+### 3.0.1. 获取标签列表（发布帖子页面）
+- **接口**: `GET /api/tags?zone=xxx&toolId=xxx`
+- **说明**: 根据用户选择的专区和工具，获取对应的已有标签列表，用于发布帖子页面
+- **查询参数**:
+  - `zone`: "practices" | "tools" | "agent" | "empowerment" (必填，根据用户选择的专区)
+  - `toolId`: number (可选，当zone为tools时，根据用户选择的工具ID获取标签)
+- **响应数据**: 同"获取标签列表"
+- **使用页面**: `PostCreateView.vue` (发布帖子页面-标签选择)
+- **标签获取规则**:
+  - AI优秀实践（zone=practices）: 返回自然语言处理、计算机视觉等标签
+  - AI工具专区（zone=tools）:
+    - 如果选择了具体工具（toolId不为-1）: 返回固定标签（"操作指导"、"优秀使用"）
+    - 如果选择了"其他工具"（toolId=-1）: 返回工具专区的通用标签
+  - 扶摇Agent应用（zone=agent）: 返回Agent应用、工作流等标签
+  - 赋能交流（zone=empowerment）: 返回讨论、提问、分享等标签
+
+### 3.0.2. 保存草稿（发布帖子页面）
+- **接口**: `POST /api/posts/draft`
+- **说明**: 保存帖子草稿，用于发布帖子页面的自动保存功能
+- **请求参数**:
+  ```json
+  {
+    "title": "string", // 帖子标题（可选）
+    "summary": "string", // 内容简介（可选）
+    "content": "string", // 帖子内容（可选）
+    "tags": ["string"], // 标签列表（可选）
+    "cover": "string", // 封面图URL（可选）
+    "zone": "practices" | "tools" | "agent" | "empowerment", // 专区（可选）
+    "toolId": "number" // 工具ID（可选，当zone为tools时）
+  }
+  ```
+- **响应数据**:
+  ```json
+  {
+    "draftId": "string", // 草稿ID
+    "savedAt": "string", // 保存时间
+    "message": "string"
+  }
+  ```
+- **使用页面**: `PostCreateView.vue` (发布帖子页面-自动保存草稿)
+- **说明**: 
+  - 前端可以定期（如每30秒）自动调用此接口保存草稿
+  - 草稿保存后，用户下次进入发布页面时可以恢复草稿内容
+  - 草稿ID可以存储在localStorage中，用于恢复草稿
 
 ### 3.1. 获取推荐封面列表
 - **接口**: `GET /api/posts/recommended-covers`
@@ -418,17 +678,187 @@
   ```
 - **使用页面**: `PostCreateView.vue`
 
-### 4. 更新帖子
+### 4. 更新帖子（编辑帖子内容）
 - **接口**: `PUT /api/posts/:id`
+- **说明**: 更新帖子内容，用于帖子详情页面的编辑功能
+- **路径参数**:
+  - `id`: number (帖子ID)
 - **请求参数**: 同"创建帖子"
-- **使用页面**: `PostCreateView.vue`, `PostDetailView.vue`
+  ```json
+  {
+    "title": "string",
+    "summary": "string",
+    "content": "string",
+    "tags": ["string"],
+    "cover": "string",
+    "zone": "practices" | "tools" | "agent" | "empowerment",
+    "toolId": "number"
+  }
+  ```
+- **响应数据**:
+  ```json
+  {
+    "id": "number",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `PostCreateView.vue` (编辑模式), `PostDetailView.vue` (帖子详情页面-编辑)
+- **权限说明**: 只有帖子作者或管理员可以编辑帖子
 
-### 5. 删除帖子
+### 5. 删除帖子（删除帖子内容）
 - **接口**: `DELETE /api/posts/:id`
-- **使用页面**: `PostDetailView.vue`
+- **说明**: 删除帖子，用于帖子详情页面的删除功能
+- **路径参数**:
+  - `id`: number (帖子ID)
+- **响应数据**:
+  ```json
+  {
+    "success": "boolean",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `PostDetailView.vue` (帖子详情页面-删除)
+- **权限说明**: 只有帖子作者或管理员可以删除帖子
+- **注意**: 删除帖子时，该帖子的所有评论和回复会一并删除
 
-### 6. 点赞/取消点赞帖子
+### 6. 点赞/取消点赞帖子（帖子详情页面）
 - **接口**: `POST /api/posts/:id/like`
+- **说明**: 更新帖子的点赞状态，用于帖子详情页面
+- **路径参数**:
+  - `id`: number (帖子ID)
+- **请求参数**:
+  ```json
+  {
+    "action": "like" | "unlike"
+  }
+  ```
+- **响应数据**:
+  ```json
+  {
+    "liked": "boolean", // 当前点赞状态
+    "likes": "number" // 更新后的点赞总数
+  }
+  ```
+- **使用页面**: `PostDetailView.vue` (帖子详情页面)
+- **积分规则**: 帖子被点赞时，作者积分+3（管理员除外）
+
+### 7. 收藏/取消收藏帖子（帖子详情页面）
+- **接口**: `POST /api/posts/:id/collect`
+- **说明**: 更新帖子的收藏状态，用于帖子详情页面
+- **路径参数**:
+  - `id`: number (帖子ID)
+- **请求参数**:
+  ```json
+  {
+    "action": "collect" | "uncollect"
+  }
+  ```
+- **响应数据**:
+  ```json
+  {
+    "collected": "boolean" // 当前收藏状态
+  }
+  ```
+- **使用页面**: `PostDetailView.vue` (帖子详情页面), `ProfileView.vue` (个人中心)
+- **积分规则**: 帖子被收藏时，作者积分+5（管理员除外）
+
+### 8. 获取帖子评论列表（评论区接口）
+- **接口**: `GET /api/posts/:id/comments`
+- **说明**: 获取指定帖子的评论列表，用于帖子详情页面的评论区
+- **路径参数**:
+  - `id`: number (帖子ID)
+- **查询参数**: 
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "userId": "number",
+        "userName": "string",
+        "userAvatar": "string",
+        "content": "string",
+        "createTime": "string",
+        "updateTime": "string", // 更新时间
+        "likes": "number",
+        "isLiked": "boolean", // 当前用户是否已点赞
+        "isAuthor": "boolean", // 是否是帖子作者
+        "isMyComment": "boolean", // 是否是当前用户的评论
+        "canEdit": "boolean", // 是否可以编辑
+        "canDelete": "boolean", // 是否可以删除
+        "replies": [
+          {
+            "id": "number",
+            "userId": "number",
+            "userName": "string",
+            "userAvatar": "string",
+            "content": "string",
+            "createTime": "string",
+            "replyTo": "string", // 回复的用户名
+            "replyToId": "number", // 回复的用户ID
+            "likes": "number",
+            "isLiked": "boolean"
+          }
+        ]
+      }
+    ],
+    "total": "number"
+  }
+  ```
+- **使用页面**: `PostDetailView.vue` (帖子详情页面-评论区)
+
+### 9. 发表评论（评论区接口）
+- **接口**: `POST /api/posts/:id/comments`
+- **说明**: 在指定帖子下发表评论，用于帖子详情页面的评论区
+- **路径参数**:
+  - `id`: number (帖子ID)
+- **请求参数**:
+  ```json
+  {
+    "content": "string", // 评论内容（必填）
+    "replyTo": "number" // 可选，回复的评论ID（如果是回复评论则必填）
+  }
+  ```
+- **响应数据**: 
+  ```json
+  {
+    "id": "number",
+    "userId": "number",
+    "userName": "string",
+    "userAvatar": "string",
+    "content": "string",
+    "createTime": "string",
+    "likes": 0,
+    "isLiked": false,
+    "replies": []
+  }
+  ```
+- **使用页面**: `PostDetailView.vue` (帖子详情页面-发表评论)
+- **积分规则**: 发表评论成功后，用户积分+1（管理员除外）
+
+### 10. 回复评论（回复接口）
+- **接口**: `POST /api/posts/:id/comments`
+- **说明**: 回复指定评论，用于帖子详情页面的回复功能
+- **路径参数**:
+  - `id`: number (帖子ID)
+- **请求参数**:
+  ```json
+  {
+    "content": "string", // 回复内容（必填）
+    "replyTo": "number" // 必填，回复的评论ID
+  }
+  ```
+- **响应数据**: 同"发表评论"
+- **使用页面**: `PostDetailView.vue` (帖子详情页面-回复评论)
+- **说明**: 回复会作为评论的子回复显示在评论的replies数组中
+
+### 11. 点赞评论
+- **接口**: `POST /api/comments/:id/like`
+- **说明**: 点赞或取消点赞评论，用于帖子详情页面
+- **路径参数**:
+  - `id`: number (评论ID)
 - **请求参数**:
   ```json
   {
@@ -442,85 +872,37 @@
     "likes": "number"
   }
   ```
-- **使用页面**: `PostDetailView.vue`
+- **使用页面**: `PostDetailView.vue` (帖子详情页面)
+- **积分规则**: 评论被点赞时，评论作者积分+1（管理员除外）
 
-### 7. 收藏/取消收藏帖子
-- **接口**: `POST /api/posts/:id/collect`
+### 12. 更新评论（评论的更新接口）
+- **接口**: `PUT /api/comments/:id`
+- **说明**: 更新评论内容，用于帖子详情页面编辑评论
+- **路径参数**:
+  - `id`: number (评论ID)
 - **请求参数**:
   ```json
   {
-    "action": "collect" | "uncollect"
+    "content": "string" // 更新后的评论内容
   }
   ```
 - **响应数据**:
   ```json
   {
-    "collected": "boolean"
-  }
-  ```
-- **使用页面**: `PostDetailView.vue`, `ProfileView.vue`
-
-### 8. 获取帖子评论列表
-- **接口**: `GET /api/posts/:id/comments`
-- **查询参数**: `page`, `pageSize`
-- **响应数据**:
-  ```json
-  {
-    "list": [
-      {
-        "id": "number",
-        "userName": "string",
-        "userAvatar": "string",
-        "content": "string",
-        "createTime": "string",
-        "likes": "number",
-        "isLiked": "boolean",
-        "isAuthor": "boolean",
-        "replies": [
-          {
-            "id": "number",
-            "userName": "string",
-            "userAvatar": "string",
-            "content": "string",
-            "createTime": "string",
-            "replyTo": "string"
-          }
-        ]
-      }
-    ],
-    "total": "number"
-  }
-  ```
-- **使用页面**: `PostDetailView.vue`
-
-### 9. 发表评论
-- **接口**: `POST /api/posts/:id/comments`
-- **请求参数**:
-  ```json
-  {
+    "id": "number",
     "content": "string",
-    "replyTo": "number" // 可选，回复的评论ID
+    "updateTime": "string",
+    "message": "string"
   }
   ```
-- **响应数据**: 评论对象
-- **使用页面**: `PostDetailView.vue`
+- **使用页面**: `PostDetailView.vue` (帖子详情页面-编辑评论)
+- **权限说明**: 只有评论作者可以更新自己的评论
 
-### 10. 点赞评论
-- **接口**: `POST /api/comments/:id/like`
-- **请求参数**:
-  ```json
-  {
-    "action": "like" | "unlike"
-  }
-  ```
-- **使用页面**: `PostDetailView.vue`
-
-### 11. 删除评论
+### 13. 删除评论（评论的删除接口）
 - **接口**: `DELETE /api/comments/:id`
-- **说明**: 
-  - 只有评论作者可以删除自己的评论
-  - 删除评论时，该评论下的所有回复会一并删除
-  - 删除后无法恢复
+- **说明**: 删除评论，用于帖子详情页面删除评论功能
+- **路径参数**:
+  - `id`: number (评论ID)
 - **响应数据**:
   ```json
   {
@@ -528,8 +910,34 @@
     "message": "string"
   }
   ```
-- **使用页面**: `PostDetailView.vue`
-- **权限说明**: 只有评论作者可以删除自己的评论
+- **使用页面**: `PostDetailView.vue` (帖子详情页面-删除评论)
+- **权限说明**: 
+  - 只有评论作者可以删除自己的评论
+  - 管理员可以删除任何评论
+- **注意**: 
+  - 删除评论时，该评论下的所有回复会一并删除
+  - 删除后无法恢复
+
+### 14. 删除回复（回复的删除接口）
+- **接口**: `DELETE /api/replies/:id` 或 `DELETE /api/comments/:commentId/replies/:id`
+- **说明**: 删除回复，用于帖子详情页面删除回复功能
+- **路径参数**:
+  - `id`: number (回复ID)
+  - `commentId`: number (评论ID，如果使用第二种路径格式)
+- **响应数据**:
+  ```json
+  {
+    "success": "boolean",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `PostDetailView.vue` (帖子详情页面-删除回复)
+- **权限说明**: 
+  - 只有回复作者可以删除自己的回复
+  - 管理员可以删除任何回复
+- **注意**: 
+  - 删除回复只删除该条回复，不影响其他回复
+  - 删除后无法恢复
 
 ### 12. 获取用户发布的帖子
 - **接口**: `GET /api/user/:userId/posts`
@@ -564,13 +972,15 @@
   ```
 - **使用页面**: `ProfileView.vue`
 
-### 15. 获取标签列表
+### 18. 获取标签列表（AI优秀实践页面使用）
 - **接口**: `GET /api/tags`
+- **说明**: 获取指定专区的标签列表，用于AI优秀实践页面的标签筛选功能
 - **查询参数**: 
-  - `zone`: "practices" | "tools" | "agent" | "empowerment" (可选，按专区获取标签)
+  - `zone`: "practices" | "tools" | "agent" | "empowerment" (必填，按专区获取标签)
   - `toolId`: number (可选，当zone为tools时，指定工具ID获取该工具的标签)
 - **说明**: 
   - 不同专区有不同的标签列表
+  - AI优秀实践专区（zone=practices）: 返回自然语言处理、计算机视觉、深度学习、AI伦理、机器学习等标签
   - AI工具专区：如果指定toolId且不为"其他"，返回固定标签（"操作指导"、"优秀使用"）
   - AI工具专区：如果toolId为"其他"或不指定，返回工具专区的通用标签
   - 其他专区：返回对应专区的标签列表
@@ -599,47 +1009,121 @@
   - **扶摇Agent应用 (agent)**: Agent应用、工作流、自动化、智能编排、案例分享等
   - **赋能交流 (empowerment)**: 讨论、提问、分享、经验、工具、技巧、案例、教程等
 
-### 16. 获取部门统计
+### 19. 获取部门统计（AI优秀实践页面使用）
 - **接口**: `GET /api/departments/stats`
-- **查询参数**: `zone` (可选)
+- **说明**: 获取各部门的帖子统计信息，用于AI优秀实践页面的部门筛选功能
+- **查询参数**: 
+  - `zone`: "practices" | "tools" | "agent" | "empowerment" (可选，指定专区，不传则返回所有专区的统计)
 - **响应数据**:
   ```json
   {
     "list": [
       {
         "id": "number",
-        "name": "string",
-        "postCount": "number",
-        "contributorCount": "number"
+        "name": "string", // 部门名称
+        "postCount": "number", // 该部门发布的帖子数量
+        "contributorCount": "number" // 该部门的贡献者数量
       }
     ]
   }
   ```
-- **使用页面**: `PracticesView.vue`, `ToolsView.vue`
+- **使用页面**: `PracticesView.vue` (AI优秀实践页面), `ToolsView.vue` (工具专区页面)
 
-### 17. 获取热门贡献者
+### 20. 获取热门贡献者（AI优秀实践页面使用）
 - **接口**: `GET /api/users/top-contributors`
-- **查询参数**: `zone` (可选), `limit` (默认10)
+- **说明**: 获取指定专区的热门贡献者列表，用于AI优秀实践页面展示
+- **查询参数**: 
+  - `zone`: "practices" | "tools" | "agent" | "empowerment" (可选，指定专区，不传则返回所有专区的贡献者)
+  - `limit`: number (可选，返回数量，默认10)
 - **响应数据**:
   ```json
   {
     "list": [
       {
         "id": "number",
-        "name": "string",
-        "avatar": "string",
-        "postCount": "number"
+        "name": "string", // 用户姓名
+        "avatar": "string", // 用户头像
+        "postCount": "number" // 发布的帖子数量
       }
     ]
   }
   ```
-- **使用页面**: `PracticesView.vue`
+- **使用页面**: `PracticesView.vue` (AI优秀实践页面)
+- **排序规则**: 按发布的帖子数量从高到低排序
 
-### 18. 获取热门帖子
+### 21. 获取最热帖子（AI优秀实践页面使用）
 - **接口**: `GET /api/posts/hot`
-- **查询参数**: `zone` (可选), `limit` (默认10)
+- **说明**: 获取指定专区的最热门帖子列表，用于AI优秀实践页面展示
+- **查询参数**: 
+  - `zone`: "practices" | "tools" | "agent" | "empowerment" (可选，指定专区，不传则返回所有专区的热门帖子)
+  - `limit`: number (可选，返回数量，默认10)
+- **响应数据**: 同"获取帖子列表"，返回的帖子按热度排序
+- **使用页面**: `PracticesView.vue` (AI优秀实践页面)
+- **热度计算规则**: 综合浏览量、点赞数、评论数等因素计算热度值
+
+### 22. 获取扶摇Agent应用帖子列表（分页）
+- **接口**: `GET /api/posts?zone=agent`
+- **说明**: 获取扶摇Agent应用专区的帖子列表，支持分页、搜索、排序、筛选
+- **查询参数**:
+  - `zone`: "agent" (必填)
+  - `tag`: string (可选，标签筛选)
+  - `department`: string (可选，部门筛选)
+  - `sort`: "newest" | "hot" | "comments" | "likes" (可选，排序方式)
+  - `search`: string (可选，搜索关键词)
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
 - **响应数据**: 同"获取帖子列表"
-- **使用页面**: `PracticesView.vue`
+- **使用页面**: `AgentView.vue` (扶摇Agent应用页面)
+
+### 23. 获取扶摇Agent应用标签列表（可过滤）
+- **接口**: `GET /api/tags?zone=agent`
+- **说明**: 获取扶摇Agent应用专区的标签列表，支持过滤
+- **查询参数**:
+  - `zone`: "agent" (必填)
+- **响应数据**: 同"获取标签列表"
+- **使用页面**: `AgentView.vue` (扶摇Agent应用页面-标签筛选)
+
+### 24. 获取扶摇Agent应用活动列表
+- **接口**: `GET /api/activities?toolId=-1`
+- **说明**: 获取扶摇Agent应用相关的活动列表（toolId=-1表示扶摇Agent应用）
+- **查询参数**:
+  - `toolId`: -1 (必填，表示扶摇Agent应用)
+  - `type`: "training" | "competition" | "sharing" (可选，活动类型)
+  - `status`: "upcoming" | "ongoing" | "ended" (可选，活动状态)
+- **响应数据**: 同"活动相关-获取活动列表"
+- **使用页面**: `AgentView.vue` (扶摇Agent应用页面)
+
+### 25. 获取赋能交流帖子列表（分页）
+- **接口**: `GET /api/posts?zone=empowerment`
+- **说明**: 获取赋能交流专区的帖子列表，支持分页、搜索、排序、筛选
+- **查询参数**:
+  - `zone`: "empowerment" (必填)
+  - `tag`: string (可选，标签筛选)
+  - `department`: string (可选，部门筛选)
+  - `sort`: "newest" | "hot" | "comments" | "likes" (可选，排序方式)
+  - `search`: string (可选，搜索关键词)
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
+- **响应数据**: 同"获取帖子列表"
+- **使用页面**: `EmpowermentView.vue` (赋能交流页面)
+
+### 26. 获取赋能交流标签列表（可过滤）
+- **接口**: `GET /api/tags?zone=empowerment`
+- **说明**: 获取赋能交流专区的标签列表，支持过滤
+- **查询参数**:
+  - `zone`: "empowerment" (必填)
+- **响应数据**: 同"获取标签列表"
+- **使用页面**: `EmpowermentView.vue` (赋能交流页面-标签筛选)
+
+### 27. 获取赋能交流精选内容
+- **接口**: `GET /api/posts?zone=empowerment&isFeatured=true`
+- **说明**: 获取赋能交流专区的精选帖子列表
+- **查询参数**:
+  - `zone`: "empowerment" (必填)
+  - `isFeatured`: true (必填，筛选精选内容)
+  - `limit`: number (可选，返回数量，默认10)
+- **响应数据**: 同"获取帖子列表"，只返回精选帖子
+- **使用页面**: `EmpowermentView.vue` (赋能交流页面-精选内容)
 
 ---
 
@@ -675,8 +1159,11 @@
   ```
 - **使用页面**: `ToolsView.vue`, `ActivityCarousel.vue`, `ProfileView.vue`
 
-### 2. 获取活动详情
+### 2. 获取活动详情（活动详情页面）
 - **接口**: `GET /api/activities/:id`
+- **说明**: 获取指定活动的详细信息，用于活动详情页面展示
+- **路径参数**:
+  - `id`: number (活动ID)
 - **响应数据**:
   ```json
   {
@@ -684,46 +1171,91 @@
     "title": "string",
     "toolId": "number",
     "toolName": "string",
-    "type": "string",
-    "date": "string",
-    "cover": "string",
-    "content": "string",
-    "authorId": "number",
-    "status": "string",
-    "isRegistered": "boolean",
-    "registeredCount": "number"
+    "type": "training" | "competition" | "sharing",
+    "date": "string", // 活动日期
+    "cover": "string", // 封面图URL
+    "content": "string", // 活动内容（HTML格式）
+    "authorId": "number", // 发布者ID
+    "authorName": "string", // 发布者姓名
+    "authorAvatar": "string", // 发布者头像
+    "createTime": "string", // 创建时间
+    "updateTime": "string", // 更新时间
+    "status": "upcoming" | "ongoing" | "ended", // 活动状态
+    "isRegistered": "boolean", // 当前用户是否已报名
+    "registeredCount": "number", // 已报名人数
+    "isAuthor": "boolean", // 当前用户是否是发布者
+    "canEdit": "boolean", // 当前用户是否可以编辑（发布者或管理员）
+    "canDelete": "boolean" // 当前用户是否可以删除（发布者或管理员）
   }
   ```
-- **使用页面**: `ActivityDetailView.vue`
+- **使用页面**: `ActivityDetailView.vue` (活动详情页面)
 
-### 3. 创建活动
+### 3. 创建活动（发布活动接口）
 - **接口**: `POST /api/activities`
+- **说明**: 发布新活动，用于发布活动页面
 - **请求参数**:
   ```json
   {
-    "title": "string",
+    "title": "string", // 活动标题（必填）
     "toolId": "number", // 工具ID（从 GET /api/tools 获取，可选，-1表示扶摇Agent应用）
+    "type": "training" | "competition" | "sharing", // 活动类型（必填）
+    "date": "string", // 活动日期（必填，格式：YYYY-MM-DD）
+    "cover": "string", // 封面图URL（必填）
+    "content": "string" // 活动内容（必填，HTML格式）
+  }
+  ```
+- **响应数据**:
+  ```json
+  {
+    "id": "number",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `ActivityCreateView.vue` (发布活动页面)
+- **数据依赖**:
+  - 工具列表: 通过 `GET /api/tools` 获取（用于选择活动关联的工具）
+
+### 3.0. 获取可选择的工具下拉列表（发布活动页面）
+- **接口**: `GET /api/tools`
+- **说明**: 获取所有工具列表，用于发布活动页面的工具下拉选择
+- **查询参数**: 无
+- **响应数据**: 同"首页-获取AI工具列表"
+- **使用页面**: `ActivityCreateView.vue` (发布活动页面-工具选择)
+- **注意**: 
+  - 工具列表用于下拉选择框
+  - toolId为-1表示"扶摇Agent应用"
+
+### 4. 更新活动（编辑接口）
+- **接口**: `PUT /api/activities/:id`
+- **说明**: 更新活动信息，用于活动详情页面的编辑功能
+- **路径参数**:
+  - `id`: number (活动ID)
+- **请求参数**: 同"创建活动"
+  ```json
+  {
+    "title": "string",
+    "toolId": "number",
     "type": "training" | "competition" | "sharing",
     "date": "string",
     "cover": "string",
     "content": "string"
   }
   ```
-- **使用页面**: `ActivityCreateView.vue`
-- **数据依赖**:
-  - 工具列表: 通过 `GET /api/tools` 获取（用于选择活动关联的工具）
+- **响应数据**:
+  ```json
+  {
+    "id": "number",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `ActivityCreateView.vue` (编辑模式), `ActivityDetailView.vue` (活动详情页面-编辑)
+- **权限说明**: 只有活动发布者或管理员可以编辑活动
 
-### 4. 更新活动
-- **接口**: `PUT /api/activities/:id`
-- **请求参数**: 同"创建活动"
-- **使用页面**: `ActivityCreateView.vue`, `ActivityDetailView.vue`
-
-### 5. 删除活动
+### 5. 删除活动（删除接口）
 - **接口**: `DELETE /api/activities/:id`
-- **使用页面**: `ActivityDetailView.vue`
-
-### 6. 报名活动
-- **接口**: `POST /api/activities/:id/register`
+- **说明**: 删除活动，用于活动详情页面的删除功能
+- **路径参数**:
+  - `id`: number (活动ID)
 - **响应数据**:
   ```json
   {
@@ -731,10 +1263,71 @@
     "message": "string"
   }
   ```
-- **使用页面**: `ActivityDetailView.vue`
+- **使用页面**: `ActivityDetailView.vue` (活动详情页面-删除)
+- **权限说明**: 只有活动发布者或管理员可以删除活动
+- **注意**: 删除活动时，该活动的所有报名记录会一并删除
+
+### 6. 报名活动（报名状态更新接口）
+- **接口**: `POST /api/activities/:id/register`
+- **说明**: 报名参加活动，用于活动详情页面的报名功能
+- **路径参数**:
+  - `id`: number (活动ID)
+- **响应数据**:
+  ```json
+  {
+    "success": "boolean",
+    "message": "string",
+    "isRegistered": true, // 更新后的报名状态
+    "registeredCount": "number" // 更新后的报名人数
+  }
+  ```
+- **使用页面**: `ActivityDetailView.vue` (活动详情页面-报名)
 - **积分规则**: 报名成功后，用户积分+10（管理员除外）
 
-### 6.1. 检查用户是否为工具Owner
+### 6.1. 取消报名（报名状态更新接口）
+- **接口**: `DELETE /api/activities/:id/register`
+- **说明**: 取消活动报名，用于活动详情页面取消报名功能
+- **路径参数**:
+  - `id`: number (活动ID)
+- **响应数据**:
+  ```json
+  {
+    "success": "boolean",
+    "message": "string",
+    "isRegistered": false, // 更新后的报名状态
+    "registeredCount": "number" // 更新后的报名人数
+  }
+  ```
+- **使用页面**: `ActivityDetailView.vue` (活动详情页面-取消报名)
+
+### 6.2. 获取活动已报名用户列表（该活动已报名用户名字列表的接口）
+- **接口**: `GET /api/activities/:id/registrations`
+- **说明**: 获取指定活动的已报名用户列表，用于活动详情页面展示
+- **路径参数**:
+  - `id`: number (活动ID)
+- **查询参数**:
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认20，最大100)
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number", // 报名记录ID
+        "userId": "number", // 用户ID
+        "userName": "string", // 用户姓名
+        "userAvatar": "string", // 用户头像
+        "employeeId": "string", // 工号
+        "department": "string", // 部门
+        "registerTime": "string" // 报名时间
+      }
+    ],
+    "total": "number" // 总报名人数
+  }
+  ```
+- **使用页面**: `ActivityDetailView.vue` (活动详情页面-已报名用户列表)
+
+### 6.3. 检查用户是否为工具Owner
 - **接口**: `GET /api/tools/:id/owner`
 - **说明**: 检查当前用户是否为指定工具的Owner，用于控制发布活动按钮的显示
 - **响应数据**:
@@ -756,30 +1349,77 @@
 
 ### 8. 获取用户参与的活动
 - **接口**: `GET /api/user/:userId/activities`
-- **查询参数**: `page`, `pageSize`
+- **说明**: 获取指定用户参与（已报名）的活动列表，用于个人中心"我参与的活动"标签页
+- **路径参数**:
+  - `userId`: number (用户ID)
+- **查询参数**: 
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
 - **响应数据**: 同"获取活动列表"
-- **使用页面**: `ProfileView.vue`
+- **使用页面**: `ProfileView.vue` (个人中心-我参与的活动)
+
+### 9. 获取用户发布的活动（我发布的活动）
+- **接口**: `GET /api/user/:userId/activities/created`
+- **说明**: 获取指定用户发布的活动列表，用于个人中心"我发布的活动"标签页
+- **路径参数**:
+  - `userId`: number (用户ID)
+- **查询参数**: 
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
+  - `status`: "upcoming" | "ongoing" | "ended" (可选，按状态筛选)
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "title": "string",
+        "description": "string",
+        "content": "string",
+        "cover": "string",
+        "date": "string",
+        "type": "training" | "competition" | "sharing",
+        "status": "upcoming" | "ongoing" | "ended",
+        "registeredCount": "number", // 已报名人数
+        "createTime": "string",
+        "toolId": "number",
+        "toolName": "string"
+      }
+    ],
+    "total": "number"
+  }
+  ```
+- **使用页面**: `ProfileView.vue` (个人中心-我发布的活动)
 
 ---
 
-## 荣誉系统
+## 荣誉系统（AI使用达人页面）
 
 > **重要说明**: 荣誉系统包括：
 > - 用户荣誉记录（获奖记录）
 > - 荣誉排行榜
 > - 获奖者推荐（管理员功能）
+> - **所有接口都支持分页功能**
 
-### 1. 获取荣誉列表
+### 1. 获取荣誉列表（按类别筛选、查询、分页）
 - **接口**: `GET /api/honors`
+- **说明**: AI使用达人页面的核心接口，支持多种筛选、查询和分页功能
 - **查询参数**:
-  - `scope`: "all" | "mine"
-  - `view`: "grid" | "timeline"
-  - `user`: string (用户名，查看特定用户的时光轴)
-  - `filterType`: "category" | "award" | "department"
-  - `filterValue`: string (筛选值)
-  - `search`: string (搜索用户名)
-  - `page`: number
-  - `pageSize`: number
+  - `scope`: "all" | "mine" (可选，默认"all")
+    - `all`: 获取所有荣誉记录
+    - `mine`: 获取当前用户的荣誉记录（我的荣誉）
+  - `view`: "grid" | "timeline" (可选，默认"grid")
+    - `grid`: 荣誉墙视图
+    - `timeline`: 时光轴视图
+  - `user`: string (可选，用户名，查看特定用户的时光轴)
+  - `filterType`: "category" | "award" | "department" (可选，筛选类型)
+    - `category`: 按类别筛选（技术创新、效能提升、最佳实践、社区贡献）
+    - `award`: 按奖项名称筛选
+    - `department`: 按部门筛选
+  - `filterValue`: string (可选，筛选值，配合filterType使用)
+  - `search`: string (可选，搜索用户名)
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认16，最大100)
 - **响应数据**:
   ```json
   {
@@ -801,11 +1441,96 @@
     "total": "number"
   }
   ```
-- **使用页面**: `UsersView.vue`
+- **使用页面**: `UsersView.vue` (AI使用达人页面)
+- **筛选说明**:
+  - 按类别筛选：`filterType=category&filterValue=innovation` (技术创新)
+  - 按奖项筛选：`filterType=award&filterValue=2026年度 AI 技术突破奖`
+  - 按部门筛选：`filterType=department&filterValue=架构平台部`
+  - 查询功能：`search=张三` (搜索用户名)
 
-### 2. 获取荣誉排行榜
+### 1.1. 获取我的荣誉（分页）
+- **接口**: `GET /api/honors?scope=mine`
+- **说明**: 获取当前登录用户的荣誉记录，支持分页
+- **查询参数**:
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认16)
+- **响应数据**: 同"获取荣誉列表"
+- **使用页面**: `UsersView.vue` (AI使用达人页面-我的荣誉)
+
+### 1.2. 获取荣誉时光轴（分页）
+- **接口**: `GET /api/honors?view=timeline`
+- **说明**: 获取所有荣誉记录的时光轴视图，按年份和日期分组，支持分页
+- **查询参数**:
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认20)
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "year": "string", // 年份
+        "items": [
+          {
+            "id": "number",
+            "name": "string",
+            "department": "string",
+            "avatar": "string",
+            "awardName": "string",
+            "awardDate": "string",
+            "category": "innovation" | "efficiency" | "practice" | "community",
+            "flowers": "number"
+          }
+        ]
+      }
+    ],
+    "total": "number"
+  }
+  ```
+- **使用页面**: `UsersView.vue` (AI使用达人页面-时光轴视图)
+
+### 1.3. 获取个人用户时光轴（分页）
+- **接口**: `GET /api/honors?view=timeline&user=xxx`
+- **说明**: 获取指定用户的荣誉时光轴，点击用户头像时使用，支持分页
+- **查询参数**:
+  - `user`: string (必填，用户名)
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认20)
+- **响应数据**: 同"获取荣誉时光轴"，但只包含指定用户的记录
+- **使用页面**: `UsersView.vue` (AI使用达人页面-点击用户查看个人时光轴)
+
+### 2. 获取荣誉影响力
+- **接口**: `GET /api/honors/influence`
+- **说明**: 获取荣誉影响力统计数据，用于展示荣誉的总体影响力
+- **查询参数**: 无
+- **响应数据**:
+  ```json
+  {
+    "totalHonors": "number", // 总荣誉数
+    "totalUsers": "number", // 获奖用户总数
+    "totalFlowers": "number", // 总花朵数
+    "categories": [
+      {
+        "category": "innovation" | "efficiency" | "practice" | "community",
+        "count": "number",
+        "label": "string" // 类别名称（技术创新、效能提升等）
+      }
+    ],
+    "topDepartments": [
+      {
+        "name": "string",
+        "count": "number"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `UsersView.vue` (AI使用达人页面)
+
+### 3. 获取荣誉排行榜（分页）
 - **接口**: `GET /api/honors/leaderboard`
-- **查询参数**: `limit` (默认10)
+- **说明**: 获取荣誉排行榜，按获奖数和花朵数排序，支持分页
+- **查询参数**: 
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10)
 - **响应数据**:
   ```json
   {
@@ -858,7 +1583,26 @@
   ```
 - **使用页面**: `UsersView.vue`
 
-### 4. 获取奖项列表
+### 4. 获取奖项规则详情
+- **接口**: `GET /api/awards/:id/rules`
+- **说明**: 获取指定奖项的详细规则信息，用于AI使用达人页面展示奖项规则
+- **查询参数**: 
+  - `id`: number (奖项ID，路径参数)
+  - `award`: string (奖项名称，可选，作为备用查询参数)
+- **响应数据**:
+  ```json
+  {
+    "id": "number",
+    "name": "string", // 奖项名称
+    "rules": "string", // 奖项规则详细说明
+    "category": "innovation" | "efficiency" | "practice" | "community",
+    "image": "string", // 奖项图片
+    "desc": "string" // 奖项描述
+  }
+  ```
+- **使用页面**: `UsersView.vue` (AI使用达人页面), `AwardRulesView.vue` (奖项规则详情页)
+
+### 5. 获取奖项列表
 - **接口**: `GET /api/awards`
 - **查询参数**:
   - `category`: string (可选，筛选奖项分类: "innovation" | "efficiency" | "practice" | "community")
@@ -883,20 +1627,6 @@
   ```
 - **使用页面**: `HomeView.vue`, `AwardRulesView.vue`, `AdminView.vue` (获奖者推荐-设置评奖)
 
-### 5. 获取奖项规则详情
-- **接口**: `GET /api/awards/:id/rules`
-- **查询参数**: `award` (奖项名称，可选)
-- **响应数据**:
-  ```json
-  {
-    "id": "number",
-    "name": "string",
-    "rules": "string",
-    "category": "string",
-    "image": "string"
-  }
-  ```
-- **使用页面**: `AwardRulesView.vue`
 
 
 ---
@@ -954,11 +1684,52 @@
 
 ---
 
-## 工具专区
+## 工具专区（AI工具专区页面）
 
-### 1. 获取工具详情
+> **重要说明**: AI工具专区页面包括：
+> - 工具列表展示
+> - 工具对应的帖子列表（支持分页）
+> - 工具对应的活动列表
+> - 其他工具的标签和帖子列表（支持分页）
+> - 部门列表（支持过滤）
+
+### 1. 获取工具列表（AI工具专区页面）
+- **接口**: `GET /api/tools`
+- **说明**: 获取所有工具列表，用于AI工具专区页面的工具筛选按钮（除了"其他工具"按钮）
+- **查询参数**: 
+  - `featured`: boolean (可选，是否只获取推荐工具)
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "name": "string",
+        "desc": "string",
+        "logo": "string",
+        "color": "string",
+        "link": "string", // 跳转路由
+        "banners": [ // 工具Banner，由管理后台配置
+          {
+            "id": "number",
+            "image": "string",
+            "title": "string",
+            "desc": "string",
+            "order": "number"
+          }
+        ]
+      }
+    ]
+  }
+  ```
+- **使用页面**: `ToolsView.vue` (AI工具专区页面)
+- **注意**: 
+  - 工具专区页面会显示所有工具按钮（来自此接口）+ "其他工具"按钮（前端固定）
+  - 工具ID为-1表示"其他工具"
+
+### 2. 获取工具详情
 - **接口**: `GET /api/tools/:id`
-- **说明**: 工具信息（包括Banner）由管理后台配置，这里读取配置数据
+- **说明**: 获取指定工具的详细信息（包括Banner），由管理后台配置
 - **响应数据**:
   ```json
   {
@@ -982,33 +1753,78 @@
 - **使用页面**: `ToolsView.vue`
 - **配置页面**: `AdminView.vue` (首页管理-AI工具配置)
 
-### 2. 获取工具相关活动
-- **接口**: `GET /api/tools/:id/activities`
-- **查询参数**: `limit` (默认3)
-- **说明**: 动态获取该工具相关的活动列表
-- **响应数据**: 同"活动相关-获取活动列表"
-- **使用页面**: `ToolsView.vue`
+### 3. 获取工具对应的帖子列表（分页）
+- **接口**: `GET /api/posts?zone=tools&toolId=xxx`
+- **说明**: 获取指定工具对应的帖子列表，支持分页、搜索、排序、筛选
+- **查询参数**:
+  - `zone`: "tools" (必填)
+  - `toolId`: number (必填，工具ID，-1表示"其他工具")
+  - `tag`: string (可选，标签筛选)
+  - `department`: string (可选，部门筛选)
+  - `sort`: "newest" | "hot" | "comments" | "likes" (可选，排序方式)
+  - `search`: string (可选，搜索关键词)
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
+- **响应数据**: 同"帖子相关-获取帖子列表"
+- **使用页面**: `ToolsView.vue` (AI工具专区页面)
 
-### 3. 获取工具列表（用于筛选和选择）
-- **接口**: `GET /api/tools`
-- **说明**: 
-  - 用于工具专区页面的工具筛选按钮（除了"其他工具"按钮）
-  - 用于发帖页面选择工具类别
-  - 用于发布活动页面选择工具
-- **响应数据**: 见"首页-获取AI工具列表"
-- **使用页面**: 
-  - `ToolsView.vue` - 工具筛选按钮
-  - `PostCreateView.vue` - 工具类别选择
-  - `ActivityCreateView.vue` - 工具选择
-- **注意**: 
-  - 工具专区页面会显示所有工具按钮（来自此接口）+ "其他工具"按钮（前端固定）
-  - 发帖和发布活动页面会显示所有工具选项供选择
+### 4. 获取工具对应的活动列表
+- **接口**: `GET /api/activities?toolId=xxx`
+- **说明**: 获取指定工具相关的活动列表
+- **查询参数**:
+  - `toolId`: number (必填，工具ID，-1表示扶摇Agent应用)
+  - `type`: "training" | "competition" | "sharing" (可选，活动类型)
+  - `status`: "upcoming" | "ongoing" | "ended" (可选，活动状态)
+  - `limit`: number (可选，返回数量，默认3)
+- **响应数据**: 同"活动相关-获取活动列表"
+- **使用页面**: `ToolsView.vue` (AI工具专区页面)
+
+### 5. 获取其他工具的所有标签（可过滤）
+- **接口**: `GET /api/tags?zone=tools&toolId=-1`
+- **说明**: 获取"其他工具"的标签列表，支持过滤
+- **查询参数**:
+  - `zone`: "tools" (必填)
+  - `toolId`: -1 (必填，表示"其他工具")
+- **响应数据**: 同"帖子相关-获取标签列表"
+- **使用页面**: `ToolsView.vue` (AI工具专区页面-其他工具筛选)
+
+### 6. 获取其他工具的帖子列表（分页）
+- **接口**: `GET /api/posts?zone=tools&toolId=-1`
+- **说明**: 获取"其他工具"的帖子列表，支持分页、搜索、排序、筛选
+- **查询参数**:
+  - `zone`: "tools" (必填)
+  - `toolId`: -1 (必填，表示"其他工具")
+  - `tag`: string (可选，标签筛选)
+  - `department`: string (可选，部门筛选)
+  - `sort`: "newest" | "hot" | "comments" | "likes" (可选，排序方式)
+  - `search`: string (可选，搜索关键词)
+  - `page`: number (页码，从1开始，默认1)
+  - `pageSize`: number (每页数量，默认10，最大100)
+- **响应数据**: 同"帖子相关-获取帖子列表"
+- **使用页面**: `ToolsView.vue` (AI工具专区页面-其他工具)
+
+### 7. 获取部门列表（可过滤）
+- **接口**: `GET /api/departments/stats?zone=tools`
+- **说明**: 获取工具专区的部门统计信息，支持按专区过滤
+- **查询参数**:
+  - `zone`: "tools" (可选，指定专区，不传则返回所有专区的统计)
+- **响应数据**: 同"帖子相关-获取部门统计"
+- **使用页面**: `ToolsView.vue` (AI工具专区页面-部门筛选)
 
 ---
 
 ## 管理后台
 
 > **重要说明**: 管理后台用于配置首页的静态内容，包括轮播图、荣誉殿堂、工具配置、社区头条等。这些配置数据会被首页读取并显示。
+> 
+> **保存各个页面配置接口**：管理后台的所有配置接口都使用 `PUT` 方法保存配置，包括：
+> - 首页轮播图配置
+> - 荣誉殿堂Banner配置
+> - 荣誉殿堂奖项配置
+> - 社区头条配置
+> - AI工具配置
+> - 扶摇Agent应用置顶帖子配置
+> - 推荐封面配置
 
 ### 1. 获取首页轮播图配置
 - **接口**: `GET /api/admin/home/carousel`
@@ -1293,13 +2109,17 @@
 - **说明**: 保存推荐封面配置后，发帖页面通过 `GET /api/posts/recommended-covers` 读取
 - **使用页面**: `AdminView.vue` (管理后台-推荐封面配置)
 
-### 15. 搜索用户（通过工号）
+### 15. 搜索用户（通过工号搜索人员的接口）
 - **接口**: `GET /api/admin/users/search`
+- **说明**: 通过工号、姓名或邮箱搜索用户，用于人员管理添加用户
 - **查询参数**:
-  - `employeeId`: string (工号)
+  - `employeeId`: string (工号，可选)
   - `name`: string (姓名，可选)
   - `email`: string (邮箱，可选)
-- **说明**: 通过工号搜索用户，用于人员管理添加用户
+- **说明**: 
+  - 至少需要提供一个查询参数
+  - 支持模糊搜索
+  - 用于人员管理添加用户
 - **响应数据**:
   ```json
   {
@@ -1307,15 +2127,25 @@
       {
         "id": "number",
         "employeeId": "string", // 工号
-        "name": "string",
-        "email": "string",
-        "department": "string",
-        "avatar": "string"
+        "name": "string", // 姓名
+        "email": "string", // 邮箱
+        "department": "string", // 部门
+        "avatar": "string" // 头像
       }
     ]
   }
   ```
 - **使用页面**: `AdminView.vue` (管理后台-人员管理)
+
+### 15.1. 搜索管理员（搜索管理员姓名的接口）
+- **接口**: `GET /api/admin/users/search`
+- **说明**: 搜索管理员用户，用于管理后台搜索管理员
+- **查询参数**:
+  - `name`: string (管理员姓名，支持模糊搜索)
+  - `role`: "admin" (必填，筛选管理员角色)
+  - `employeeId`: string (工号，可选)
+- **响应数据**: 同"搜索用户"
+- **使用页面**: `AdminView.vue` (管理后台-人员管理-搜索管理员)
 
 ### 16. 获取用户列表
 - **接口**: `GET /api/admin/users`
@@ -1396,12 +2226,12 @@
 - **说明**: 移除用户的指定角色（管理员或工具Owner）
 - **使用页面**: `AdminView.vue` (管理后台-人员管理)
 
-### 20. 获取本月积分排行榜（获奖者推荐）
+### 20. 获取本月积分排行榜（获奖者推荐接口）
 - **接口**: `GET /api/admin/honors/recommended-winners`
+- **说明**: 获取本月积分靠前的用户，用于管理员推荐评奖
 - **查询参数**: 
   - `month`: string (可选，格式：YYYY-MM，默认当前月份)
   - `limit`: number (默认3，推荐Top 3用户)
-- **说明**: 获取本月积分靠前的用户，用于管理员推荐评奖
 - **响应数据**:
   ```json
   {
@@ -1430,23 +2260,24 @@
   - 排除管理员用户的积分
   - 按积分从高到低排序，返回Top 3
 
-### 21. 设置用户获奖
+### 21. 设置用户获奖（获奖者推荐接口）
 - **接口**: `POST /api/admin/honors`
+- **说明**: 为推荐的用户设置获奖记录，用于管理后台获奖者推荐功能
 - **请求参数**:
   ```json
   {
-    "userId": "number",
-    "awardId": "number", // 奖项ID（从奖项列表中选择）
+    "userId": "number", // 用户ID（必填）
+    "awardId": "number", // 奖项ID（从奖项列表中选择，必填）
     "awardName": "string", // 奖项名称（自动从奖项ID获取）
-    "awardDate": "string", // 获奖时间，格式：YYYY-MM（年月）
-    "category": "innovation" | "efficiency" | "practice" | "community",
+    "awardDate": "string", // 获奖时间，格式：YYYY-MM（年月，必填）
+    "category": "innovation" | "efficiency" | "practice" | "community", // 奖项分类（必填）
     "year": "string" // 年份，格式：YYYY（从awardDate中提取）
   }
   ```
 - **响应数据**:
   ```json
   {
-    "id": "number",
+    "id": "number", // 荣誉记录ID
     "message": "string"
   }
   ```
@@ -1462,6 +2293,17 @@
     5. 提交设置（系统自动从获奖时间中提取年份）
   - 奖项名称必须从管理后台配置的奖项列表中选择，只有配置了的奖项才能被选择
   - 获奖时间使用年月格式，系统会自动提取年份用于展示和统计
+
+### 21.1. 通过已添加的奖项获取获奖者可选奖项（通过已添加的奖项获取获奖者可选奖项的接口）
+- **接口**: `GET /api/awards?category=xxx`
+- **说明**: 根据奖项分类获取可选奖项列表，用于获奖者推荐时选择奖项
+- **查询参数**:
+  - `category`: "innovation" | "efficiency" | "practice" | "community" (必填，奖项分类)
+- **响应数据**: 同"获取奖项列表"
+- **使用页面**: `AdminView.vue` (管理后台-AI使用达人管理-获奖者推荐-选择奖项)
+- **说明**: 
+  - 只返回指定分类下已配置的奖项
+  - 用于获奖者推荐时，管理员只能从已配置的奖项中选择
 
 ### 22. 取消用户获奖
 - **接口**: `DELETE /api/admin/honors/:id`

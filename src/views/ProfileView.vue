@@ -178,15 +178,122 @@
             </div>
           </div>
         </el-tab-pane>
+
+        <el-tab-pane :label="isViewingOtherUser ? '发布的活动' : '我发布的活动'" name="myActivities">
+          <div class="tab-content">
+            <div class="activities-list">
+              <div
+                v-for="activity in paginatedMyActivities"
+                :key="activity.id"
+                class="activity-item glass-card"
+              >
+                <div class="activity-image" v-if="activity.cover">
+                  <img :src="activity.cover" :alt="activity.title" />
+                </div>
+                <div class="activity-content">
+                  <h3 class="activity-title">{{ activity.title }}</h3>
+                  <p class="activity-desc">{{ activity.description || activity.content?.substring(0, 100) }}</p>
+                  <div class="activity-meta">
+                    <span class="activity-date">
+                      <el-icon><Calendar /></el-icon>
+                      {{ activity.date }}
+                    </span>
+                    <span class="activity-type">
+                      <el-tag :type="getActivityTypeTag(activity.type)" size="small">
+                        {{ getActivityTypeName(activity.type) }}
+                      </el-tag>
+                    </span>
+                    <el-tag :type="activity.status === 'ongoing' ? 'success' : activity.status === 'upcoming' ? 'warning' : 'info'" size="small">
+                      {{ getActivityStatusName(activity.status) }}
+                    </el-tag>
+                    <span class="activity-registered-count">
+                      <el-icon><User /></el-icon>
+                      已报名：{{ activity.registeredCount || 0 }} 人
+                    </span>
+                  </div>
+                  <div class="activity-actions">
+                    <el-button
+                      type="primary"
+                      size="small"
+                      @click.stop="handleViewRegistrations(activity)"
+                    >
+                      <el-icon><View /></el-icon>
+                      查看报名详情
+                    </el-button>
+                    <el-button
+                      type="default"
+                      size="small"
+                      @click.stop="handleActivityClick(activity)"
+                    >
+                      查看详情
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="myCreatedActivities.length === 0" class="empty-state">
+              <el-empty description="还没有发布过活动" />
+            </div>
+            <div class="pagination-wrapper" v-if="myCreatedActivities.length > 0">
+              <el-pagination
+                v-model:current-page="myActivitiesPage"
+                v-model:page-size="myActivitiesPageSize"
+                :total="myCreatedActivities.length"
+                layout="total, prev, pager, next"
+                @current-change="handleMyActivitiesPageChange"
+              />
+            </div>
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </div>
+
+    <!-- 报名详情对话框 -->
+    <el-dialog
+      v-model="showRegistrationsDialog"
+      :title="`${currentActivity?.title || ''} - 报名详情`"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div v-loading="loadingRegistrations" class="registrations-dialog">
+        <div class="registrations-header">
+          <span class="total-count">共 {{ registrations.length }} 人报名</span>
+        </div>
+        <div class="registrations-list" v-if="registrations.length > 0">
+          <div
+            v-for="registration in registrations"
+            :key="registration.id"
+            class="registration-item"
+          >
+            <el-avatar :size="40" :src="registration.userAvatar" class="registration-avatar">
+              {{ registration.userName?.charAt(0) || 'U' }}
+            </el-avatar>
+            <div class="registration-info">
+              <div class="registration-name">{{ registration.userName }}</div>
+              <div class="registration-meta">
+                <span v-if="registration.employeeId">工号：{{ registration.employeeId }}</span>
+                <span v-if="registration.department">部门：{{ registration.department }}</span>
+              </div>
+            </div>
+            <div class="registration-time">
+              {{ registration.registerTime }}
+            </div>
+          </div>
+        </div>
+        <el-empty v-else description="暂无报名用户" />
+      </div>
+      <template #footer>
+        <el-button @click="showRegistrationsDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Document, Star, Calendar, Location } from '@element-plus/icons-vue'
+import { Document, Star, Calendar, Location, User, View } from '@element-plus/icons-vue'
+import { ElMessage, ElDialog, ElMessageBox } from 'element-plus'
 import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'
 import FlowerIcon from '../components/FlowerIcon.vue'
@@ -327,6 +434,9 @@ const myComments = ref([
 // 我参与的活动
 const myActivities = ref<any[]>([])
 
+// 我发布的活动
+const myCreatedActivities = ref<any[]>([])
+
 // 加载报名的活动
 const loadRegisteredActivities = () => {
   try {
@@ -358,6 +468,66 @@ const loadRegisteredActivities = () => {
   }
 }
 
+// 加载我发布的活动
+const loadMyCreatedActivities = async () => {
+  try {
+    // 这里应该调用API获取用户发布的活动
+    // const response = await getUserCreatedActivities(userInfo.value.name)
+    // myCreatedActivities.value = response.data
+    
+    // 模拟数据
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    // 从localStorage获取发布的活动（实际应该从API获取）
+    const createdKey = `user_${userInfo.value.name}_created_activities`
+    const createdStr = localStorage.getItem(createdKey)
+    
+    if (createdStr) {
+      try {
+        const created = JSON.parse(createdStr)
+        myCreatedActivities.value = created.sort((a: any, b: any) => {
+          const timeA = new Date(a.createTime || 0).getTime()
+          const timeB = new Date(b.createTime || 0).getTime()
+          return timeB - timeA
+        })
+      } catch (e) {
+        console.warn('解析发布活动列表失败:', e)
+        myCreatedActivities.value = []
+      }
+    } else {
+      // 模拟数据
+      myCreatedActivities.value = [
+        {
+          id: 1,
+          title: 'AI工具使用培训活动',
+          description: '分享AI工具的使用技巧和最佳实践',
+          content: '本次活动将详细介绍各种AI工具的使用方法...',
+          cover: 'https://picsum.photos/400/300?random=10',
+          date: '2024-04-15',
+          type: 'training',
+          status: 'upcoming',
+          registeredCount: 15,
+          createTime: '2024-04-01 10:00:00'
+        },
+        {
+          id: 2,
+          title: 'AI应用创新大赛',
+          description: '展示你的AI应用创新项目',
+          cover: 'https://picsum.photos/400/300?random=11',
+          date: '2024-04-20',
+          type: 'competition',
+          status: 'upcoming',
+          registeredCount: 8,
+          createTime: '2024-04-02 14:30:00'
+        }
+      ]
+    }
+  } catch (error) {
+    console.error('加载发布活动列表失败:', error)
+    myCreatedActivities.value = []
+  }
+}
+
 // 监听活动报名更新事件
 const handleActivityRegistered = (event: CustomEvent) => {
   if (event.detail.userId === 1) { // 当前用户ID
@@ -374,6 +544,8 @@ const commentsPage = ref(1)
 const commentsPageSize = ref(10)
 const activitiesPage = ref(1)
 const activitiesPageSize = ref(10)
+const myActivitiesPage = ref(1)
+const myActivitiesPageSize = ref(10)
 
 // 分页后的数据
 const paginatedComments = computed(() => {
@@ -386,6 +558,12 @@ const paginatedActivities = computed(() => {
   const start = (activitiesPage.value - 1) * activitiesPageSize.value
   const end = start + activitiesPageSize.value
   return myActivities.value.slice(start, end)
+})
+
+const paginatedMyActivities = computed(() => {
+  const start = (myActivitiesPage.value - 1) * myActivitiesPageSize.value
+  const end = start + myActivitiesPageSize.value
+  return myCreatedActivities.value.slice(start, end)
 })
 
 // 根据用户名加载用户数据
@@ -402,6 +580,8 @@ const loadUserProfile = async (userName: string) => {
 
   // 加载该用户的帖子
   await loadUserPosts(userName)
+  // 加载该用户发布的活动（如果是查看其他用户，也加载）
+  await loadMyCreatedActivities()
 }
 
 // 获取用户头像（mock数据）
@@ -543,6 +723,99 @@ const handleActivitiesPageChange = (page: number) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+const handleMyActivitiesPageChange = (page: number) => {
+  myActivitiesPage.value = page
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// 获取活动类型标签
+const getActivityTypeTag = (type: string) => {
+  const typeMap: Record<string, string> = {
+    'training': 'success',
+    'competition': 'warning',
+    'sharing': 'info'
+  }
+  return typeMap[type] || 'info'
+}
+
+// 获取活动类型名称
+const getActivityTypeName = (type: string) => {
+  const nameMap: Record<string, string> = {
+    'training': '培训',
+    'competition': '竞赛',
+    'sharing': '分享'
+  }
+  return nameMap[type] || type
+}
+
+// 获取活动状态名称
+const getActivityStatusName = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'upcoming': '即将开始',
+    'ongoing': '进行中',
+    'ended': '已结束'
+  }
+  return statusMap[status] || status
+}
+
+// 查看报名详情
+const showRegistrationsDialog = ref(false)
+const currentActivity = ref<any>(null)
+const registrations = ref<any[]>([])
+const loadingRegistrations = ref(false)
+
+const handleViewRegistrations = async (activity: any) => {
+  currentActivity.value = activity
+  showRegistrationsDialog.value = true
+  loadingRegistrations.value = true
+  
+  try {
+    // 这里应该调用API获取报名用户列表
+    // const response = await getActivityRegistrations(activity.id)
+    // registrations.value = response.data.list
+    
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // 模拟数据
+    registrations.value = [
+      {
+        id: 1,
+        userId: 2,
+        userName: '李四',
+        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+        employeeId: 'E001',
+        department: '技术部',
+        registerTime: '2024-04-05 10:30:00'
+      },
+      {
+        id: 2,
+        userId: 3,
+        userName: '王五',
+        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+        employeeId: 'E002',
+        department: '产品部',
+        registerTime: '2024-04-05 11:20:00'
+      },
+      {
+        id: 3,
+        userId: 4,
+        userName: '赵六',
+        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+        employeeId: 'E003',
+        department: '设计部',
+        registerTime: '2024-04-06 09:15:00'
+      }
+    ]
+  } catch (error) {
+    console.error('加载报名列表失败:', error)
+    ElMessage.error('加载报名列表失败')
+    registrations.value = []
+  } finally {
+    loadingRegistrations.value = false
+  }
+}
+
 // 加载数据（当前用户）
 const loadUserData = async () => {
   // 这里应该调用API获取当前用户数据
@@ -556,6 +829,7 @@ const loadUserData = async () => {
     await loadUserPosts(userInfo.value.name)
     loadFavoritePosts() // 加载收藏的帖子
     loadRegisteredActivities() // 加载报名的活动
+    await loadMyCreatedActivities() // 加载发布的活动
   }
 }
 
@@ -829,21 +1103,106 @@ onBeforeUnmount(() => {
       overflow: hidden;
     }
 
-    .activity-meta {
+  .activity-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 12px;
+
+    span {
       display: flex;
       align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 13px;
-      color: #999;
+      gap: 4px;
+    }
 
-      span {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
+    .activity-registered-count {
+      margin-left: auto;
+      color: #409eff;
+      font-weight: 500;
     }
   }
+
+  .activity-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+}
+
+// 报名详情对话框样式
+.registrations-dialog {
+  min-height: 200px;
+  max-height: 500px;
+  overflow-y: auto;
+
+  .registrations-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+    .total-count {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  .registrations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .registration-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(250, 250, 250, 0.8);
+    border-radius: 8px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .registration-avatar {
+      flex-shrink: 0;
+    }
+
+    .registration-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .registration-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      .registration-meta {
+        font-size: 12px;
+        color: #999;
+        display: flex;
+        gap: 12px;
+      }
+    }
+
+    .registration-time {
+      font-size: 12px;
+      color: #999;
+      flex-shrink: 0;
+    }
+  }
+}
 }
 
 @media (max-width: 768px) {
