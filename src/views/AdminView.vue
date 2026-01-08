@@ -7,10 +7,6 @@
             <h1>管理后台</h1>
             <p>配置首页内容、荣誉殿堂和社区头条</p>
           </div>
-        <el-button type="success" size="large" @click="handlePublishActivityClick" class="publish-activity-btn">
-          <el-icon><Plus /></el-icon>
-          发布活动
-        </el-button>
         </div>
       </div>
 
@@ -565,29 +561,47 @@
                         <el-form-item label="获奖者">
                           <el-input v-model="winner.name" placeholder="请输入获奖者姓名" />
                         </el-form-item>
-                        <el-form-item label="获奖时间">
-                          <el-date-picker
-                            v-model="winner.awardTime"
-                            type="date"
-                            placeholder="选择获奖时间"
-                            format="YYYY-MM-DD"
-                            value-format="YYYY-MM-DD"
+                        <el-form-item label="奖项分类">
+                          <el-select
+                            v-model="winner.category"
+                            placeholder="请先选择奖项分类"
                             style="width: 100%;"
-                          />
+                            @change="handleWinnerCategoryChange(winner, index)"
+                          >
+                            <el-option label="创新突破" value="innovation" />
+                            <el-option label="效率提升" value="efficiency" />
+                            <el-option label="最佳实践" value="practice" />
+                            <el-option label="社区贡献" value="community" />
+                          </el-select>
                         </el-form-item>
-                        <el-form-item label="获奖名称">
+                        <el-form-item label="奖项名称">
                           <el-select
                             v-model="winner.awardName"
-                            placeholder="请选择奖项"
+                            placeholder="请先选择奖项分类，然后选择奖项名称"
                             style="width: 100%;"
+                            :disabled="!winner.category"
+                            :loading="loadingAwards"
                           >
                             <el-option
-                              v-for="award in awardsList"
+                              v-for="award in getFilteredAwardsForWinner(winner.category)"
                               :key="award.id"
                               :label="award.name"
                               :value="award.name"
                             />
                           </el-select>
+                          <div v-if="!winner.category" style="margin-top: 8px; font-size: 12px; color: #909399;">
+                            提示：请先选择奖项分类，系统会从后台获取该分类下的奖项列表
+                          </div>
+                        </el-form-item>
+                        <el-form-item label="获奖时间">
+                          <el-date-picker
+                            v-model="winner.awardTime"
+                            type="month"
+                            placeholder="选择获奖时间（年月）"
+                            format="YYYY-MM"
+                            value-format="YYYY-MM"
+                            style="width: 100%;"
+                          />
                         </el-form-item>
                         <el-form-item>
                           <el-button type="danger" @click="handleDeleteWinner(index)">
@@ -896,29 +910,12 @@
             <p style="margin: 0;"><strong>部门：</strong>{{ currentAwardUser?.department }}</p>
           </div>
         </el-form-item>
-        <el-form-item label="奖项" prop="awardId">
-          <el-select
-            v-model="awardForm.awardId"
-            placeholder="请选择奖项"
-            style="width: 100%;"
-            @change="handleAwardChange"
-          >
-            <el-option
-              v-for="award in awardsList"
-              :key="award.id"
-              :label="award.name"
-              :value="award.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="奖项名称" prop="awardName">
-          <el-input v-model="awardForm.awardName" placeholder="奖项名称" disabled />
-        </el-form-item>
         <el-form-item label="奖项分类" prop="category">
           <el-select
             v-model="awardForm.category"
-            placeholder="请选择奖项分类"
+            placeholder="请先选择奖项分类"
             style="width: 100%;"
+            @change="handleCategoryChange"
           >
             <el-option label="创新突破" value="innovation" />
             <el-option label="效率提升" value="efficiency" />
@@ -926,18 +923,35 @@
             <el-option label="社区贡献" value="community" />
           </el-select>
         </el-form-item>
-        <el-form-item label="获奖日期" prop="awardDate">
+        <el-form-item label="奖项名称" prop="awardId">
+          <el-select
+            v-model="awardForm.awardId"
+            placeholder="请先选择奖项分类，然后选择奖项名称"
+            style="width: 100%;"
+            :disabled="!awardForm.category"
+            :loading="loadingAwards"
+            @change="handleAwardChange"
+          >
+            <el-option
+              v-for="award in filteredAwardsList"
+              :key="award.id"
+              :label="award.name"
+              :value="award.id"
+            />
+          </el-select>
+          <div v-if="!awardForm.category" style="margin-top: 8px; font-size: 12px; color: #909399;">
+            提示：请先选择奖项分类，系统会从后台获取该分类下的奖项列表
+          </div>
+        </el-form-item>
+        <el-form-item label="获奖时间" prop="awardDate">
           <el-date-picker
             v-model="awardForm.awardDate"
-            type="date"
-            placeholder="选择获奖日期"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
+            type="month"
+            placeholder="选择获奖时间（年月）"
+            format="YYYY-MM"
+            value-format="YYYY-MM"
             style="width: 100%;"
           />
-        </el-form-item>
-        <el-form-item label="年份" prop="year">
-          <el-input v-model="awardForm.year" placeholder="例如：2024" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -1145,16 +1159,37 @@ interface WinnerItem {
   name: string
   awardTime: string
   awardName: string
+  category?: 'innovation' | 'efficiency' | 'practice' | 'community' | ''
 }
 
 const winnersList = ref<WinnerItem[]>([
   {
     id: 1,
     name: '张工程师',
-    awardTime: '2024-01-15',
-    awardName: '年度最佳贡献奖'
+    awardTime: '2024-01',
+    awardName: '年度最佳贡献奖',
+    category: 'innovation'
   }
 ])
+
+// 根据分类筛选奖项（用于获奖者管理）
+const getFilteredAwardsForWinner = (category: string) => {
+  if (!category) {
+    return []
+  }
+  return apiAwardsList.value.filter(award => award.category === category)
+}
+
+// 获奖者管理中的分类变化处理
+const handleWinnerCategoryChange = async (winner: WinnerItem, index: number) => {
+  // 清空已选择的奖项名称
+  winner.awardName = ''
+  
+  // 根据分类加载奖项列表
+  if (winner.category) {
+    await loadAwardsFromApi(winner.category)
+  }
+}
 
 // 获奖者推荐相关
 interface RecommendedWinner {
@@ -1193,23 +1228,41 @@ const showSetAwardDialog = ref(false)
 const settingAward = ref(false)
 const awardFormRef = ref()
 
+// 从接口获取的奖项列表（用于设置评奖）
+interface ApiAwardItem {
+  id: number
+  name: string
+  desc: string
+  image: string
+  category: 'innovation' | 'efficiency' | 'practice' | 'community'
+  rules: string
+}
+
+const apiAwardsList = ref<ApiAwardItem[]>([])
+const loadingAwards = ref(false)
+
+// 根据分类筛选的奖项列表
+const filteredAwardsList = computed(() => {
+  if (!awardForm.value.category) {
+    return []
+  }
+  return apiAwardsList.value.filter(award => award.category === awardForm.value.category)
+})
+
 // 评奖表单
 const awardForm = ref({
   userId: null as number | null,
   awardId: null as number | null,
   awardName: '',
   awardDate: '',
-  category: '' as 'innovation' | 'efficiency' | 'practice' | 'community' | '',
-  year: ''
+  category: '' as 'innovation' | 'efficiency' | 'practice' | 'community' | ''
 })
 
 // 评奖表单验证规则
 const awardRules = {
-  awardId: [{ required: true, message: '请选择奖项', trigger: 'change' }],
-  awardName: [{ required: true, message: '奖项名称不能为空', trigger: 'blur' }],
   category: [{ required: true, message: '请选择奖项分类', trigger: 'change' }],
-  awardDate: [{ required: true, message: '请选择获奖日期', trigger: 'change' }],
-  year: [{ required: true, message: '请输入年份', trigger: 'blur' }]
+  awardId: [{ required: true, message: '请选择奖项名称', trigger: 'change' }],
+  awardDate: [{ required: true, message: '请选择获奖时间', trigger: 'change' }]
 }
 
 // 扶摇Agent应用置顶帖子列表
@@ -1486,10 +1539,6 @@ onMounted(() => {
   }
 })
 
-// 点击发布活动按钮
-const handlePublishActivityClick = () => {
-  router.push('/activity/create')
-}
 
 // 发布活动相关
 const showPublishActivityDialog = ref(false)
@@ -1836,13 +1885,21 @@ const handleDeleteAward = (index: number) => {
 }
 
 // 添加获奖者
-const handleAddWinner = () => {
+const handleAddWinner = async () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  
   winnersList.value.push({
     id: Date.now(),
     name: '',
-    awardTime: '',
-    awardName: ''
+    awardTime: `${year}-${month}`,
+    awardName: '',
+    category: ''
   })
+  
+  // 加载所有奖项列表（不筛选分类）
+  await loadAwardsFromApi()
 }
 
 // 删除获奖者
@@ -1932,23 +1989,103 @@ const loadRecommendedWinners = async () => {
   }
 }
 
+// 从接口获取奖项列表
+const loadAwardsFromApi = async (category?: string) => {
+  loadingAwards.value = true
+  try {
+    // 模拟API调用：GET /api/awards?category=xxx
+    // 实际应该调用真实API
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    // 从localStorage获取已配置的奖项（实际应该从接口获取）
+    const savedAwards = localStorage.getItem('admin_awards_list')
+    let awards: AwardItem[] = []
+    if (savedAwards) {
+      awards = JSON.parse(savedAwards)
+    } else {
+      awards = awardsList.value
+    }
+    
+    // 转换为API格式的奖项列表
+    // 注意：这里需要根据实际的API响应格式来调整
+    // 假设API返回的category字段对应关系：
+    // '年度奖项' -> 'innovation' | 'efficiency' | 'practice' | 'community'
+    // 这里需要根据实际配置的奖项分类来映射
+    apiAwardsList.value = awards.map(award => ({
+      id: award.id,
+      name: award.name,
+      desc: award.description || '',
+      image: '',
+      category: mapCategoryToApiCategory(award.category),
+      rules: award.description || ''
+    }))
+    
+    // 如果有指定分类，只返回该分类的奖项
+    if (category) {
+      apiAwardsList.value = apiAwardsList.value.filter(a => a.category === category)
+    }
+  } catch (error) {
+    console.error('获取奖项列表失败:', error)
+    ElMessage.error('获取奖项列表失败')
+  } finally {
+    loadingAwards.value = false
+  }
+}
+
+// 将配置的奖项分类映射到API的category
+const mapCategoryToApiCategory = (category: string): 'innovation' | 'efficiency' | 'practice' | 'community' => {
+  // 根据实际配置的奖项分类来映射
+  // 这里可以根据需要调整映射逻辑
+  const categoryMap: Record<string, 'innovation' | 'efficiency' | 'practice' | 'community'> = {
+    '创新突破': 'innovation',
+    '效率提升': 'efficiency',
+    '最佳实践': 'practice',
+    '社区贡献': 'community',
+    '年度奖项': 'innovation', // 默认映射
+    'innovation': 'innovation',
+    'efficiency': 'efficiency',
+    'practice': 'practice',
+    'community': 'community'
+  }
+  return categoryMap[category] || 'innovation'
+}
+
 // 设置评奖
-const handleSetAward = (user: RecommendedWinner) => {
+const handleSetAward = async (user: RecommendedWinner) => {
   currentAwardUser.value = user
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  
   awardForm.value = {
     userId: user.id,
     awardId: null,
     awardName: '',
-    awardDate: new Date().toISOString().split('T')[0],
-    category: '',
-    year: new Date().getFullYear().toString()
+    awardDate: `${year}-${month}`,
+    category: ''
   }
+  
+  // 加载所有奖项列表（不筛选分类）
+  await loadAwardsFromApi()
+  
   showSetAwardDialog.value = true
+}
+
+// 奖项分类变化
+const handleCategoryChange = async (category: string) => {
+  // 清空已选择的奖项
+  awardForm.value.awardId = null
+  awardForm.value.awardName = ''
+  
+  // 根据分类加载奖项列表
+  if (category) {
+    await loadAwardsFromApi(category)
+  }
 }
 
 // 奖项选择变化
 const handleAwardChange = (awardId: number) => {
-  const award = awardsList.value.find(a => a.id === awardId)
+  const award = apiAwardsList.value.find(a => a.id === awardId)
   if (award) {
     awardForm.value.awardName = award.name
   }
@@ -1966,6 +2103,17 @@ const handleConfirmSetAward = async () => {
       return
     }
 
+    if (!awardForm.value.awardId) {
+      ElMessage.error('请选择奖项名称')
+      return
+    }
+
+    const selectedAward = apiAwardsList.value.find(a => a.id === awardForm.value.awardId)
+    if (!selectedAward) {
+      ElMessage.error('奖项信息不存在')
+      return
+    }
+
     settingAward.value = true
 
     // 模拟API调用：POST /api/admin/honors
@@ -1973,14 +2121,17 @@ const handleConfirmSetAward = async () => {
     
     // 创建荣誉记录
     const honorId = Date.now()
+    // 从获奖时间（YYYY-MM）中提取年份
+    const year = awardForm.value.awardDate.split('-')[0]
+    
     const honorRecord = {
       id: honorId,
       userId: currentAwardUser.value.id,
       awardId: awardForm.value.awardId,
-      awardName: awardForm.value.awardName,
+      awardName: selectedAward.name,
       awardDate: awardForm.value.awardDate,
       category: awardForm.value.category,
-      year: awardForm.value.year
+      year: year
     }
 
     // 保存到localStorage（实际应该保存到后端）
@@ -2501,18 +2652,6 @@ onBeforeUnmount(() => {
       }
     }
 
-    .publish-activity-btn {
-      padding: 16px 32px;
-      font-size: 16px;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
-      transition: all 0.3s;
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(103, 194, 58, 0.4);
-      }
-    }
   }
 }
 

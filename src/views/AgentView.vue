@@ -104,13 +104,31 @@
         </div>
       </el-col>
     </el-row>
+
+    <!-- 发布活动悬浮按钮（工具owner和管理员可见） -->
+    <el-tooltip 
+      v-if="isAgentOwner || isAdmin"
+      content="发布活动" 
+      placement="left"
+    >
+      <el-button
+        class="activity-fab"
+        type="success"
+        size="large"
+        @click="handlePublishActivity"
+      >
+        <el-icon class="activity-fab__icon"><Plus /></el-icon>
+        <span class="activity-fab__label">发布活动</span>
+      </el-button>
+    </el-tooltip>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Clock, View, ChatDotRound, Calendar, Location, Search } from '@element-plus/icons-vue'
+import { User, Clock, View, ChatDotRound, Calendar, Location, Search, Plus } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
@@ -120,6 +138,47 @@ const router = useRouter()
 
 // 选中的标签
 const selectedTag = ref<string | null>(null)
+
+// 扶摇Agent应用Owner权限检查
+const isAgentOwner = ref(false)
+const isAdmin = ref(false) // 是否为管理员
+const checkingOwner = ref(false)
+
+// 检查是否为扶摇Agent应用Owner或管理员
+const checkAgentOwner = async () => {
+  checkingOwner.value = true
+  try {
+    // 模拟API调用：GET /api/tools/-1/owner 和 GET /api/user/current
+    // 实际应该调用真实API
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    // 模拟数据：从localStorage或用户信息中获取
+    // 实际应该从API获取
+    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
+    
+    // 检查是否为管理员
+    const savedAdmins = JSON.parse(localStorage.getItem('admin_users_list') || '[]')
+    const admin = savedAdmins.find((u: any) => u.id === currentUserId && u.currentRole === 'admin')
+    isAdmin.value = !!admin
+    
+    // 检查是否为扶摇Agent应用Owner
+    const savedOwners = JSON.parse(localStorage.getItem('tool_owners') || '[]')
+    const isOwner = savedOwners.some((owner: any) => owner.toolId === -1 && owner.userId === currentUserId)
+    
+    isAgentOwner.value = isOwner
+  } catch (error) {
+    console.error('检查扶摇Agent应用Owner权限失败:', error)
+    isAgentOwner.value = false
+    isAdmin.value = false
+  } finally {
+    checkingOwner.value = false
+  }
+}
+
+// 发布活动
+const handlePublishActivity = () => {
+  router.push('/activity/create?toolId=-1')
+}
 
 // 分页
 const currentPage = ref(1)
@@ -421,6 +480,11 @@ const handlePostCreate = () => {
     console.error('路由跳转失败:', err)
   })
 }
+
+// 页面加载时检查权限
+onMounted(() => {
+  checkAgentOwner()
+})
 </script>
 
 <style scoped lang="scss">
@@ -732,6 +796,87 @@ const handlePostCreate = () => {
     .post-image {
       width: 100%;
       height: 180px;
+    }
+  }
+}
+
+/* 发布活动悬浮按钮 */
+.activity-fab {
+  position: fixed;
+  right: 0; /* 默认只显示一半，所以从右边0开始 */
+  bottom: 148px; /* 发帖按钮在72px，按钮高度60px，间距16px，所以是72+60+16=148px */
+  z-index: 1301; /* 比发帖按钮稍高，确保在上层 */
+  box-shadow: 0 20px 50px rgba(103, 194, 58, 0.55), 0 0 0 8px rgba(103, 194, 58, 0.16);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  padding: 0 26px;
+  height: 60px;
+  border-radius: 999px 0 0 999px; /* 左边圆角，右边直角 */
+  background: linear-gradient(135deg, #85ce61 0%, #67c23a 50%, #5daf34 100%);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(6px);
+  transform: translateX(calc(100% - 60px)); /* 默认只显示60px（图标+部分文字） */
+  overflow: hidden;
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: inherit;
+    background: radial-gradient(circle at 50% 50%, rgba(103, 194, 58, 0.35), rgba(103, 194, 58, 0));
+    z-index: -1;
+    opacity: 0.75;
+    filter: blur(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  &__icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-size: 16px;
+    letter-spacing: 0.6px;
+    opacity: 0; /* 默认隐藏文字 */
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateX(0); /* 悬浮时完全显示 */
+    border-radius: 999px; /* 悬浮时恢复完整圆角 */
+    box-shadow: 0 24px 58px rgba(103, 194, 58, 0.65), 0 0 0 10px rgba(103, 194, 58, 0.18);
+
+    &::after {
+      opacity: 1;
+      transform: scale(1.02);
+    }
+
+    .activity-fab__label {
+      opacity: 1; /* 悬浮时显示文字 */
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .activity-fab {
+    right: 0;
+    bottom: 124px; /* 移动端发帖按钮在48px，按钮高度52px，间距24px，所以是48+52+24=124px */
+    height: 52px;
+    padding: 0 18px;
+    transform: translateX(calc(100% - 52px)); /* 移动端默认显示52px */
+
+    &__label {
+      font-size: 15px;
+    }
+
+    &:hover {
+      transform: translateX(0);
     }
   }
 }

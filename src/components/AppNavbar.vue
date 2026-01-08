@@ -58,7 +58,22 @@
                     <div class="rule-item">
                       <el-icon class="rule-icon"><Document /></el-icon>
                       <span class="rule-text">发布帖子</span>
+                      <span class="rule-points">+15</span>
+                    </div>
+                    <div class="rule-item">
+                      <el-icon class="rule-icon"><Calendar /></el-icon>
+                      <span class="rule-text">参加活动</span>
                       <span class="rule-points">+10</span>
+                    </div>
+                    <div class="rule-item">
+                      <el-icon class="rule-icon"><Collection /></el-icon>
+                      <span class="rule-text">帖子被收藏</span>
+                      <span class="rule-points">+5</span>
+                    </div>
+                    <div class="rule-item">
+                      <el-icon class="rule-icon"><Star /></el-icon>
+                      <span class="rule-text">帖子被点赞</span>
+                      <span class="rule-points">+3</span>
                     </div>
                     <div class="rule-item">
                       <el-icon class="rule-icon"><ChatDotRound /></el-icon>
@@ -67,13 +82,8 @@
                     </div>
                     <div class="rule-item">
                       <el-icon class="rule-icon"><Star /></el-icon>
-                      <span class="rule-text">帖子被点赞</span>
-                      <span class="rule-points">+3</span>
-                    </div>
-                    <div class="rule-item">
-                      <el-icon class="rule-icon"><Collection /></el-icon>
-                      <span class="rule-text">帖子被收藏</span>
-                      <span class="rule-points">+5</span>
+                      <span class="rule-text">评论被点赞</span>
+                      <span class="rule-points">+1</span>
                     </div>
                   </div>
                 </div>
@@ -107,7 +117,8 @@ import {
   ChatDotRound,
   Star,
   Collection,
-  Bell
+  Bell,
+  Calendar
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getUnreadMessageCount } from '../utils/message'
@@ -132,18 +143,20 @@ const isAdmin = computed(() => {
 // 用户积分（实际应该从 store 或 API 获取）
 // 这里使用模拟数据，实际应该从后端获取
 const userPoints = computed(() => {
-  // 模拟计算积分：发帖数*10 + 评论数*1 + 被点赞数*3 + 被收藏数*5
+  // 模拟计算积分：发帖数*15 + 评论数*1 + 被点赞数*3 + 被收藏数*5 + 参加活动数*10
   // 实际应该从API获取
   const mockData = {
     postsCount: 12,      // 发帖数
     commentsCount: 45,   // 评论数
     likesReceived: 128,   // 帖子被点赞数
-    favoritesReceived: 8  // 帖子被收藏数
+    favoritesReceived: 8,  // 帖子被收藏数
+    activitiesCount: 5    // 参加活动数
   }
-  return mockData.postsCount * 10 + 
+  return mockData.postsCount * 15 + 
          mockData.commentsCount * 1 + 
          mockData.likesReceived * 3 + 
-         mockData.favoritesReceived * 5
+         mockData.favoritesReceived * 5 +
+         mockData.activitiesCount * 10
 })
 
 // 当前用户ID（实际应该从登录状态获取）

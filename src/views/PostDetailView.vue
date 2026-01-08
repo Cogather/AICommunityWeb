@@ -190,6 +190,17 @@
                   >
                     回复
                   </el-button>
+                  <el-button
+                    v-if="isMyComment(comment)"
+                    type="text"
+                    size="small"
+                    :icon="Delete"
+                    @click="handleDeleteComment(comment)"
+                    :loading="deletingComment"
+                    style="color: #f56c6c;"
+                  >
+                    删除
+                  </el-button>
                 </div>
 
                 <!-- 回复输入框（展开时显示） -->
@@ -327,8 +338,29 @@ const newComment = ref('')
 const submitting = ref(false)
 const replying = ref(false)
 const liking = ref(false)
+const deletingComment = ref(false)
 const loading = ref(true)
-const commentCount = computed(() => comments.value.length)
+const commentCount = computed(() => {
+  // 计算所有评论和回复的总数
+  let total = comments.value.length
+  comments.value.forEach(comment => {
+    if (comment.replies && comment.replies.length > 0) {
+      total += comment.replies.length
+    }
+  })
+  return total
+})
+
+// 当前用户信息（实际应该从登录状态获取）
+const currentUser = ref({
+  id: 1, // 当前用户ID
+  name: '当前用户' // 当前用户名
+})
+
+// 判断是否是当前用户
+const isCurrentUser = (userName: string) => {
+  return userName === currentUser.value.name
+}
 
 // 收藏状态
 const isCollected = ref(false)
@@ -427,6 +459,7 @@ const loadComments = async () => {
     comments.value = [
       {
         id: 1,
+        userId: 2,
         userName: '李四',
         userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
         content: '这是一个很好的帖子，学到了很多！',
@@ -436,6 +469,7 @@ const loadComments = async () => {
         replies: [
           {
             id: 1,
+            userId: 3,
             userName: '王五',
             userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
             content: '我也觉得很有用！',
@@ -446,6 +480,7 @@ const loadComments = async () => {
           },
           {
             id: 2,
+            userId: 1,
             userName: postData.value.authorName,
             userAvatar: postData.value.authorAvatar,
             content: '谢谢支持！',
@@ -460,6 +495,7 @@ const loadComments = async () => {
       },
       {
         id: 2,
+        userId: 4,
         userName: '赵六',
         userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
         content: '感谢分享，期待更多内容！',
@@ -644,7 +680,8 @@ const handleSubmitComment = async () => {
     
     const comment = {
       id: Date.now(),
-      userName: '当前用户',
+      userId: currentUserId.value,
+      userName: currentUserName.value,
       userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
       content: newComment.value,
       createTime: new Date().toLocaleString('zh-CN'),
@@ -702,7 +739,8 @@ const handleSubmitReply = async (comment: any) => {
     
     const reply = {
       id: Date.now(),
-      userName: '当前用户',
+      userId: currentUserId.value,
+      userName: currentUserName.value,
       userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
       content: comment.replyText,
       createTime: new Date().toLocaleString('zh-CN'),
@@ -751,6 +789,87 @@ const handleReplyLike = async (reply: any) => {
     console.error('点赞失败:', error)
     ElMessage.error('操作失败')
   }
+}
+
+// 删除评论
+const handleDeleteComment = (comment: any) => {
+  const replyCount = comment.replies?.length || 0
+  const confirmMessage = replyCount > 0
+    ? `确定要删除这条评论吗？删除后该评论下的 ${replyCount} 条回复也会一并删除，且无法恢复。`
+    : '确定要删除这条评论吗？删除后无法恢复。'
+  
+  ElMessageBox.confirm(
+    confirmMessage,
+    '确认删除',
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+      distinguishCancelAndClose: true
+    }
+  ).then(async () => {
+    deletingComment.value = true
+    try {
+      // 这里应该调用API删除评论
+      // await deleteComment(comment.id)
+      // 注意：后端应该自动删除该评论下的所有回复
+      
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // 从评论列表中移除该评论（包括其所有回复）
+      const index = comments.value.findIndex(c => c.id === comment.id)
+      if (index !== -1) {
+        comments.value.splice(index, 1)
+        ElMessage.success(replyCount > 0 ? `评论及 ${replyCount} 条回复已删除` : '评论已删除')
+      }
+    } catch (error) {
+      console.error('删除评论失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    } finally {
+      deletingComment.value = false
+    }
+  }).catch(() => {
+    // 用户取消
+  })
+}
+
+// 删除评论
+const handleDeleteComment = (comment: any) => {
+  ElMessageBox.confirm(
+    `确定要删除这条评论吗？删除后该评论下的所有回复也会一并删除，且无法恢复。`,
+    '确认删除',
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+      distinguishCancelAndClose: true
+    }
+  ).then(async () => {
+    deletingComment.value = true
+    try {
+      // 这里应该调用API删除评论
+      // await deleteComment(comment.id)
+      // 注意：后端应该自动删除该评论下的所有回复
+      
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // 从评论列表中移除该评论（包括其所有回复）
+      const index = comments.value.findIndex(c => c.id === comment.id)
+      if (index !== -1) {
+        comments.value.splice(index, 1)
+        ElMessage.success('评论已删除')
+      }
+    } catch (error) {
+      console.error('删除评论失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    } finally {
+      deletingComment.value = false
+    }
+  }).catch(() => {
+    // 用户取消
+  })
 }
 
 // 初始化

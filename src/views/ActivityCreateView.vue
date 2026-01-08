@@ -650,6 +650,22 @@ const handleBack = () => {
 
 // 组件挂载时，如果是编辑模式且编辑器还未创建，也尝试加载
 onMounted(() => {
+  // 如果URL中有toolId参数，自动选中对应工具
+  const toolIdParam = route.query.toolId
+  if (toolIdParam && !isEditMode.value) {
+    const toolId = Number(toolIdParam)
+    if (!isNaN(toolId)) {
+      // 检查工具是否存在于列表中
+      const tool = allToolsList.value.find(t => t.id === toolId)
+      if (tool) {
+        formData.value.toolId = toolId
+        console.log('从URL参数自动选中工具:', tool.name, 'ID:', toolId)
+      } else {
+        console.warn('URL参数中的toolId不存在于工具列表中:', toolId)
+      }
+    }
+  }
+  
   if (isEditMode.value) {
     console.log('组件挂载，编辑模式，准备加载活动数据')
     // 如果编辑器已经创建，直接加载

@@ -515,19 +515,35 @@
   ```
 - **使用页面**: `PostDetailView.vue`
 
-### 11. 获取用户发布的帖子
+### 11. 删除评论
+- **接口**: `DELETE /api/comments/:id`
+- **说明**: 
+  - 只有评论作者可以删除自己的评论
+  - 删除评论时，该评论下的所有回复会一并删除
+  - 删除后无法恢复
+- **响应数据**:
+  ```json
+  {
+    "success": "boolean",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `PostDetailView.vue`
+- **权限说明**: 只有评论作者可以删除自己的评论
+
+### 12. 获取用户发布的帖子
 - **接口**: `GET /api/user/:userId/posts`
 - **查询参数**: `page`, `pageSize`
 - **响应数据**: 同"获取帖子列表"
 - **使用页面**: `ProfileView.vue`
 
-### 12. 获取用户收藏的帖子
+### 13. 获取用户收藏的帖子
 - **接口**: `GET /api/user/:userId/favorites`
 - **查询参数**: `page`, `pageSize`
 - **响应数据**: 同"获取帖子列表"
 - **使用页面**: `ProfileView.vue`
 
-### 13. 获取用户评论列表
+### 14. 获取用户评论列表
 - **接口**: `GET /api/user/:userId/comments`
 - **查询参数**: `page`, `pageSize`
 - **响应数据**:
@@ -548,7 +564,7 @@
   ```
 - **使用页面**: `ProfileView.vue`
 
-### 14. 获取标签列表
+### 15. 获取标签列表
 - **接口**: `GET /api/tags`
 - **查询参数**: 
   - `zone`: "practices" | "tools" | "agent" | "empowerment" (可选，按专区获取标签)
@@ -583,7 +599,7 @@
   - **扶摇Agent应用 (agent)**: Agent应用、工作流、自动化、智能编排、案例分享等
   - **赋能交流 (empowerment)**: 讨论、提问、分享、经验、工具、技巧、案例、教程等
 
-### 15. 获取部门统计
+### 16. 获取部门统计
 - **接口**: `GET /api/departments/stats`
 - **查询参数**: `zone` (可选)
 - **响应数据**:
@@ -601,7 +617,7 @@
   ```
 - **使用页面**: `PracticesView.vue`, `ToolsView.vue`
 
-### 16. 获取热门贡献者
+### 17. 获取热门贡献者
 - **接口**: `GET /api/users/top-contributors`
 - **查询参数**: `zone` (可选), `limit` (默认10)
 - **响应数据**:
@@ -619,7 +635,7 @@
   ```
 - **使用页面**: `PracticesView.vue`
 
-### 17. 获取热门帖子
+### 18. 获取热门帖子
 - **接口**: `GET /api/posts/hot`
 - **查询参数**: `zone` (可选), `limit` (默认10)
 - **响应数据**: 同"获取帖子列表"
@@ -844,6 +860,12 @@
 
 ### 4. 获取奖项列表
 - **接口**: `GET /api/awards`
+- **查询参数**:
+  - `category`: string (可选，筛选奖项分类: "innovation" | "efficiency" | "practice" | "community")
+- **说明**: 
+  - 如果不传category参数，返回所有已配置的奖项
+  - 如果传入category参数，只返回该分类下的奖项
+  - 奖项数据来自管理后台配置的奖项列表（奖项管理页面）
 - **响应数据**:
   ```json
   {
@@ -853,13 +875,13 @@
         "name": "string",
         "desc": "string",
         "image": "string",
-        "category": "string",
+        "category": "innovation" | "efficiency" | "practice" | "community",
         "rules": "string"
       }
     ]
   }
   ```
-- **使用页面**: `HomeView.vue`, `AwardRulesView.vue`
+- **使用页面**: `HomeView.vue`, `AwardRulesView.vue`, `AdminView.vue` (获奖者推荐-设置评奖)
 
 ### 5. 获取奖项规则详情
 - **接口**: `GET /api/awards/:id/rules`
@@ -1415,10 +1437,10 @@
   {
     "userId": "number",
     "awardId": "number", // 奖项ID（从奖项列表中选择）
-    "awardName": "string", // 奖项名称
-    "awardDate": "string", // 获奖日期，格式：YYYY-MM-DD
+    "awardName": "string", // 奖项名称（自动从奖项ID获取）
+    "awardDate": "string", // 获奖时间，格式：YYYY-MM（年月）
     "category": "innovation" | "efficiency" | "practice" | "community",
-    "year": "string" // 年份，格式：YYYY
+    "year": "string" // 年份，格式：YYYY（从awardDate中提取）
   }
   ```
 - **响应数据**:
@@ -1432,7 +1454,14 @@
 - **说明**: 
   - 管理员可以为推荐的用户设置获奖记录
   - 设置后，该用户会出现在荣誉墙和时光轴中
-  - 可以设置是否评奖（hasAwarded字段）
+  - 设置评奖流程：
+    1. 先选择奖项分类（innovation/efficiency/practice/community）
+    2. 根据分类从接口获取奖项列表（GET /api/awards?category=xxx）
+    3. 选择奖项名称（只能选择该分类下已配置的奖项）
+    4. 选择获奖时间（年月格式：YYYY-MM）
+    5. 提交设置（系统自动从获奖时间中提取年份）
+  - 奖项名称必须从管理后台配置的奖项列表中选择，只有配置了的奖项才能被选择
+  - 获奖时间使用年月格式，系统会自动提取年份用于展示和统计
 
 ### 22. 取消用户获奖
 - **接口**: `DELETE /api/admin/honors/:id`
@@ -1548,7 +1577,7 @@ AI使用达人管理流程
   → 获取标签列表 (GET /api/tags?zone=xxx&toolId=xxx)
   → 上传封面图片 (POST /api/admin/upload/image) 
   → 提交帖子 (POST /api/posts) 
-  → 后端计算积分（发布帖子+20，管理员除外）
+  → 后端计算积分（发布帖子+15，管理员除外）
   → 返回帖子ID 
   → 跳转到帖子详情页或返回列表页
 ```
@@ -1729,11 +1758,12 @@ AI使用达人管理流程
 ### 积分规则
 用户通过以下行为获得积分（管理员除外）：
 
-1. **发布帖子**: +20 积分
-2. **发表评论**: +1 积分
-3. **帖子被点赞**: +3 积分
-4. **帖子被收藏**: +5 积分
-5. **参加活动**: +10 积分
+1. **发布帖子**: +15 积分
+2. **参加活动**: +10 积分
+3. **帖子被收藏**: +5 积分
+4. **帖子被点赞**: +3 积分
+5. **发表评论**: +1 积分
+6. **评论被点赞**: +1 积分
 
 ### 积分计算接口
 - **接口**: `GET /api/user/points/calculate`
@@ -1754,11 +1784,12 @@ AI使用达人管理流程
 - **使用页面**: `AppNavbar.vue`, `ProfileView.vue`
 
 ### 积分更新时机
-- 发布帖子成功后自动+20积分
+- 发布帖子成功后自动+15积分
 - 参加活动成功后自动+10积分
 - 发表评论成功后自动+1积分
 - 帖子被点赞时自动+3积分
 - 帖子被收藏时自动+5积分
+- 评论被点赞时自动+1积分
 
 ### 权限说明
 - **管理员**: 管理员的所有操作不计算积分
@@ -1819,7 +1850,7 @@ AI使用达人管理流程
    - 删除操作需要检查权限和关联数据
 
 6. **权限控制**:
-   - 发布活动按钮只在工具Owner访问对应工具页面时显示（悬浮按钮形式）
+   - 发布活动按钮在工具Owner或管理员访问对应工具页面时显示（悬浮按钮形式）
    - 管理后台的人员管理需要管理员权限
    - 积分计算时排除管理员用户
    - 工具Owner可以通过工号搜索添加
@@ -1827,5 +1858,9 @@ AI使用达人管理流程
 7. **发布活动按钮位置**:
    - 从管理后台移除发布活动按钮
    - 在AI工具专区页面（ToolsView）和扶摇Agent应用页面（AgentView）以悬浮按钮形式显示
-   - 只有当前工具Owner可以看到并点击该按钮
+   - 当前工具Owner或管理员可以看到并点击该按钮
    - 按钮位置：页面右下角（类似PostFab组件的位置）
+
+8. **获奖时间格式**:
+   - 设置评奖和获奖者管理中的获奖时间统一使用年月格式（YYYY-MM）
+   - 系统会自动从获奖时间中提取年份用于展示和统计
