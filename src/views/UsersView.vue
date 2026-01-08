@@ -103,7 +103,7 @@
               </div>
 
               <div class="card-bottom">
-                <span class="date-text">{{ item.awardDate }}</span>
+                <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
                 <div class="flower-section" @click.stop="handleGiveFlower(item)">
                   <FlowerIcon 
                     :filled="item.hasGivenFlower" 
@@ -404,6 +404,15 @@ const handleAwardClick = (awardName: string) => {
     path: '/award-rules',
     query: { award: awardName }
   });
+};
+
+// 格式化日期为年月格式
+const formatAwardDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}年${month}月`;
 };
 
 const handleGiveFlower = (item: HonorItem) => {

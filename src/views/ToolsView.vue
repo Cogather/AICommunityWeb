@@ -159,9 +159,9 @@
               >
                 <div class="activity-card">
                   <div class="activity-image">
-                    <img :src="activity.image" :alt="activity.title" />
+                    <img :src="activity.image || activity.cover" :alt="activity.title" />
                     <div class="activity-badge" v-if="activity.type">
-                      {{ activity.type === 'training' ? '培训' : '赋能' }}
+                      {{ activity.type === 'activity' ? '活动' : '赋能' }}
                     </div>
                   </div>
                   <div class="activity-content">
@@ -536,7 +536,7 @@ const currentToolActivities = computed(() => {
     .filter((a: any) => a.toolId === selectedToolId.value)
     .map((a: any) => ({
       id: a.id,
-      type: 'activity' as const,
+      type: a.type || 'activity',
       title: a.title,
       desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
       date: a.date,

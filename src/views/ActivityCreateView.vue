@@ -24,6 +24,14 @@
           />
         </el-form-item>
 
+        <!-- 活动类型 -->
+        <el-form-item label="活动类型" prop="type">
+          <el-radio-group v-model="formData.type">
+            <el-radio label="activity">活动</el-radio>
+            <el-radio label="empowerment">赋能</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
         <!-- 选择工具 -->
         <el-form-item label="选择工具" prop="toolId">
           <el-select
@@ -174,6 +182,7 @@ const allToolsList = computed(() => {
 // 表单数据
 const formData = ref({
   title: '',
+  type: 'activity' as 'activity' | 'empowerment',
   toolId: null as number | null,
   date: '',
   cover: '',
@@ -183,6 +192,7 @@ const formData = ref({
 // 表单验证规则
 const rules = {
   title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择活动类型', trigger: 'change' }],
   toolId: [{ required: true, message: '请选择工具', trigger: 'change' }],
   date: [{ required: true, message: '请选择活动时间', trigger: 'change' }],
   cover: [{ required: true, message: '请上传封面图片', trigger: 'change' }],
@@ -482,6 +492,7 @@ const fillFormData = (activity: any) => {
   
   // 填充表单数据 - 使用响应式更新
   formData.value.title = activity.title || ''
+  formData.value.type = activity.type || 'activity'
   formData.value.toolId = toolId
   formData.value.cover = activity.cover || ''
   formData.value.content = activity.content || ''
@@ -590,6 +601,7 @@ const handlePublish = async () => {
           toolId: formData.value.toolId,
           toolName: selectedTool?.name || '未知工具',
           title: formData.value.title,
+          type: formData.value.type,
           date: formData.value.date,
           cover: formData.value.cover,
           content: formData.value.content
@@ -603,6 +615,7 @@ const handlePublish = async () => {
         toolId: formData.value.toolId,
         toolName: selectedTool?.name || '未知工具',
         title: formData.value.title,
+        type: formData.value.type,
         date: formData.value.date,
         cover: formData.value.cover,
         content: formData.value.content,

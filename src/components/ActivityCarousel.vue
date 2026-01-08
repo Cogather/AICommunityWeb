@@ -16,9 +16,9 @@
       >
         <div class="activity-card">
           <div class="activity-image">
-            <img :src="activity.image" :alt="activity.title" />
+            <img :src="activity.image || activity.cover" :alt="activity.title" />
             <div class="activity-badge" v-if="activity.type">
-              {{ activity.type === 'training' ? '培训' : '活动' }}
+              {{ activity.type === 'activity' ? '活动' : '赋能' }}
             </div>
           </div>
           <div class="activity-content">
@@ -55,12 +55,13 @@ import { Calendar, Location } from '@element-plus/icons-vue'
 
 interface Activity {
   id: number
-  type?: 'training' | 'activity' | 'empowerment'
+  type?: 'activity' | 'empowerment' | 'training'
   title: string
   desc: string
   date: string
   location?: string
-  image: string
+  image?: string
+  cover?: string
 }
 
 interface Props {

@@ -172,7 +172,7 @@ const activities = computed(() => {
     .filter((a: any) => a.toolId === -1)
     .map((a: any) => ({
       id: a.id,
-      type: 'activity' as const,
+      type: a.type || 'activity',
       title: a.title,
       desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
       date: a.date,
