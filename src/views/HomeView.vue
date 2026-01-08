@@ -294,6 +294,7 @@ const handleConfigUpdate = () => {
   newsList.value = loadNewsList()
   honorBannerImage.value = loadHonorBanner()
   tools.value = loadTools()
+  toolZoneBanners.value = loadToolBanners()
 }
 
 onMounted(() => {
@@ -507,6 +508,40 @@ const loadTools = () => {
 
 const tools = ref(loadTools())
 
+// AI工具专区Banner配置 - 从localStorage读取配置
+const loadToolBanners = () => {
+  try {
+    const saved = localStorage.getItem('admin_tool_banners_config')
+    if (saved) {
+      const config = JSON.parse(saved)
+      return config.map((item: any) => ({
+        title: item.title || '',
+        desc: item.desc || '',
+        image: item.image || ''
+      }))
+    }
+  } catch (e) {
+    console.error('加载工具Banner配置失败:', e)
+  }
+  return [
+    {
+      title: '最新 AI 工具推荐',
+      desc: '探索最新发布的 AI 工具，提升你的工作效率',
+      image: 'https://picsum.photos/1200/400?random=10'
+    },
+    {
+      title: '热门工具排行榜',
+      desc: '查看最受欢迎的 AI 工具，发现社区精选',
+      image: 'https://picsum.photos/1200/400?random=11'
+    },
+    {
+      title: '开发者必备工具',
+      desc: '专为开发者打造的 AI 工具集合',
+      image: 'https://picsum.photos/1200/400?random=12'
+    }
+  ]
+}
+
 // 根据工具数量计算列宽（一行最多4个）
 const getColSpan = (count: number) => {
   if (count <= 4) return 24 / count
@@ -544,23 +579,7 @@ const handleNewsClick = (news: any) => {
 }
 
 // AI工具专区轮播图数据
-const toolZoneBanners = ref([
-  {
-    title: '最新 AI 工具推荐',
-    desc: '探索最新发布的 AI 工具，提升你的工作效率',
-    image: 'https://picsum.photos/1200/400?random=10'
-  },
-  {
-    title: '热门工具排行榜',
-    desc: '查看最受欢迎的 AI 工具，发现社区精选',
-    image: 'https://picsum.photos/1200/400?random=11'
-  },
-  {
-    title: '开发者必备工具',
-    desc: '专为开发者打造的 AI 工具集合',
-    image: 'https://picsum.photos/1200/400?random=12'
-  }
-])
+const toolZoneBanners = ref(loadToolBanners())
 </script>
 
 <style scoped lang="scss">

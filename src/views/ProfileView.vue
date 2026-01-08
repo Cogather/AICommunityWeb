@@ -268,7 +268,7 @@ const loadFavoritePosts = () => {
     const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
     const favoritesKey = `user_${currentUserId}_favorites`
     const favoritesStr = localStorage.getItem(favoritesKey)
-    
+
     if (favoritesStr) {
       try {
         const favorites = JSON.parse(favoritesStr)
@@ -333,7 +333,7 @@ const loadRegisteredActivities = () => {
     const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
     const registeredKey = `user_${currentUserId}_registered_activities`
     const registeredStr = localStorage.getItem(registeredKey)
-    
+
     if (registeredStr) {
       try {
         const registered = JSON.parse(registeredStr)
@@ -399,7 +399,7 @@ const loadUserProfile = async (userName: string) => {
     bio: getUserBio(userName),
     flowersCount: getUserFlowersFromHonors(userName)
   }
-  
+
   // 加载该用户的帖子
   await loadUserPosts(userName)
 }
@@ -480,10 +480,10 @@ const loadUserPosts = async (userName: string) => {
       image: 'https://picsum.photos/400/300?random=4'
     }
   ]
-  
+
   // 根据用户名过滤帖子
   myPosts.value = allPosts.filter(post => post.author === userName)
-  
+
   // 更新用户统计信息
   userInfo.value.postsCount = myPosts.value.length
 }
@@ -550,7 +550,7 @@ const loadUserData = async () => {
   // userInfo.value = response.data.userInfo
   // myPosts.value = response.data.posts
   // ...
-  
+
   // 如果没有路由参数，使用默认用户数据
   if (!route.query.user) {
     await loadUserPosts(userInfo.value.name)
@@ -565,7 +565,7 @@ onMounted(() => {
   if (!route.query.user) {
     loadUserData()
   }
-  
+
   // 监听收藏更新事件
   window.addEventListener('favoritesUpdated', handleFavoritesUpdate as EventListener)
   // 监听活动报名更新事件

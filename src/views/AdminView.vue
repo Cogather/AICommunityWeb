@@ -230,6 +230,87 @@
               <!-- AI工具配置 -->
               <el-tab-pane label="AI工具配置" name="tools">
                 <div class="config-section">
+                  <!-- AI工具专区Banner配置 -->
+                  <div class="section-header" style="margin-top: 0;">
+                    <h2>AI工具专区 Banner 配置</h2>
+                    <el-button type="primary" @click="handleAddToolBanner">
+                      <el-icon><Plus /></el-icon>
+                      添加Banner
+                    </el-button>
+                  </div>
+                  
+                  <div class="banner-list" style="margin-bottom: 40px;">
+                    <div 
+                      v-for="(banner, index) in toolBannersList" 
+                      :key="banner.id"
+                      class="banner-item"
+                    >
+                      <div class="item-preview">
+                        <img v-if="banner.image" :src="banner.image" :alt="banner.title || 'Banner'" />
+                        <div v-else class="no-image">暂无图片</div>
+                        <div v-if="banner.image" class="preview-content">
+                          <h3>{{ banner.title || '标题' }}</h3>
+                          <p>{{ banner.desc || '描述' }}</p>
+                        </div>
+                      </div>
+                      <div class="item-form">
+                        <el-form :model="banner" label-width="120px">
+                          <el-form-item label="图片">
+                            <div class="image-upload-wrapper">
+                              <el-radio-group v-model="banner.imageType" @change="handleToolBannerImageTypeChange(banner, index)">
+                                <el-radio label="url">URL</el-radio>
+                                <el-radio label="upload">本地上传</el-radio>
+                              </el-radio-group>
+                              <el-input 
+                                v-if="banner.imageType === 'url'"
+                                v-model="banner.image" 
+                                placeholder="请输入图片URL"
+                                style="margin-top: 8px;"
+                              />
+                              <el-upload
+                                v-else
+                                class="image-uploader"
+                                :auto-upload="false"
+                                :show-file-list="false"
+                                :on-change="(file) => handleImageFileChange(file, banner, 'toolBanner')"
+                                :before-upload="beforeImageUpload"
+                                accept="image/*"
+                              >
+                                <el-button type="primary" style="margin-top: 8px;">选择图片</el-button>
+                              </el-upload>
+                            </div>
+                          </el-form-item>
+                          <el-form-item label="标题">
+                            <el-input v-model="banner.title" placeholder="请输入标题" />
+                          </el-form-item>
+                          <el-form-item label="描述">
+                            <el-input 
+                              v-model="banner.desc" 
+                              type="textarea" 
+                              :rows="3"
+                              placeholder="请输入描述内容"
+                            />
+                          </el-form-item>
+                          <el-form-item>
+                            <el-button type="danger" @click="handleDeleteToolBanner(index)">
+                              删除
+                            </el-button>
+                            <el-button @click="handleMoveToolBannerUp(index)" :disabled="index === 0">
+                              上移
+                            </el-button>
+                            <el-button @click="handleMoveToolBannerDown(index)" :disabled="index === toolBannersList.length - 1">
+                              下移
+                            </el-button>
+                          </el-form-item>
+                        </el-form>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="toolBannersList.length === 0" class="empty-state" style="margin-bottom: 40px;">
+                    <el-empty description="暂无Banner，点击上方按钮添加" />
+                  </div>
+
                   <div class="section-header">
                     <h2>AI工具配置</h2>
                     <el-button type="primary" @click="handleAddTool">
@@ -815,6 +896,32 @@ const toolsList = ref<ToolItem[]>([
   }
 ])
 
+// AI工具专区Banner列表
+interface ToolBannerItem {
+  id: number
+  image: string
+  imageType: 'url' | 'upload'
+  title: string
+  desc: string
+}
+
+const toolBannersList = ref<ToolBannerItem[]>([
+  {
+    id: 1,
+    image: 'https://picsum.photos/1200/400?random=10',
+    imageType: 'url',
+    title: '最新 AI 工具推荐',
+    desc: '探索最新发布的 AI 工具，提升你的工作效率'
+  },
+  {
+    id: 2,
+    image: 'https://picsum.photos/1200/400?random=11',
+    imageType: 'url',
+    title: '热门工具排行榜',
+    desc: '查看最受欢迎的 AI 工具，发现社区精选'
+  }
+])
+
 // 精华帖子URL列表
 interface FeaturedPostItem {
   id: number
@@ -1361,6 +1468,8 @@ const handleImageFileChange = async (file: any, target: any, type: string) => {
       target.logo = base64
     } else if (type === 'activity') {
       target.bannerImage = base64
+    } else if (type === 'toolBanner') {
+      target.image = base64
     }
     
     ElMessage.success('图片已加载')
@@ -1394,6 +1503,52 @@ const handleNewsImageTypeChange = (news: NewsItem, index: number) => {
 
 const handleToolLogoTypeChange = (tool: ToolItem, index: number) => {
   // 处理工具Logo类型切换
+}
+
+// 添加工具Banner
+const handleAddToolBanner = () => {
+  toolBannersList.value.push({
+    id: Date.now(),
+    image: '',
+    imageType: 'url',
+    title: '',
+    desc: ''
+  })
+}
+
+// 删除工具Banner
+const handleDeleteToolBanner = (index: number) => {
+  ElMessageBox.confirm('确定要删除这个Banner吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    toolBannersList.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+// 上移工具Banner
+const handleMoveToolBannerUp = (index: number) => {
+  if (index > 0) {
+    const temp = toolBannersList.value[index]
+    toolBannersList.value[index] = toolBannersList.value[index - 1]
+    toolBannersList.value[index - 1] = temp
+  }
+}
+
+// 下移工具Banner
+const handleMoveToolBannerDown = (index: number) => {
+  if (index < toolBannersList.value.length - 1) {
+    const temp = toolBannersList.value[index]
+    toolBannersList.value[index] = toolBannersList.value[index + 1]
+    toolBannersList.value[index + 1] = temp
+  }
+}
+
+// 处理工具Banner图片类型切换
+const handleToolBannerImageTypeChange = (banner: ToolBannerItem, index: number) => {
+  // 处理工具Banner图片类型切换
 }
 
 // 添加精华帖子
@@ -1672,6 +1827,7 @@ const updateComponentsData = () => {
     localStorage.setItem('admin_honor_config', JSON.stringify(honorConfig.value))
     localStorage.setItem('admin_news_config', JSON.stringify(newsList.value))
     localStorage.setItem('admin_tools_config', JSON.stringify(toolsList.value))
+    localStorage.setItem('admin_tool_banners_config', JSON.stringify(toolBannersList.value))
     localStorage.setItem('admin_featured_posts', JSON.stringify(featuredPostsList.value))
     localStorage.setItem('admin_awards_list', JSON.stringify(awardsList.value))
     localStorage.setItem('admin_winners_list', JSON.stringify(winnersList.value))
@@ -1739,6 +1895,15 @@ const loadConfig = async () => {
       }))
     }
     
+    const toolBannersConfig = localStorage.getItem('admin_tool_banners_config')
+    if (toolBannersConfig) {
+      const config = JSON.parse(toolBannersConfig)
+      toolBannersList.value = config.map((item: any) => ({
+        ...item,
+        imageType: item.imageType || (item.image ? 'url' : 'url')
+      }))
+    }
+    
     // 初始化图片类型（如果没有配置）
     carouselList.value.forEach(item => {
       if (!item.imageType) {
@@ -1753,6 +1918,11 @@ const loadConfig = async () => {
     toolsList.value.forEach(item => {
       if (!item.logoType) {
         item.logoType = item.logo ? 'url' : 'url'
+      }
+    })
+    toolBannersList.value.forEach(item => {
+      if (!item.imageType) {
+        item.imageType = item.image ? 'url' : 'url'
       }
     })
     if (!honorConfig.value.bannerImageType) {
@@ -1985,12 +2155,14 @@ onBeforeUnmount(() => {
 }
 
 // 轮播图列表
-.carousel-list {
+.carousel-list,
+.banner-list {
   display: flex;
   flex-direction: column;
   gap: 24px;
 
-  .carousel-item {
+  .carousel-item,
+  .banner-item {
     background: rgba(255, 255, 255, 0.6);
     border-radius: 12px;
     padding: 20px;
