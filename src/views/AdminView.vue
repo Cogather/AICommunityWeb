@@ -603,6 +603,121 @@
                   </div>
                 </div>
               </el-tab-pane>
+
+              <!-- 获奖者推荐 -->
+              <el-tab-pane label="获奖者推荐" name="recommended">
+                <div class="config-section">
+                  <div class="section-header">
+                    <h2>获奖者推荐</h2>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                      <el-date-picker
+                        v-model="recommendedMonth"
+                        type="month"
+                        placeholder="选择月份"
+                        format="YYYY-MM"
+                        value-format="YYYY-MM"
+                        @change="loadRecommendedWinners"
+                        style="width: 200px;"
+                      />
+                      <el-button type="primary" @click="loadRecommendedWinners">
+                        <el-icon><Refresh /></el-icon>
+                        刷新
+                      </el-button>
+                    </div>
+                  </div>
+
+                  <el-alert
+                    title="说明：系统会根据本月积分自动推荐Top 3用户，管理员可以为推荐用户设置获奖记录。"
+                    type="info"
+                    :closable="false"
+                    style="margin-bottom: 24px;"
+                  />
+
+                  <div v-if="loadingRecommended" class="loading-state">
+                    <el-skeleton :rows="3" animated />
+                  </div>
+
+                  <div v-else class="recommended-winners-list">
+                    <div
+                      v-for="(user, index) in recommendedWinnersList"
+                      :key="user.id"
+                      class="recommended-winner-item"
+                    >
+                      <div class="winner-info">
+                        <div class="winner-avatar">
+                          <el-avatar :src="user.avatar" :size="60">
+                            {{ user.name.charAt(0) }}
+                          </el-avatar>
+                          <div v-if="index < 3" class="rank-badge">
+                            {{ index + 1 }}
+                          </div>
+                        </div>
+                        <div class="winner-details">
+                          <div class="winner-name-row">
+                            <h3>{{ user.name }}</h3>
+                            <el-tag v-if="user.hasAwarded" type="success" size="small">
+                              已评奖
+                            </el-tag>
+                            <el-tag v-else type="info" size="small">
+                              未评奖
+                            </el-tag>
+                          </div>
+                          <div class="winner-meta">
+                            <span><strong>工号：</strong>{{ user.employeeId }}</span>
+                            <span><strong>部门：</strong>{{ user.department }}</span>
+                          </div>
+                          <div class="winner-stats">
+                            <div class="stat-item">
+                              <span class="stat-label">本月积分：</span>
+                              <span class="stat-value highlight">{{ user.points }}</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">发帖数：</span>
+                              <span class="stat-value">{{ user.postsCount }}</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">评论数：</span>
+                              <span class="stat-value">{{ user.commentsCount }}</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">参加活动：</span>
+                              <span class="stat-value">{{ user.activitiesCount }}</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">被点赞：</span>
+                              <span class="stat-value">{{ user.likesReceived }}</span>
+                            </div>
+                            <div class="stat-item">
+                              <span class="stat-label">被收藏：</span>
+                              <span class="stat-value">{{ user.favoritesReceived }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="winner-actions">
+                        <el-button
+                          v-if="!user.hasAwarded"
+                          type="primary"
+                          @click="handleSetAward(user)"
+                        >
+                          设置评奖
+                        </el-button>
+                        <el-button
+                          v-else
+                          type="warning"
+                          @click="handleCancelAward(user)"
+                        >
+                          取消评奖
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="!loadingRecommended && recommendedWinnersList.length === 0" class="empty-state">
+                    <el-empty description="暂无推荐用户" />
+                  </div>
+                </div>
+              </el-tab-pane>
             </el-tabs>
           </div>
         </el-tab-pane>
@@ -763,6 +878,76 @@
           :disabled="!addAdminForm.userId || !foundUser"
         >
           确认添加
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 设置评奖对话框 -->
+    <el-dialog
+      v-model="showSetAwardDialog"
+      title="设置评奖"
+      width="600px"
+    >
+      <el-form :model="awardForm" :rules="awardRules" ref="awardFormRef" label-width="120px">
+        <el-form-item label="用户信息">
+          <div style="padding: 12px; background: #f5f7fa; border-radius: 4px;">
+            <p style="margin: 0 0 8px 0;"><strong>姓名：</strong>{{ currentAwardUser?.name }}</p>
+            <p style="margin: 0 0 8px 0;"><strong>工号：</strong>{{ currentAwardUser?.employeeId }}</p>
+            <p style="margin: 0;"><strong>部门：</strong>{{ currentAwardUser?.department }}</p>
+          </div>
+        </el-form-item>
+        <el-form-item label="奖项" prop="awardId">
+          <el-select
+            v-model="awardForm.awardId"
+            placeholder="请选择奖项"
+            style="width: 100%;"
+            @change="handleAwardChange"
+          >
+            <el-option
+              v-for="award in awardsList"
+              :key="award.id"
+              :label="award.name"
+              :value="award.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="奖项名称" prop="awardName">
+          <el-input v-model="awardForm.awardName" placeholder="奖项名称" disabled />
+        </el-form-item>
+        <el-form-item label="奖项分类" prop="category">
+          <el-select
+            v-model="awardForm.category"
+            placeholder="请选择奖项分类"
+            style="width: 100%;"
+          >
+            <el-option label="创新突破" value="innovation" />
+            <el-option label="效率提升" value="efficiency" />
+            <el-option label="最佳实践" value="practice" />
+            <el-option label="社区贡献" value="community" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="获奖日期" prop="awardDate">
+          <el-date-picker
+            v-model="awardForm.awardDate"
+            type="date"
+            placeholder="选择获奖日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 100%;"
+          />
+        </el-form-item>
+        <el-form-item label="年份" prop="year">
+          <el-input v-model="awardForm.year" placeholder="例如：2024" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showSetAwardDialog = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleConfirmSetAward"
+          :loading="settingAward"
+        >
+          确认设置
         </el-button>
       </template>
     </el-dialog>
@@ -970,6 +1155,62 @@ const winnersList = ref<WinnerItem[]>([
     awardName: '年度最佳贡献奖'
   }
 ])
+
+// 获奖者推荐相关
+interface RecommendedWinner {
+  id: number
+  employeeId: string
+  name: string
+  avatar: string
+  department: string
+  points: number
+  postsCount: number
+  commentsCount: number
+  activitiesCount: number
+  likesReceived: number
+  favoritesReceived: number
+  hasAwarded: boolean
+  honorId?: number // 如果已评奖，记录荣誉ID
+}
+
+const recommendedWinnersList = ref<RecommendedWinner[]>([])
+const loadingRecommended = ref(false)
+const recommendedMonth = ref<string>('')
+
+// 设置当前月份为默认值
+const getCurrentMonth = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
+recommendedMonth.value = getCurrentMonth()
+
+// 当前设置评奖的用户
+const currentAwardUser = ref<RecommendedWinner | null>(null)
+const showSetAwardDialog = ref(false)
+const settingAward = ref(false)
+const awardFormRef = ref()
+
+// 评奖表单
+const awardForm = ref({
+  userId: null as number | null,
+  awardId: null as number | null,
+  awardName: '',
+  awardDate: '',
+  category: '' as 'innovation' | 'efficiency' | 'practice' | 'community' | '',
+  year: ''
+})
+
+// 评奖表单验证规则
+const awardRules = {
+  awardId: [{ required: true, message: '请选择奖项', trigger: 'change' }],
+  awardName: [{ required: true, message: '奖项名称不能为空', trigger: 'blur' }],
+  category: [{ required: true, message: '请选择奖项分类', trigger: 'change' }],
+  awardDate: [{ required: true, message: '请选择获奖日期', trigger: 'change' }],
+  year: [{ required: true, message: '请输入年份', trigger: 'blur' }]
+}
 
 // 扶摇Agent应用置顶帖子列表
 interface AgentPinnedPostItem {
@@ -1616,6 +1857,207 @@ const handleDeleteWinner = (index: number) => {
   }).catch(() => {})
 }
 
+// 加载获奖者推荐列表
+const loadRecommendedWinners = async () => {
+  if (!recommendedMonth.value) {
+    ElMessage.warning('请选择月份')
+    return
+  }
+
+  loadingRecommended.value = true
+  try {
+    // 模拟API调用：GET /api/admin/honors/recommended-winners?month=YYYY-MM&limit=3
+    // 实际应该调用真实API
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // 模拟数据：从localStorage或生成mock数据
+    const savedData = localStorage.getItem(`recommended_winners_${recommendedMonth.value}`)
+    if (savedData) {
+      recommendedWinnersList.value = JSON.parse(savedData)
+    } else {
+      // 生成模拟数据（Top 3用户）
+      const mockUsers: RecommendedWinner[] = [
+        {
+          id: 2,
+          employeeId: 'E001',
+          name: '李四',
+          avatar: 'https://picsum.photos/80/80?random=2',
+          department: '产品部',
+          points: 156,
+          postsCount: 8,
+          commentsCount: 25,
+          activitiesCount: 3,
+          likesReceived: 45,
+          favoritesReceived: 12,
+          hasAwarded: false
+        },
+        {
+          id: 3,
+          employeeId: 'E002',
+          name: '王五',
+          avatar: 'https://picsum.photos/80/80?random=3',
+          department: '技术部',
+          points: 142,
+          postsCount: 6,
+          commentsCount: 30,
+          activitiesCount: 2,
+          likesReceived: 38,
+          favoritesReceived: 10,
+          hasAwarded: false
+        },
+        {
+          id: 4,
+          employeeId: 'E003',
+          name: '赵六',
+          avatar: 'https://picsum.photos/80/80?random=4',
+          department: '数据部',
+          points: 128,
+          postsCount: 5,
+          commentsCount: 20,
+          activitiesCount: 4,
+          likesReceived: 32,
+          favoritesReceived: 8,
+          hasAwarded: false
+        }
+      ]
+      
+      recommendedWinnersList.value = mockUsers
+      localStorage.setItem(`recommended_winners_${recommendedMonth.value}`, JSON.stringify(mockUsers))
+    }
+  } catch (error) {
+    console.error('加载推荐用户失败:', error)
+    ElMessage.error('加载推荐用户失败')
+  } finally {
+    loadingRecommended.value = false
+  }
+}
+
+// 设置评奖
+const handleSetAward = (user: RecommendedWinner) => {
+  currentAwardUser.value = user
+  awardForm.value = {
+    userId: user.id,
+    awardId: null,
+    awardName: '',
+    awardDate: new Date().toISOString().split('T')[0],
+    category: '',
+    year: new Date().getFullYear().toString()
+  }
+  showSetAwardDialog.value = true
+}
+
+// 奖项选择变化
+const handleAwardChange = (awardId: number) => {
+  const award = awardsList.value.find(a => a.id === awardId)
+  if (award) {
+    awardForm.value.awardName = award.name
+  }
+}
+
+// 确认设置评奖
+const handleConfirmSetAward = async () => {
+  if (!awardFormRef.value) return
+
+  try {
+    await awardFormRef.value.validate()
+    
+    if (!currentAwardUser.value) {
+      ElMessage.error('用户信息丢失')
+      return
+    }
+
+    settingAward.value = true
+
+    // 模拟API调用：POST /api/admin/honors
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // 创建荣誉记录
+    const honorId = Date.now()
+    const honorRecord = {
+      id: honorId,
+      userId: currentAwardUser.value.id,
+      awardId: awardForm.value.awardId,
+      awardName: awardForm.value.awardName,
+      awardDate: awardForm.value.awardDate,
+      category: awardForm.value.category,
+      year: awardForm.value.year
+    }
+
+    // 保存到localStorage（实际应该保存到后端）
+    const honors = JSON.parse(localStorage.getItem('admin_honors') || '[]')
+    honors.push(honorRecord)
+    localStorage.setItem('admin_honors', JSON.stringify(honors))
+
+    // 更新推荐用户列表中的状态
+    const userIndex = recommendedWinnersList.value.findIndex(u => u.id === currentAwardUser.value!.id)
+    if (userIndex !== -1) {
+      recommendedWinnersList.value[userIndex].hasAwarded = true
+      recommendedWinnersList.value[userIndex].honorId = honorId
+      
+      // 更新localStorage中的推荐用户数据
+      localStorage.setItem(
+        `recommended_winners_${recommendedMonth.value}`,
+        JSON.stringify(recommendedWinnersList.value)
+      )
+    }
+
+    settingAward.value = false
+    showSetAwardDialog.value = false
+    ElMessage.success('评奖设置成功')
+  } catch (error) {
+    console.error('设置评奖失败:', error)
+    settingAward.value = false
+  }
+}
+
+// 取消评奖
+const handleCancelAward = (user: RecommendedWinner) => {
+  if (!user.honorId) {
+    ElMessage.warning('该用户没有获奖记录')
+    return
+  }
+
+  ElMessageBox.confirm(
+    `确定要取消 ${user.name} 的获奖记录吗？`,
+    '确认取消',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      // 模拟API调用：DELETE /api/admin/honors/:id
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // 从localStorage删除荣誉记录
+      const honors = JSON.parse(localStorage.getItem('admin_honors') || '[]')
+      const updatedHonors = honors.filter((h: any) => h.id !== user.honorId)
+      localStorage.setItem('admin_honors', JSON.stringify(updatedHonors))
+
+      // 更新推荐用户列表中的状态
+      const userIndex = recommendedWinnersList.value.findIndex(u => u.id === user.id)
+      if (userIndex !== -1) {
+        recommendedWinnersList.value[userIndex].hasAwarded = false
+        recommendedWinnersList.value[userIndex].honorId = undefined
+        
+        // 更新localStorage中的推荐用户数据
+        localStorage.setItem(
+          `recommended_winners_${recommendedMonth.value}`,
+          JSON.stringify(recommendedWinnersList.value)
+        )
+      }
+
+      ElMessage.success('已取消评奖')
+    } catch (error) {
+      console.error('取消评奖失败:', error)
+      ElMessage.error('取消评奖失败')
+    }
+  }).catch(() => {
+    // 用户取消
+  })
+}
+
 // 添加扶摇Agent应用置顶帖子
 const handleAddAgentPinnedPost = () => {
   agentPinnedPostsList.value.push({
@@ -1952,6 +2394,8 @@ onMounted(() => {
   loadConfig()
   // 监听编辑活动事件
   window.addEventListener('editActivity', handleEditActivityEvent as EventListener)
+  // 加载获奖者推荐列表
+  loadRecommendedWinners()
 })
 
 // 待加载的活动内容（用于编辑器创建后加载）
@@ -2317,6 +2761,126 @@ onBeforeUnmount(() => {
     padding: 20px;
     border: 1px solid rgba(0, 0, 0, 0.1);
   }
+}
+
+// 获奖者推荐列表
+.recommended-winners-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  .recommended-winner-item {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .winner-info {
+      display: flex;
+      gap: 20px;
+      flex: 1;
+
+      .winner-avatar {
+        position: relative;
+        flex-shrink: 0;
+
+        .rank-badge {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          width: 24px;
+          height: 24px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: #fff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+      }
+
+      .winner-details {
+        flex: 1;
+
+        .winner-name-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 12px;
+
+          h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+          }
+        }
+
+        .winner-meta {
+          display: flex;
+          gap: 24px;
+          margin-bottom: 16px;
+          font-size: 14px;
+          color: #666;
+
+          span {
+            strong {
+              color: #333;
+            }
+          }
+        }
+
+        .winner-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+
+          .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            .stat-label {
+              font-size: 12px;
+              color: #999;
+            }
+
+            .stat-value {
+              font-size: 16px;
+              font-weight: 600;
+              color: #333;
+
+              &.highlight {
+                color: #409eff;
+                font-size: 20px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .winner-actions {
+      flex-shrink: 0;
+    }
+  }
+}
+
+.loading-state {
+  padding: 40px 0;
 }
 
 // 活动列表

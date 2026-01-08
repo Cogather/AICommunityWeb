@@ -14,7 +14,8 @@
    - 工具跳转路由路径
    - 工具Banner图
 5. **扶摇Agent应用置顶帖子** - 管理员在后台配置置顶帖子的内容、封面图等
-6. **标签列表** - 不同专区有不同的标签列表，由后端返回（不是管理后台配置）
+6. **推荐封面** - 管理员在后台配置发帖页面的推荐封面图片列表
+7. **标签列表** - 不同专区有不同的标签列表，由后端返回（不是管理后台配置）
 
 **数据流向**：
 ```
@@ -32,6 +33,7 @@
 5. **荣誉记录** - 实时从数据库获取
 6. **AI使用达人（Top用户）** - 根据用户荣誉数量动态计算排序
 7. **标签列表** - 根据专区和工具动态返回对应的标签列表
+8. **本月积分排行榜** - 用于获奖者推荐，根据本月积分动态计算（排除管理员）
 
 **数据流向**：
 ```
@@ -51,6 +53,8 @@
 7. [工具专区](#工具专区)
 8. [管理后台](#管理后台)
 9. [数据交互流程](#数据交互流程)
+10. [积分系统](#积分系统)
+11. [用户角色与权限](#用户角色与权限)
 
 ---
 
@@ -90,6 +94,7 @@
   ```json
   {
     "id": "number",
+    "employeeId": "string", // 工号
     "name": "string",
     "avatar": "string",
     "bio": "string",
@@ -99,7 +104,14 @@
     "commentsCount": "number",
     "activitiesCount": "number",
     "flowersCount": "number",
-    "points": "number"
+    "points": "number",
+    "roles": ["admin" | "owner" | "user"], // 用户角色列表
+    "ownedTools": [ // 如果是工具Owner，显示拥有的工具列表
+      {
+        "toolId": "number",
+        "toolName": "string"
+      }
+    ]
   }
   ```
 - **使用页面**: `AppNavbar.vue`, `ProfileView.vue`
@@ -387,6 +399,24 @@
 - **数据依赖**:
   - 工具列表: 通过 `GET /api/tools` 获取（当zone为tools时）
   - 标签列表: 通过 `GET /api/tags?zone=xxx&toolId=xxx` 获取
+  - 推荐封面: 通过 `GET /api/posts/recommended-covers` 获取
+
+### 3.1. 获取推荐封面列表
+- **接口**: `GET /api/posts/recommended-covers`
+- **说明**: 获取发帖页面的推荐封面图片列表
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "url": "string",
+        "thumbnail": "string" // 缩略图URL（可选）
+      }
+    ]
+  }
+  ```
+- **使用页面**: `PostCreateView.vue`
 
 ### 4. 更新帖子
 - **接口**: `PUT /api/posts/:id`
@@ -686,6 +716,23 @@
   }
   ```
 - **使用页面**: `ActivityDetailView.vue`
+- **积分规则**: 报名成功后，用户积分+10（管理员除外）
+
+### 6.1. 检查用户是否为工具Owner
+- **接口**: `GET /api/tools/:id/owner`
+- **说明**: 检查当前用户是否为指定工具的Owner，用于控制发布活动按钮的显示
+- **响应数据**:
+  ```json
+  {
+    "isOwner": "boolean",
+    "toolId": "number",
+    "toolName": "string"
+  }
+  ```
+- **使用页面**: `ToolsView.vue`, `AgentView.vue`
+- **权限说明**: 
+  - 只有工具Owner可以在工具专区页面和扶摇Agent应用页面看到发布活动按钮
+  - 发布活动按钮以悬浮按钮形式显示在页面右下角
 
 ### 7. 取消报名
 - **接口**: `DELETE /api/activities/:id/register`
@@ -700,6 +747,11 @@
 ---
 
 ## 荣誉系统
+
+> **重要说明**: 荣誉系统包括：
+> - 用户荣誉记录（获奖记录）
+> - 荣誉排行榜
+> - 获奖者推荐（管理员功能）
 
 ### 1. 获取荣誉列表
 - **接口**: `GET /api/honors`
@@ -823,6 +875,7 @@
   }
   ```
 - **使用页面**: `AwardRulesView.vue`
+
 
 ---
 
@@ -1182,7 +1235,211 @@
   - 如果提供id字段，可以关联到已存在的帖子，此时会同步更新帖子的封面图等信息
 - **使用页面**: `AdminView.vue` (管理后台-扶摇Agent应用置顶帖子配置)
 
-### 13. 上传图片
+### 13. 获取推荐封面配置
+- **接口**: `GET /api/admin/posts/recommended-covers`
+- **说明**: 获取当前配置的推荐封面列表，用于管理后台编辑
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "url": "string",
+        "thumbnail": "string",
+        "order": "number"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (管理后台-推荐封面配置)
+
+### 14. 保存推荐封面配置
+- **接口**: `PUT /api/admin/posts/recommended-covers`
+- **请求参数**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "url": "string",
+        "thumbnail": "string",
+        "order": "number"
+      }
+    ]
+  }
+  ```
+- **说明**: 保存推荐封面配置后，发帖页面通过 `GET /api/posts/recommended-covers` 读取
+- **使用页面**: `AdminView.vue` (管理后台-推荐封面配置)
+
+### 15. 搜索用户（通过工号）
+- **接口**: `GET /api/admin/users/search`
+- **查询参数**:
+  - `employeeId`: string (工号)
+  - `name`: string (姓名，可选)
+  - `email`: string (邮箱，可选)
+- **说明**: 通过工号搜索用户，用于人员管理添加用户
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "employeeId": "string", // 工号
+        "name": "string",
+        "email": "string",
+        "department": "string",
+        "avatar": "string"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (管理后台-人员管理)
+
+### 16. 获取用户列表
+- **接口**: `GET /api/admin/users`
+- **查询参数**:
+  - `role`: "admin" | "owner" | "user" (可选，筛选角色)
+  - `toolId`: number (可选，筛选指定工具的Owner)
+  - `search`: string (可选，搜索关键词，支持姓名、邮箱、工号)
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "employeeId": "string", // 工号
+        "name": "string",
+        "email": "string",
+        "department": "string",
+        "avatar": "string",
+        "roles": ["admin" | "owner" | "user"], // 用户角色列表
+        "ownedTools": [ // 如果是工具Owner，显示拥有的工具列表
+          {
+            "toolId": "number",
+            "toolName": "string"
+          }
+        ]
+      }
+    ],
+    "total": "number"
+  }
+  ```
+- **使用页面**: `AdminView.vue` (管理后台-人员管理)
+- **说明**: 
+  - 用于管理后台的人员管理页面
+  - 可以筛选不同角色的用户
+  - 可以查看工具Owner及其拥有的工具列表
+
+### 17. 添加管理员
+- **接口**: `POST /api/admin/users/:userId/role`
+- **请求参数**:
+  ```json
+  {
+    "role": "admin",
+    "employeeId": "string" // 可选，如果通过工号搜索添加
+  }
+  ```
+- **说明**: 将用户设置为管理员角色
+- **使用页面**: `AdminView.vue` (管理后台-人员管理)
+
+### 18. 添加工具Owner
+- **接口**: `POST /api/admin/users/:userId/role`
+- **请求参数**:
+  ```json
+  {
+    "role": "owner",
+    "toolId": "number", // 工具ID
+    "employeeId": "string" // 可选，如果通过工号搜索添加
+  }
+  ```
+- **说明**: 将用户设置为指定工具的Owner角色
+- **响应数据**:
+  ```json
+  {
+    "success": "boolean",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `AdminView.vue` (管理后台-人员管理)
+
+### 19. 移除用户角色
+- **接口**: `DELETE /api/admin/users/:userId/role`
+- **请求参数**:
+  ```json
+  {
+    "role": "admin" | "owner",
+    "toolId": "number" // 当role为owner时必填
+  }
+  ```
+- **说明**: 移除用户的指定角色（管理员或工具Owner）
+- **使用页面**: `AdminView.vue` (管理后台-人员管理)
+
+### 20. 获取本月积分排行榜（获奖者推荐）
+- **接口**: `GET /api/admin/honors/recommended-winners`
+- **查询参数**: 
+  - `month`: string (可选，格式：YYYY-MM，默认当前月份)
+  - `limit`: number (默认3，推荐Top 3用户)
+- **说明**: 获取本月积分靠前的用户，用于管理员推荐评奖
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "employeeId": "string", // 工号
+        "name": "string",
+        "avatar": "string",
+        "department": "string",
+        "points": "number", // 本月积分
+        "postsCount": "number", // 本月发帖数
+        "commentsCount": "number", // 本月评论数
+        "activitiesCount": "number", // 本月参加活动数
+        "likesReceived": "number", // 本月被点赞数
+        "favoritesReceived": "number", // 本月被收藏数
+        "hasAwarded": "boolean" // 是否已评奖
+      }
+    ],
+    "month": "string" // 当前查询的月份，格式：YYYY-MM
+  }
+  ```
+- **使用页面**: `AdminView.vue` (管理后台-AI使用达人管理-获奖者推荐)
+- **计算说明**: 
+  - 只计算本月（当前月份）的积分
+  - 排除管理员用户的积分
+  - 按积分从高到低排序，返回Top 3
+
+### 21. 设置用户获奖
+- **接口**: `POST /api/admin/honors`
+- **请求参数**:
+  ```json
+  {
+    "userId": "number",
+    "awardId": "number", // 奖项ID（从奖项列表中选择）
+    "awardName": "string", // 奖项名称
+    "awardDate": "string", // 获奖日期，格式：YYYY-MM-DD
+    "category": "innovation" | "efficiency" | "practice" | "community",
+    "year": "string" // 年份，格式：YYYY
+  }
+  ```
+- **响应数据**:
+  ```json
+  {
+    "id": "number",
+    "message": "string"
+  }
+  ```
+- **使用页面**: `AdminView.vue` (管理后台-AI使用达人管理-获奖者推荐)
+- **说明**: 
+  - 管理员可以为推荐的用户设置获奖记录
+  - 设置后，该用户会出现在荣誉墙和时光轴中
+  - 可以设置是否评奖（hasAwarded字段）
+
+### 22. 取消用户获奖
+- **接口**: `DELETE /api/admin/honors/:id`
+- **说明**: 删除已设置的获奖记录
+- **使用页面**: `AdminView.vue` (管理后台-AI使用达人管理-获奖者推荐)
+
+### 23. 上传图片
 - **接口**: `POST /api/admin/upload/image`
 - **请求类型**: `multipart/form-data`
 - **请求参数**: `file` (File)
@@ -1218,17 +1475,27 @@
   │   └── 用于显示工具筛选按钮（除了"其他工具"）
   ├── 获取工具详情 (GET /api/tools/:id) ← 管理后台配置（选中工具时）
   │   └── 获取工具Banner图
+  ├── 检查是否为工具Owner (GET /api/tools/:id/owner) ← 权限检查
+  │   └── 如果是Owner，显示发布活动悬浮按钮
   └── 获取工具相关帖子 (GET /api/posts?zone=tools&toolId=xxx) ← 接口动态数据
+
+扶摇Agent应用页面加载
+  ├── 获取置顶帖子 (GET /api/agent/featured-post) ← 管理后台配置
+  ├── 检查是否为扶摇Agent应用Owner (GET /api/tools/-1/owner) ← 权限检查
+  │   └── 如果是Owner，显示发布活动悬浮按钮
+  └── 获取帖子列表 (GET /api/posts?zone=agent) ← 接口动态数据
 
 发帖页面加载
   ├── 获取工具列表 (GET /api/tools) ← 管理后台配置
   │   └── 当选择"AI工具专区"时，显示工具选择下拉框
-  └── 获取标签列表 (GET /api/tags?zone=xxx&toolId=xxx) ← 接口动态数据
-      └── 根据选择的专区和工具，返回对应的标签列表
+  ├── 获取标签列表 (GET /api/tags?zone=xxx&toolId=xxx) ← 接口动态数据
+  │   └── 根据选择的专区和工具，返回对应的标签列表
+  └── 获取推荐封面列表 (GET /api/posts/recommended-covers) ← 管理后台配置
 
 发布活动页面加载
-  └── 获取工具列表 (GET /api/tools) ← 管理后台配置
-      └── 显示工具选择下拉框
+  ├── 获取工具列表 (GET /api/tools) ← 管理后台配置
+  │   └── 显示工具选择下拉框
+  └── 如果URL中有toolId参数，自动选中对应工具
 ```
 
 ### 2. 管理后台配置流程
@@ -1241,16 +1508,26 @@
   │   └── 首页统一读取 (GET /api/home/honor) - 同时返回荣誉殿堂和社区头条数据
   ├── 配置AI工具 (PUT /api/admin/tools)
   │   ├── 配置工具列表、路由、Banner
+  │   ├── 工具列表用于：
+  │   │   ├── 首页工具专区展示
+  │   │   ├── 工具专区页面筛选按钮（除了"其他工具"）
+  │   │   ├── 发帖页面工具类别选择
+  │   │   └── 发布活动页面工具选择
   │   └── 首页和工具页面读取 (GET /api/tools)
-  └── 配置扶摇Agent应用置顶帖子 (PUT /api/admin/agent/featured-post)
-      └── 扶摇Agent应用页面读取 (GET /api/agent/featured-post) - 返回包含封面图
-  └── 配置AI工具 (PUT /api/admin/tools)
-      ├── 工具列表用于：
-      │   ├── 首页工具专区展示
-      │   ├── 工具专区页面筛选按钮（除了"其他工具"）
-      │   ├── 发帖页面工具类别选择
-      │   └── 发布活动页面工具选择
-      └── 前端通过 GET /api/tools 读取
+  ├── 配置扶摇Agent应用置顶帖子 (PUT /api/admin/agent/featured-post)
+  │   └── 扶摇Agent应用页面读取 (GET /api/agent/featured-post) - 返回包含封面图
+  └── 配置推荐封面 (PUT /api/admin/posts/recommended-covers)
+      └── 发帖页面读取 (GET /api/posts/recommended-covers)
+
+AI使用达人管理流程
+  ├── 获取本月积分排行榜 (GET /api/admin/honors/recommended-winners)
+  │   └── 推荐本月积分Top 3用户（排除管理员）
+  ├── 管理员查看推荐用户信息
+  │   ├── 用户基本信息
+  │   ├── 本月积分明细
+  │   └── 是否已评奖状态
+  └── 管理员设置评奖 (POST /api/admin/honors)
+      └── 设置后用户出现在荣誉墙和时光轴中
 ```
 
 ### 3. 用户登录流程
@@ -1266,8 +1543,12 @@
 ### 4. 帖子发布流程
 ```
 用户在PostCreateView填写表单 
+  → 获取推荐封面列表 (GET /api/posts/recommended-covers)
+  → 获取工具列表 (GET /api/tools) - 如果选择AI工具专区
+  → 获取标签列表 (GET /api/tags?zone=xxx&toolId=xxx)
   → 上传封面图片 (POST /api/admin/upload/image) 
   → 提交帖子 (POST /api/posts) 
+  → 后端计算积分（发布帖子+20，管理员除外）
   → 返回帖子ID 
   → 跳转到帖子详情页或返回列表页
 ```
@@ -1289,8 +1570,42 @@
   → GET /api/activities/:id 获取活动详情 
   → 用户点击报名 (POST /api/activities/:id/register) 
   → 后端创建报名记录并发送消息通知 
+  → 后端计算积分（参加活动+10，管理员除外）
   → 更新活动详情中的isRegistered状态 
   → 如果活动发布者在线，通过WebSocket推送消息
+```
+
+### 6.1. 发布活动流程（工具Owner）
+```
+工具Owner在ToolsView或AgentView页面
+  → 检查是否为工具Owner (GET /api/tools/:id/owner)
+  → 如果isOwner为true，显示发布活动悬浮按钮
+  → 点击发布活动按钮
+  → 跳转到活动创建页面 (/activity/create?toolId=xxx)
+  → 获取工具列表 (GET /api/tools) - 用于选择工具
+  → 填写活动信息并提交 (POST /api/activities)
+  → 返回活动ID
+  → 跳转到活动详情页
+```
+
+### 6.2. 获奖者推荐流程（管理员）
+```
+管理员在管理后台-AI使用达人管理页面
+  → 获取本月积分排行榜 (GET /api/admin/honors/recommended-winners)
+  │   └── 返回本月积分Top 3用户（排除管理员）
+  → 管理员查看推荐用户信息
+  │   ├── 用户基本信息（姓名、部门、工号）
+  │   ├── 本月积分
+  │   ├── 本月发帖数、评论数、参加活动数
+  │   └── 是否已评奖状态
+  → 管理员选择是否给推荐用户评奖
+  │   ├── 如果选择评奖：
+  │   │   ├── 选择奖项 (从奖项列表中选择)
+  │   │   ├── 设置获奖日期和年份
+  │   │   └── 提交评奖 (POST /api/admin/honors)
+  │   └── 如果取消评奖：
+  │       └── 删除获奖记录 (DELETE /api/admin/honors/:id)
+  → 评奖成功后，用户出现在荣誉墙和时光轴中
 ```
 
 ### 7. 荣誉送花流程
@@ -1409,6 +1724,80 @@
 
 ---
 
+## 积分系统
+
+### 积分规则
+用户通过以下行为获得积分（管理员除外）：
+
+1. **发布帖子**: +20 积分
+2. **发表评论**: +1 积分
+3. **帖子被点赞**: +3 积分
+4. **帖子被收藏**: +5 积分
+5. **参加活动**: +10 积分
+
+### 积分计算接口
+- **接口**: `GET /api/user/points/calculate`
+- **说明**: 计算用户当前积分（用于显示和验证）
+- **响应数据**:
+  ```json
+  {
+    "points": "number",
+    "breakdown": {
+      "posts": "number", // 发帖获得的积分
+      "comments": "number", // 评论获得的积分
+      "likesReceived": "number", // 被点赞获得的积分
+      "favoritesReceived": "number", // 被收藏获得的积分
+      "activities": "number" // 参加活动获得的积分
+    }
+  }
+  ```
+- **使用页面**: `AppNavbar.vue`, `ProfileView.vue`
+
+### 积分更新时机
+- 发布帖子成功后自动+20积分
+- 参加活动成功后自动+10积分
+- 发表评论成功后自动+1积分
+- 帖子被点赞时自动+3积分
+- 帖子被收藏时自动+5积分
+
+### 权限说明
+- **管理员**: 管理员的所有操作不计算积分
+- **工具Owner**: 工具Owner的积分计算规则与普通用户相同
+
+### 月度积分统计
+- 系统按月统计用户积分
+- 每月1日重置月度积分统计
+- 用于获奖者推荐功能，推荐本月积分Top 3用户
+
+---
+
+## 用户角色与权限
+
+### 角色类型
+1. **user** - 普通用户（默认角色）
+2. **admin** - 管理员（可以访问管理后台，配置所有内容）
+3. **owner** - 工具Owner（可以发布指定工具的活动）
+
+### 权限说明
+
+#### 管理员 (admin)
+- 可以访问管理后台
+- 可以配置首页内容、荣誉殿堂、工具配置等
+- 可以管理用户角色（添加/移除管理员、工具Owner）
+- 所有操作不计算积分
+
+#### 工具Owner (owner)
+- 可以在指定工具的工具专区页面和扶摇Agent应用页面看到发布活动按钮
+- 可以发布该工具相关的活动
+- 积分计算规则与普通用户相同
+- 一个用户可以是多个工具的Owner
+
+#### 普通用户 (user)
+- 可以发布帖子、评论、参加活动等
+- 所有操作正常计算积分
+
+---
+
 ## 注意事项
 
 1. **认证**: 除公开接口外，所有接口都需要在Header中携带token
@@ -1428,3 +1817,15 @@
 5. **数据一致性**: 
    - 点赞、收藏等操作需要检查重复操作
    - 删除操作需要检查权限和关联数据
+
+6. **权限控制**:
+   - 发布活动按钮只在工具Owner访问对应工具页面时显示（悬浮按钮形式）
+   - 管理后台的人员管理需要管理员权限
+   - 积分计算时排除管理员用户
+   - 工具Owner可以通过工号搜索添加
+
+7. **发布活动按钮位置**:
+   - 从管理后台移除发布活动按钮
+   - 在AI工具专区页面（ToolsView）和扶摇Agent应用页面（AgentView）以悬浮按钮形式显示
+   - 只有当前工具Owner可以看到并点击该按钮
+   - 按钮位置：页面右下角（类似PostFab组件的位置）
