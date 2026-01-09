@@ -8,11 +8,8 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig({
   plugins: [
     vue(),
-    // 只在开发环境启用 vue-dev-tools，并添加错误处理
-    vueDevTools({
-      enabled: process.env.NODE_ENV === 'development',
-      componentInspector: false, // 禁用组件检查器以避免潜在问题
-    }),
+    // 只在开发环境启用 vue-dev-tools
+    ...(process.env.NODE_ENV === 'development' ? [vueDevTools()] : []),
   ],
   resolve: {
     alias: {
