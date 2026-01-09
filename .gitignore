@@ -33,9 +33,6 @@ coverage
 # ESLint
 .eslintcache
 
-# Cypress
-cypress/videos/
-cypress/screenshots/
 
 # Vitest
 __screenshots__/
