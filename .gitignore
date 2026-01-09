@@ -7,8 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 .DS_Store
+
+# Build outputs
 dist
 dist-ssr
 coverage
@@ -24,13 +27,32 @@ coverage
 *.sln
 *.sw?
 
+# TypeScript
 *.tsbuildinfo
 
+# ESLint
 .eslintcache
 
 # Cypress
-/cypress/videos/
-/cypress/screenshots/
+cypress/videos/
+cypress/screenshots/
 
 # Vitest
 __screenshots__/
+
+# Maven
+backend/target/
+backend/.classpath
+backend/.project
+backend/.settings/
+
+# IDE
+*.iml
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

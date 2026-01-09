@@ -1,110 +1,72 @@
-# AI Community Web
+# AI社区平台
 
-Vue 3 + TypeScript + Element Plus 项目
-
-## 技术栈
-
-- Vue 3 (Composition API)
-- TypeScript
-- Vue Router
-- Pinia (状态管理)
-- Element Plus (UI 组件库)
-- Vite (构建工具)
-- Vitest (单元测试)
-- Cypress (E2E 测试)
-- ESLint + Prettier (代码规范)
-
-## 环境要求
-
-- Node.js >= 20.19.0 或 >= 22.12.0
-- npm
-
-## 安装依赖
-
-```bash
-npm install
-```
-
-## 开发
-
-```bash
-npm run dev
-```
-
-如果遇到 `command not found: npm` 或 `command not found: node` 错误，请先执行：
-
-```bash
-eval "$(/opt/homebrew/bin/brew shellenv)"
-```
-
-或者将以下内容添加到你的 `~/.zshrc` 文件中（如果使用 zsh）：
-
-```bash
-eval "$(/opt/homebrew/bin/brew shellenv)"
-```
-
-然后重新打开终端或执行：
-
-```bash
-source ~/.zshrc
-```
-
-## 构建
-
-```bash
-npm run build
-```
-
-## 预览构建结果
-
-```bash
-npm run preview
-```
-
-## 代码检查
-
-```bash
-npm run lint
-```
-
-## 格式化代码
-
-```bash
-npm run format
-```
-
-## 类型检查
-
-```bash
-npm run type-check
-```
-
-## 运行测试
-
-### 单元测试
-
-```bash
-npm run test:unit
-```
-
-### E2E 测试
-
-```bash
-npm run test:e2e
-```
+AI社区平台是一个集成了前端和后端的完整项目，提供AI工具分享、实践交流、活动管理等功能的社区平台。
 
 ## 项目结构
 
 ```
-ai-community-web/
-├── src/
-│   ├── assets/          # 静态资源
-│   ├── components/      # 组件
-│   ├── router/          # 路由配置
-│   ├── stores/          # Pinia 状态管理
-│   ├── views/           # 页面视图
-│   ├── App.vue          # 根组件
-│   └── main.ts          # 入口文件
-├── public/              # 公共资源
-└── package.json         # 项目配置
+AICommunityWeb/
+├── frontend/          # 前端项目 (Vue 3 + TypeScript + Vite)
+├── backend/           # 后端项目 (Spring Boot 2.7.x + MyBatis + MySQL)
+├── API接口需求文档.md  # API接口文档
+└── README.md          # 项目说明文档
 ```
+
+## 技术栈
+
+### 前端
+- Vue 3 (Composition API)
+- TypeScript
+- Vite
+- Element Plus
+- Vue Router
+- Pinia (状态管理)
+
+### 后端
+- Spring Boot 2.7.18
+- MyBatis
+- MySQL 5.7
+- JWT (认证)
+- Swagger 2 (API文档)
+
+## 快速开始
+
+### 前端开发
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 后端开发
+
+```bash
+cd backend
+# 配置数据库连接信息
+# 修改 src/main/resources/application.yml
+mvn clean install
+mvn spring-boot:run
+```
+
+详细文档请参考：
+- 前端：`frontend/README.md`
+- 后端：`backend/README.md`
+- API接口：`API接口需求文档.md`
+
+## 功能模块
+
+- 用户认证与权限管理
+- 帖子发布与管理
+- 评论与互动
+- 活动创建与报名
+- 荣誉系统与积分
+- 管理后台
+- AI工具专区
+
+## 开发规范
+
+- 前端代码遵循 Vue 3 最佳实践
+- 后端代码遵循阿里巴巴Java开发手册
+- API接口统一返回格式
+- 代码提交前进行 lint 检查
