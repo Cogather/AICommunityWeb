@@ -39,6 +39,33 @@
         <!-- 右侧：标签栏 -->
         <el-col :xs="24" :md="8">
           <div class="sidebar">
+            <!-- 最热帖子（置顶显示） -->
+            <div class="sidebar-section hot-posts-section">
+              <div class="section-header-hot">
+                <h3 class="hot-posts-title">
+                  <el-icon class="hot-icon"><Star /></el-icon>
+                  最热帖子
+                </h3>
+              </div>
+              <div class="hot-posts-featured">
+                <div 
+                  v-for="(post, index) in topHotPosts" 
+                  :key="post.id"
+                  class="hot-post-featured-item"
+                  :class="`rank-${index + 1}`"
+                  @click="handlePostClick(post)"
+                >
+                  <div class="hot-post-featured-rank">
+                    <span class="rank-number">{{ index + 1 }}</span>
+                    <div class="rank-badge"></div>
+                  </div>
+                  <div class="hot-post-featured-content">
+                    <div class="hot-post-featured-title">{{ post.title }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 标签筛选 -->
             <div class="sidebar-section">
               <TagFilter
@@ -99,31 +126,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- 最热帖子 -->
-            <div class="sidebar-section">
-              <h3>最热帖子</h3>
-              <div class="hot-posts-list">
-                <div 
-                  v-for="(post, index) in hotPosts" 
-                  :key="post.id"
-                  class="hot-post-item"
-                  @click="handlePostClick(post)"
-                >
-                  <div class="hot-post-rank">{{ index + 1 }}</div>
-                  <div class="hot-post-content">
-                    <div class="hot-post-title">{{ post.title }}</div>
-                    <div class="hot-post-meta">
-                      <span class="hot-post-views">
-                        <el-icon><View /></el-icon>
-                        {{ post.views }}
-                      </span>
-                      <span class="hot-post-author">{{ post.author }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </el-col>
       </el-row>
@@ -132,17 +134,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { View, Refresh } from '@element-plus/icons-vue'
+import { Refresh, Star } from '@element-plus/icons-vue'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 
 const router = useRouter()
-
-// 模拟管理员状态，实际应该从用户信息中获取
-const isAdmin = ref(false)
 
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>('newest')
@@ -396,28 +395,16 @@ const paginatedPosts = computed(() => {
   return filteredPosts.value.slice(start, end)
 })
 
-// 最热的5个帖子（按浏览量排序）
-const hotPosts = computed(() => {
+// 最热的3个帖子（按浏览量排序，用于右侧分栏顶部展示）
+const topHotPosts = computed(() => {
   // 合并所有帖子（包括精华帖和普通帖子）
   const allPosts = [...featuredPosts.value, ...posts.value]
-  // 按浏览量降序排序，取前5个
+  // 按浏览量降序排序，取前3个
   return allPosts
     .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 5)
+    .slice(0, 3)
 })
 
-// 获取标签类型
-const getTagType = (tag: string) => {
-  const typeMap: Record<string, string> = {
-    '精华': 'success',
-    '活动': 'success',
-    '项目': 'info',
-    '效率': 'warning',
-    '实践': 'success',
-    '已解决': 'success'
-  }
-  return typeMap[tag] || 'info'
-}
 
 
 // 处理搜索
@@ -493,7 +480,7 @@ const handleContributorClick = (contributorName: string) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: any) => {
+const handlePostClick = (post: { id: number; [key: string]: unknown }) => {
   console.log('PracticesView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
@@ -502,14 +489,6 @@ const handlePostClick = (post: any) => {
   router.push(`/post/${post.id}`).catch((err) => {
     console.error('路由跳转失败:', err)
   })
-}
-
-// 获取排名样式类
-const getRankClass = (index: number) => {
-  if (index === 0) return 'rank-gold'
-  if (index === 1) return 'rank-silver'
-  if (index === 2) return 'rank-bronze'
-  return ''
 }
 </script>
 
@@ -662,101 +641,177 @@ const getRankClass = (index: number) => {
       }
     }
 
-    .hot-posts-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    // 最热帖子区域（置顶显示）
+    &.hot-posts-section {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+      border: 2px solid rgba(64, 158, 255, 0.2);
+      box-shadow: 0 4px 20px rgba(64, 158, 255, 0.1);
+      padding: 16px;
 
-      .hot-post-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 1px solid transparent;
-        background: rgba(255, 255, 255, 0.5);
+      .section-header-hot {
+        margin-bottom: 12px;
 
-        &:hover {
-          background: rgba(64, 158, 255, 0.08);
-          border-color: rgba(64, 158, 255, 0.2);
-          transform: translateX(4px);
-        }
-
-        .hot-post-rank {
-          flex-shrink: 0;
-          width: 24px;
-          height: 24px;
+        .hot-posts-title {
           display: flex;
           align-items: center;
-          justify-content: center;
-          border-radius: 50%;
+          gap: 6px;
+          margin: 0;
+          font-size: 16px;
           font-weight: 700;
-          font-size: 12px;
-          color: #fff;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+
+          .hot-icon {
+            font-size: 18px;
+            color: #f5576c;
+            animation: pulse 2s ease infinite;
+          }
         }
+      }
 
-        &:nth-child(1) .hot-post-rank {
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-          width: 28px;
-          height: 28px;
-          font-size: 14px;
-        }
+      .hot-posts-featured {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
 
-        &:nth-child(2) .hot-post-rank {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
+        .hot-post-featured-item {
+          position: relative;
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 10px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          background: rgba(255, 255, 255, 0.8);
+          border: 2px solid transparent;
+          overflow: hidden;
 
-        &:nth-child(3) .hot-post-rank {
-          background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        }
-
-        .hot-post-content {
-          flex: 1;
-          min-width: 0;
-
-          .hot-post-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 6px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
+          &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--rank-color, #667eea), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
           }
 
-          .hot-post-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 12px;
-            color: #999;
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--rank-color, #667eea);
 
-            .hot-post-views {
-              display: flex;
-              align-items: center;
-              gap: 4px;
-              color: #f56c6c;
-              font-weight: 600;
+            &::before {
+              opacity: 1;
+            }
+          }
 
-              .el-icon {
-                font-size: 14px;
+          &.rank-1 {
+            --rank-color: #f5576c;
+            background: linear-gradient(135deg, rgba(245, 87, 108, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%);
+            border-color: rgba(245, 87, 108, 0.3);
+
+            .hot-post-featured-rank {
+              .rank-badge {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);
               }
             }
+          }
 
-            .hot-post-author {
-              color: #666;
+          &.rank-2 {
+            --rank-color: #4facfe;
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%);
+            border-color: rgba(79, 172, 254, 0.3);
+
+            .hot-post-featured-rank {
+              .rank-badge {
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+              }
+            }
+          }
+
+          &.rank-3 {
+            --rank-color: #43e97b;
+            background: linear-gradient(135deg, rgba(67, 233, 123, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%);
+            border-color: rgba(67, 233, 123, 0.3);
+
+            .hot-post-featured-rank {
+              .rank-badge {
+                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+                box-shadow: 0 2px 8px rgba(67, 233, 123, 0.3);
+              }
+            }
+          }
+
+          .hot-post-featured-rank {
+            position: relative;
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .rank-number {
+              position: relative;
+              z-index: 2;
+              font-size: 14px;
+              font-weight: 800;
+              color: #fff;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            }
+
+            .rank-badge {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              border-radius: 50%;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+          }
+
+          .hot-post-featured-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+
+            .hot-post-featured-title {
+              font-size: 13px;
+              font-weight: 600;
+              color: #333;
+              line-height: 1.4;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              line-clamp: 2;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
           }
         }
       }
     }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
   }
 }
 
@@ -771,6 +826,46 @@ const getRankClass = (index: number) => {
 
       .search-input {
         width: 100%;
+      }
+    }
+  }
+
+  .sidebar-section.hot-posts-section {
+    padding: 12px;
+
+    .section-header-hot {
+      margin-bottom: 10px;
+
+      .hot-posts-title {
+        font-size: 14px;
+
+        .hot-icon {
+          font-size: 16px;
+        }
+      }
+    }
+
+    .hot-posts-featured {
+      gap: 8px;
+
+      .hot-post-featured-item {
+        padding: 8px;
+        gap: 8px;
+
+        .hot-post-featured-rank {
+          width: 28px;
+          height: 28px;
+
+          .rank-number {
+            font-size: 12px;
+          }
+        }
+
+        .hot-post-featured-content {
+          .hot-post-featured-title {
+            font-size: 12px;
+          }
+        }
       }
     }
   }
