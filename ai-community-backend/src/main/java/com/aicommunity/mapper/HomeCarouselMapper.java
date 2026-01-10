@@ -1,6 +1,6 @@
 package com.aicommunity.mapper;
 
-import com.aicommunity.entity.HomeCarousel;
+import com.aicommunity.dto.CarouselResponse;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -12,26 +12,18 @@ import java.util.List;
  */
 @Mapper
 public interface HomeCarouselMapper {
-
     /**
      * 查询所有轮播图
-     *
-     * @return 轮播图列表
      */
-    List<HomeCarousel> selectAll();
+    List<CarouselResponse.CarouselItem> selectAll();
 
     /**
      * 删除所有轮播图
-     *
-     * @return 影响行数
      */
-    int deleteAll();
+    void deleteAll();
 
     /**
      * 插入轮播图
-     *
-     * @param carousel 轮播图
-     * @return 影响行数
      */
-    int insert(HomeCarousel carousel);
+    void insert(CarouselResponse.CarouselItem item);
 }

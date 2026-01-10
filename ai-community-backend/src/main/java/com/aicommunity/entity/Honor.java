@@ -2,7 +2,7 @@ package com.aicommunity.entity;
 
 import lombok.Data;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 荣誉实体类
@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
  */
 @Data
 public class Honor implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
@@ -23,6 +22,21 @@ public class Honor implements Serializable {
      * 用户ID
      */
     private Long userId;
+
+    /**
+     * 用户姓名
+     */
+    private String name;
+
+    /**
+     * 部门
+     */
+    private String department;
+
+    /**
+     * 头像
+     */
+    private String avatar;
 
     /**
      * 奖项ID
@@ -55,7 +69,31 @@ public class Honor implements Serializable {
     private Integer flowers;
 
     /**
+     * 是否已送花
+     */
+    private Boolean hasGivenFlower;
+
+    /**
+     * 是否是我的荣誉
+     */
+    private Boolean isMine;
+
+    /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
+
+    /**
+     * Top用户内部类
+     */
+    @Data
+    public static class TopUser implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private Long id;
+        private String name;
+        private String avatar;
+        private Integer level;
+        private String department;
+    }
 }

@@ -15,40 +15,59 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
-    <sql id="Base_Column_List">
-        id, employee_id, name, email, password, avatar, bio, department, create_time, update_time
-    </sql>
-
     <select id="selectByEmployeeId" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
-        FROM user
-        WHERE employee_id = #{employeeId}
+        SELECT * FROM users WHERE employee_id = #{employeeId}
     </select>
 
     <select id="selectById" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
-        FROM user
-        WHERE id = #{id}
+        SELECT * FROM users WHERE id = #{id}
     </select>
 
-    <insert id="insert" parameterType="com.aicommunity.entity.User" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO user (employee_id, name, email, password, avatar, bio, department, create_time, update_time)
-        VALUES (#{employeeId}, #{name}, #{email}, #{password}, #{avatar}, #{bio}, #{department}, NOW(), NOW())
-    </insert>
+    <select id="selectByName" resultMap="BaseResultMap">
+        SELECT * FROM users WHERE name = #{name} LIMIT 1
+    </select>
 
-    <update id="update" parameterType="com.aicommunity.entity.User">
-        UPDATE user
-        <set>
-            <if test="name != null">name = #{name},</if>
-            <if test="email != null">email = #{email},</if>
-            <if test="avatar != null">avatar = #{avatar},</if>
-            <if test="bio != null">bio = #{bio},</if>
-            <if test="department != null">department = #{department},</if>
+    <update id="updateById">
+        UPDATE users
+        SET bio = #{bio},
+            avatar = #{avatar},
             update_time = NOW()
-        </set>
         WHERE id = #{id}
     </update>
+
+    <select id="searchUsers" resultMap="BaseResultMap">
+        SELECT DISTINCT u.* FROM users u
+        <if test="role != null and role != ''">
+            INNER JOIN user_roles ur ON u.id = ur.user_id AND ur.role = #{role}
+        </if>
+        WHERE 1=1
+        <if test="employeeId != null and employeeId != ''">
+            AND u.employee_id LIKE CONCAT('%', #{employeeId}, '%')
+        </if>
+        <if test="name != null and name != ''">
+            AND u.name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        <if test="email != null and email != ''">
+            AND u.email LIKE CONCAT('%', #{email}, '%')
+        </if>
+        LIMIT 20
+    </select>
+
+    <select id="selectUsers" resultMap="BaseResultMap">
+        SELECT DISTINCT u.* FROM users u
+        <if test="role != null and role != ''">
+            INNER JOIN user_roles ur ON u.id = ur.user_id AND ur.role = #{role}
+        </if>
+        <if test="toolId != null">
+            INNER JOIN user_roles ur2 ON u.id = ur2.user_id AND ur2.role = 'owner' AND ur2.tool_id = #{toolId}
+        </if>
+        WHERE 1=1
+        <if test="search != null and search != ''">
+            AND (u.name LIKE CONCAT('%', #{search}, '%') 
+                 OR u.email LIKE CONCAT('%', #{search}, '%')
+                 OR u.employee_id LIKE CONCAT('%', #{search}, '%'))
+        </if>
+        ORDER BY u.create_time DESC
+    </select>
 
 </mapper>

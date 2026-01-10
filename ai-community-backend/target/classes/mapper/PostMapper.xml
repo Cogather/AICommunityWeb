@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.PostMapper">
+
+    <resultMap id="BaseResultMap" type="com.aicommunity.entity.Post">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="summary" property="summary"/>
+        <result column="content" property="content"/>
+        <result column="cover" property="cover"/>
+        <result column="author_id" property="authorId"/>
+        <result column="zone" property="zone"/>
+        <result column="tool_id" property="toolId"/>
+        <result column="is_featured" property="isFeatured"/>
+        <result column="views" property="views"/>
+        <result column="likes" property="likes"/>
+        <result column="comments" property="comments"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM posts WHERE id = #{id}
+    </select>
+
+    <select id="selectPosts" resultMap="BaseResultMap">
+        SELECT p.* FROM posts p
+        <if test="tag != null and tag != ''">
+            INNER JOIN post_tags pt ON p.id = pt.post_id
+            INNER JOIN tags t ON pt.tag_id = t.id AND t.name = #{tag}
+        </if>
+        <if test="department != null and department != ''">
+            INNER JOIN users u ON p.author_id = u.id AND u.department = #{department}
+        </if>
+        <if test="author != null and author != ''">
+            INNER JOIN users u2 ON p.author_id = u2.id AND u2.name = #{author}
+        </if>
+        WHERE 1=1
+        <if test="zone != null and zone != ''">
+            AND p.zone = #{zone}
+        </if>
+        <if test="toolId != null">
+            AND p.tool_id = #{toolId}
+        </if>
+        <if test="search != null and search != ''">
+            AND (p.title LIKE CONCAT('%', #{search}, '%') OR p.summary LIKE CONCAT('%', #{search}, '%'))
+        </if>
+        <choose>
+            <when test="sort == 'hot'">
+                ORDER BY (p.views * 0.3 + p.likes * 0.4 + p.comments * 0.3) DESC, p.create_time DESC
+            </when>
+            <when test="sort == 'comments'">
+                ORDER BY p.comments DESC, p.create_time DESC
+            </when>
+            <when test="sort == 'likes'">
+                ORDER BY p.likes DESC, p.create_time DESC
+            </when>
+            <otherwise>
+                ORDER BY p.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO posts (title, summary, content, cover, author_id, zone, tool_id, is_featured, views, likes, comments, create_time, update_time)
+        VALUES (#{title}, #{summary}, #{content}, #{cover}, #{authorId}, #{zone}, #{toolId}, #{isFeatured}, #{views}, #{likes}, #{comments}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="updateById">
+        UPDATE posts
+        SET title = #{title},
+            summary = #{summary},
+            content = #{content},
+            cover = #{cover},
+            zone = #{zone},
+            tool_id = #{toolId},
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM posts WHERE id = #{id}
+    </delete>
+
+    <select id="selectByAuthorId" resultMap="BaseResultMap">
+        SELECT * FROM posts WHERE author_id = #{authorId} ORDER BY create_time DESC
+    </select>
+
+    <select id="countByAuthorId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM posts WHERE author_id = #{authorId}
+    </select>
+
+    <update id="incrementViews">
+        UPDATE posts SET views = views + 1 WHERE id = #{id}
+    </update>
+
+    <update id="incrementLikes">
+        UPDATE posts SET likes = likes + 1 WHERE id = #{id}
+    </update>
+
+    <update id="decrementLikes">
+        UPDATE posts SET likes = GREATEST(likes - 1, 0) WHERE id = #{id}
+    </update>
+
+    <update id="incrementComments">
+        UPDATE posts SET comments = comments + 1 WHERE id = #{id}
+    </update>
+
+    <select id="selectHotPosts" resultMap="BaseResultMap">
+        SELECT * FROM posts
+        WHERE 1=1
+        <if test="zone != null and zone != ''">
+            AND zone = #{zone}
+        </if>
+        ORDER BY (views * 0.3 + likes * 0.4 + comments * 0.3) DESC, create_time DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

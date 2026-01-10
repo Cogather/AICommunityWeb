@@ -3,8 +3,9 @@ package com.aicommunity.controller;
 import com.aicommunity.common.PageQuery;
 import com.aicommunity.common.PageResult;
 import com.aicommunity.common.Result;
-import com.aicommunity.dto.PostDetailDTO;
-import com.aicommunity.dto.PostListDTO;
+import com.aicommunity.dto.PostCreateRequest;
+import com.aicommunity.dto.PostUpdateRequest;
+import com.aicommunity.entity.Post;
 import com.aicommunity.service.PostService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -13,13 +14,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 帖子控制器
  *
  * @author AI Community Team
  */
-@Api(tags = "帖子相关接口")
+@Api(tags = "帖子管理")
 @RestController
 @RequestMapping("/posts")
 public class PostController {
@@ -30,33 +32,35 @@ public class PostController {
     /**
      * 获取帖子列表
      *
-     * @param zone       专区
-     * @param toolId     工具ID
-     * @param tag        标签
+     * @param zone 专区
+     * @param toolId 工具ID
+     * @param tag 标签
      * @param department 部门
-     * @param author     作者
-     * @param sort       排序方式
-     * @param search     搜索关键词
-     * @param page       页码
-     * @param pageSize   每页数量
-     * @param isFeatured 是否精选
+     * @param author 作者
+     * @param sort 排序方式
+     * @param search 搜索关键词
+     * @param pageQuery 分页参数
      * @return 帖子列表
      */
     @ApiOperation(value = "获取帖子列表", notes = "支持搜索、排序、筛选功能的帖子列表接口")
     @GetMapping
-    public Result<PageResult<PostListDTO>> getPosts(
-            @ApiParam(value = "专区", required = true) @RequestParam String zone,
-            @ApiParam(value = "工具ID") @RequestParam(required = false) Long toolId,
-            @ApiParam(value = "标签") @RequestParam(required = false) String tag,
-            @ApiParam(value = "部门") @RequestParam(required = false) String department,
-            @ApiParam(value = "作者") @RequestParam(required = false) String author,
-            @ApiParam(value = "排序方式") @RequestParam(defaultValue = "newest") String sort,
-            @ApiParam(value = "搜索关键词") @RequestParam(required = false) String search,
-            @ApiParam(value = "页码") @RequestParam(defaultValue = "1") Integer page,
-            @ApiParam(value = "每页数量") @RequestParam(defaultValue = "10") Integer pageSize,
-            @ApiParam(value = "是否精选") @RequestParam(required = false) Boolean isFeatured) {
-        PageQuery pageQuery = new PageQuery(page, pageSize);
-        PageResult<PostListDTO> result = postService.getPosts(zone, toolId, tag, department, author, sort, search, isFeatured, pageQuery);
+    public Result<PageResult<Post>> getPosts(
+            @ApiParam(value = "专区", example = "practices")
+            @RequestParam(required = false) String zone,
+            @ApiParam(value = "工具ID")
+            @RequestParam(required = false) Long toolId,
+            @ApiParam(value = "标签")
+            @RequestParam(required = false) String tag,
+            @ApiParam(value = "部门")
+            @RequestParam(required = false) String department,
+            @ApiParam(value = "作者")
+            @RequestParam(required = false) String author,
+            @ApiParam(value = "排序方式：newest-最新，hot-最热，comments-评论数，likes-点赞数")
+            @RequestParam(required = false, defaultValue = "newest") String sort,
+            @ApiParam(value = "搜索关键词")
+            @RequestParam(required = false) String search,
+            PageQuery pageQuery) {
+        PageResult<Post> result = postService.getPosts(zone, toolId, tag, department, author, sort, search, pageQuery);
         return Result.success(result);
     }
 
@@ -68,9 +72,10 @@ public class PostController {
      */
     @ApiOperation(value = "获取帖子详情", notes = "获取指定帖子的详细信息")
     @GetMapping("/{id}")
-    public Result<PostDetailDTO> getPostDetail(
-            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
-        PostDetailDTO post = postService.getPostDetail(id);
+    public Result<Post> getPostDetail(
+            @ApiParam(value = "帖子ID", required = true)
+            @PathVariable Long id) {
+        Post post = postService.getPostDetail(id);
         return Result.success(post);
     }
 
@@ -82,25 +87,29 @@ public class PostController {
      */
     @ApiOperation(value = "创建帖子", notes = "发布新帖子")
     @PostMapping
-    public Result<CreatePostResponse> createPost(@Valid @RequestBody CreatePostRequest request) {
-        CreatePostResponse response = postService.createPost(request);
-        return Result.success(response);
+    public Result<Post> createPost(
+            @ApiParam(value = "创建请求", required = true)
+            @Valid @RequestBody PostCreateRequest request) {
+        Post post = postService.createPost(request);
+        return Result.success(post);
     }
 
     /**
      * 更新帖子
      *
-     * @param id      帖子ID
+     * @param id 帖子ID
      * @param request 更新请求
      * @return 更新结果
      */
     @ApiOperation(value = "更新帖子", notes = "更新帖子内容")
     @PutMapping("/{id}")
-    public Result<UpdatePostResponse> updatePost(
-            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id,
-            @Valid @RequestBody CreatePostRequest request) {
-        UpdatePostResponse response = postService.updatePost(id, request);
-        return Result.success(response);
+    public Result<Post> updatePost(
+            @ApiParam(value = "帖子ID", required = true)
+            @PathVariable Long id,
+            @ApiParam(value = "更新请求", required = true)
+            @Valid @RequestBody PostUpdateRequest request) {
+        Post post = postService.updatePost(id, request);
+        return Result.success(post);
     }
 
     /**
@@ -109,10 +118,11 @@ public class PostController {
      * @param id 帖子ID
      * @return 删除结果
      */
-    @ApiOperation(value = "删除帖子", notes = "删除帖子内容")
+    @ApiOperation(value = "删除帖子", notes = "删除帖子")
     @DeleteMapping("/{id}")
     public Result<?> deletePost(
-            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
+            @ApiParam(value = "帖子ID", required = true)
+            @PathVariable Long id) {
         postService.deletePost(id);
         return Result.success();
     }
@@ -120,32 +130,36 @@ public class PostController {
     /**
      * 点赞/取消点赞帖子
      *
-     * @param id     帖子ID
-     * @param request 点赞请求
-     * @return 点赞结果
+     * @param id 帖子ID
+     * @param action 操作：like-点赞，unlike-取消点赞
+     * @return 操作结果
      */
     @ApiOperation(value = "点赞/取消点赞帖子", notes = "更新帖子的点赞状态")
     @PostMapping("/{id}/like")
-    public Result<LikePostResponse> likePost(
-            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id,
-            @RequestBody LikePostRequest request) {
-        LikePostResponse response = postService.likePost(id, request);
+    public Result<LikeResponse> likePost(
+            @ApiParam(value = "帖子ID", required = true)
+            @PathVariable Long id,
+            @ApiParam(value = "操作：like-点赞，unlike-取消点赞", required = true)
+            @RequestParam String action) {
+        LikeResponse response = postService.likePost(id, action);
         return Result.success(response);
     }
 
     /**
      * 收藏/取消收藏帖子
      *
-     * @param id      帖子ID
-     * @param request 收藏请求
-     * @return 收藏结果
+     * @param id 帖子ID
+     * @param action 操作：collect-收藏，uncollect-取消收藏
+     * @return 操作结果
      */
     @ApiOperation(value = "收藏/取消收藏帖子", notes = "更新帖子的收藏状态")
     @PostMapping("/{id}/collect")
-    public Result<CollectPostResponse> collectPost(
-            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id,
-            @RequestBody CollectPostRequest request) {
-        CollectPostResponse response = postService.collectPost(id, request);
+    public Result<CollectResponse> collectPost(
+            @ApiParam(value = "帖子ID", required = true)
+            @PathVariable Long id,
+            @ApiParam(value = "操作：collect-收藏，uncollect-取消收藏", required = true)
+            @RequestParam String action) {
+        CollectResponse response = postService.collectPost(id, action);
         return Result.success(response);
     }
 
@@ -156,46 +170,72 @@ public class PostController {
      */
     @ApiOperation(value = "获取推荐封面列表", notes = "获取发帖页面的推荐封面图片列表")
     @GetMapping("/recommended-covers")
-    public Result<?> getRecommendedCovers() {
-        return Result.success(postService.getRecommendedCovers());
+    public Result<List<CoverInfo>> getRecommendedCovers() {
+        List<CoverInfo> covers = postService.getRecommendedCovers();
+        return Result.success(covers);
     }
 
     /**
      * 保存草稿
-     *
-     * @param request 草稿请求
-     * @return 保存结果
      */
     @ApiOperation(value = "保存草稿", notes = "保存帖子草稿")
     @PostMapping("/draft")
-    public Result<SaveDraftResponse> saveDraft(@RequestBody SaveDraftRequest request) {
-        SaveDraftResponse response = postService.saveDraft(request);
+    public Result<DraftResponse> saveDraft(
+            @ApiParam(value = "草稿请求", required = true)
+            @Valid @RequestBody DraftRequest request) {
+        DraftResponse response = postService.saveDraft(request);
         return Result.success(response);
     }
 
     /**
      * 获取最热帖子
-     *
-     * @param zone  专区
-     * @param limit 返回数量
-     * @return 帖子列表
      */
     @ApiOperation(value = "获取最热帖子", notes = "获取指定专区的最热门帖子列表")
     @GetMapping("/hot")
-    public Result<?> getHotPosts(
-            @ApiParam(value = "专区") @RequestParam(required = false) String zone,
-            @ApiParam(value = "返回数量") @RequestParam(defaultValue = "10") Integer limit) {
-        return Result.success(postService.getHotPosts(zone, limit));
+    public Result<List<Post>> getHotPosts(
+            @ApiParam(value = "专区")
+            @RequestParam(required = false) String zone,
+            @ApiParam(value = "返回数量", example = "10")
+            @RequestParam(required = false, defaultValue = "10") Integer limit) {
+        List<Post> posts = postService.getHotPosts(zone, limit);
+        return Result.success(posts);
     }
 
     /**
-     * 创建帖子请求DTO
+     * 获取帖子评论列表
      */
-    public static class CreatePostRequest {
+    @ApiOperation(value = "获取帖子评论列表", notes = "获取指定帖子的评论列表")
+    @GetMapping("/{id}/comments")
+    public Result<PageResult<Comment>> getPostComments(
+            @ApiParam(value = "帖子ID", required = true)
+            @PathVariable Long id,
+            PageQuery pageQuery) {
+        PageResult<Comment> result = postService.getPostComments(id, pageQuery);
+        return Result.success(result);
+    }
+
+    /**
+     * 发表评论
+     */
+    @ApiOperation(value = "发表评论", notes = "在指定帖子下发表评论")
+    @PostMapping("/{id}/comments")
+    public Result<Comment> createComment(
+            @ApiParam(value = "帖子ID", required = true)
+            @PathVariable Long id,
+            @ApiParam(value = "评论请求", required = true)
+            @Valid @RequestBody CommentCreateRequest request) {
+        Comment comment = postService.createComment(id, request);
+        return Result.success(comment);
+    }
+
+    /**
+     * 草稿请求
+     */
+    public static class DraftRequest {
         private String title;
         private String summary;
         private String content;
-        private java.util.List<String> tags;
+        private String[] tags;
         private String cover;
         private String zone;
         private Long toolId;
@@ -207,8 +247,8 @@ public class PostController {
         public void setSummary(String summary) { this.summary = summary; }
         public String getContent() { return content; }
         public void setContent(String content) { this.content = content; }
-        public java.util.List<String> getTags() { return tags; }
-        public void setTags(java.util.List<String> tags) { this.tags = tags; }
+        public String[] getTags() { return tags; }
+        public void setTags(String[] tags) { this.tags = tags; }
         public String getCover() { return cover; }
         public void setCover(String cover) { this.cover = cover; }
         public String getZone() { return zone; }
@@ -218,135 +258,12 @@ public class PostController {
     }
 
     /**
-     * 创建帖子响应DTO
+     * 草稿响应
      */
-    public static class CreatePostResponse {
-        private Long id;
-        private String message;
-
-        public CreatePostResponse(Long id, String message) {
-            this.id = id;
-            this.message = message;
-        }
-
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-    }
-
-    /**
-     * 更新帖子响应DTO
-     */
-    public static class UpdatePostResponse {
-        private Long id;
-        private String message;
-
-        public UpdatePostResponse(Long id, String message) {
-            this.id = id;
-            this.message = message;
-        }
-
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-    }
-
-    /**
-     * 点赞帖子请求DTO
-     */
-    public static class LikePostRequest {
-        private String action; // "like" | "unlike"
-
-        public String getAction() { return action; }
-        public void setAction(String action) { this.action = action; }
-    }
-
-    /**
-     * 点赞帖子响应DTO
-     */
-    public static class LikePostResponse {
-        private Boolean liked;
-        private Integer likes;
-
-        public LikePostResponse(Boolean liked, Integer likes) {
-            this.liked = liked;
-            this.likes = likes;
-        }
-
-        public Boolean getLiked() { return liked; }
-        public void setLiked(Boolean liked) { this.liked = liked; }
-        public Integer getLikes() { return likes; }
-        public void setLikes(Integer likes) { this.likes = likes; }
-    }
-
-    /**
-     * 收藏帖子请求DTO
-     */
-    public static class CollectPostRequest {
-        private String action; // "collect" | "uncollect"
-
-        public String getAction() { return action; }
-        public void setAction(String action) { this.action = action; }
-    }
-
-    /**
-     * 收藏帖子响应DTO
-     */
-    public static class CollectPostResponse {
-        private Boolean collected;
-
-        public CollectPostResponse(Boolean collected) {
-            this.collected = collected;
-        }
-
-        public Boolean getCollected() { return collected; }
-        public void setCollected(Boolean collected) { this.collected = collected; }
-    }
-
-    /**
-     * 保存草稿请求DTO
-     */
-    public static class SaveDraftRequest {
-        private String title;
-        private String summary;
-        private String content;
-        private java.util.List<String> tags;
-        private String cover;
-        private String zone;
-        private Long toolId;
-
-        // Getters and Setters
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
-        public String getSummary() { return summary; }
-        public void setSummary(String summary) { this.summary = summary; }
-        public String getContent() { return content; }
-        public void setContent(String content) { this.content = content; }
-        public java.util.List<String> getTags() { return tags; }
-        public void setTags(java.util.List<String> tags) { this.tags = tags; }
-        public String getCover() { return cover; }
-        public void setCover(String cover) { this.cover = cover; }
-        public String getZone() { return zone; }
-        public void setZone(String zone) { this.zone = zone; }
-        public Long getToolId() { return toolId; }
-        public void setToolId(Long toolId) { this.toolId = toolId; }
-    }
-
-    /**
-     * 保存草稿响应DTO
-     */
-    public static class SaveDraftResponse {
+    public static class DraftResponse {
         private String draftId;
         private String savedAt;
         private String message;
-
-        public SaveDraftResponse(String draftId, String savedAt, String message) {
-            this.draftId = draftId;
-            this.savedAt = savedAt;
-            this.message = message;
-        }
 
         public String getDraftId() { return draftId; }
         public void setDraftId(String draftId) { this.draftId = draftId; }
@@ -354,5 +271,90 @@ public class PostController {
         public void setSavedAt(String savedAt) { this.savedAt = savedAt; }
         public String getMessage() { return message; }
         public void setMessage(String message) { this.message = message; }
+    }
+
+    /**
+     * 评论创建请求
+     */
+    public static class CommentCreateRequest {
+        private String content;
+        private Long replyTo;
+
+        public String getContent() { return content; }
+        public void setContent(String content) { this.content = content; }
+        public Long getReplyTo() { return replyTo; }
+        public void setReplyTo(Long replyTo) { this.replyTo = replyTo; }
+    }
+
+    /**
+     * 点赞响应
+     */
+    public static class LikeResponse {
+        private Boolean liked;
+        private Integer likes;
+
+        public Boolean getLiked() {
+            return liked;
+        }
+
+        public void setLiked(Boolean liked) {
+            this.liked = liked;
+        }
+
+        public Integer getLikes() {
+            return likes;
+        }
+
+        public void setLikes(Integer likes) {
+            this.likes = likes;
+        }
+    }
+
+    /**
+     * 收藏响应
+     */
+    public static class CollectResponse {
+        private Boolean collected;
+
+        public Boolean getCollected() {
+            return collected;
+        }
+
+        public void setCollected(Boolean collected) {
+            this.collected = collected;
+        }
+    }
+
+    /**
+     * 封面信息
+     */
+    public static class CoverInfo {
+        private Long id;
+        private String url;
+        private String thumbnail;
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public String getThumbnail() {
+            return thumbnail;
+        }
+
+        public void setThumbnail(String thumbnail) {
+            this.thumbnail = thumbnail;
+        }
     }
 }

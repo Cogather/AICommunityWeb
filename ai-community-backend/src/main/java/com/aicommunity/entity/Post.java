@@ -2,7 +2,8 @@ package com.aicommunity.entity;
 
 import lombok.Data;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 帖子实体类
@@ -11,7 +12,6 @@ import java.time.LocalDateTime;
  */
 @Data
 public class Post implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
@@ -35,9 +35,24 @@ public class Post implements Serializable {
     private String content;
 
     /**
+     * 封面图URL
+     */
+    private String cover;
+
+    /**
      * 作者ID
      */
     private Long authorId;
+
+    /**
+     * 作者姓名
+     */
+    private String authorName;
+
+    /**
+     * 作者头像
+     */
+    private String authorAvatar;
 
     /**
      * 专区：practices-AI优秀实践，tools-AI工具专区，agent-扶摇Agent应用，empowerment-赋能交流
@@ -50,9 +65,9 @@ public class Post implements Serializable {
     private Long toolId;
 
     /**
-     * 封面图URL
+     * 工具名称
      */
-    private String cover;
+    private String toolName;
 
     /**
      * 是否精选：0-否，1-是
@@ -75,12 +90,42 @@ public class Post implements Serializable {
     private Integer comments;
 
     /**
+     * 标签列表
+     */
+    private List<String> tags;
+
+    /**
+     * 是否已点赞
+     */
+    private Boolean isLiked;
+
+    /**
+     * 是否已收藏
+     */
+    private Boolean isCollected;
+
+    /**
+     * 是否是作者
+     */
+    private Boolean isAuthor;
+
+    /**
+     * 是否可以编辑
+     */
+    private Boolean canEdit;
+
+    /**
+     * 是否可以删除
+     */
+    private Boolean canDelete;
+
+    /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 更新时间
      */
-    private LocalDateTime updateTime;
+    private Date updateTime;
 }

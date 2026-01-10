@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.AgentFeaturedPostMapper">
+
+    <resultMap id="FeaturedPostResultMap" type="com.aicommunity.dto.AgentFeaturedPostResponse">
+        <result column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="author" property="author"/>
+        <result column="author_avatar" property="authorAvatar"/>
+        <result column="create_time" property="createTime"/>
+        <result column="views" property="views"/>
+        <result column="comments" property="comments"/>
+        <result column="likes" property="likes"/>
+        <result column="tags" property="tags" jdbcType="VARCHAR" typeHandler="com.aicommunity.util.StringArrayTypeHandler"/>
+        <result column="cover" property="cover"/>
+        <result column="link" property="link"/>
+    </resultMap>
+
+    <select id="selectFeaturedPost" resultMap="FeaturedPostResultMap">
+        SELECT 
+            id, title, description, author, author_avatar, create_time,
+            views, comments, likes, tags, cover, link
+        FROM agent_featured_post LIMIT 1
+    </select>
+
+    <update id="updateFeaturedPost">
+        UPDATE agent_featured_post
+        SET title = #{title},
+            description = #{description},
+            author = #{author},
+            author_avatar = #{authorAvatar},
+            create_time = #{createTime},
+            views = #{views},
+            comments = #{comments},
+            likes = #{likes},
+            tags = #{tags, jdbcType=VARCHAR, typeHandler=com.aicommunity.util.StringArrayTypeHandler},
+            cover = #{cover},
+            link = #{link},
+            update_time = NOW()
+        WHERE id = 1
+    </update>
+
+</mapper>

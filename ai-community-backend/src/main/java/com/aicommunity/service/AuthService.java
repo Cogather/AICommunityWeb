@@ -1,6 +1,5 @@
 package com.aicommunity.service;
 
-import com.aicommunity.dto.LoginRequest;
 import com.aicommunity.dto.LoginResponse;
 
 /**
@@ -9,17 +8,12 @@ import com.aicommunity.dto.LoginResponse;
  * @author AI Community Team
  */
 public interface AuthService {
-
     /**
      * 用户登录
      *
-     * @param request 登录请求
+     * @param username 用户名
+     * @param password 密码
      * @return 登录响应
      */
-    LoginResponse login(LoginRequest request);
-
-    /**
-     * 用户登出
-     */
-    void logout();
+    LoginResponse login(String username, String password);
 }

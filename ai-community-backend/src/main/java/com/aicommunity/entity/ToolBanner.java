@@ -2,7 +2,7 @@ package com.aicommunity.entity;
 
 import lombok.Data;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 工具Banner实体类
@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
  */
 @Data
 public class ToolBanner implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
@@ -25,7 +24,7 @@ public class ToolBanner implements Serializable {
     private Long toolId;
 
     /**
-     * Banner图片URL
+     * 图片URL
      */
     private String image;
 
@@ -47,5 +46,5 @@ public class ToolBanner implements Serializable {
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 }

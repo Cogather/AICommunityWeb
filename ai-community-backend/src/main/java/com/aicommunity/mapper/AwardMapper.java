@@ -13,20 +13,18 @@ import java.util.List;
  */
 @Mapper
 public interface AwardMapper {
-
-    /**
-     * 查询奖项列表
-     *
-     * @param category 奖项分类
-     * @return 奖项列表
-     */
-    List<Award> selectByCategory(@Param("category") String category);
-
     /**
      * 根据ID查询奖项
-     *
-     * @param id 奖项ID
-     * @return 奖项
      */
     Award selectById(@Param("id") Long id);
+
+    /**
+     * 查询所有奖项
+     */
+    List<Award> selectAll();
+
+    /**
+     * 根据分类查询奖项
+     */
+    List<Award> selectByCategory(@Param("category") String category);
 }

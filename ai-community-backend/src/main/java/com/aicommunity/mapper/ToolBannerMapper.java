@@ -1,10 +1,7 @@
 package com.aicommunity.mapper;
 
-import com.aicommunity.entity.ToolBanner;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
-import java.util.List;
 
 /**
  * 工具Banner Mapper接口
@@ -13,12 +10,20 @@ import java.util.List;
  */
 @Mapper
 public interface ToolBannerMapper {
+    /**
+     * 根据工具ID删除Banner
+     */
+    void deleteByToolId(@Param("toolId") Long toolId);
 
     /**
-     * 根据工具ID查询Banner列表
-     *
-     * @param toolId 工具ID
-     * @return Banner列表
+     * 插入Banner
      */
-    List<ToolBanner> selectByToolId(@Param("toolId") Long toolId);
+    void insert(com.aicommunity.dto.ToolsConfigResponse.BannerItem item);
+
+    /**
+     * 设置工具ID（用于插入时）
+     */
+    default void setToolId(com.aicommunity.dto.ToolsConfigResponse.BannerItem item, Long toolId) {
+        // 这个方法在XML中通过#{toolId}参数传递
+    }
 }

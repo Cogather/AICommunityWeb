@@ -2,7 +2,8 @@ package com.aicommunity.entity;
 
 import lombok.Data;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 工具实体类
@@ -11,7 +12,6 @@ import java.time.LocalDateTime;
  */
 @Data
 public class Tool implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
@@ -30,12 +30,12 @@ public class Tool implements Serializable {
     private String desc;
 
     /**
-     * 工具Logo URL
+     * Logo URL
      */
     private String logo;
 
     /**
-     * 工具颜色
+     * 颜色
      */
     private String color;
 
@@ -45,12 +45,22 @@ public class Tool implements Serializable {
     private String link;
 
     /**
+     * 排序
+     */
+    private Integer order;
+
+    /**
+     * Banner列表
+     */
+    private List<ToolBanner> banners;
+
+    /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 更新时间
      */
-    private LocalDateTime updateTime;
+    private Date updateTime;
 }

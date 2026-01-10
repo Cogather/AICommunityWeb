@@ -2,7 +2,8 @@ package com.aicommunity.entity;
 
 import lombok.Data;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 评论实体类
@@ -11,7 +12,6 @@ import java.time.LocalDateTime;
  */
 @Data
 public class Comment implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
@@ -25,9 +25,19 @@ public class Comment implements Serializable {
     private Long postId;
 
     /**
-     * 评论用户ID
+     * 用户ID
      */
     private Long userId;
+
+    /**
+     * 用户名
+     */
+    private String userName;
+
+    /**
+     * 用户头像
+     */
+    private String userAvatar;
 
     /**
      * 评论内容
@@ -35,27 +45,47 @@ public class Comment implements Serializable {
     private String content;
 
     /**
-     * 父评论ID（回复评论时使用）
-     */
-    private Long parentId;
-
-    /**
-     * 回复的用户ID
-     */
-    private Long replyToUserId;
-
-    /**
      * 点赞数
      */
     private Integer likes;
 
     /**
+     * 是否已点赞
+     */
+    private Boolean isLiked;
+
+    /**
+     * 是否是帖子作者
+     */
+    private Boolean isAuthor;
+
+    /**
+     * 是否是当前用户的评论
+     */
+    private Boolean isMyComment;
+
+    /**
+     * 是否可以编辑
+     */
+    private Boolean canEdit;
+
+    /**
+     * 是否可以删除
+     */
+    private Boolean canDelete;
+
+    /**
+     * 回复列表
+     */
+    private List<Reply> replies;
+
+    /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 更新时间
      */
-    private LocalDateTime updateTime;
+    private Date updateTime;
 }

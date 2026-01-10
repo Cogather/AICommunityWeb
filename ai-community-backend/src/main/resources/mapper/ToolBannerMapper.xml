@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.ToolBannerMapper">
+
+    <delete id="deleteByToolId">
+        DELETE FROM tool_banners WHERE tool_id = #{toolId}
+    </delete>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tool_banners (tool_id, image, title, `desc`, `order`, create_time)
+        VALUES (#{toolId}, #{image}, #{title}, #{desc}, #{order}, NOW())
+    </insert>
+
+</mapper>

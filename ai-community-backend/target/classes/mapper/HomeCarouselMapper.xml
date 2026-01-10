@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.HomeCarouselMapper">
+
+    <resultMap id="CarouselItemResultMap" type="com.aicommunity.dto.CarouselResponse$CarouselItem">
+        <id column="id" property="id"/>
+        <result column="image" property="image"/>
+        <result column="title" property="title"/>
+        <result column="desc" property="desc"/>
+        <result column="link" property="link"/>
+        <result column="show_content" property="showContent"/>
+        <result column="order" property="order"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="CarouselItemResultMap">
+        SELECT * FROM home_carousel ORDER BY `order` ASC, id ASC
+    </select>
+
+    <delete id="deleteAll">
+        DELETE FROM home_carousel
+    </delete>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO home_carousel (image, title, `desc`, link, show_content, `order`, create_time)
+        VALUES (#{image}, #{title}, #{desc}, #{link}, #{showContent}, #{order}, NOW())
+    </insert>
+
+</mapper>

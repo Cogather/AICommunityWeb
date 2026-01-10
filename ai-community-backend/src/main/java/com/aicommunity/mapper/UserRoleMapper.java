@@ -1,6 +1,5 @@
 package com.aicommunity.mapper;
 
-import com.aicommunity.entity.UserRole;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -13,48 +12,58 @@ import java.util.List;
  */
 @Mapper
 public interface UserRoleMapper {
-
     /**
      * 根据用户ID查询角色列表
-     *
-     * @param userId 用户ID
-     * @return 角色列表
      */
     List<String> selectRolesByUserId(@Param("userId") Long userId);
 
     /**
-     * 根据用户ID和角色查询
-     *
-     * @param userId 用户ID
-     * @param role   角色
-     * @return 角色列表
+     * 根据用户ID查询拥有的工具列表
      */
-    List<UserRole> selectByUserIdAndRole(@Param("userId") Long userId, @Param("role") String role);
+    List<OwnedTool> selectOwnedToolsByUserId(@Param("userId") Long userId);
 
     /**
      * 插入用户角色
-     *
-     * @param userRole 用户角色
-     * @return 影响行数
      */
-    int insert(UserRole userRole);
+    void insert(@Param("userId") Long userId, 
+                @Param("role") String role, 
+                @Param("toolId") Long toolId);
 
     /**
      * 删除用户角色
-     *
-     * @param userId 用户ID
-     * @param role   角色
-     * @param toolId 工具ID（当role为owner时必填）
-     * @return 影响行数
      */
-    int delete(@Param("userId") Long userId, @Param("role") String role, @Param("toolId") Long toolId);
+    void delete(@Param("userId") Long userId, 
+                @Param("role") String role, 
+                @Param("toolId") Long toolId);
 
     /**
-     * 根据用户ID和角色查询
-     *
-     * @param userId 用户ID
-     * @param role   角色
-     * @return 角色列表
+     * 检查用户是否为指定工具的Owner
      */
-    List<UserRole> selectByUserIdAndRole(@Param("userId") Long userId, @Param("role") String role);
+    boolean existsByUserAndToolAndRole(@Param("userId") Long userId, 
+                                      @Param("toolId") Long toolId, 
+                                      @Param("role") String role);
+
+    /**
+     * 拥有的工具
+     */
+    class OwnedTool {
+        private Long toolId;
+        private String toolName;
+
+        public Long getToolId() {
+            return toolId;
+        }
+
+        public void setToolId(Long toolId) {
+            this.toolId = toolId;
+        }
+
+        public String getToolName() {
+            return toolName;
+        }
+
+        public void setToolName(String toolName) {
+            this.toolName = toolName;
+        }
+    }
 }

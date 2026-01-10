@@ -1,23 +1,25 @@
 package com.aicommunity.service;
 
+import com.aicommunity.dto.CarouselResponse;
+import com.aicommunity.dto.HonorHomeResponse;
+
 /**
  * 首页服务接口
  *
  * @author AI Community Team
  */
 public interface HomeService {
-
     /**
      * 获取首页轮播图
      *
-     * @return 轮播图列表
+     * @return 轮播图响应
      */
-    Object getCarousel();
+    CarouselResponse getCarousel();
 
     /**
      * 获取荣誉殿堂和社区头条信息
      *
-     * @return 荣誉殿堂和社区头条数据
+     * @return 荣誉殿堂和社区头条响应
      */
-    Object getHonor();
+    HonorHomeResponse getHonor();
 }

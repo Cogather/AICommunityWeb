@@ -6,6 +6,7 @@ import com.aicommunity.dto.LoginResponse;
 import com.aicommunity.service.AuthService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,8 +33,10 @@ public class AuthController {
      */
     @ApiOperation(value = "用户登录", notes = "用户登录接口")
     @PostMapping("/login")
-    public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
+    public Result<LoginResponse> login(
+            @ApiParam(value = "登录请求", required = true)
+            @Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request.getUsername(), request.getPassword());
         return Result.success(response);
     }
 
@@ -45,7 +48,7 @@ public class AuthController {
     @ApiOperation(value = "用户登出", notes = "用户登出接口")
     @PostMapping("/logout")
     public Result<?> logout() {
-        authService.logout();
+        // TODO: 实现登出逻辑（清除token等）
         return Result.success();
     }
 }

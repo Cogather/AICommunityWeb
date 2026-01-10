@@ -10,33 +10,23 @@ import java.io.Serializable;
  */
 @Data
 public class PageQuery implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
-     * 页码（从1开始）
+     * 页码，从1开始
      */
     private Integer page = 1;
 
     /**
-     * 每页数量（默认10，最大100）
+     * 每页数量，默认10，最大100
      */
     private Integer pageSize = 10;
 
-    public PageQuery() {
-    }
-
-    public PageQuery(Integer page, Integer pageSize) {
-        this.page = page != null && page > 0 ? page : 1;
-        this.pageSize = pageSize != null && pageSize > 0 && pageSize <= 100 ? pageSize : 10;
-    }
-
-    /**
-     * 获取偏移量
-     *
-     * @return 偏移量
-     */
-    public Integer getOffset() {
-        return (page - 1) * pageSize;
+    public void setPageSize(Integer pageSize) {
+        if (pageSize != null && pageSize > 0 && pageSize <= 100) {
+            this.pageSize = pageSize;
+        } else if (pageSize != null && pageSize > 100) {
+            this.pageSize = 100;
+        }
     }
 }

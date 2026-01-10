@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.PointsMapper">
+
+    <insert id="insert">
+        INSERT INTO points_records (user_id, points, type, target_id, target_type, month, create_time)
+        VALUES (#{userId}, #{points}, #{type}, #{targetId}, #{targetType}, #{month}, NOW())
+    </insert>
+
+    <select id="calculateUserPoints" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(points), 0) FROM points_records WHERE user_id = #{userId}
+    </select>
+
+    <select id="calculatePointsByType" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(points), 0) FROM points_records 
+        WHERE user_id = #{userId} AND type = #{type}
+    </select>
+
+    <select id="calculateMonthlyPoints" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(points), 0) FROM points_records 
+        WHERE user_id = #{userId} AND month = #{month}
+    </select>
+
+    <resultMap id="WinnerItemResultMap" type="com.aicommunity.dto.RecommendedWinnersResponse$WinnerItem">
+        <result column="id" property="id"/>
+        <result column="employee_id" property="employeeId"/>
+        <result column="name" property="name"/>
+        <result column="avatar" property="avatar"/>
+        <result column="department" property="department"/>
+        <result column="points" property="points"/>
+        <result column="posts_count" property="postsCount"/>
+        <result column="comments_count" property="commentsCount"/>
+        <result column="activities_count" property="activitiesCount"/>
+        <result column="likes_received" property="likesReceived"/>
+        <result column="favorites_received" property="favoritesReceived"/>
+        <result column="has_awarded" property="hasAwarded"/>
+    </resultMap>
+
+    <select id="selectMonthlyTopUsers" resultMap="WinnerItemResultMap">
+        SELECT 
+            u.id,
+            u.employee_id,
+            u.name,
+            u.avatar,
+            u.department,
+            COALESCE(SUM(pr.points), 0) as points,
+            (SELECT COUNT(*) FROM posts WHERE author_id = u.id AND DATE_FORMAT(create_time, '%Y-%m') = #{month}) as posts_count,
+            (SELECT COUNT(*) FROM comments WHERE user_id = u.id AND DATE_FORMAT(create_time, '%Y-%m') = #{month}) as comments_count,
+            (SELECT COUNT(*) FROM activity_registrations ar 
+             INNER JOIN activities a ON ar.activity_id = a.id 
+             WHERE ar.user_id = u.id AND DATE_FORMAT(a.date, '%Y-%m') = #{month}) as activities_count,
+            (SELECT COUNT(*) FROM likes l 
+             INNER JOIN posts p ON l.target_id = p.id AND l.target_type = 'post'
+             WHERE p.author_id = u.id AND DATE_FORMAT(l.create_time, '%Y-%m') = #{month}) as likes_received,
+            (SELECT COUNT(*) FROM favorites f 
+             INNER JOIN posts p ON f.post_id = p.id
+             WHERE p.author_id = u.id AND DATE_FORMAT(f.create_time, '%Y-%m') = #{month}) as favorites_received,
+            (SELECT COUNT(*) > 0 FROM honors WHERE user_id = u.id AND award_date = #{month}) as has_awarded
+        FROM users u
+        LEFT JOIN points_records pr ON u.id = pr.user_id AND pr.month = #{month}
+        GROUP BY u.id, u.employee_id, u.name, u.avatar, u.department
+        ORDER BY points DESC, u.create_time ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

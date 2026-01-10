@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.UserRoleMapper">
+
+    <select id="selectRolesByUserId" resultType="java.lang.String">
+        SELECT DISTINCT role FROM user_roles WHERE user_id = #{userId}
+    </select>
+
+    <resultMap id="OwnedToolResultMap" type="com.aicommunity.mapper.UserRoleMapper$OwnedTool">
+        <result column="tool_id" property="toolId"/>
+        <result column="tool_name" property="toolName"/>
+    </resultMap>
+
+    <select id="selectOwnedToolsByUserId" resultMap="OwnedToolResultMap">
+        SELECT ur.tool_id, t.name as tool_name
+        FROM user_roles ur
+        INNER JOIN tools t ON ur.tool_id = t.id
+        WHERE ur.user_id = #{userId} AND ur.role = 'owner'
+    </select>
+
+    <insert id="insert">
+        INSERT INTO user_roles (user_id, role, tool_id, create_time)
+        VALUES (#{userId}, #{role}, #{toolId}, NOW())
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM user_roles 
+        WHERE user_id = #{userId} AND role = #{role}
+        <if test="toolId != null">
+            AND tool_id = #{toolId}
+        </if>
+    </delete>
+
+    <select id="existsByUserAndToolAndRole" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM user_roles 
+        WHERE user_id = #{userId} AND tool_id = #{toolId} AND role = #{role}
+    </select>
+
+</mapper>

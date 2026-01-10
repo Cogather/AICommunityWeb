@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.UserContributorMapper">
+
+    <resultMap id="TopContributorResultMap" type="com.aicommunity.dto.TopContributorResponse">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="avatar" property="avatar"/>
+        <result column="post_count" property="postCount"/>
+    </resultMap>
+
+    <select id="selectTopContributors" resultMap="TopContributorResultMap">
+        SELECT 
+            u.id,
+            u.name,
+            u.avatar,
+            COUNT(p.id) as post_count
+        FROM users u
+        INNER JOIN posts p ON u.id = p.author_id
+        <if test="zone != null and zone != ''">
+            WHERE p.zone = #{zone}
+        </if>
+        GROUP BY u.id, u.name, u.avatar
+        ORDER BY post_count DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

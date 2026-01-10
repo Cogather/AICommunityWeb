@@ -2,7 +2,7 @@ package com.aicommunity.entity;
 
 import lombok.Data;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 消息实体类
@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
  */
 @Data
 public class Message implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
@@ -50,6 +49,11 @@ public class Message implements Serializable {
     private Long fromUserId;
 
     /**
+     * 发送用户名
+     */
+    private String fromUserName;
+
+    /**
      * 是否已读：0-未读，1-已读
      */
     private Boolean read;
@@ -57,5 +61,5 @@ public class Message implements Serializable {
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 }

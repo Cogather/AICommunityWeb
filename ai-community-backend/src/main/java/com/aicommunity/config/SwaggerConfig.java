@@ -33,9 +33,9 @@ public class SwaggerConfig {
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
                 .title("AI社区后端API文档")
-                .description("AI社区Web前端接口文档")
+                .description("AI社区后端接口文档")
                 .version("1.0.0")
-                .contact(new Contact("AI社区开发团队", "", ""))
+                .contact(new Contact("AI社区开发团队", "", "dev@aicommunity.com"))
                 .build();
     }
 }

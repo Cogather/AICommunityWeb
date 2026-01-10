@@ -1,11 +1,10 @@
 package com.aicommunity.mapper;
 
-import com.aicommunity.entity.ActivityRegistration;
+import com.aicommunity.dto.ActivityRegistrationResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 活动报名Mapper接口
@@ -14,38 +13,33 @@ import java.util.Map;
  */
 @Mapper
 public interface ActivityRegistrationMapper {
-
-    /**
-     * 查询用户是否已报名
-     *
-     * @param activityId 活动ID
-     * @param userId     用户ID
-     * @return 报名记录
-     */
-    ActivityRegistration selectByActivityAndUser(@Param("activityId") Long activityId, @Param("userId") Long userId);
-
     /**
      * 插入报名记录
-     *
-     * @param registration 报名记录
-     * @return 影响行数
      */
-    int insert(ActivityRegistration registration);
+    void insert(@Param("userId") Long userId, @Param("activityId") Long activityId);
 
     /**
      * 删除报名记录
-     *
-     * @param activityId 活动ID
-     * @param userId     用户ID
-     * @return 影响行数
      */
-    int delete(@Param("activityId") Long activityId, @Param("userId") Long userId);
+    void deleteByUserAndActivity(@Param("userId") Long userId, @Param("activityId") Long activityId);
 
     /**
-     * 查询活动报名用户列表
-     *
-     * @param activityId 活动ID
-     * @return 用户列表
+     * 检查是否存在报名记录
      */
-    List<Map<String, Object>> selectUsersByActivityId(@Param("activityId") Long activityId);
+    boolean existsByUserAndActivity(@Param("userId") Long userId, @Param("activityId") Long activityId);
+
+    /**
+     * 根据活动ID查询报名用户列表
+     */
+    List<ActivityRegistrationResponse.RegistrationUser> selectUsersByActivityId(@Param("activityId") Long activityId);
+
+    /**
+     * 统计用户报名活动数
+     */
+    Integer countByUserId(@Param("userId") Long userId);
+
+    /**
+     * 根据活动ID删除报名记录
+     */
+    void deleteByActivityId(@Param("activityId") Long activityId);
 }

@@ -2,7 +2,7 @@ package com.aicommunity.entity;
 
 import lombok.Data;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 奖项实体类
@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
  */
 @Data
 public class Award implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     /**
@@ -52,10 +51,10 @@ public class Award implements Serializable {
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 更新时间
      */
-    private LocalDateTime updateTime;
+    private Date updateTime;
 }

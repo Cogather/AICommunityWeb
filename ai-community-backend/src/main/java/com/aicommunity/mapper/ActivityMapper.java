@@ -5,7 +5,6 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 活动Mapper接口
@@ -14,82 +13,50 @@ import java.util.Map;
  */
 @Mapper
 public interface ActivityMapper {
-
-    /**
-     * 根据条件查询活动列表
-     *
-     * @param toolId 工具ID
-     * @param type   活动类型
-     * @param status 活动状态
-     * @return 活动列表
-     */
-    List<Map<String, Object>> selectByCondition(
-            @Param("toolId") Long toolId,
-            @Param("type") String type,
-            @Param("status") String status);
-
     /**
      * 根据ID查询活动
-     *
-     * @param id 活动ID
-     * @return 活动
      */
     Activity selectById(@Param("id") Long id);
 
     /**
-     * 插入活动
-     *
-     * @param activity 活动
-     * @return 影响行数
+     * 查询活动列表
      */
-    int insert(Activity activity);
+    List<Activity> selectActivities(@Param("toolId") Long toolId,
+                                    @Param("type") String type,
+                                    @Param("status") String status);
+
+    /**
+     * 插入活动
+     */
+    void insert(Activity activity);
 
     /**
      * 更新活动
-     *
-     * @param activity 活动
-     * @return 影响行数
      */
-    int update(Activity activity);
+    void updateById(Activity activity);
 
     /**
      * 删除活动
-     *
-     * @param id 活动ID
-     * @return 影响行数
      */
-    int deleteById(@Param("id") Long id);
+    void deleteById(@Param("id") Long id);
 
     /**
-     * 更新报名人数
-     *
-     * @param id    活动ID
-     * @param delta 变化量
-     * @return 影响行数
+     * 根据报名用户ID查询活动列表
      */
-    int updateRegisteredCount(@Param("id") Long id, @Param("delta") Integer delta);
+    List<Activity> selectByRegisteredUserId(@Param("userId") Long userId);
 
     /**
-     * 根据用户ID查询参与的活动
-     *
-     * @param userId 用户ID
-     * @return 活动列表
+     * 根据发布者ID查询活动列表
      */
-    List<Map<String, Object>> selectByUserId(@Param("userId") Long userId);
+    List<Activity> selectByAuthorId(@Param("authorId") Long authorId, @Param("status") String status);
 
     /**
-     * 根据作者ID查询发布的活动
-     *
-     * @param authorId 作者ID
-     * @return 活动列表
+     * 增加报名人数
      */
-    List<Map<String, Object>> selectByAuthorId(@Param("authorId") Long authorId);
+    void incrementRegisteredCount(@Param("id") Long id);
 
     /**
-     * 统计用户参与的活动数
-     *
-     * @param userId 用户ID
-     * @return 活动数
+     * 减少报名人数
      */
-    int countByUserId(@Param("userId") Long userId);
+    void decrementRegisteredCount(@Param("id") Long id);
 }

@@ -1,14 +1,16 @@
 package com.aicommunity.service.impl;
 
-import com.aicommunity.common.exception.BusinessException;
+import com.aicommunity.common.BusinessException;
+import com.aicommunity.common.ErrorCodeEnum;
+import com.aicommunity.dto.AwardRulesResponse;
 import com.aicommunity.entity.Award;
 import com.aicommunity.mapper.AwardMapper;
 import com.aicommunity.service.AwardService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
 /**
  * 奖项服务实现类
@@ -22,38 +24,19 @@ public class AwardServiceImpl implements AwardService {
     private AwardMapper awardMapper;
 
     @Override
-    public Object getAwards(String category) {
-        List<Award> awards = awardMapper.selectByCategory(category);
-        List<Map<String, Object>> list = awards.stream()
-                .map(award -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", award.getId());
-                    map.put("name", award.getName());
-                    map.put("desc", award.getDesc());
-                    map.put("image", award.getImage());
-                    map.put("category", award.getCategory());
-                    map.put("rules", award.getRules());
-                    return map;
-                })
-                .collect(Collectors.toList());
-        return Map.of("list", list);
+    public List<Award> getAwards(String category) {
+        return awardMapper.selectByCategory(category);
     }
 
     @Override
-    public Object getAwardRules(Long id) {
+    public AwardRulesResponse getAwardRules(Long id) {
         Award award = awardMapper.selectById(id);
         if (award == null) {
-            throw new BusinessException("奖项不存在");
+            throw new BusinessException(ErrorCodeEnum.NOT_FOUND, "奖项不存在");
         }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", award.getId());
-        result.put("name", award.getName());
-        result.put("rules", award.getRules());
-        result.put("category", award.getCategory());
-        result.put("image", award.getImage());
-        result.put("desc", award.getDesc());
-
-        return result;
+        AwardRulesResponse response = new AwardRulesResponse();
+        BeanUtils.copyProperties(award, response);
+        return response;
     }
 }
