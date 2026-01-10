@@ -6,10 +6,10 @@ AI社区平台是一个集成了前端和后端的完整项目，提供AI工具�
 
 ```
 AICommunityWeb/
-├── frontend/          # 前端项目 (Vue 3 + TypeScript + Vite)
-├── backend/           # 后端项目 (Spring Boot 2.7.x + MyBatis + MySQL)
-├── API接口需求文档.md  # API接口文档
-└── README.md          # 项目说明文档
+├── frontend/                # 前端项目 (Vue 3 + TypeScript + Vite)
+├── ai-community-backend/   # 后端项目 (Spring Boot 2.7.x + MyBatis + MySQL)
+├── API接口需求文档.md       # API接口文档
+└── README.md               # 项目说明文档
 ```
 
 ## 技术栈
@@ -42,7 +42,7 @@ npm run dev
 ### 后端开发
 
 ```bash
-cd backend
+cd ai-community-backend
 # 配置数据库连接信息
 # 修改 src/main/resources/application.yml
 mvn clean install
@@ -51,7 +51,7 @@ mvn spring-boot:run
 
 详细文档请参考：
 - 前端：`frontend/README.md`
-- 后端：`backend/README.md`
+- 后端：`ai-community-backend/README.md`
 - API接口：`API接口需求文档.md`
 
 ## 功能模块
