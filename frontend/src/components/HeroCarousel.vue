@@ -150,93 +150,11 @@
     margin-bottom: -50px; /* 负边距让底部渐消区域与下方内容重叠 */
     box-sizing: border-box;
     z-index: 1; /* 确保在背景上层，但在内容下层 */
-    
-    /* 上下渐显渐消模糊效果 - 使用 mask-image 实现更明显的渐显渐消 */
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.2) 3%,
-      rgba(0, 0, 0, 0.5) 8%,
-      rgba(0, 0, 0, 0.75) 12%,
-      rgba(0, 0, 0, 0.9) 16%,
-      black 25%,
-      black 70%,
-      rgba(0, 0, 0, 0.95) 78%,
-      rgba(0, 0, 0, 0.85) 82%,
-      rgba(0, 0, 0, 0.7) 86%,
-      rgba(0, 0, 0, 0.5) 90%,
-      rgba(0, 0, 0, 0.3) 94%,
-      rgba(0, 0, 0, 0.15) 97%,
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.2) 3%,
-      rgba(0, 0, 0, 0.5) 8%,
-      rgba(0, 0, 0, 0.75) 12%,
-      rgba(0, 0, 0, 0.9) 16%,
-      black 25%,
-      black 70%,
-      rgba(0, 0, 0, 0.95) 78%,
-      rgba(0, 0, 0, 0.85) 82%,
-      rgba(0, 0, 0, 0.7) 86%,
-      rgba(0, 0, 0, 0.5) 90%,
-      rgba(0, 0, 0, 0.3) 94%,
-      rgba(0, 0, 0, 0.15) 97%,
-      transparent 100%
-    );
   }
   
-  /* 为轮播图容器添加上下模糊层 */
+  /* 为轮播图容器 */
   :deep(.el-carousel__container) {
     position: relative;
-    
-    /* 顶部模糊层 - 减小模糊范围 */
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      background: linear-gradient(
-        to bottom,
-        rgba(106, 17, 203, 0.5) 0%,
-        rgba(106, 17, 203, 0.3) 30%,
-        rgba(106, 17, 203, 0.15) 60%,
-        rgba(106, 17, 203, 0.05) 85%,
-        transparent 100%
-      );
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      pointer-events: none;
-      z-index: 1;
-    }
-    
-    /* 底部模糊层 - 增强效果，扩大范围 */
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 150px;
-      background: linear-gradient(
-        to bottom,
-        transparent 0%,
-        rgba(106, 17, 203, 0.05) 10%,
-        rgba(106, 17, 203, 0.12) 25%,
-        rgba(106, 17, 203, 0.2) 40%,
-        rgba(106, 17, 203, 0.3) 60%,
-        rgba(106, 17, 203, 0.4) 80%,
-        rgba(106, 17, 203, 0.5) 100%
-      );
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      pointer-events: none;
-      z-index: 1;
-    }
   }
   
   /* 覆盖 Element Plus 样式 */
@@ -270,8 +188,8 @@
   :deep(.el-carousel__item) {
     border-radius: 24px;
     /* 默认状态：稍微透明，带一点模糊，制造景深感 */
-    opacity: 0.6;
-    filter: blur(2px) grayscale(30%);
+    opacity: 0.8;
+    filter: blur(0.5px) grayscale(20%);
     transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1); /* 平滑的贝塞尔曲线 */
     box-sizing: border-box !important;
     /* 调整卡片宽度，确保三张图能在一行显示 */

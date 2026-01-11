@@ -48,7 +48,7 @@
     <!-- 左右分栏 -->
     <el-row :gutter="24">
       <!-- 左侧：帖子列表 -->
-      <el-col :xs="24" :md="16">
+      <el-col :xs="24" :md="18">
         <div class="posts-section">
           <!-- 头部操作栏 -->
           <PostHeader
@@ -83,7 +83,7 @@
       </el-col>
 
       <!-- 右侧：标签选择和活动预告 -->
-      <el-col :xs="24" :md="8">
+      <el-col :xs="24" :md="6">
         <!-- 标签选择 -->
         <div class="tags-section">
           <TagFilter

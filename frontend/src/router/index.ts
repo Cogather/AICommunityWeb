@@ -33,11 +33,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/EmpowermentView.vue').catch(() => import('../views/NotFoundView.vue'))
   },
   {
-    path: '/honor',
-    name: 'Honor',
-    component: () => import('../views/HonorView.vue').catch(() => import('../views/NotFoundView.vue'))
-  },
-  {
     path: '/award-rules',
     name: 'AwardRules',
     component: () => import('../views/AwardRulesView.vue').catch(() => import('../views/NotFoundView.vue'))

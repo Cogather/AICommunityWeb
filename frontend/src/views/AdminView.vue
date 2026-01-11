@@ -5,7 +5,7 @@
         <div class="header-content">
           <div>
             <h1>管理后台</h1>
-            <p>配置首页内容、荣誉殿堂和社区头条</p>
+            <p>配置首页内容和AI使用达人</p>
           </div>
         </div>
       </div>
@@ -144,82 +144,6 @@
                       </div>
                     </el-form-item>
                   </el-form>
-                </div>
-              </el-tab-pane>
-
-              <!-- 社区头条配置 -->
-              <el-tab-pane label="社区头条" name="news">
-                <div class="config-section">
-                  <div class="section-header">
-                    <h2>社区头条配置</h2>
-                    <el-button type="primary" @click="handleAddNews">
-                      <el-icon><Plus /></el-icon>
-                      添加头条
-                    </el-button>
-                  </div>
-
-                  <div class="news-list">
-                    <div 
-                      v-for="(news, index) in newsList" 
-                      :key="news.id"
-                      class="news-item"
-                    >
-                      <el-form :model="news" label-width="120px">
-                        <el-form-item label="标题">
-                          <el-input v-model="news.title" placeholder="请输入标题" />
-                        </el-form-item>
-                        <el-form-item label="图片">
-                          <div class="image-upload-wrapper">
-                            <el-radio-group v-model="news.imageType" @change="handleNewsImageTypeChange(news, index)">
-                              <el-radio label="url">URL</el-radio>
-                              <el-radio label="upload">本地上传</el-radio>
-                            </el-radio-group>
-                            <el-input 
-                              v-if="news.imageType === 'url'"
-                              v-model="news.image" 
-                              placeholder="请输入图片URL"
-                              style="margin-top: 8px;"
-                            />
-                            <el-upload
-                              v-else
-                              class="image-uploader"
-                              :auto-upload="false"
-                              :show-file-list="false"
-                              :on-change="(file) => handleImageFileChange(file, news, 'news')"
-                              :before-upload="beforeImageUpload"
-                              accept="image/*"
-                            >
-                              <el-button type="primary" style="margin-top: 8px;">选择图片</el-button>
-                            </el-upload>
-                            <div class="preview-box" v-if="news.image" style="margin-top: 12px;">
-                              <img :src="news.image" alt="图片预览" />
-                            </div>
-                          </div>
-                        </el-form-item>
-                        <el-form-item label="跳转链接">
-                          <el-input v-model="news.link" placeholder="请输入跳转链接" />
-                        </el-form-item>
-                        <el-form-item label="日期">
-                          <el-input v-model="news.date" placeholder="例如：刚刚、1小时前、昨天" />
-                        </el-form-item>
-                        <el-form-item>
-                          <el-button type="danger" @click="handleDeleteNews(index)">
-                            删除
-                          </el-button>
-                          <el-button @click="handleMoveNewsUp(index)" :disabled="index === 0">
-                            上移
-                          </el-button>
-                          <el-button @click="handleMoveNewsDown(index)" :disabled="index === newsList.length - 1">
-                            下移
-                          </el-button>
-                        </el-form-item>
-                      </el-form>
-                    </div>
-                  </div>
-
-                  <div v-if="newsList.length === 0" class="empty-state">
-                    <el-empty description="暂无头条，点击上方按钮添加" />
-                  </div>
                 </div>
               </el-tab-pane>
 
@@ -493,242 +417,351 @@
         <el-tab-pane label="AI使用达人管理" name="users">
           <div class="tab-content">
             <el-tabs v-model="usersSubTab" type="card" class="sub-tabs">
-              <!-- 奖项管理 -->
-              <el-tab-pane label="奖项管理" name="awards">
+              <!-- 个人奖项设置 -->
+              <el-tab-pane label="个人奖项设置" name="individual">
+                <el-tabs v-model="individualSubTab" type="card" class="sub-sub-tabs">
+                  <!-- 奖项设置 -->
+                  <el-tab-pane label="奖项设置" name="awards">
+                    <div class="config-section">
+                      <div class="section-header">
+                        <h2>奖项设置</h2>
+                        <el-button type="primary" @click="handleAddAward">
+                          <el-icon><Plus /></el-icon>
+                          添加奖项
+                        </el-button>
+                      </div>
+
+                      <div class="awards-list">
+                        <div
+                          v-for="(award, index) in awardsList"
+                          :key="award.id"
+                          class="award-item"
+                        >
+                          <el-form :model="award" label-width="120px">
+                            <el-form-item label="奖项名称">
+                              <el-input v-model="award.name" placeholder="请输入奖项名称" />
+                            </el-form-item>
+                            <el-form-item label="奖项描述">
+                              <el-input
+                                v-model="award.description"
+                                type="textarea"
+                                :rows="4"
+                                placeholder="请输入奖项描述（将展示在奖项详情里）"
+                              />
+                            </el-form-item>
+                            <el-form-item>
+                              <el-button type="danger" @click="handleDeleteAward(index)">
+                                删除
+                              </el-button>
+                            </el-form-item>
+                          </el-form>
+                        </div>
+                      </div>
+
+                      <div v-if="awardsList.length === 0" class="empty-state">
+                        <el-empty description="暂无奖项，点击上方按钮添加" />
+                      </div>
+                    </div>
+                  </el-tab-pane>
+
+                  <!-- 获奖者管理 -->
+                  <el-tab-pane label="获奖者管理" name="winners">
+                    <div class="config-section">
+                      <div class="section-header">
+                        <h2>获奖者管理</h2>
+                        <el-button type="primary" @click="handleAddWinner">
+                          <el-icon><Plus /></el-icon>
+                          添加获奖者
+                        </el-button>
+                      </div>
+
+                      <div class="winners-list">
+                        <div
+                          v-for="(winner, index) in winnersList"
+                          :key="winner.id"
+                          class="winner-item"
+                        >
+                          <el-form :model="winner" label-width="120px">
+                            <el-form-item label="获奖者">
+                              <el-input v-model="winner.name" placeholder="请输入获奖者姓名" />
+                            </el-form-item>
+                            <el-form-item label="奖项分类">
+                              <el-select
+                                v-model="winner.category"
+                                placeholder="请先选择奖项分类"
+                                style="width: 100%;"
+                                @change="handleWinnerCategoryChange(winner, index)"
+                              >
+                                <el-option label="创新突破" value="innovation" />
+                                <el-option label="效率提升" value="efficiency" />
+                                <el-option label="最佳实践" value="practice" />
+                                <el-option label="社区贡献" value="community" />
+                              </el-select>
+                            </el-form-item>
+                            <el-form-item label="奖项名称">
+                              <el-select
+                                v-model="winner.awardName"
+                                placeholder="请先选择奖项分类，然后选择奖项名称"
+                                style="width: 100%;"
+                                :disabled="!winner.category"
+                                :loading="loadingAwards"
+                              >
+                                <el-option
+                                  v-for="award in getFilteredAwardsForWinner(winner.category)"
+                                  :key="award.id"
+                                  :label="award.name"
+                                  :value="award.name"
+                                />
+                              </el-select>
+                              <div v-if="!winner.category" style="margin-top: 8px; font-size: 12px; color: #909399;">
+                                提示：请先选择奖项分类，系统会从后台获取该分类下的奖项列表
+                              </div>
+                            </el-form-item>
+                            <el-form-item label="获奖时间">
+                              <el-date-picker
+                                v-model="winner.awardTime"
+                                type="month"
+                                placeholder="选择获奖时间（年月）"
+                                format="YYYY-MM"
+                                value-format="YYYY-MM"
+                                style="width: 100%;"
+                              />
+                            </el-form-item>
+                            <el-form-item>
+                              <el-button type="danger" @click="handleDeleteWinner(index)">
+                                删除
+                              </el-button>
+                            </el-form-item>
+                          </el-form>
+                        </div>
+                      </div>
+
+                      <div v-if="winnersList.length === 0" class="empty-state">
+                        <el-empty description="暂无获奖者，点击上方按钮添加" />
+                      </div>
+                    </div>
+                  </el-tab-pane>
+
+                  <!-- 获奖者推荐 -->
+                  <el-tab-pane label="获奖者推荐" name="recommended">
+                    <div class="config-section">
+                      <div class="section-header">
+                        <h2>获奖者推荐</h2>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                          <el-date-picker
+                            v-model="recommendedMonth"
+                            type="month"
+                            placeholder="选择月份"
+                            format="YYYY-MM"
+                            value-format="YYYY-MM"
+                            @change="loadRecommendedWinners"
+                            style="width: 200px;"
+                          />
+                          <el-button type="primary" @click="loadRecommendedWinners">
+                            <el-icon><Refresh /></el-icon>
+                            刷新
+                          </el-button>
+                        </div>
+                      </div>
+
+                      <el-alert
+                        title="说明：系统会根据本月积分自动推荐Top 3用户，管理员可以为推荐用户设置获奖记录。"
+                        type="info"
+                        :closable="false"
+                        style="margin-bottom: 24px;"
+                      />
+
+                      <div v-if="loadingRecommended" class="loading-state">
+                        <el-skeleton :rows="3" animated />
+                      </div>
+
+                      <div v-else class="recommended-winners-list">
+                        <div
+                          v-for="(user, index) in recommendedWinnersList"
+                          :key="user.id"
+                          class="recommended-winner-item"
+                        >
+                          <div class="winner-info">
+                            <div class="winner-avatar">
+                              <el-avatar :src="user.avatar" :size="60">
+                                {{ user.name.charAt(0) }}
+                              </el-avatar>
+                              <div v-if="index < 3" class="rank-badge">
+                                {{ index + 1 }}
+                              </div>
+                            </div>
+                            <div class="winner-details">
+                              <div class="winner-name-row">
+                                <h3>{{ user.name }}</h3>
+                                <el-tag v-if="user.hasAwarded" type="success" size="small">
+                                  已评奖
+                                </el-tag>
+                                <el-tag v-else type="info" size="small">
+                                  未评奖
+                                </el-tag>
+                              </div>
+                              <div class="winner-meta">
+                                <span><strong>工号：</strong>{{ user.employeeId }}</span>
+                                <span><strong>部门：</strong>{{ user.department }}</span>
+                              </div>
+                              <div class="winner-stats">
+                                <div class="stat-item">
+                                  <span class="stat-label">本月积分：</span>
+                                  <span class="stat-value highlight">{{ user.points }}</span>
+                                </div>
+                                <div class="stat-item">
+                                  <span class="stat-label">发帖数：</span>
+                                  <span class="stat-value">{{ user.postsCount }}</span>
+                                </div>
+                                <div class="stat-item">
+                                  <span class="stat-label">评论数：</span>
+                                  <span class="stat-value">{{ user.commentsCount }}</span>
+                                </div>
+                                <div class="stat-item">
+                                  <span class="stat-label">参加活动：</span>
+                                  <span class="stat-value">{{ user.activitiesCount }}</span>
+                                </div>
+                                <div class="stat-item">
+                                  <span class="stat-label">被点赞：</span>
+                                  <span class="stat-value">{{ user.likesReceived }}</span>
+                                </div>
+                                <div class="stat-item">
+                                  <span class="stat-label">被收藏：</span>
+                                  <span class="stat-value">{{ user.favoritesReceived }}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="winner-actions">
+                            <el-button
+                              v-if="!user.hasAwarded"
+                              type="primary"
+                              @click="handleSetAward(user)"
+                            >
+                              设置评奖
+                            </el-button>
+                            <el-button
+                              v-else
+                              type="warning"
+                              @click="handleCancelAward(user)"
+                            >
+                              取消评奖
+                            </el-button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div v-if="!loadingRecommended && recommendedWinnersList.length === 0" class="empty-state">
+                        <el-empty description="暂无推荐用户" />
+                      </div>
+                    </div>
+                  </el-tab-pane>
+                </el-tabs>
+              </el-tab-pane>
+
+              <!-- 团队奖项设置 -->
+              <el-tab-pane label="团队奖项设置" name="team">
                 <div class="config-section">
                   <div class="section-header">
-                    <h2>奖项管理</h2>
-                    <el-button type="primary" @click="handleAddAward">
+                    <h2>团队奖项设置</h2>
+                    <el-button type="primary" @click="handleAddTeamAward">
                       <el-icon><Plus /></el-icon>
-                      添加奖项
+                      添加团队奖项
                     </el-button>
                   </div>
 
-                  <div class="awards-list">
+                  <div class="team-awards-list">
                     <div
-                      v-for="(award, index) in awardsList"
+                      v-for="(award, index) in teamAwardsList"
                       :key="award.id"
-                      class="award-item"
+                      class="team-award-item"
                     >
                       <el-form :model="award" label-width="120px">
                         <el-form-item label="奖项名称">
-                          <el-input v-model="award.name" placeholder="请输入奖项名称" />
+                          <el-input v-model="award.title" placeholder="请输入奖项名称" />
                         </el-form-item>
-                        <el-form-item label="奖项分类">
-                          <el-input v-model="award.category" placeholder="请输入奖项分类" />
-                        </el-form-item>
-                        <el-form-item label="奖项描述">
-                          <el-input
-                            v-model="award.description"
-                            type="textarea"
-                            :rows="4"
-                            placeholder="请输入奖项描述（将展示在奖项详情里）"
-                          />
-                        </el-form-item>
-                        <el-form-item>
-                          <el-button type="danger" @click="handleDeleteAward(index)">
-                            删除
-                          </el-button>
-                        </el-form-item>
-                      </el-form>
-                    </div>
-                  </div>
-
-                  <div v-if="awardsList.length === 0" class="empty-state">
-                    <el-empty description="暂无奖项，点击上方按钮添加" />
-                  </div>
-                </div>
-              </el-tab-pane>
-
-              <!-- 获奖者管理 -->
-              <el-tab-pane label="获奖者管理" name="winners">
-                <div class="config-section">
-                  <div class="section-header">
-                    <h2>获奖者管理</h2>
-                    <el-button type="primary" @click="handleAddWinner">
-                      <el-icon><Plus /></el-icon>
-                      添加获奖者
-                    </el-button>
-                  </div>
-
-                  <div class="winners-list">
-                    <div
-                      v-for="(winner, index) in winnersList"
-                      :key="winner.id"
-                      class="winner-item"
-                    >
-                      <el-form :model="winner" label-width="120px">
-                        <el-form-item label="获奖者">
-                          <el-input v-model="winner.name" placeholder="请输入获奖者姓名" />
-                        </el-form-item>
-                        <el-form-item label="奖项分类">
-                          <el-select
-                            v-model="winner.category"
-                            placeholder="请先选择奖项分类"
-                            style="width: 100%;"
-                            @change="handleWinnerCategoryChange(winner, index)"
-                          >
-                            <el-option label="创新突破" value="innovation" />
-                            <el-option label="效率提升" value="efficiency" />
-                            <el-option label="最佳实践" value="practice" />
-                            <el-option label="社区贡献" value="community" />
-                          </el-select>
-                        </el-form-item>
-                        <el-form-item label="奖项名称">
-                          <el-select
-                            v-model="winner.awardName"
-                            placeholder="请先选择奖项分类，然后选择奖项名称"
-                            style="width: 100%;"
-                            :disabled="!winner.category"
-                            :loading="loadingAwards"
-                          >
-                            <el-option
-                              v-for="award in getFilteredAwardsForWinner(winner.category)"
-                              :key="award.id"
-                              :label="award.name"
-                              :value="award.name"
-                            />
-                          </el-select>
-                          <div v-if="!winner.category" style="margin-top: 8px; font-size: 12px; color: #909399;">
-                            提示：请先选择奖项分类，系统会从后台获取该分类下的奖项列表
-                          </div>
-                        </el-form-item>
-                        <el-form-item label="获奖时间">
+                        <el-form-item label="年份">
                           <el-date-picker
-                            v-model="winner.awardTime"
-                            type="month"
-                            placeholder="选择获奖时间（年月）"
-                            format="YYYY-MM"
-                            value-format="YYYY-MM"
-                            style="width: 100%;"
+                            v-model="award.year"
+                            type="year"
+                            placeholder="选择年份"
+                            format="YYYY"
+                            value-format="YYYY"
+                            style="width: 200px;"
                           />
                         </el-form-item>
+                        <el-form-item label="获奖照片">
+                          <div class="team-award-images">
+                            <div
+                              v-for="(img, imgIndex) in award.images"
+                              :key="img.id"
+                              class="team-award-image-item"
+                            >
+                              <div class="image-upload-wrapper">
+                                <el-radio-group v-model="img.imageType" @change="handleTeamAwardImageTypeChange(img, index, imgIndex)">
+                                  <el-radio label="url">URL</el-radio>
+                                  <el-radio label="upload">本地上传</el-radio>
+                                </el-radio-group>
+                                <el-input 
+                                  v-if="img.imageType === 'url'"
+                                  v-model="img.image" 
+                                  placeholder="请输入图片URL"
+                                  style="margin-top: 8px;"
+                                />
+                                <el-upload
+                                  v-else
+                                  class="image-uploader"
+                                  :auto-upload="false"
+                                  :show-file-list="false"
+                                  :on-change="(file) => handleTeamAwardImageFileChange(file, img, index, imgIndex)"
+                                  :before-upload="beforeImageUpload"
+                                  accept="image/*"
+                                >
+                                  <el-button type="primary" style="margin-top: 8px;">选择图片</el-button>
+                                </el-upload>
+                                <div class="preview-box" v-if="img.image" style="margin-top: 12px;">
+                                  <img :src="img.image" alt="图片预览" />
+                                </div>
+                              </div>
+                              <el-form-item label="获奖名称" style="margin-top: 12px;">
+                                <el-input v-model="img.winnerName" placeholder="请输入获奖名称（如：AI研发团队）" />
+                              </el-form-item>
+                              <el-button 
+                                type="danger" 
+                                size="small" 
+                                @click="handleDeleteTeamAwardImage(index, imgIndex)"
+                                style="margin-top: 8px;"
+                              >
+                                删除此图片
+                              </el-button>
+                            </div>
+                            <el-button 
+                              type="primary" 
+                              @click="handleAddTeamAwardImage(index)"
+                              style="margin-top: 12px;"
+                            >
+                              <el-icon><Plus /></el-icon>
+                              添加图片
+                            </el-button>
+                          </div>
+                        </el-form-item>
                         <el-form-item>
-                          <el-button type="danger" @click="handleDeleteWinner(index)">
-                            删除
+                          <el-button type="danger" @click="handleDeleteTeamAward(index)">
+                            删除奖项
+                          </el-button>
+                          <el-button @click="handleMoveTeamAwardUp(index)" :disabled="index === 0">
+                            上移
+                          </el-button>
+                          <el-button @click="handleMoveTeamAwardDown(index)" :disabled="index === teamAwardsList.length - 1">
+                            下移
                           </el-button>
                         </el-form-item>
                       </el-form>
                     </div>
                   </div>
 
-                  <div v-if="winnersList.length === 0" class="empty-state">
-                    <el-empty description="暂无获奖者，点击上方按钮添加" />
-                  </div>
-                </div>
-              </el-tab-pane>
-
-              <!-- 获奖者推荐 -->
-              <el-tab-pane label="获奖者推荐" name="recommended">
-                <div class="config-section">
-                  <div class="section-header">
-                    <h2>获奖者推荐</h2>
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                      <el-date-picker
-                        v-model="recommendedMonth"
-                        type="month"
-                        placeholder="选择月份"
-                        format="YYYY-MM"
-                        value-format="YYYY-MM"
-                        @change="loadRecommendedWinners"
-                        style="width: 200px;"
-                      />
-                      <el-button type="primary" @click="loadRecommendedWinners">
-                        <el-icon><Refresh /></el-icon>
-                        刷新
-                      </el-button>
-                    </div>
-                  </div>
-
-                  <el-alert
-                    title="说明：系统会根据本月积分自动推荐Top 3用户，管理员可以为推荐用户设置获奖记录。"
-                    type="info"
-                    :closable="false"
-                    style="margin-bottom: 24px;"
-                  />
-
-                  <div v-if="loadingRecommended" class="loading-state">
-                    <el-skeleton :rows="3" animated />
-                  </div>
-
-                  <div v-else class="recommended-winners-list">
-                    <div
-                      v-for="(user, index) in recommendedWinnersList"
-                      :key="user.id"
-                      class="recommended-winner-item"
-                    >
-                      <div class="winner-info">
-                        <div class="winner-avatar">
-                          <el-avatar :src="user.avatar" :size="60">
-                            {{ user.name.charAt(0) }}
-                          </el-avatar>
-                          <div v-if="index < 3" class="rank-badge">
-                            {{ index + 1 }}
-                          </div>
-                        </div>
-                        <div class="winner-details">
-                          <div class="winner-name-row">
-                            <h3>{{ user.name }}</h3>
-                            <el-tag v-if="user.hasAwarded" type="success" size="small">
-                              已评奖
-                            </el-tag>
-                            <el-tag v-else type="info" size="small">
-                              未评奖
-                            </el-tag>
-                          </div>
-                          <div class="winner-meta">
-                            <span><strong>工号：</strong>{{ user.employeeId }}</span>
-                            <span><strong>部门：</strong>{{ user.department }}</span>
-                          </div>
-                          <div class="winner-stats">
-                            <div class="stat-item">
-                              <span class="stat-label">本月积分：</span>
-                              <span class="stat-value highlight">{{ user.points }}</span>
-                            </div>
-                            <div class="stat-item">
-                              <span class="stat-label">发帖数：</span>
-                              <span class="stat-value">{{ user.postsCount }}</span>
-                            </div>
-                            <div class="stat-item">
-                              <span class="stat-label">评论数：</span>
-                              <span class="stat-value">{{ user.commentsCount }}</span>
-                            </div>
-                            <div class="stat-item">
-                              <span class="stat-label">参加活动：</span>
-                              <span class="stat-value">{{ user.activitiesCount }}</span>
-                            </div>
-                            <div class="stat-item">
-                              <span class="stat-label">被点赞：</span>
-                              <span class="stat-value">{{ user.likesReceived }}</span>
-                            </div>
-                            <div class="stat-item">
-                              <span class="stat-label">被收藏：</span>
-                              <span class="stat-value">{{ user.favoritesReceived }}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="winner-actions">
-                        <el-button
-                          v-if="!user.hasAwarded"
-                          type="primary"
-                          @click="handleSetAward(user)"
-                        >
-                          设置评奖
-                        </el-button>
-                        <el-button
-                          v-else
-                          type="warning"
-                          @click="handleCancelAward(user)"
-                        >
-                          取消评奖
-                        </el-button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-if="!loadingRecommended && recommendedWinnersList.length === 0" class="empty-state">
-                    <el-empty description="暂无推荐用户" />
+                  <div v-if="teamAwardsList.length === 0" class="empty-state">
+                    <el-empty description="暂无团队奖项，点击上方按钮添加" />
                   </div>
                 </div>
               </el-tab-pane>
@@ -983,7 +1016,8 @@ const router = useRouter()
 // 当前标签页
 const activeTab = ref('home')
 const homeSubTab = ref('carousel')
-const usersSubTab = ref('awards')
+const usersSubTab = ref('individual')
+const individualSubTab = ref('awards')
 
 // 图片上传处理（使用base64作为临时方案，实际应该上传到服务器）
 const uploadAction = '/api/upload' // 这里需要替换为实际的上传接口
@@ -1042,24 +1076,35 @@ const honorConfig = ref({
   ] as Award[]
 })
 
-// 社区头条列表
-interface NewsItem {
+// 团队奖项图片项
+interface TeamAwardImageItem {
   id: number
-  title: string
   image: string
   imageType: 'url' | 'upload'
-  link: string
-  date: string
+  winnerName: string
 }
 
-const newsList = ref<NewsItem[]>([
+// 团队奖项列表
+interface TeamAwardItem {
+  id: number
+  title: string
+  year?: number
+  images: TeamAwardImageItem[]
+}
+
+const teamAwardsList = ref<TeamAwardItem[]>([
   {
     id: 1,
-    title: '【大模型专题】多模态模型在医疗影像中的最新应用突破',
-    image: 'https://picsum.photos/300/200?random=20',
-    imageType: 'url',
-    link: '/news',
-    date: '刚刚'
+    title: '年度最佳团队奖',
+    year: 2024,
+    images: [
+      {
+        id: 1,
+        image: 'https://picsum.photos/400/300?random=21',
+        imageType: 'url',
+        winnerName: 'AI研发团队'
+      }
+    ]
   }
 ])
 
@@ -1760,6 +1805,8 @@ const handleImageFileChange = async (file: any, target: any, type: string) => {
       target.bannerImage = base64
     } else if (type === 'toolBanner') {
       target.image = base64
+    } else if (type === 'teamAward' || type === 'teamAwardImage') {
+      target.image = base64
     }
     
     ElMessage.success('图片已加载')
@@ -1787,8 +1834,34 @@ const handleHonorBannerImageTypeChange = () => {
   // 处理荣誉殿堂banner图片类型切换
 }
 
-const handleNewsImageTypeChange = (news: NewsItem, index: number) => {
-  // 处理头条图片类型切换
+const handleTeamAwardImageTypeChange = (img: TeamAwardImageItem, awardIndex: number, imgIndex: number) => {
+  // 处理团队奖项图片类型切换
+}
+
+const handleTeamAwardImageFileChange = (file: any, img: TeamAwardImageItem, awardIndex: number, imgIndex: number) => {
+  handleImageFileChange(file, img, 'teamAwardImage')
+}
+
+// 添加团队奖项图片
+const handleAddTeamAwardImage = (awardIndex: number) => {
+  const award = teamAwardsList.value[awardIndex]
+  if (award) {
+    award.images.push({
+      id: Date.now(),
+      image: '',
+      imageType: 'url',
+      winnerName: ''
+    })
+  }
+}
+
+// 删除团队奖项图片
+const handleDeleteTeamAwardImage = (awardIndex: number, imgIndex: number) => {
+  const award = teamAwardsList.value[awardIndex]
+  if (award && award.images.length > imgIndex) {
+    award.images.splice(imgIndex, 1)
+    ElMessage.success('删除成功')
+  }
 }
 
 const handleToolLogoTypeChange = (tool: ToolItem, index: number) => {
@@ -2316,44 +2389,50 @@ const handleDeleteHonorAward = (index: number) => {
   }).catch(() => {})
 }
 
-// 添加头条
-const handleAddNews = () => {
-  newsList.value.push({
+// 添加团队奖项
+const handleAddTeamAward = () => {
+  teamAwardsList.value.push({
     id: Date.now(),
     title: '',
-    image: '',
-    link: '',
-    date: ''
+    year: new Date().getFullYear(),
+    images: [
+      {
+        id: Date.now(),
+        image: '',
+        imageType: 'url',
+        winnerName: ''
+      }
+    ]
   })
 }
 
-// 删除头条
-const handleDeleteNews = (index: number) => {
-  ElMessageBox.confirm('确定要删除这条头条吗？', '提示', {
+// 删除团队奖项
+const handleDeleteTeamAward = (index: number) => {
+  ElMessageBox.confirm('确定要删除这个团队奖项吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    newsList.value.splice(index, 1)
+    teamAwardsList.value.splice(index, 1)
     ElMessage.success('删除成功')
   }).catch(() => {})
 }
 
-// 上移头条
-const handleMoveNewsUp = (index: number) => {
+// 上移团队奖项
+const handleMoveTeamAwardUp = (index: number) => {
   if (index > 0) {
-    const temp = newsList.value[index]
-    newsList.value[index] = newsList.value[index - 1]
-    newsList.value[index - 1] = temp
+    const temp = teamAwardsList.value[index]
+    teamAwardsList.value[index] = teamAwardsList.value[index - 1]
+    teamAwardsList.value[index - 1] = temp
   }
 }
 
-// 下移头条
-const handleMoveNewsDown = (index: number) => {
-  if (index < newsList.value.length - 1) {
-    const temp = newsList.value[index]
-    newsList.value[index] = newsList.value[index + 1]
-    newsList.value[index + 1] = temp
+// 下移团队奖项
+const handleMoveTeamAwardDown = (index: number) => {
+  if (index < teamAwardsList.value.length - 1) {
+    const temp = teamAwardsList.value[index]
+    teamAwardsList.value[index] = teamAwardsList.value[index + 1]
+    teamAwardsList.value[index + 1] = temp
   }
 }
 
@@ -2418,7 +2497,7 @@ const updateComponentsData = () => {
   try {
     localStorage.setItem('admin_carousel_config', JSON.stringify(carouselList.value))
     localStorage.setItem('admin_honor_config', JSON.stringify(honorConfig.value))
-    localStorage.setItem('admin_news_config', JSON.stringify(newsList.value))
+    localStorage.setItem('admin_team_awards_config', JSON.stringify(teamAwardsList.value))
     localStorage.setItem('admin_tools_config', JSON.stringify(toolsList.value))
     localStorage.setItem('admin_tool_banners_config', JSON.stringify(toolBannersList.value))
     localStorage.setItem('admin_featured_posts', JSON.stringify(featuredPostsList.value))
@@ -2470,12 +2549,15 @@ const loadConfig = async () => {
       }
     }
     
-    const newsConfig = localStorage.getItem('admin_news_config')
-    if (newsConfig) {
-      const config = JSON.parse(newsConfig)
-      newsList.value = config.map((item: any) => ({
+    const teamAwardsConfig = localStorage.getItem('admin_team_awards_config')
+    if (teamAwardsConfig) {
+      const config = JSON.parse(teamAwardsConfig)
+      teamAwardsList.value = config.map((item: any) => ({
         ...item,
-        imageType: item.imageType || (item.image ? 'url' : 'url')
+        images: item.images ? item.images.map((img: any) => ({
+          ...img,
+          imageType: img.imageType || (img.image ? 'url' : 'url')
+        })) : []
       }))
     }
     
@@ -2503,9 +2585,13 @@ const loadConfig = async () => {
         item.imageType = item.image ? 'url' : 'url'
       }
     })
-    newsList.value.forEach(item => {
-      if (!item.imageType) {
-        item.imageType = item.image ? 'url' : 'url'
+    teamAwardsList.value.forEach(item => {
+      if (item.images) {
+        item.images.forEach((img: TeamAwardImageItem) => {
+          if (!img.imageType) {
+            img.imageType = img.image ? 'url' : 'url'
+          }
+        })
       }
     })
     toolsList.value.forEach(item => {
@@ -2811,17 +2897,31 @@ onBeforeUnmount(() => {
   }
 }
 
-// 头条列表
-.news-list {
+// 团队奖项列表
+.team-awards-list {
   display: flex;
   flex-direction: column;
   gap: 24px;
 
-  .news-item {
+  .team-award-item {
     background: rgba(255, 255, 255, 0.6);
     border-radius: 12px;
     padding: 20px;
     border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 团队奖项图片列表
+.team-award-images {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  
+  .team-award-image-item {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
 }
 

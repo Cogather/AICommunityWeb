@@ -2,14 +2,38 @@
   <div class="page-container">
     <section class="hero-section">
       <HeroCarousel />
+      <!-- 右侧悬浮工具按钮列表 -->
+      <div class="floating-tools-panel">
+        <div class="tools-panel-header">
+          <el-icon><Trophy /></el-icon>
+          <span>工具平台</span>
+        </div>
+        <div class="tools-list">
+          <div
+            v-for="tool in tools"
+            :key="tool.id"
+            class="tool-btn"
+            :style="{ '--tool-color': tool.color }"
+            @click="handleToolPlatformClick(tool)"
+          >
+            <div class="tool-icon">
+              <img v-if="tool.logo" :src="tool.logo" :alt="tool.name" />
+              <el-icon v-else><Star /></el-icon>
+            </div>
+            <div class="tool-info">
+              <span class="tool-name">{{ tool.name }}</span>
+              <span class="tool-desc">{{ tool.desc }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <main class="main-content">
-      <!-- AI新闻 -->
-      <section class="section-block">
+      <!-- AI动态 -->
+      <section class="section-block ai-dynamic-section">
         <div class="section-title-center">
-          <h2>AI 新闻</h2>
-          <p>AI NEWS</p>
+          <h2>AI 动态</h2>
         </div>
 
       <el-row :gutter="24" class="section-row">
@@ -17,7 +41,7 @@
           <div class="glass-card honor-section">
             <!-- 顶部标题条 -->
             <div class="honor-header-bar">
-              <h3 class="header-title">AI使用达人·荣誉殿堂</h3>
+              <h3 class="header-title">AI使用达人</h3>
               <el-button 
                 text 
                 size="small" 
@@ -29,37 +53,7 @@
             </div>
             
             <div class="honor-split-container" style="padding: 20px;">
-              <!-- 左边：荣誉殿堂 -->
-              <div class="honor-hall">
-                <!-- 荣誉殿堂 Banner -->
-                <div class="honor-banner" @click="router.push('/honor')" style="cursor: pointer;">
-                  <img :src="honorBannerImage" alt="荣誉殿堂" class="banner-image" />
-                  <div class="banner-overlay">
-                    <div class="banner-content">
-                      <h3>荣誉殿堂</h3>
-                      <p>Hall of Fame</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- 奖项列表 - 一行两个，小卡片+小logo -->
-                <div class="awards-grid">
-                  <div class="award-card-small" v-for="award in awards" :key="award.id">
-                    <div class="award-logo-small">
-                      <img :src="award.image" :alt="award.name" class="award-logo-img" />
-                    </div>
-                    <div class="award-content-small">
-                      <h4>{{ award.name }}</h4>
-                      <p>{{ award.desc }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- 中间分割线 -->
-              <div class="split-line"></div>
-              
-              <!-- 右边：AI使用达人 -->
+              <!-- AI使用达人 -->
               <div class="ai-users">
                 <div class="users-header">
                   <h4>AI使用达人</h4>
@@ -78,50 +72,142 @@
         </el-col>
 
         <el-col :xs="24" :md="8">
-          <div class="glass-card full-height">
+          <div class="glass-card equal-height-card">
             <div class="card-header">
-              <h3>
-                <el-icon class="header-icon"><Bell /></el-icon>
-                社区头条
-              </h3>
-              <div class="header-actions">
-                <el-tag effect="plain" round size="small">HOT</el-tag>
-                <el-button 
-                  text 
-                  size="small" 
-                  class="more-btn-pill"
-                  @click="router.push('/news')"
-                >
-                  更多
-                </el-button>
-              </div>
-            </div>
-            <!-- 社区头条 - 四个帖子，两两并排 -->
-            <div class="news-grid">
-              <div 
-                class="news-card" 
-                v-for="(news, idx) in newsList" 
-                :key="idx"
-                @click="handleNewsClick(news)"
+              <h3>🗣️ 赋能交流</h3>
+              <el-button 
+                text 
+                size="small" 
+                class="more-btn-pill"
+                @click="router.push('/empowerment')"
               >
-                <div class="news-image-wrapper">
-                  <img :src="news.image" :alt="news.title" class="news-image" />
-                </div>
-                <div class="news-content">
-                  <h4 class="news-title">{{ news.title }}</h4>
-                  <span class="news-date">{{ news.date }}</span>
-                </div>
-              </div>
+                更多
+              </el-button>
+            </div>
+            <div class="text-list">
+              <p 
+                v-for="n in 5" 
+                :key="n" 
+                class="list-row"
+                @click="router.push('/empowerment')"
+              >
+                <span class="tag blue">讨论</span>
+                如何使用 Agent 提升代码开发效率？
+              </p>
             </div>
           </div>
         </el-col>
       </el-row>
       </section>
 
+      <!-- AI优秀实践 -->
+      <section class="section-block">
+        <div class="section-title-center">
+          <h2>AI 优秀实践</h2>
+        </div>
+
+      <div class="glass-card practice-unified">
+        <div class="practice-container">
+          <!-- 培训赋能 -->
+          <div class="practice-module">
+            <div class="card-header">
+              <h3>📚 培训赋能</h3>
+              <el-button 
+                text 
+                size="small" 
+                class="more-btn-pill"
+                @click="router.push('/practices')"
+              >
+                更多
+              </el-button>
+            </div>
+            <div class="text-list">
+              <div 
+                v-for="practice in practices.slice(0, 5)" 
+                :key="practice.id" 
+                class="list-row"
+                @click="handlePracticeClick(practice)"
+              >
+                <div class="practice-content">
+                  <h4 class="practice-title">{{ practice.title }}</h4>
+                  <div class="practice-meta">
+                    <span class="practice-author">{{ practice.author }}</span>
+                    <span class="practice-time">{{ practice.time }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 分割线 -->
+          <div class="practice-divider"></div>
+          
+          <!-- AI训战 -->
+          <div class="practice-module">
+            <div class="card-header">
+              <h3>⚔️ AI训战</h3>
+              <el-button 
+                text 
+                size="small" 
+                class="more-btn-pill"
+                @click="router.push('/practices')"
+              >
+                更多
+              </el-button>
+            </div>
+            <div class="text-list">
+              <div 
+                v-for="practice in practices.slice(0, 5)" 
+                :key="'train-' + practice.id" 
+                class="list-row"
+                @click="handlePracticeClick(practice)"
+              >
+                <div class="practice-content">
+                  <h4 class="practice-title">{{ practice.title }}</h4>
+                  <div class="practice-meta">
+                    <span class="practice-author">{{ practice.author }}</span>
+                    <span class="practice-time">{{ practice.time }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 分割线 -->
+          <div class="practice-divider"></div>
+          
+          <!-- 用户交流 -->
+          <div class="practice-module">
+            <div class="card-header">
+              <h3>💬 用户交流</h3>
+              <el-button 
+                text 
+                size="small" 
+                class="more-btn-pill"
+                @click="router.push('/empowerment')"
+              >
+                更多
+              </el-button>
+            </div>
+            <div class="text-list">
+              <p 
+                v-for="n in 5" 
+                :key="n" 
+                class="list-row"
+                @click="router.push('/empowerment')"
+              >
+                <span class="tag blue">讨论</span>
+                如何使用 Agent 提升代码开发效率？
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      </section>
+
       <section class="section-block">
         <div class="section-title-center">
           <h2>AI 工具专区</h2>
-          <p>AI TOOL ZONE</p>
         </div>
         
         <!-- AI工具专区轮播图 Banner -->
@@ -184,79 +270,10 @@
         </el-row>
       </section>
 
-      <!-- AI乐园 -->
-      <section class="section-block">
-        <div class="section-title-center">
-          <h2>AI 乐园</h2>
-          <p>AI PARK</p>
-        </div>
-
-      <el-row :gutter="24" class="section-row equal-height">
-        <el-col :xs="24" :md="12">
-          <div class="glass-card equal-height-card">
-            <div class="card-header">
-              <h3>🏠 AI 优秀实践</h3>
-              <el-button 
-                text 
-                size="small" 
-                class="more-btn-pill"
-                @click="router.push('/practices')"
-              >
-                更多
-              </el-button>
-            </div>
-            <div class="text-list">
-              <div 
-                v-for="practice in practices" 
-                :key="practice.id" 
-                class="list-row"
-                @click="handlePracticeClick(practice)"
-              >
-                <div class="practice-content">
-                  <h4 class="practice-title">{{ practice.title }}</h4>
-                  <div class="practice-meta">
-                    <span class="practice-author">{{ practice.author }}</span>
-                    <span class="practice-time">{{ practice.time }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :md="12">
-          <div class="glass-card equal-height-card">
-            <div class="card-header">
-              <h3>🗣️ 赋能交流</h3>
-              <el-button 
-                text 
-                size="small" 
-                class="more-btn-pill"
-                @click="router.push('/empowerment')"
-              >
-                更多
-              </el-button>
-            </div>
-            <div class="text-list">
-              <p 
-                v-for="n in 5" 
-                :key="n" 
-                class="list-row"
-                @click="router.push('/empowerment')"
-              >
-                <span class="tag blue">讨论</span>
-                如何使用 Agent 提升代码开发效率？
-              </p>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
-      </section>
-
       <!-- AI资讯 -->
       <section class="section-block">
         <div class="section-title-center">
           <h2>AI 资讯</h2>
-          <p>AI INFORMATION</p>
         </div>
 
       <div class="glass-card wide-banner section-row">
@@ -284,7 +301,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, ChatDotRound, Bell } from '@element-plus/icons-vue'
+import { ArrowRight, ChatDotRound, Bell, Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 
 const router = useRouter()
@@ -292,7 +309,6 @@ const router = useRouter()
 // 监听配置更新
 const handleConfigUpdate = () => {
   newsList.value = loadNewsList()
-  honorBannerImage.value = loadHonorBanner()
   tools.value = loadTools()
   toolZoneBanners.value = loadToolBanners()
 }
@@ -385,48 +401,6 @@ const loadNewsList = () => {
 
 const newsList = ref(loadNewsList())
 
-// 荣誉殿堂数据 - 从localStorage读取配置
-const loadHonorBanner = () => {
-  try {
-    const saved = localStorage.getItem('admin_honor_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.bannerImage || 'https://picsum.photos/800/300?random=30'
-    }
-  } catch (e) {
-    console.error('加载荣誉殿堂配置失败:', e)
-  }
-  return 'https://picsum.photos/800/300?random=30'
-}
-
-const honorBannerImage = ref(loadHonorBanner())
-
-const awards = ref([
-  {
-    id: 1,
-    name: '年度最佳贡献奖',
-    desc: '2026年度',
-    image: 'https://picsum.photos/200/150?random=31'
-  },
-  {
-    id: 2,
-    name: '年度创新奖',
-    desc: '2025年度',
-    image: 'https://picsum.photos/200/150?random=32'
-  },
-  {
-    id: 3,
-    name: '年度最佳实践奖',
-    desc: '2024年度',
-    image: 'https://picsum.photos/200/150?random=33'
-  },
-  {
-    id: 4,
-    name: '社区贡献奖',
-    desc: '2023年度',
-    image: 'https://picsum.photos/200/150?random=34'
-  }
-])
 
 // AI工具列表配置 - 从localStorage读取配置
 const loadTools = () => {
@@ -559,6 +533,25 @@ const handleToolClick = (tool: any) => {
   })
 }
 
+// 处理工具平台点击跳转（悬浮面板）
+const handleToolPlatformClick = (tool: any) => {
+  if (tool.link) {
+    if (tool.link.startsWith('http')) {
+      window.open(tool.link, '_blank')
+    } else {
+      router.push(tool.link)
+    }
+  } else {
+    // 如果没有link，跳转到工具专区
+    router.push({
+      path: '/tools',
+      query: {
+        toolId: tool.id
+      }
+    })
+  }
+}
+
 // 处理实践点击
 const handlePracticeClick = (practice: any) => {
   // 跳转到实践详情或列表页
@@ -613,7 +606,249 @@ const toolZoneBanners = ref(loadToolBanners())
 */
 .hero-section {
   width: 100%;
+  position: relative;
+  min-height: 500px; /* 确保有足够高度，与轮播图高度一致 */
   /* 轮播图区域 */
+}
+
+/* 右侧悬浮工具面板 */
+.floating-tools-panel {
+  position: absolute;
+  right: 80px; /* 固定右边距，避免遮挡轮播图右箭头 */
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  
+  /* 大屏幕时增加右边距，保持与轮播图的视觉平衡 */
+  @media (min-width: 1920px) {
+    right: 120px;
+  }
+  
+  /* 中等屏幕保持固定边距 */
+  @media (min-width: 1400px) and (max-width: 1919px) {
+    right: 80px;
+  }
+  width: 220px; /* 减小宽度 */
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 添加光效背景 */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at top right, rgba(255, 255, 255, 0.15), transparent 60%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    border-radius: 20px;
+  }
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 
+      0 12px 48px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+      0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-50%) scale(1.02);
+  }
+  
+  @media (max-width: 1400px) {
+    display: none; /* 小屏幕隐藏 */
+  }
+}
+
+.tools-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px; /* 减小内边距 */
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  position: relative;
+  z-index: 1;
+  
+  .el-icon {
+    font-size: 18px; /* 减小图标 */
+    color: rgba(255, 255, 255, 0.95);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+  
+  span {
+    font-size: 14px; /* 减小字体 */
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* 减小间距 */
+  padding: 10px; /* 减小内边距 */
+  max-height: 350px; /* 减小最大高度 */
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+  
+  /* 隐藏滚动条但保持滚动功能 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+  }
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 减小间距 */
+  padding: 8px 12px; /* 减小内边距 */
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.35); /* 提高透明度，更白 */
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  /* 左侧彩色指示条 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--tool-color, rgba(255, 255, 255, 0.8));
+    transform: scaleY(0);
+    transition: transform 0.3s;
+    border-radius: 0 2px 2px 0;
+  }
+  
+  /* 光效 */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.5); /* 悬停时更白 */
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateX(3px);
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+    
+    &::before {
+      transform: scaleY(1);
+    }
+    
+    &::after {
+      opacity: 1;
+    }
+    
+    .tool-icon {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .tool-name {
+      color: #1e293b; /* 悬停时保持黑色 */
+    }
+  }
+  
+  &:active {
+    transform: translateX(2px);
+  }
+}
+
+.tool-icon {
+  width: 36px; /* 减小图标尺寸 */
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.4); /* 提高透明度，更白 */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+  
+  .el-icon {
+    font-size: 20px; /* 减小图标字体 */
+    color: rgba(255, 255, 255, 0.95);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+}
+
+.tool-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px; /* 减小间距 */
+  min-width: 0;
+}
+
+.tool-name {
+  font-size: 13px; /* 减小字体 */
+  font-weight: 700;
+  color: #1e293b; /* 改为黑色 */
+  transition: all 0.3s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tool-desc {
+  font-size: 11px; /* 减小字体 */
+  color: #64748b; /* 改为深灰色 */
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .main-content {
@@ -673,12 +908,17 @@ const toolZoneBanners = ref(loadToolBanners())
   }
 }
 
-/* 第一个 section-block (AI新闻) 往下挪一点，并在轮播图上层 */
+/* 第一个 section-block (AI动态) 往下挪一点，并在轮播图上层 */
 .section-block:first-of-type {
-  margin-top: 20px; /* 往下挪一点 */
+  margin-top: 60px; /* 增加间距，离轮播图远一点 */
   padding-top: 0;
   position: relative;
   z-index: 10; /* 确保在轮播图上层 */
+}
+
+/* AI动态模块特殊样式 */
+.ai-dynamic-section {
+  margin-top: 60px;
 }
 
 /* 第一个 section-row 减少顶部间距 */
@@ -687,26 +927,48 @@ const toolZoneBanners = ref(loadToolBanners())
   padding-top: 0;
 }
 
-/* 通用毛玻璃卡片 - 更透亮更立体 */
+/* 通用毛玻璃卡片 - 更透亮更立体，带流动光感 */
 .glass-card {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(25px) saturate(200%);
   -webkit-backdrop-filter: blur(25px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 
     0 8px 32px 0 rgba(31, 38, 135, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
   color: #000000; /* 改为黑色 */
   transition: all 0.3s ease;
   position: relative;
   width: 100%; /* 占满父元素宽度 */
   box-sizing: border-box; /* 确保 padding 不会超出宽度 */
+  overflow: hidden; /* 确保流动光效不溢出 */
   
-  /* 添加顶部高光效果，增强立体感 */
+  /* 流动光感效果 */
   &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.5),
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    animation: glassShimmer 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  /* 顶部高光效果，增强立体感 */
+  &::after {
     content: '';
     position: absolute;
     top: 0;
@@ -716,20 +978,27 @@ const toolZoneBanners = ref(loadToolBanners())
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0.8),
       transparent
     );
     border-radius: 16px 16px 0 0;
+    z-index: 2;
+  }
+  
+  /* 确保内容在光效之上 */
+  > * {
+    position: relative;
+    z-index: 3;
   }
   
   /* 悬停时增强透亮效果 */
   &:hover {
-    background: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(255, 255, 255, 0.7);
     box-shadow: 
       0 12px 40px 0 rgba(31, 38, 135, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.15);
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 0 0 1px rgba(255, 255, 255, 0.4);
     transform: translateY(-2px);
   }
 }
@@ -1200,7 +1469,7 @@ const toolZoneBanners = ref(loadToolBanners())
 /* Section 2: Tools Zone */
 .section-title-center {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 15px; /* 减少标题和模块之间的间距 */
 
   h2 {
     font-size: 28px;
@@ -1566,44 +1835,152 @@ const toolZoneBanners = ref(loadToolBanners())
   }
 }
 
+/* AI优秀实践 - 统一毛玻璃结构 */
+.practice-unified {
+  padding: 24px;
+  
+  .practice-container {
+    display: flex;
+    gap: 0;
+    width: 100%;
+    
+    .practice-module {
+      flex: 1;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      
+      &:first-child {
+        padding-left: 0;
+      }
+      
+      &:last-child {
+        padding-right: 0;
+      }
+      
+      .card-header {
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        padding-bottom: 10px;
+      }
+      
+      .text-list {
+        flex: 1;
+      }
+    }
+    
+    .practice-divider {
+      width: 1px;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.2) 0,
+        rgba(0, 0, 0, 0.2) 4px,
+        transparent 4px,
+        transparent 8px
+      );
+      flex-shrink: 0;
+      margin: 0 20px;
+    }
+  }
+  
+  /* 响应式 */
+  @media (max-width: 768px) {
+    .practice-container {
+      flex-direction: column;
+      
+      .practice-module {
+        padding: 0;
+        margin-bottom: 20px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+      
+      .practice-divider {
+        width: 100%;
+        height: 1px;
+        background: repeating-linear-gradient(
+          to right,
+          rgba(0, 0, 0, 0.2) 0,
+          rgba(0, 0, 0, 0.2) 4px,
+          transparent 4px,
+          transparent 8px
+        );
+        margin: 20px 0;
+      }
+    }
+  }
+}
+
 /* Section 4: AI Info */
 .wide-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 32px 40px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-  border: 2px solid rgba(102, 126, 234, 0.2);
+  /* 使用发白的毛玻璃质感，覆盖原有的渐变背景 */
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(25px) saturate(200%);
+  -webkit-backdrop-filter: blur(25px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
-
+  
+  /* 流动光感效果 */
   &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.5),
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    animation: glassShimmer 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  /* 顶部高光效果 */
+  &::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.8),
+      transparent
+    );
+    border-radius: 16px 16px 0 0;
+    z-index: 2;
   }
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
-    border-color: rgba(102, 126, 234, 0.4);
-
-    &::before {
-      opacity: 1;
-    }
+    background: rgba(255, 255, 255, 0.65) !important;
+    border-color: rgba(255, 255, 255, 0.7) !important;
+    box-shadow: 
+      0 12px 40px 0 rgba(31, 38, 135, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 0 0 1px rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
   }
 
   .info-content {
     flex: 1;
     position: relative;
-    z-index: 1;
+    z-index: 3; /* 确保内容在光效之上 */
 
     h3 {
       margin: 0 0 16px;
@@ -1626,7 +2003,7 @@ const toolZoneBanners = ref(loadToolBanners())
 
   .more-btn-pill {
     position: relative;
-    z-index: 1;
+    z-index: 3; /* 确保按钮在光效之上 */
     font-size: 14px;
     font-weight: 600;
     padding: 10px 24px;
@@ -1644,5 +2021,22 @@ const toolZoneBanners = ref(loadToolBanners())
   }
 }
 
+/* 流动光感动画 */
+@keyframes glassShimmer {
+  0% {
+    left: -50%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 150%;
+    opacity: 0;
+  }
+}
 
 </style>

@@ -3,7 +3,7 @@
     <div class="navbar-container">
       <div class="brand">
         <RouterLink to="/" class="logo-link">
-          <span class="logo-text">AI Portal</span>
+          <span class="logo-text">云核AI使能社区</span>
         </RouterLink>
       </div>
       <nav class="nav-menu">
@@ -13,7 +13,6 @@
         <RouterLink to="/tools" class="nav-item">AI工具专区</RouterLink>
         <RouterLink to="/agent" class="nav-item">扶摇Agent应用</RouterLink>
         <RouterLink to="/empowerment" class="nav-item">赋能交流</RouterLink>
-        <RouterLink to="/honor" class="nav-item">荣誉殿堂</RouterLink>
         <RouterLink to="/news" class="nav-item">AI资讯</RouterLink>
         <RouterLink v-if="isAdmin" to="/admin" class="nav-item admin-link">管理</RouterLink>
       </nav>
@@ -250,9 +249,9 @@ const handleCommand = (command: string) => {
     text-decoration: none;
     
     .logo-text {
-      font-size: 24px;
+      font-size: 20px; /* 减小字体大小 */
       font-weight: 800;
-      color: #ffffff;
+      color: #000000; /* 改为黑色 */
     }
   }
 }
@@ -271,7 +270,7 @@ const handleCommand = (command: string) => {
   color: #333;
   text-decoration: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px; /* 从 14px 增加到 16px */
   border-radius: 8px;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -468,7 +467,7 @@ const handleCommand = (command: string) => {
   border: none;
   color: #fff;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 18px; /* 从 16px 增加到 18px */
   padding: 12px 28px;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
   transition: all 0.3s ease;
@@ -513,7 +512,7 @@ const handleCommand = (command: string) => {
 
   .nav-item {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 15px; /* 从 13px 增加到 15px */
   }
 }
 
@@ -548,17 +547,17 @@ const handleCommand = (command: string) => {
 
 @media (max-width: 480px) {
   .brand .logo-text {
-    font-size: 20px;
+    font-size: 18px; /* 减小字体大小 */
   }
 
   .nav-item {
-    font-size: 12px;
+    font-size: 14px; /* 从 12px 增加到 14px */
     padding: 6px 10px;
   }
 
   .join-btn,
   .login-btn {
-    font-size: 13px;
+    font-size: 15px; /* 从 13px 增加到 15px */
     padding: 8px 16px;
   }
 }

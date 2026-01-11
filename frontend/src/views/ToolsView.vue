@@ -26,7 +26,7 @@
     <div class="content-area" v-if="selectedToolId">
       <el-row :gutter="24">
         <!-- 左侧：帖子列表 -->
-        <el-col :xs="24" :md="16">
+        <el-col :xs="24" :md="18">
           <div class="posts-section">
             <!-- 其他工具：搜索框和排序 -->
             <div v-if="selectedToolId === 'other'">
@@ -86,7 +86,7 @@
         </el-col>
 
         <!-- 右侧：赋能/培训活动宣传 或 其他工具的标签/部门分类 -->
-        <el-col :xs="24" :md="8">
+        <el-col :xs="24" :md="6">
           <!-- 其他工具：标签和部门分类 -->
           <div v-if="selectedToolId === 'other'" class="sidebar-section">
             <!-- 标签筛选 -->

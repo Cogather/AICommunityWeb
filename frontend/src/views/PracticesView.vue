@@ -3,7 +3,7 @@
     <div class="posts-container">
       <el-row :gutter="24">
         <!-- 左侧：帖子列表 -->
-        <el-col :xs="24" :md="16">
+        <el-col :xs="24" :md="18">
           <div class="posts-content">
             <!-- 头部操作栏 -->
             <PostHeader
@@ -37,7 +37,7 @@
         </el-col>
 
         <!-- 右侧：标签栏 -->
-        <el-col :xs="24" :md="8">
+        <el-col :xs="24" :md="6">
           <div class="sidebar">
             <!-- 最热帖子（置顶显示） -->
             <div class="sidebar-section hot-posts-section">

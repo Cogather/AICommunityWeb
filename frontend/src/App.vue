@@ -4,6 +4,7 @@ import { RouterView, useRoute } from 'vue-router'
 import AppNavbar from './components/AppNavbar.vue'
 import AppFooter from './components/AppFooter.vue'
 import PostFab from './components/PostFab.vue'
+import backgroundImage from './assets/image/background.jpg'
 
 const route = useRoute()
 const showPostFab = computed(() => route.name !== 'Home')
@@ -12,7 +13,7 @@ const showPostFab = computed(() => route.name !== 'Home')
 <template>
   <div class="app-shell">
     <!-- 全局背景（所有页面使用） -->
-    <div class="global-background"></div>
+    <div class="global-background" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
 
     <!-- 导航栏 -->
     <AppNavbar />
@@ -43,15 +44,14 @@ const showPostFab = computed(() => route.name !== 'Home')
   height: 100%;
   z-index: -1;
   overflow: hidden;
-  
-  /* 背景图片 */
-  background-image: url('/background.jpg');
+
+  /* 背景图片样式 */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  
-  /* 如果图片较暗，可以添加遮罩层来确保内容可读性 */
+
+  /* 白色蒙层，让背景看起来更浅 */
   &::before {
     content: '';
     position: absolute;
@@ -59,7 +59,7 @@ const showPostFab = computed(() => route.name !== 'Home')
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.1); /* 可选的半透明遮罩，根据需要调整透明度 */
+    background: rgba(255, 255, 255, 0.5); /* 增加白色蒙层透明度，让背景更浅 */
     pointer-events: none;
   }
 }
