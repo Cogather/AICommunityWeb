@@ -297,25 +297,27 @@ import { ElMessage, ElDialog, ElMessageBox } from 'element-plus'
 import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'
 import FlowerIcon from '../components/FlowerIcon.vue'
+import {
+  getUserProfileByName,
+  getUserProfileById,
+  getCurrentUser,
+  getUserPosts,
+  getUserFavorites,
+  getUserComments,
+  getUserActivities,
+  getUserCreatedActivities
+} from '../api/user'
+import type { Post } from '../api/practices'
+import type { Comment } from '../api/user'
+import type { Activity } from '../api/activity'
 
 const router = useRouter()
 const route = useRoute()
 
-// 从UsersView获取用户花朵数量的辅助函数（这里需要共享数据或API调用）
-// 暂时使用mock数据，实际应该从API或store获取
+// 从UsersView获取用户花朵数量的辅助函数（从用户资料中获取）
 const getUserFlowersFromHonors = (userName: string): number => {
-  // 这里应该调用API或从共享store获取
-  // 暂时返回mock数据
-  const mockFlowers: Record<string, number> = {
-    '林星辰': 20,
-    'Sarah': 15,
-    '张伟': 55,
-    '王强': 18,
-    'Emily': 14,
-    '赵敏': 9,
-    '张三': 34
-  }
-  return mockFlowers[userName] || 0
+  // 花朵数量已从用户资料API中获取，这里直接返回0（实际应该从userInfo中获取）
+  return userInfo.value.flowersCount || 0
 }
 
 // 当前标签页
@@ -328,108 +330,77 @@ const isViewingOtherUser = computed(() => {
 
 // 用户信息
 const userInfo = ref({
-  name: '张三',
-  avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-  bio: 'AI技术爱好者，专注于机器学习和深度学习',
-  postsCount: 12,
-  favoritesCount: 8,
-  commentsCount: 45,
-  activitiesCount: 3,
-  flowersCount: 34
+  id: 0,
+  name: '',
+  avatar: '',
+  bio: '',
+  postsCount: 0,
+  favoritesCount: 0,
+  commentsCount: 0,
+  activitiesCount: 0,
+  flowersCount: 0
 })
 
 // 我发布的帖子
-const myPosts = ref([
-  {
-    id: 1,
-    title: '大模型在工业设计中的落地应用案例分享',
-    description: '分享如何在实际项目中高效使用大模型提升设计效率。',
-    author: '张三',
-    createTime: '2024年4月10日',
-    views: 1250,
-    comments: 45,
-    likes: 128,
-    tags: ['讨论', 'AI应用'],
-    image: 'https://picsum.photos/400/300?random=1'
-  },
-  {
-    id: 2,
-    title: '如何利用AI提升代码质量和开发效率',
-    description: '介绍AI工具在代码开发中的实际应用经验。',
-    author: '张三',
-    createTime: '2024年4月8日',
-    views: 890,
-    comments: 32,
-    likes: 95,
-    tags: ['分享', '开发'],
-    image: 'https://picsum.photos/400/300?random=2'
-  }
-])
+const myPosts = ref<Post[]>([])
 
 // 我收藏的帖子
 const favoritePosts = ref<any[]>([])
 
 // 加载收藏的帖子
-const loadFavoritePosts = () => {
+const loadFavoritePosts = async (userId: number) => {
   try {
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    const favoritesKey = `user_${currentUserId}_favorites`
-    const favoritesStr = localStorage.getItem(favoritesKey)
-
-    if (favoritesStr) {
-      try {
-        const favorites = JSON.parse(favoritesStr)
-        // 按收藏时间倒序排列（最新的在前）
-        favoritePosts.value = favorites.sort((a: any, b: any) => {
-          const timeA = new Date(a.favoriteTime || 0).getTime()
-          const timeB = new Date(b.favoriteTime || 0).getTime()
-          return timeB - timeA
-        })
-        // 更新收藏数量
-        userInfo.value.favoritesCount = favoritePosts.value.length
-      } catch (e) {
-        console.warn('解析收藏列表失败:', e)
-        favoritePosts.value = []
-      }
-    } else {
-      favoritePosts.value = []
-    }
-  } catch (error) {
+    const result = await getUserFavorites(userId, {
+      page: 1,
+      pageSize: 100 // 获取所有收藏
+    })
+    // 字段映射
+    favoritePosts.value = result.list.map(post => ({
+      ...post,
+      author: post.author || (post as any).authorName || '',
+      description: post.description || (post as any).summary || '',
+      image: post.image || post.cover || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
+    }))
+    // 更新收藏数量
+    userInfo.value.favoritesCount = result.total || favoritePosts.value.length
+  } catch (error: any) {
     console.error('加载收藏列表失败:', error)
+    ElMessage.error(error.message || '加载收藏列表失败')
     favoritePosts.value = []
   }
 }
 
 // 监听收藏更新事件
-const handleFavoritesUpdate = (event: CustomEvent) => {
-  if (event.detail.userId === 1) { // 当前用户ID
-    loadFavoritePosts()
+const handleFavoritesUpdate = async (event: CustomEvent) => {
+  // 重新加载收藏列表
+  if (userInfo.value.id) {
+    await loadFavoritePosts(userInfo.value.id)
   }
 }
 
 // 我的评论
-const myComments = ref([
-  {
-    id: 1,
-    postId: 5,
-    postTitle: '多模态模型在医疗影像分析中的应用',
-    userName: '张三',
-    userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    content: '这个案例非常实用，感谢分享！',
-    createTime: '2024年4月11日 10:30',
-    likes: 5
-  },
-  {
-    id: 2,
-    postId: 6,
-    postTitle: '构建企业级AI知识库的完整方案',
-    userName: '张三',
-    userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    content: '很有参考价值，我们公司也在做类似的项目。',
-    createTime: '2024年4月10日 15:20',
-    likes: 3
+const myComments = ref<Comment[]>([])
+
+// 加载用户评论列表
+const loadUserComments = async (userId: number) => {
+  try {
+    const result = await getUserComments(userId, {
+      page: 1,
+      pageSize: 100 // 获取所有评论
+    })
+    myComments.value = result.list.map(comment => ({
+      ...comment,
+      createTime: typeof comment.createTime === 'string' ? comment.createTime : new Date(comment.createTime).toLocaleString('zh-CN')
+    }))
+    // 更新评论数量
+    userInfo.value.commentsCount = result.total || myComments.value.length
+  } catch (error: any) {
+    console.error('加载用户评论失败:', error)
+    ElMessage.error(error.message || '加载用户评论失败')
+    myComments.value = []
   }
-])
+}
 
 // 我参与的活动
 const myActivities = ref<any[]>([])
@@ -438,63 +409,42 @@ const myActivities = ref<any[]>([])
 const myCreatedActivities = ref<any[]>([])
 
 // 加载报名的活动
-const loadRegisteredActivities = () => {
+const loadRegisteredActivities = async (userId: number) => {
   try {
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    const registeredKey = `user_${currentUserId}_registered_activities`
-    const registeredStr = localStorage.getItem(registeredKey)
-
-    if (registeredStr) {
-      try {
-        const registered = JSON.parse(registeredStr)
-        // 按报名时间倒序排列（最新的在前）
-        myActivities.value = registered.sort((a: any, b: any) => {
-          const timeA = new Date(a.registerTime || 0).getTime()
-          const timeB = new Date(b.registerTime || 0).getTime()
-          return timeB - timeA
-        })
-        // 更新活动数量
-        userInfo.value.activitiesCount = myActivities.value.length
-      } catch (e) {
-        console.warn('解析报名活动列表失败:', e)
-        myActivities.value = []
-      }
-    } else {
-      myActivities.value = []
-    }
-  } catch (error) {
+    const result = await getUserActivities(userId, {
+      page: 1,
+      pageSize: 100 // 获取所有活动
+    })
+    myActivities.value = result.list.map(activity => ({
+      ...activity,
+      date: typeof activity.date === 'string' ? activity.date : new Date(activity.date).toLocaleString('zh-CN')
+    }))
+    // 更新活动数量
+    userInfo.value.activitiesCount = result.total || myActivities.value.length
+  } catch (error: any) {
     console.error('加载报名活动列表失败:', error)
+    ElMessage.error(error.message || '加载报名活动列表失败')
     myActivities.value = []
   }
 }
 
 // 加载我发布的活动
-const loadMyCreatedActivities = async () => {
+const loadMyCreatedActivities = async (userId: number) => {
   try {
-    // 这里应该调用API获取用户发布的活动
-    // const response = await getUserCreatedActivities(userInfo.value.name)
-    // myCreatedActivities.value = response.data
-    
-    // 模拟数据
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // 从localStorage获取发布的活动（实际应该从API获取）
-    const createdKey = `user_${userInfo.value.name}_created_activities`
-    const createdStr = localStorage.getItem(createdKey)
-    
-    if (createdStr) {
-      try {
-        const created = JSON.parse(createdStr)
-        myCreatedActivities.value = created.sort((a: any, b: any) => {
-          const timeA = new Date(a.createTime || 0).getTime()
-          const timeB = new Date(b.createTime || 0).getTime()
-          return timeB - timeA
-        })
-      } catch (e) {
-        console.warn('解析发布活动列表失败:', e)
-        myCreatedActivities.value = []
-      }
-    } else {
+    const result = await getUserCreatedActivities(userId, {
+      page: 1,
+      pageSize: 100 // 获取所有活动
+    })
+    myCreatedActivities.value = result.list.map(activity => ({
+      ...activity,
+      date: typeof activity.date === 'string' ? activity.date : new Date(activity.date).toLocaleString('zh-CN')
+    }))
+  } catch (error: any) {
+    console.error('加载发布活动列表失败:', error)
+    ElMessage.error(error.message || '加载发布活动列表失败')
+    myCreatedActivities.value = []
+  }
+}
       // 模拟数据
       myCreatedActivities.value = [
         {
@@ -529,9 +479,10 @@ const loadMyCreatedActivities = async () => {
 }
 
 // 监听活动报名更新事件
-const handleActivityRegistered = (event: CustomEvent) => {
-  if (event.detail.userId === 1) { // 当前用户ID
-    loadRegisteredActivities()
+const handleActivityRegistered = async (event: CustomEvent) => {
+  // 重新加载报名的活动
+  if (userInfo.value.id) {
+    await loadRegisteredActivities(userInfo.value.id)
   }
 }
 
@@ -568,104 +519,61 @@ const paginatedMyActivities = computed(() => {
 
 // 根据用户名加载用户数据
 const loadUserProfile = async (userName: string) => {
-  // 这里应该调用API获取用户信息
-  // 暂时使用mock数据
-  userInfo.value = {
-    ...userInfo.value,
-    name: userName,
-    avatar: getUserAvatar(userName),
-    bio: getUserBio(userName),
-    flowersCount: getUserFlowersFromHonors(userName)
-  }
-
-  // 加载该用户的帖子
-  await loadUserPosts(userName)
-  // 加载该用户发布的活动（如果是查看其他用户，也加载）
-  await loadMyCreatedActivities()
-}
-
-// 获取用户头像（mock数据）
-const getUserAvatar = (userName: string): string => {
-  const avatarMap: Record<string, string> = {
-    '张三': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    '李四': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    '王五': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    '赵六': 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-  }
-  return avatarMap[userName] || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-}
-
-// 获取用户简介（mock数据）
-const getUserBio = (userName: string): string => {
-  const bioMap: Record<string, string> = {
-    '张三': 'AI技术爱好者，专注于机器学习和深度学习',
-    '李四': '前端开发工程师，热爱新技术',
-    '王五': '后端架构师，专注于系统设计',
-    '赵六': '全栈开发者，喜欢分享技术经验'
-  }
-  return bioMap[userName] || '这个人很懒，什么都没有留下'
-}
-
-// 根据用户名加载帖子列表
-const loadUserPosts = async (userName: string) => {
-  // 这里应该调用API获取该用户的帖子
-  // 暂时使用mock数据，根据用户名过滤
-  const allPosts = [
-    {
-      id: 1,
-      title: '大模型在工业设计中的落地应用案例分享',
-      description: '分享如何在实际项目中高效使用大模型提升设计效率。',
-      author: '张三',
-      createTime: '2024年4月10日',
-      views: 1250,
-      comments: 45,
-      likes: 128,
-      tags: ['讨论', 'AI应用'],
-      image: 'https://picsum.photos/400/300?random=1'
-    },
-    {
-      id: 2,
-      title: '如何利用AI提升代码质量和开发效率',
-      description: '介绍AI工具在代码开发中的实际应用经验。',
-      author: '张三',
-      createTime: '2024年4月8日',
-      views: 890,
-      comments: 32,
-      likes: 95,
-      tags: ['分享', '开发'],
-      image: 'https://picsum.photos/400/300?random=2'
-    },
-    {
-      id: 3,
-      title: 'AI辅助测试的最佳实践与经验总结',
-      description: '分享AI在测试领域的应用经验和最佳实践。',
-      author: '李四',
-      createTime: '2024年4月9日',
-      views: 720,
-      comments: 28,
-      likes: 78,
-      tags: ['测试', '最佳实践'],
-      image: 'https://picsum.photos/400/300?random=3'
-    },
-    {
-      id: 4,
-      title: '深度学习模型优化技巧分享',
-      description: '介绍如何优化深度学习模型的性能和效率。',
-      author: '张三',
-      createTime: '2024年4月5日',
-      views: 1100,
-      comments: 38,
-      likes: 102,
-      tags: ['深度学习', '优化'],
-      image: 'https://picsum.photos/400/300?random=4'
+  try {
+    const profile = await getUserProfileByName(userName)
+    userInfo.value = {
+      id: profile.id,
+      name: profile.name,
+      avatar: profile.avatar,
+      bio: profile.bio || '',
+      postsCount: profile.postsCount || 0,
+      favoritesCount: profile.favoritesCount || 0,
+      commentsCount: profile.commentsCount || 0,
+      activitiesCount: profile.activitiesCount || 0,
+      flowersCount: profile.flowersCount || 0
     }
-  ]
+    
+    // 保存用户ID
+    userInfo.value.id = profile.id
+    
+    // 加载该用户的帖子
+    await loadUserPosts(profile.id)
+    // 加载该用户的评论
+    await loadUserComments(profile.id)
+    // 加载该用户收藏的帖子
+    await loadFavoritePosts(profile.id)
+    // 加载该用户参与的活动
+    await loadRegisteredActivities(profile.id)
+    // 加载该用户发布的活动
+    await loadMyCreatedActivities(profile.id)
+  } catch (error: any) {
+    console.error('加载用户资料失败:', error)
+    ElMessage.error(error.message || '加载用户资料失败')
+  }
+}
 
-  // 根据用户名过滤帖子
-  myPosts.value = allPosts.filter(post => post.author === userName)
-
-  // 更新用户统计信息
-  userInfo.value.postsCount = myPosts.value.length
+// 根据用户ID加载帖子列表
+const loadUserPosts = async (userId: number) => {
+  try {
+    const result = await getUserPosts(userId, {
+      page: 1,
+      pageSize: 100 // 获取所有帖子
+    })
+    // 字段映射
+    myPosts.value = result.list.map(post => ({
+      ...post,
+      author: post.author || (post as any).authorName || '',
+      description: post.description || (post as any).summary || '',
+      image: post.image || post.cover || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
+    }))
+    // 更新用户统计信息
+    userInfo.value.postsCount = result.total || myPosts.value.length
+  } catch (error: any) {
+    console.error('加载用户帖子失败:', error)
+    ElMessage.error(error.message || '加载用户帖子失败')
+    myPosts.value = []
+  }
 }
 
 // 监听路由参数，支持查看其他用户
@@ -818,18 +726,32 @@ const handleViewRegistrations = async (activity: any) => {
 
 // 加载数据（当前用户）
 const loadUserData = async () => {
-  // 这里应该调用API获取当前用户数据
-  // const response = await getUserProfile()
-  // userInfo.value = response.data.userInfo
-  // myPosts.value = response.data.posts
-  // ...
-
-  // 如果没有路由参数，使用默认用户数据
-  if (!route.query.user) {
-    await loadUserPosts(userInfo.value.name)
-    loadFavoritePosts() // 加载收藏的帖子
-    loadRegisteredActivities() // 加载报名的活动
-    await loadMyCreatedActivities() // 加载发布的活动
+  try {
+    // 获取当前用户信息
+    const profile = await getCurrentUser()
+    userInfo.value = {
+      id: profile.id,
+      name: profile.name,
+      avatar: profile.avatar,
+      bio: profile.bio || '',
+      postsCount: profile.postsCount || 0,
+      favoritesCount: profile.favoritesCount || 0,
+      commentsCount: profile.commentsCount || 0,
+      activitiesCount: profile.activitiesCount || 0,
+      flowersCount: profile.flowersCount || 0
+    }
+    
+    // 加载当前用户的所有数据
+    await Promise.all([
+      loadUserPosts(profile.id),
+      loadFavoritePosts(profile.id),
+      loadUserComments(profile.id),
+      loadRegisteredActivities(profile.id),
+      loadMyCreatedActivities(profile.id)
+    ])
+  } catch (error: any) {
+    console.error('加载用户数据失败:', error)
+    ElMessage.error(error.message || '加载用户数据失败')
   }
 }
 

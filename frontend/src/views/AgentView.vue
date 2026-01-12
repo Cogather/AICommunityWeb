@@ -133,6 +133,12 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
+import { getFeaturedPost } from '../api/agent'
+import { checkToolOwner } from '../api/tool'
+import { getCurrentUser } from '../api/user'
+import { getActivities } from '../api/activity'
+import { getPosts } from '../api/practices'
+import type { Post } from '../api/practices'
 
 const router = useRouter()
 
@@ -148,25 +154,14 @@ const checkingOwner = ref(false)
 const checkAgentOwner = async () => {
   checkingOwner.value = true
   try {
-    // 模拟API调用：GET /api/tools/-1/owner 和 GET /api/user/current
-    // 实际应该调用真实API
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // 获取当前用户信息
+    const user = await getCurrentUser()
+    isAdmin.value = user.roles?.includes('admin') || false
     
-    // 模拟数据：从localStorage或用户信息中获取
-    // 实际应该从API获取
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    
-    // 检查是否为管理员
-    const savedAdmins = JSON.parse(localStorage.getItem('admin_users_list') || '[]')
-    const admin = savedAdmins.find((u: any) => u.id === currentUserId && u.currentRole === 'admin')
-    isAdmin.value = !!admin
-    
-    // 检查是否为扶摇Agent应用Owner
-    const savedOwners = JSON.parse(localStorage.getItem('tool_owners') || '[]')
-    const isOwner = savedOwners.some((owner: any) => owner.toolId === -1 && owner.userId === currentUserId)
-    
-    isAgentOwner.value = isOwner
-  } catch (error) {
+    // 检查是否为扶摇Agent应用Owner（toolId为-1表示扶摇Agent应用）
+    const ownerResponse = await checkToolOwner(-1)
+    isAgentOwner.value = ownerResponse.isOwner || false
+  } catch (error: any) {
     console.error('检查扶摇Agent应用Owner权限失败:', error)
     isAgentOwner.value = false
     isAdmin.value = false
@@ -188,112 +183,92 @@ const pageSize = ref(15)
 const searchKeyword = ref('')
 const sortBy = ref('newest')
 
-// 所有标签（包含"全部"选项）
-const allTags = computed(() => {
-  // 获取所有帖子（包括置顶帖和普通帖子）
-  const postsList = featuredPost.value ? [featuredPost.value, ...allPosts.value] : [...allPosts.value]
-  
-  // 统计每个标签的数量
-  const tagCountMap = new Map<string, number>()
-  postsList.forEach(post => {
-    if (post.tag) {
-      tagCountMap.set(post.tag, (tagCountMap.get(post.tag) || 0) + 1)
-    }
-    if (post.tags && Array.isArray(post.tags)) {
-      post.tags.forEach(tag => {
-        tagCountMap.set(tag, (tagCountMap.get(tag) || 0) + 1)
-      })
-    }
-  })
-  
-  // 构建标签列表，包含"全部"
-  const tags: Array<{ name: string; count: number }> = [
-    { name: '全部', count: postsList.length }
-  ]
-  
-  // 添加其他标签
-  const tagNames = ['Agent应用', '工作流', '自动化', '智能编排', '最佳实践', '案例分享', '问题解决', '开发指南']
-  tagNames.forEach(tagName => {
-    const count = tagCountMap.get(tagName) || 0
-    if (count > 0) {
-      tags.push({ name: tagName, count })
-    }
-  })
-  
-  return tags
-})
+// 所有标签（从API获取，这里先使用固定标签，实际应该从getTags API获取）
+const allTags = ref<Array<{ name: string; count: number }>>([
+  { name: '全部', count: 0 }
+])
 
-// 近期活动和培训（从localStorage加载发布的活动）
-const activities = computed(() => {
-  // 从localStorage加载发布的活动（toolId为-1表示扶摇Agent应用）
-  const publishedActivities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
-  const publishedForAgent = publishedActivities
-    .filter((a: any) => a.toolId === -1)
-    .map((a: any) => ({
+// 加载标签列表
+const loadTags = async () => {
+  try {
+    const { getTags } = await import('../api/practices')
+    const result = await getTags({
+      zone: 'agent',
+      toolId: -1
+    })
+    // 构建标签列表，包含"全部"
+    const tags: Array<{ name: string; count: number }> = [
+      { name: '全部', count: allPosts.value.length }
+    ]
+    result.list.forEach(tag => {
+      tags.push({ name: tag.name, count: tag.count || 0 })
+    })
+    allTags.value = tags
+  } catch (error) {
+    console.error('加载标签列表失败:', error)
+    // 使用默认标签
+    allTags.value = [
+      { name: '全部', count: allPosts.value.length },
+      { name: 'Agent应用', count: 0 },
+      { name: '工作流', count: 0 },
+      { name: '自动化', count: 0 },
+      { name: '智能编排', count: 0 },
+      { name: '最佳实践', count: 0 },
+      { name: '案例分享', count: 0 },
+      { name: '开发指南', count: 0 }
+    ]
+  }
+}
+
+// 近期活动和培训
+const activities = ref<any[]>([])
+
+// 加载活动列表
+const loadActivities = async () => {
+  try {
+    const result = await getActivities({
+      toolId: -1, // toolId为-1表示扶摇Agent应用
+      page: 1,
+      pageSize: 10
+    })
+    activities.value = result.list.map((a: any) => ({
       id: a.id,
       type: a.type || 'activity',
       title: a.title,
       desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
-      date: a.date,
+      date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
       location: '',
-      image: a.cover
+      image: a.cover || ''
     }))
-  
-  // 模拟数据（作为默认数据）
-  const mockActivities = [
-    {
-      id: 1,
-      type: 'training' as const,
-      title: '扶摇 Agent 开发训练营',
-      desc: '系统学习扶摇 Agent 编排引擎的使用方法和实战技巧，从入门到精通。',
-      date: '2024年5月10日',
-      location: '线上',
-      image: 'https://picsum.photos/600/400?random=30'
-    },
-    {
-      id: 2,
-      type: 'activity' as const,
-      title: '扶摇 Agent 应用创新大赛',
-      desc: '展示你的 Agent 应用创意，赢取丰厚奖品和荣誉。',
-      date: '2024年5月15日',
-      location: '线上',
-      image: 'https://picsum.photos/600/400?random=31'
-    },
-    {
-      id: 3,
-      type: 'training' as const,
-      title: 'Agent 工作流编排高级培训',
-      desc: '深入学习 Agent 工作流编排的高级技巧和最佳实践。',
-      date: '2024年5月20日',
-      location: '北京',
-      image: 'https://picsum.photos/600/400?random=32'
-    },
-    {
-      id: 4,
-      type: 'activity' as const,
-      title: '扶摇 Agent 技术分享会',
-      desc: '与行业专家面对面交流，分享 Agent 应用开发经验。',
-      date: '2024年5月25日',
-      location: '上海',
-      image: 'https://picsum.photos/600/400?random=33'
-    }
-  ]
-  
-  return [...publishedForAgent, ...mockActivities]
-})
+  } catch (error) {
+    console.error('加载活动列表失败:', error)
+    activities.value = []
+  }
+}
 
 // 置顶帖子
-const featuredPost = ref({
-  id: 0,
-  title: '扶摇 Agent 应用开发指南',
-  description: '全面介绍如何使用扶摇 Agent 编排引擎开发智能应用，包括基础概念、开发流程、最佳实践和常见问题解答。',
-  author: '扶摇团队',
-  createTime: '2024年4月15日',
-  views: 2500,
-  comments: 120,
-  tags: ['Agent应用', '最佳实践', '开发指南'],
-  image: 'https://picsum.photos/800/400?random=20'
-})
+const featuredPost = ref<any>(null)
+
+// 加载置顶帖子
+const loadFeaturedPost = async () => {
+  try {
+    const response = await getFeaturedPost()
+    if (response.post) {
+      featuredPost.value = {
+        ...response.post,
+        image: response.post.image || response.post.cover || '',
+        createTime: typeof response.post.createTime === 'string' 
+          ? response.post.createTime 
+          : new Date(response.post.createTime).toLocaleDateString('zh-CN')
+      }
+    } else {
+      featuredPost.value = null
+    }
+  } catch (error) {
+    console.error('加载置顶帖子失败:', error)
+    featuredPost.value = null
+  }
+}
 
 // 所有帖子
 const allPosts = ref([
@@ -359,38 +334,9 @@ const allPosts = ref([
   }
 ])
 
-// 过滤后的帖子
+// 过滤后的帖子（后端已处理搜索、排序、标签过滤，这里直接使用）
 const filteredPosts = computed(() => {
-  let posts = [...allPosts.value]
-
-  // 按标签过滤（排除"全部"）
-  if (selectedTag.value && selectedTag.value !== '全部') {
-    posts = posts.filter(post => post.tag === selectedTag.value)
-  }
-
-  // 搜索过滤
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    posts = posts.filter(post => 
-      post.title.toLowerCase().includes(keyword) ||
-      post.author.toLowerCase().includes(keyword) ||
-      (post.description && post.description.toLowerCase().includes(keyword))
-    )
-  }
-
-  // 排序
-  if (sortBy.value === 'hot') {
-    posts.sort((a, b) => b.views - a.views)
-  } else if (sortBy.value === 'comments') {
-    posts.sort((a, b) => (b.comments || 0) - (a.comments || 0))
-  } else if (sortBy.value === 'likes') {
-    posts.sort((a, b) => (b.likes || 0) - (a.likes || 0))
-  } else {
-    // 按最新排序（这里简化处理，按id倒序）
-    posts.sort((a, b) => b.id - a.id)
-  }
-
-  return posts
+  return allPosts.value
 })
 
 // 分页后的帖子
@@ -418,38 +364,41 @@ const getTagType = (tag: string) => {
 // 处理标签点击
 const handleTagClick = (tagName: string) => {
   if (tagName === '全部') {
-    // 点击"全部"时清除标签过滤
     selectedTag.value = null
   } else if (selectedTag.value === tagName) {
-    // 再次点击已选中的标签时清除
     selectedTag.value = null
   } else {
     selectedTag.value = tagName
   }
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
+  loadPosts() // 重新加载帖子
 }
 
 // 处理搜索
 const handleSearch = (keyword: string) => {
   searchKeyword.value = keyword
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
+  loadPosts() // 重新加载帖子
 }
 
 // 处理排序
 const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
   sortBy.value = sort
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
+  loadPosts() // 重新加载帖子
 }
 
 // 处理分页大小变化
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
+  loadPosts() // 重新加载帖子
 }
 
 // 处理当前页变化
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
+  loadPosts() // 重新加载帖子
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -482,8 +431,12 @@ const handlePostCreate = () => {
 }
 
 // 页面加载时检查权限
-onMounted(() => {
-  checkAgentOwner()
+onMounted(async () => {
+  await checkAgentOwner()
+  await loadFeaturedPost()
+  await loadActivities()
+  await loadPosts()
+  await loadTags()
 })
 </script>
 

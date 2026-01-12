@@ -88,6 +88,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, Calendar, UserFilled, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getActivityDetail, registerActivity, cancelRegistration, deleteActivity } from '../api/activity'
+import { getCurrentUser } from '../api/user'
 
 const router = useRouter()
 const route = useRoute()
@@ -95,8 +97,8 @@ const route = useRoute()
 const loading = ref(true)
 const registering = ref(false)
 
-// 模拟管理员状态（实际应该从用户信息中获取）
-const isAdmin = ref(true)
+// 管理员状态
+const isAdmin = ref(false)
 
 // 活动数据
 const activityData = ref({
@@ -115,52 +117,54 @@ const loadActivity = async () => {
   loading.value = true
   try {
     const activityId = route.params.id
+    if (!activityId || (Array.isArray(activityId) && activityId.length === 0)) {
+      ElMessage.error('活动ID不存在')
+      router.push('/agent')
+      return
+    }
+
+    const activityIdNum = Number(Array.isArray(activityId) ? activityId[0] : activityId)
+    if (isNaN(activityIdNum)) {
+      ElMessage.error('活动ID格式错误')
+      router.push('/agent')
+      return
+    }
     
-    // 这里应该调用API获取活动数据
-    // const response = await getActivity(activityId)
+    const activity = await getActivityDetail(activityIdNum)
     
-    // 模拟数据
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // 格式化日期
+    const formatDate = (date: string | Date) => {
+      if (!date) return ''
+      const d = typeof date === 'string' ? new Date(date) : date
+      return d.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
     
-    // 从localStorage获取活动数据（实际应该从API获取）
-    const activities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
-    const activity = activities.find((a: any) => a.id === Number(activityId))
+    activityData.value = {
+      id: activity.id,
+      title: activity.title,
+      toolName: activity.toolName || '',
+      toolId: activity.toolId || null,
+      date: formatDate(activity.date),
+      cover: activity.cover || '',
+      content: activity.content || '',
+      authorId: activity.authorId
+    }
     
-      if (activity) {
-        activityData.value = {
-          id: activity.id,
-          title: activity.title || '活动标题',
-          toolName: activity.toolName || '工具名称',
-          toolId: activity.toolId, // 保存toolId以便编辑时使用
-          date: activity.date || '',
-          cover: activity.cover || '',
-          content: activity.content || '',
-          authorId: activity.authorId || 1
-        }
-      } else {
-        // 如果没有找到，尝试从模拟数据中查找（兼容旧数据）
-        const mockActivities = [
-          {
-            id: 1,
-            title: '扶摇 Agent 开发训练营',
-            toolName: '扶摇Agent应用',
-            date: '2024年5月10日 14:00',
-            cover: 'https://picsum.photos/800/400?random=30',
-            content: '<p>系统学习扶摇 Agent 编排引擎的使用方法和实战技巧，从入门到精通。</p>'
-          }
-        ]
-        const mockActivity = mockActivities.find(a => a.id === Number(activityId))
-        
-        if (mockActivity) {
-          activityData.value = mockActivity
-        } else {
-          ElMessage.error('活动不存在')
-          router.push('/agent')
-        }
-      }
-  } catch (error) {
+    // 检查报名状态
+    isRegistered.value = activity.isRegistered || false
+    
+    // 检查管理员权限
+    isAdmin.value = activity.canDelete || activity.canEdit || false
+  } catch (error: any) {
     console.error('加载活动失败:', error)
-    ElMessage.error('加载活动失败')
+    ElMessage.error(error.message || '加载活动失败')
+    router.push('/agent')
   } finally {
     loading.value = false
   }
@@ -178,24 +182,9 @@ const handleBack = () => {
 // 报名状态
 const isRegistered = ref(false)
 
-// 检查是否已报名
+// 检查是否已报名（已在loadActivity中从API获取）
 const checkIfRegistered = () => {
-  try {
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    const registeredKey = `user_${currentUserId}_registered_activities`
-    const registeredStr = localStorage.getItem(registeredKey)
-    
-    if (registeredStr) {
-      try {
-        const registered = JSON.parse(registeredStr)
-        isRegistered.value = registered.some((act: any) => act.id === activityData.value.id)
-      } catch (e) {
-        console.warn('检查报名状态失败:', e)
-      }
-    }
-  } catch (error) {
-    console.error('检查报名状态失败:', error)
-  }
+  // 报名状态已从API返回的isRegistered字段中获取
 }
 
 // 报名参加
@@ -207,75 +196,20 @@ const handleRegister = async () => {
   
   registering.value = true
   try {
-    // 这里应该调用API报名
-    // await registerActivity(activityData.value.id)
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 保存到localStorage
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    const registeredKey = `user_${currentUserId}_registered_activities`
-    
-    // 从localStorage读取已报名的活动列表
-    const registeredStr = localStorage.getItem(registeredKey)
-    let registered: any[] = []
-    
-    if (registeredStr) {
-      try {
-        registered = JSON.parse(registeredStr)
-      } catch (e) {
-        console.warn('解析报名列表失败:', e)
-        registered = []
-      }
-    }
-    
-    // 检查是否已存在
-    const exists = registered.some((act: any) => act.id === activityData.value.id)
-    if (!exists) {
-      // 添加活动信息
-      const activityToRegister = {
-        id: activityData.value.id,
-        title: activityData.value.title,
-        description: activityData.value.content?.replace(/<[^>]*>/g, '').substring(0, 200) || '',
-        date: activityData.value.date,
-        location: '',
-        image: activityData.value.cover || '',
-        toolName: activityData.value.toolName || '',
-        registerTime: new Date().toISOString(), // 报名时间
-        status: 'registered' // 报名状态
-      }
-      
-      registered.unshift(activityToRegister) // 添加到开头
-      isRegistered.value = true
-      
-      // 保存到localStorage
-      localStorage.setItem(registeredKey, JSON.stringify(registered))
-      
-      // 触发活动报名更新事件
-      window.dispatchEvent(new CustomEvent('activityRegistered', {
-        detail: { userId: currentUserId, activities: registered }
-      }))
-    }
-    
-    // 发送消息给活动发布者
-    const authorId = activityData.value.authorId // 活动发布者ID
-    const currentUserName = '当前用户' // 当前用户名（实际应该从登录状态获取）
-    
-    // 导入消息工具函数
-    const { sendActivityRegistrationMessage } = await import('../utils/message')
-    sendActivityRegistrationMessage(
-      activityData.value.id,
-      activityData.value.title,
-      authorId,
-      currentUserId,
-      currentUserName
-    )
-    
+    const response = await registerActivity(activityData.value.id)
+    isRegistered.value = response.registered
     ElMessage.success('报名成功！')
-  } catch (error) {
+    
+    // 触发活动报名更新事件（用于更新个人中心的活动数量）
+    window.dispatchEvent(new CustomEvent('activityRegistered', {
+      detail: {
+        activityId: activityData.value.id,
+        registered: response.registered
+      }
+    }))
+  } catch (error: any) {
     console.error('报名失败:', error)
-    ElMessage.error('报名失败，请稍后重试')
+    ElMessage.error(error.message || '报名失败，请稍后重试')
   } finally {
     registering.value = false
   }
@@ -313,22 +247,12 @@ const handleDelete = () => {
     distinguishCancelAndClose: true
   }).then(async () => {
     try {
-      // 这里应该调用API删除活动
-      // await deleteActivity(activityData.value.id)
-      
-      // 从localStorage删除
-      const activities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
-      const filtered = activities.filter((a: any) => a.id !== activityData.value.id)
-      localStorage.setItem('admin_activities', JSON.stringify(filtered))
-      
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+      await deleteActivity(activityData.value.id)
       ElMessage.success('活动已删除')
       router.push('/agent')
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除失败:', error)
-      ElMessage.error('删除失败，请稍后重试')
+      ElMessage.error(error.message || '删除失败，请稍后重试')
     }
   }).catch(() => {
     // 用户取消
@@ -336,6 +260,14 @@ const handleDelete = () => {
 }
 
 onMounted(async () => {
+  try {
+    // 获取当前用户信息（用于判断管理员权限）
+    const user = await getCurrentUser()
+    isAdmin.value = user.roles?.includes('admin') || false
+  } catch (error) {
+    console.warn('获取当前用户信息失败:', error)
+  }
+  
   await loadActivity()
   checkIfRegistered() // 检查报名状态
 })

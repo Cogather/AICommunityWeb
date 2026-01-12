@@ -206,7 +206,8 @@ import {
   Star, ArrowLeft, ArrowRight
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
-import { getTeamAwards } from '../api/users';
+import { getTeamAwards } from '../api/users'
+import { giveFlower } from '../api/honor'
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
@@ -270,14 +271,22 @@ const handleYearChange = (year: string) => {
 };
 
 // 处理团队荣誉送花
-const handleGiveFlowerToTeam = (img: TeamAwardImage) => {
+const handleGiveFlowerToTeam = async (img: TeamAwardImage) => {
   if (img.hasGivenFlower) {
-    ElMessage.warning('已送过花');
-    return;
+    ElMessage.warning('已送过花')
+    return
   }
-  img.flowers = (img.flowers || 0) + 1;
-  img.hasGivenFlower = true;
-  ElMessage.success('送花成功！');
+  try {
+    // 注意：团队荣誉送花可能需要不同的接口，这里先使用荣誉送花接口
+    // 如果后端有专门的团队荣誉送花接口，需要更新
+    const response = await giveFlower(img.id)
+    img.flowers = response.flowers
+    img.hasGivenFlower = response.hasGivenFlower
+    ElMessage.success('送花成功！')
+  } catch (error: any) {
+    console.error('送花失败:', error)
+    ElMessage.error(error.message || '送花失败')
+  }
 };
 
 // 团队奖数据 - 从localStorage加载
@@ -587,7 +596,21 @@ const switchMode = (mode: string) => { currentViewMode.value = mode as ViewMode;
 const handleUserClick = (name: string) => { if (currentViewMode.value === 'grid') router.push({ path: '/users', query: { view: 'timeline', user: name } }); else { currentTimelineUserName.value = name; router.replace({ path: '/users', query: { view: 'timeline', user: name } }); } };
 const handleAwardClick = (name: string) => router.push({ path: '/award-rules', query: { award: name } });
 const formatAwardDate = (d: string) => { const dt = new Date(d); return `${dt.getFullYear()}年${String(dt.getMonth()+1).padStart(2,'0')}月`; };
-const handleGiveFlower = (item: HonorItem) => { if (item.hasGivenFlower) return ElMessage.warning('已送过花'); item.flowers = (item.flowers||0)+1; item.hasGivenFlower=true; ElMessage.success('送花成功！'); };
+const handleGiveFlower = async (item: HonorItem) => {
+  if (item.hasGivenFlower) {
+    ElMessage.warning('已送过花')
+    return
+  }
+  try {
+    const response = await giveFlower(item.id)
+    item.flowers = response.flowers
+    item.hasGivenFlower = response.hasGivenFlower
+    ElMessage.success('送花成功！')
+  } catch (error: any) {
+    console.error('送花失败:', error)
+    ElMessage.error(error.message || '送花失败')
+  }
+}
 const handleSizeChange = (val: number) => { pageSize.value = val; currentPage.value = 1; };
 const handleCurrentChange = (val: number) => { currentPage.value = val; window.scrollTo({ top: 0, behavior: 'smooth' }); };
 

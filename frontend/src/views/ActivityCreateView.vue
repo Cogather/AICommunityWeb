@@ -127,6 +127,9 @@ import { ElMessage } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
+import { createActivity, updateActivity } from '../api/activity'
+import { getActivityDetail } from '../api/activity'
+import { getTools } from '../api/home'
 import {
   Plus,
   Delete,
@@ -147,37 +150,42 @@ const isEditMode = computed(() => {
 })
 
 // 所有工具列表（包括扶摇Agent应用）
-const allToolsList = computed(() => {
-  // 从localStorage获取工具列表
-  const toolsConfig = localStorage.getItem('admin_tools_config')
-  let tools: any[] = []
-  
-  if (toolsConfig) {
-    try {
-      const parsed = JSON.parse(toolsConfig)
-      tools = Array.isArray(parsed) ? parsed : []
-    } catch (e) {
-      console.warn('解析工具配置失败:', e)
-      tools = []
-    }
+const allToolsList = ref<any[]>([])
+
+// 加载工具列表
+const loadToolsList = async () => {
+  try {
+    const toolsList = await getTools()
+    const tools = toolsList.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      desc: item.description || '',
+      logo: item.icon || '',
+      logoType: 'url' as const,
+      color: '#4096ff',
+      link: item.link || `/tools?toolId=${item.id}`
+    }))
+    
+    // 确保扶摇Agent应用不在列表中（避免重复）
+    const filteredTools = tools.filter(t => t.id !== -1 && t.name !== '扶摇Agent应用')
+    
+    // 添加扶摇Agent应用（始终显示在列表最前面）
+    filteredTools.unshift({
+      id: -1,
+      name: '扶摇Agent应用',
+      desc: 'Agent编排引擎',
+      logo: '',
+      logoType: 'url' as const,
+      color: '#4096ff',
+      link: '/agent'
+    })
+    
+    allToolsList.value = filteredTools
+  } catch (error) {
+    console.error('加载工具列表失败:', error)
+    allToolsList.value = []
   }
-  
-  // 确保扶摇Agent应用不在列表中（避免重复）
-  tools = tools.filter(t => t.id !== -1 && t.name !== '扶摇Agent应用')
-  
-  // 添加扶摇Agent应用（始终显示在列表最前面）
-  tools.unshift({
-    id: -1,
-    name: '扶摇Agent应用',
-    desc: 'Agent编排引擎',
-    logo: '',
-    logoType: 'url' as const,
-    color: '#4096ff',
-    link: '/agent'
-  })
-  
-  return tools
-})
+}
 
 // 表单数据
 const formData = ref({
@@ -380,9 +388,9 @@ const loadActivityForEdit = async () => {
       console.error('活动列表中的所有ID:', activities.map((a: any) => ({ id: a.id, type: typeof a.id, title: a.title })))
       ElMessage.error(`活动不存在，ID: ${activityId}`)
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载活动失败:', error)
-    ElMessage.error('加载活动失败: ' + (error as Error).message)
+    ElMessage.error(error.message || '加载活动失败')
   }
 }
 
@@ -580,51 +588,29 @@ const handlePublish = async () => {
 
     publishing.value = true
 
-    // 这里应该调用API发布活动
-    // await publishActivity(formData.value)
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // 保存到localStorage（实际应该保存到后端）
-    const selectedTool = allToolsList.value.find(t => t.id === formData.value.toolId)
-    
-    const activities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
-    
+    // 判断是创建还是更新
     if (isEditMode.value) {
       // 编辑模式：更新现有活动
       const activityId = Number(route.query.id)
-      const index = activities.findIndex((a: any) => a.id === activityId)
-      if (index !== -1) {
-        activities[index] = {
-          ...activities[index],
-          toolId: formData.value.toolId,
-          toolName: selectedTool?.name || '未知工具',
-          title: formData.value.title,
-          type: formData.value.type,
-          date: formData.value.date,
-          cover: formData.value.cover,
-          content: formData.value.content
-        }
-      }
-    } else {
-      // 新建模式：添加新活动
-      const activityId = Date.now()
-      const activityData = {
-        id: activityId,
-        toolId: formData.value.toolId,
-        toolName: selectedTool?.name || '未知工具',
+      await updateActivity(activityId, {
         title: formData.value.title,
+        toolId: formData.value.toolId || undefined,
         type: formData.value.type,
         date: formData.value.date,
         cover: formData.value.cover,
-        content: formData.value.content,
-        authorId: 1 // 当前用户ID（实际应该从登录状态获取）
-      }
-      activities.push(activityData)
+        content: formData.value.content
+      })
+    } else {
+      // 新建模式：创建新活动
+      await createActivity({
+        title: formData.value.title,
+        toolId: formData.value.toolId || undefined,
+        type: formData.value.type,
+        date: formData.value.date,
+        cover: formData.value.cover,
+        content: formData.value.content
+      })
     }
-    
-    localStorage.setItem('admin_activities', JSON.stringify(activities))
 
     publishing.value = false
     
@@ -636,9 +622,9 @@ const handlePublish = async () => {
     } else {
       router.push('/admin')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('发布活动失败:', error)
-    ElMessage.error('发布活动失败')
+    ElMessage.error(error.message || '发布活动失败')
     publishing.value = false
   }
 }
@@ -649,7 +635,9 @@ const handleBack = () => {
 }
 
 // 组件挂载时，如果是编辑模式且编辑器还未创建，也尝试加载
-onMounted(() => {
+onMounted(async () => {
+  // 加载工具列表
+  await loadToolsList()
   // 如果URL中有toolId参数，自动选中对应工具
   const toolIdParam = route.query.toolId
   if (toolIdParam && !isEditMode.value) {

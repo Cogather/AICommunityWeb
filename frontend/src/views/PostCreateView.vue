@@ -234,6 +234,8 @@
 import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, nextTick, watch, shallowRef } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { createPost, updatePost, saveDraft, getRecommendedCovers } from '../api/post'
+import { getTools } from '../api/home'
 import type { InputInstance } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
@@ -264,11 +266,23 @@ const isEditMode = computed(() => {
 })
 
 // 推荐封面列表
-const recommendedCovers = ref([
-  'https://picsum.photos/800/400?random=1',
-  'https://picsum.photos/800/400?random=2',
-  'https://picsum.photos/800/400?random=3'
-])
+const recommendedCovers = ref<string[]>([])
+
+// 加载推荐封面
+const loadRecommendedCovers = async () => {
+  try {
+    const covers = await getRecommendedCovers()
+    recommendedCovers.value = covers.map(cover => cover.url)
+  } catch (error) {
+    console.error('加载推荐封面失败:', error)
+    // 使用默认封面
+    recommendedCovers.value = [
+      'https://picsum.photos/800/400?random=1',
+      'https://picsum.photos/800/400?random=2',
+      'https://picsum.photos/800/400?random=3'
+    ]
+  }
+}
 
 // 预设标签（不可删除）
 const presetTags = ref<string[]>([])
@@ -284,27 +298,23 @@ const formData = ref({
   content: ''
 })
 
-// 工具列表（AI工具专区）- 从localStorage读取配置
-const loadTools = () => {
+// 工具列表（AI工具专区）- 从API加载
+const loadTools = async () => {
   try {
-    const saved = localStorage.getItem('admin_tools_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      const tools = config.map((item: any, index: number) => ({
-        id: item.id || index + 1,
-        name: item.name
-      }))
-      // 添加"其他"选项
-      tools.push({ id: -1, name: '其他' })
-      return tools
-    }
+    const toolsList = await getTools()
+    const tools = toolsList.map((item: any) => ({
+      id: item.id,
+      name: item.name
+    }))
+    // 添加"其他"选项
+    tools.push({ id: -1, name: '其他' })
+    return tools
   } catch (e) {
     console.error('加载工具配置失败:', e)
-  }
-  return [
-    { id: 1, name: 'TestMate' },
-    { id: 2, name: 'CodeMate' },
-    { id: 3, name: '云集' },
+    return [
+      { id: 1, name: 'TestMate' },
+      { id: 2, name: 'CodeMate' },
+      { id: 3, name: '云集' },
     { id: 4, name: '云见' },
     { id: 5, name: '扶摇' },
     { id: 6, name: '纠错Agent' },
@@ -313,11 +323,11 @@ const loadTools = () => {
   ]
 }
 
-const tools = ref(loadTools())
+const tools = ref<Array<{ id: number; name: string }>>([])
 
 // 监听配置更新
-const handleConfigUpdate = () => {
-  tools.value = loadTools()
+const handleConfigUpdate = async () => {
+  tools.value = await loadTools()
 }
 
 // 监听配置更新（在现有的onMounted中添加）
@@ -851,14 +861,43 @@ const handlePublish = async () => {
 
     publishing.value = true
 
-    // 这里应该调用API发布帖子
-    // await publishPost(formData.value)
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      // 判断是创建还是更新
+      const postId = route.query.id ? Number(route.query.id) : null
+      if (postId && route.query.edit === 'true') {
+        // 更新帖子
+        await updatePost(postId, {
+          title: formData.value.title,
+          summary: formData.value.summary,
+          content: formData.value.content,
+          tags: formData.value.tags,
+          cover: formData.value.cover,
+          zone: formData.value.zone,
+          toolId: formData.value.toolId || undefined
+        })
+        ElMessage.success('帖子更新成功')
+      } else {
+        // 创建帖子
+        await createPost({
+          title: formData.value.title,
+          summary: formData.value.summary,
+          content: formData.value.content,
+          tags: formData.value.tags,
+          cover: formData.value.cover,
+          zone: formData.value.zone,
+          toolId: formData.value.toolId || undefined
+        })
+        ElMessage.success('帖子发布成功')
+      }
 
-    // 清除草稿
-    localStorage.removeItem('post_draft')
+      // 清除草稿
+      localStorage.removeItem('post_draft')
+    } catch (error: any) {
+      console.error('发布失败:', error)
+      ElMessage.error(error.message || '发布失败，请稍后重试')
+      publishing.value = false
+      return
+    }
     
     publishing.value = false
     
@@ -1042,37 +1081,22 @@ const loadPostForEdit = async () => {
 
   try {
     postLoading.value = true
-    // 这里应该调用API获取帖子数据
-    // const response = await getPost(postId)
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 模拟数据（实际应该从API获取）
-    const mockPostData = {
-      id: Number(postId),
-      zone: 'practices',
-      toolId: null,
-      title: '示例帖子标题',
-      summary: '这是帖子的简介内容',
-      tags: ['自然语言处理', '深度学习'],
-      cover: 'https://picsum.photos/800/400?random=1',
-      content: '<p>这是帖子的内容，支持富文本格式。</p><p>可以包含<strong>加粗</strong>、<em>斜体</em>等格式。</p>'
-    }
+    const { getPostDetail } = await import('../api/post')
+    const post = await getPostDetail(Number(postId))
     
     // 填充表单数据
     formData.value = {
-      zone: mockPostData.zone,
-      toolId: mockPostData.toolId,
-      title: mockPostData.title,
-      summary: mockPostData.summary,
-      tags: [...mockPostData.tags],
-      cover: mockPostData.cover,
-      content: mockPostData.content
+      zone: post.zone || 'practices',
+      toolId: post.toolId || null,
+      title: post.title,
+      summary: post.summary || post.description || '',
+      tags: post.tags || [],
+      cover: post.cover || post.image || '',
+      content: post.content || ''
     }
     
     // 标记所有标签为预设标签
-    presetTags.value = [...mockPostData.tags]
+    presetTags.value = [...(post.tags || [])]
     
     // 设置编辑器内容
     if (editorRef.value) {
@@ -1086,7 +1110,12 @@ const loadPostForEdit = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 加载工具列表
+  tools.value = await loadTools()
+  // 加载推荐封面
+  await loadRecommendedCovers()
+  
   // 监听配置更新
   window.addEventListener('adminConfigUpdated', handleConfigUpdate)
   

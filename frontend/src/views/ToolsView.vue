@@ -220,6 +220,11 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
+import { checkToolOwner } from '../api/tool'
+import { getCurrentUser } from '../api/user'
+import { getActivities } from '../api/activity'
+import { getPosts } from '../api/practices'
+import type { Post } from '../api/practices'
 
 const router = useRouter()
 const route = useRoute()
@@ -324,7 +329,12 @@ const displayedDepartments = computed(() => {
 })
 
 // 页面加载时检查路由参数
-onMounted(() => {
+onMounted(async () => {
+  // 加载工具列表
+  tools.value = await loadTools()
+  
+  // 加载所有活动
+  await loadActivities()
   // 监听配置更新
   window.addEventListener('adminConfigUpdated', handleConfigUpdate)
 
@@ -372,12 +382,16 @@ onMounted(() => {
     }
 })
 
-// 监听selectedToolId变化，自动检查权限
-watch(selectedToolId, (newToolId) => {
+// 监听selectedToolId变化，自动检查权限并加载数据
+watch(selectedToolId, async (newToolId) => {
   if (typeof newToolId === 'number') {
-    checkToolOwner(newToolId)
+    await checkToolOwner(newToolId)
+    await loadPosts(newToolId)
+    await loadActivities(newToolId)
   } else {
     isToolOwner.value = false
+    await loadPosts(0) // 加载"其他工具"的帖子
+    await loadActivities(0)
   }
 })
 
@@ -388,25 +402,22 @@ onUnmounted(() => {
 // 当前激活的帖子分类
 const activePostTab = ref<'guide' | 'excellent'>('guide')
 
-// 工具列表 - 从localStorage读取配置
-const loadTools = () => {
+// 工具列表 - 从API加载
+const loadTools = async () => {
   try {
-    const saved = localStorage.getItem('admin_tools_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.map((item: any, index: number) => ({
-        id: item.id || index + 1,
-        name: item.name,
-        desc: item.desc || '',
-        logo: item.logo || '',
-        link: item.link || `/tools/${item.name.toLowerCase()}`,
-        color: item.color || '#409eff'
-      }))
-    }
+    const { getTools } = await import('../api/home')
+    const toolsList = await getTools()
+    return toolsList.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      desc: item.description || '',
+      logo: item.icon || '',
+      link: item.link || `/tools?toolId=${item.id}`,
+      color: '#409eff'
+    }))
   } catch (e) {
     console.error('加载工具配置失败:', e)
-  }
-  return [
+    return [
     {
       id: 1,
       name: 'TestMate',
@@ -459,52 +470,83 @@ const loadTools = () => {
   ]
 }
 
-const tools = ref(loadTools())
+const tools = ref<any[]>([])
 
 // 监听配置更新
-const handleConfigUpdate = () => {
-  tools.value = loadTools()
+const handleConfigUpdate = async () => {
+  tools.value = await loadTools()
 }
 
-// 所有帖子数据（模拟）
-const allPosts = ref([
-  // TestMate 相关
-  { id: 1, toolId: 1, category: 'guide', title: 'TestMate 快速入门指南', description: '从零开始学习 TestMate 的基本使用方法，快速上手自动化测试。', author: '张工程师', createTime: '2024年4月10日', views: 1250, comments: 45, likes: 128, tag: '新手', image: 'https://picsum.photos/400/300?random=1' },
-  { id: 2, toolId: 1, category: 'excellent', title: 'TestMate 在企业级项目中的最佳实践', description: '分享如何在实际项目中高效使用 TestMate 提升测试效率。', author: '李开发者', createTime: '2024年4月8日', views: 890, comments: 32, likes: 95, tag: '最佳实践', image: 'https://picsum.photos/400/300?random=2' },
-  { id: 3, toolId: 1, category: 'guide', title: 'TestMate 高级功能详解', description: '深入探讨 TestMate 的高级功能和配置选项。', author: '王测试', createTime: '2024年4月5日', views: 650, comments: 18, likes: 52, tag: '进阶', image: 'https://picsum.photos/400/300?random=3' },
+// 所有帖子数据
+const allPosts = ref<Post[]>([])
 
-  // CodeMate 相关
-  { id: 4, toolId: 2, category: 'guide', title: 'CodeMate 代码补全技巧', description: '掌握 CodeMate 的智能代码补全功能，提升编码效率。', author: '赵医生', createTime: '2024年4月12日', views: 720, comments: 28, likes: 78, tag: '技巧', image: 'https://picsum.photos/400/300?random=4' },
-  { id: 5, toolId: 2, category: 'excellent', title: 'CodeMate 在大型项目中的应用', description: '介绍 CodeMate 在大型软件开发项目中的实际应用案例。', author: '陈架构师', createTime: '2024年4月9日', views: 520, comments: 15, likes: 42, tag: '案例', image: 'https://picsum.photos/400/300?random=5' },
+// 加载帖子列表
+const loadPosts = async (toolId?: number) => {
+  try {
+    const result = await getPosts({
+      zone: 'tools',
+      toolId: toolId || undefined,
+      page: 1,
+      pageSize: 100 // 获取所有帖子
+    })
+    // 字段映射
+    allPosts.value = result.list.map(post => ({
+      ...post,
+      author: post.author || (post as any).authorName || '',
+      description: post.description || (post as any).summary || '',
+      image: post.image || post.cover || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN'),
+      tag: post.tags && post.tags.length > 0 ? post.tags[0] : '',
+      category: (post as any).category || 'guide' // 保留category字段用于分类
+    }))
+  } catch (error: any) {
+    console.error('加载帖子列表失败:', error)
+    ElMessage.error(error.message || '加载帖子列表失败')
+    allPosts.value = []
+  }
+}
 
-  // 云集相关
-  { id: 6, toolId: 3, category: 'guide', title: '云集集群管理入门', description: '学习如何使用云集进行云端计算集群的管理和调度。', author: '刘设计师', createTime: '2024年4月11日', views: 450, comments: 12, likes: 35, tag: '入门', image: 'https://picsum.photos/400/300?random=6' },
-  { id: 7, toolId: 3, category: 'excellent', title: '云集性能优化实战', description: '分享云集集群性能优化的实战经验和技巧。', author: '张工程师', createTime: '2024年4月7日', views: 380, comments: 10, likes: 28, tag: '优化', image: 'https://picsum.photos/400/300?random=7' },
+// 活动数据
+const allActivities = ref<any[]>([])
 
-  // 其他工具
-  { id: 8, toolId: 0, category: 'guide', title: 'AI工具使用通用指南', description: '介绍AI工具使用的一般方法和注意事项。', author: '系统管理员', createTime: '2024年4月13日', views: 1200, comments: 58, likes: 156, tag: '通用', image: 'https://picsum.photos/400/300?random=8' },
-  { id: 9, toolId: 0, category: 'excellent', title: 'AI工具优秀案例集锦', description: '收集整理各类AI工具的优秀使用案例。', author: '社区编辑', createTime: '2024年4月6日', views: 950, comments: 42, likes: 112, tag: '案例', image: 'https://picsum.photos/400/300?random=9' },
-])
-
-// 活动数据（模拟）
-const allActivities = ref([
-  { id: 1, toolId: 1, type: 'training', title: 'TestMate 培训课程', desc: '深入学习 TestMate 的高级功能和应用场景，提升测试自动化能力。', date: '2024年4月20日', location: '线上', image: 'https://picsum.photos/600/400?random=10' },
-  { id: 2, toolId: 1, type: 'empowerment', title: 'TestMate 赋能工作坊', desc: '实战演练 TestMate 在企业项目中的应用，现场答疑解惑。', date: '2024年4月25日', location: '北京', image: 'https://picsum.photos/600/400?random=11' },
-  { id: 3, toolId: 2, type: 'training', title: 'CodeMate 开发培训', desc: '掌握 CodeMate 的核心功能，提升代码开发效率和质量。', date: '2024年4月22日', location: '线上', image: 'https://picsum.photos/600/400?random=12' },
-  { id: 4, toolId: 3, type: 'empowerment', title: '云集技术分享会', desc: '分享云集集群管理的最佳实践和最新功能。', date: '2024年4月28日', location: '上海', image: 'https://picsum.photos/600/400?random=13' },
-  { id: 5, toolId: 5, type: 'training', title: '扶摇 Agent 训练营', desc: '系统学习扶摇 Agent 编排引擎的使用方法和实战技巧。', date: '2024年5月5日', location: '线上', image: 'https://picsum.photos/600/400?random=14' },
-])
+// 加载活动列表
+const loadActivities = async (toolId?: number) => {
+  try {
+    const result = await getActivities({
+      toolId: toolId || undefined,
+      page: 1,
+      pageSize: 100 // 获取所有活动
+    })
+    allActivities.value = result.list.map((a: any) => ({
+      id: a.id,
+      toolId: a.toolId,
+      type: a.type || 'activity',
+      title: a.title,
+      desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
+      date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
+      location: '',
+      image: a.cover || ''
+    }))
+  } catch (error) {
+    console.error('加载活动列表失败:', error)
+    allActivities.value = []
+  }
+}
 
 // 选择工具
-const selectTool = (toolId: number | string) => {
+const selectTool = async (toolId: number | string) => {
   selectedToolId.value = toolId
   activePostTab.value = 'guide' // 重置为操作指导
 
   // 检查是否为工具Owner（仅对普通工具检查，不包括"其他工具"）
   if (typeof toolId === 'number') {
-    checkToolOwner(toolId)
+    await checkToolOwner(toolId)
+    await loadPosts(toolId)
+    await loadActivities(toolId)
   } else {
     isToolOwner.value = false
+    await loadPosts(0)
+    await loadActivities(0)
   }
 }
 
@@ -518,25 +560,14 @@ const checkToolOwner = async (toolId: number) => {
 
   checkingOwner.value = true
   try {
-    // 模拟API调用：GET /api/tools/:id/owner 和 GET /api/user/current
-    // 实际应该调用真实API
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    // 模拟数据：从localStorage或用户信息中获取
-    // 实际应该从API获取
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-
-    // 检查是否为管理员
-    const savedAdmins = JSON.parse(localStorage.getItem('admin_users_list') || '[]')
-    const admin = savedAdmins.find((u: any) => u.id === currentUserId && u.currentRole === 'admin')
-    isAdmin.value = !!admin
-
+    // 获取当前用户信息
+    const user = await getCurrentUser()
+    isAdmin.value = user.roles?.includes('admin') || false
+    
     // 检查是否为工具Owner
-    const savedOwners = JSON.parse(localStorage.getItem('tool_owners') || '[]')
-    const isOwner = savedOwners.some((owner: any) => owner.toolId === toolId && owner.userId === currentUserId)
-
-    isToolOwner.value = isOwner
-  } catch (error) {
+    const ownerResponse = await checkToolOwner(toolId)
+    isToolOwner.value = ownerResponse.isOwner || false
+  } catch (error: any) {
     console.error('检查工具Owner权限失败:', error)
     isToolOwner.value = false
     isAdmin.value = false
@@ -630,29 +661,9 @@ const paginatedPosts = computed(() => {
   return filteredPosts.value.slice(start, end)
 })
 
-// 当前工具的活动
+// 当前工具的活动（已在activities computed中处理）
 const currentToolActivities = computed(() => {
-  if (selectedToolId.value === 'other' || !selectedToolId.value) {
-    return []
-  }
-
-  // 从localStorage加载发布的活动
-  const publishedActivities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
-  const publishedForTool = publishedActivities
-    .filter((a: any) => a.toolId === selectedToolId.value)
-    .map((a: any) => ({
-      id: a.id,
-      type: a.type || 'activity',
-      title: a.title,
-      desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
-      date: a.date,
-      location: '',
-      image: a.cover
-    }))
-
-  // 合并模拟活动和发布的活动
-  const mockActivities = allActivities.value.filter(activity => activity.toolId === selectedToolId.value)
-  return [...publishedForTool, ...mockActivities]
+  return activities.value
 })
 
 // 颜色池 - 为不同标签提供不同颜色

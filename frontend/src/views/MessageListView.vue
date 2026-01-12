@@ -4,7 +4,7 @@
       <div class="message-header">
         <h2>消息中心</h2>
         <div class="header-actions">
-          <el-button text @click="handleMarkAllRead" :disabled="unreadCount === 0">
+          <el-button text @click="handleMarkAllRead" :disabled="unreadCount === 0 && computedUnreadCount === 0">
             全部标记为已读
           </el-button>
         </div>
@@ -79,18 +79,20 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import {
-  getUserMessages,
+  getMessages,
   markMessageAsRead,
   markAllMessagesAsRead,
   deleteMessage,
+  getUnreadMessageCount,
   MessageType,
   type Message
-} from '../utils/message'
+} from '../api/message'
+import { getCurrentUser } from '../api/user'
 
 const router = useRouter()
 const loading = ref(false)
 const activeTab = ref('all')
-const currentUserId = ref(1) // 当前用户ID（实际应该从登录状态获取）
+const currentUserId = ref<number>(0)
 
 const messages = ref<Message[]>([])
 
@@ -103,9 +105,24 @@ const filteredMessages = computed(() => {
 })
 
 // 未读消息数量
-const unreadCount = computed(() => {
+const unreadCount = ref(0)
+
+// 计算未读数量（作为备用）
+const computedUnreadCount = computed(() => {
   return messages.value.filter(msg => !msg.read).length
 })
+
+// 加载未读消息数量
+const loadUnreadCount = async () => {
+  try {
+    const result = await getUnreadMessageCount()
+    unreadCount.value = result.count
+  } catch (error) {
+    console.error('加载未读消息数量失败:', error)
+    // 如果API失败，使用本地计算
+    unreadCount.value = messages.value.filter(msg => !msg.read).length
+  }
+}
 
 // 获取消息图标
 const getMessageIcon = (type: MessageType) => {
@@ -206,61 +223,81 @@ const loadMessages = () => {
 }
 
 // 处理消息点击
-const handleMessageClick = (message: Message) => {
+const handleMessageClick = async (message: Message) => {
   // 标记为已读
   if (!message.read) {
-    markMessageAsRead(currentUserId.value, message.id)
-    message.read = true
+    await handleMarkAsRead(message)
   }
 
   // 根据消息类型跳转
-  if (message.relatedId && message.relatedType) {
-    if (message.relatedType === 'activity') {
-      router.push(`/activity/${message.relatedId}`)
-    } else if (message.relatedType === 'post') {
-      // 如果是评论回复，需要定位到评论
-      if (message.type === MessageType.COMMENT_REPLY) {
-        router.push({
-          path: `/post/${message.relatedId}`,
-          query: { commentId: message.relatedId.toString() }
-        })
-      } else {
-        router.push(`/post/${message.relatedId}`)
-      }
-    }
+  if (message.link) {
+    router.push(message.link)
+  } else if (message.type === MessageType.ACTIVITY_REGISTRATION) {
+    // 活动报名消息，跳转到活动详情
+    router.push(`/activity/${message.id}`)
+  } else if (message.type === MessageType.POST_COMMENT || message.type === MessageType.COMMENT_REPLY) {
+    // 评论相关消息，跳转到帖子详情
+    router.push(`/post/${message.id}`)
+  } else if (message.type === MessageType.POST_LIKE) {
+    // 点赞消息，跳转到帖子详情
+    router.push(`/post/${message.id}`)
   }
 }
 
 // 处理标签切换
 const handleTabChange = () => {
-  // 可以在这里添加其他逻辑
+  // 重新加载消息列表
+  loadMessages()
 }
 
 // 标记全部为已读
-const handleMarkAllRead = () => {
-  markAllMessagesAsRead(currentUserId.value)
-  messages.value.forEach(msg => {
-    msg.read = true
-  })
-  ElMessage.success('已标记全部为已读')
-}
-
-// 删除消息
-const handleDeleteMessage = (messageId: number) => {
-  deleteMessage(currentUserId.value, messageId)
-  messages.value = messages.value.filter(msg => msg.id !== messageId)
-  ElMessage.success('消息已删除')
-}
-
-// 监听消息更新事件
-const handleMessageUpdate = (event: CustomEvent) => {
-  if (event.detail.userId === currentUserId.value) {
-    loadMessages()
+const handleMarkAllRead = async () => {
+  try {
+    await markAllMessagesAsRead()
+    messages.value.forEach(msg => {
+      msg.read = true
+    })
+    unreadCount.value = 0
+    ElMessage.success('已标记全部为已读')
+  } catch (error: any) {
+    console.error('标记全部为已读失败:', error)
+    ElMessage.error(error.message || '操作失败')
   }
 }
 
-onMounted(() => {
+// 删除消息
+const handleDeleteMessage = async (messageId: number) => {
+  try {
+    await deleteMessage(messageId)
+    const message = messages.value.find(msg => msg.id === messageId)
+    if (message && !message.read) {
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    }
+    messages.value = messages.value.filter(msg => msg.id !== messageId)
+    ElMessage.success('消息已删除')
+  } catch (error: any) {
+    console.error('删除消息失败:', error)
+    ElMessage.error(error.message || '删除失败')
+  }
+}
+
+// 监听消息更新事件
+const handleMessageUpdate = () => {
   loadMessages()
+  loadUnreadCount()
+}
+
+onMounted(async () => {
+  try {
+    // 获取当前用户ID
+    const user = await getCurrentUser()
+    currentUserId.value = user.id
+  } catch (error) {
+    console.warn('获取当前用户信息失败:', error)
+  }
+  
+  await loadMessages()
+  await loadUnreadCount()
   window.addEventListener('messageUpdated', handleMessageUpdate as EventListener)
 })
 

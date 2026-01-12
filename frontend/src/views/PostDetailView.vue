@@ -342,6 +342,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { 
+  getPostDetail, 
+  likePost, 
+  collectPost, 
+  deletePost,
+  getPostComments,
+  createComment
+} from '../api/post'
+import { likeComment, deleteComment } from '../api/comment'
+import { getCurrentUser } from '../api/user'
 import {
   View,
   ChatDotRound,
@@ -489,24 +499,23 @@ const loadPostDetail = async () => {
 
   loading.value = true
   try {
-    // 这里应该调用API获取帖子详情
-    // const response = await getPostDetail(postIdNum)
-    // postData.value = response.data
-    
-    // 模拟API调用延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 模拟数据
+    const post = await getPostDetail(postIdNum)
     postData.value = {
-      ...postData.value,
-      id: postIdNum,
-      title: `帖子标题 ${postIdStr}`,
-      views: Math.floor(Math.random() * 5000) + 1000,
-      likes: Math.floor(Math.random() * 200) + 10
+      ...post,
+      authorName: post.author || post.authorName || '',
+      authorAvatar: post.authorAvatar || '',
+      cover: post.cover || post.image || '',
+      isLiked: post.isLiked || false,
+      isCollected: post.isCollected || false,
+      isAuthor: post.isAuthor || false,
+      canEdit: post.canEdit || false,
+      canDelete: post.canDelete || false
     }
-  } catch (error) {
+    // 检查收藏状态
+    isCollected.value = post.isCollected || false
+  } catch (error: any) {
     console.error('加载帖子详情失败:', error)
-    ElMessage.error('加载帖子详情失败')
+    ElMessage.error(error.message || '加载帖子详情失败')
     router.push('/practices')
   } finally {
     loading.value = false
@@ -516,86 +525,21 @@ const loadPostDetail = async () => {
 // 加载评论列表
 const loadComments = async () => {
   try {
-    // 这里应该调用API获取评论列表
-    // const response = await getComments(postData.value.id)
-    // comments.value = response.data
-    
-    // 模拟API调用延迟
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // 模拟数据（包含嵌套回复结构）
-    comments.value = [
-      {
-        id: 1,
-        userId: 2,
-        userName: '李四',
-        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-        content: '这是一个很好的帖子，学到了很多！',
-        createTime: '2024-01-07 11:00:00',
-        likes: 5,
-        isLiked: false,
-        replies: [
-          {
-            id: 1,
-            userId: 3,
-            userName: '王五',
-            userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-            content: '我也觉得很有用！',
-            createTime: '2024-01-07 11:30:00',
-            likes: 2,
-            isLiked: false,
-            replyTo: '李四',
-            replyToId: 1,
-            replies: [
-              {
-                id: 3,
-                userId: 1,
-                userName: postData.value.authorName,
-                userAvatar: postData.value.authorAvatar,
-                content: '感谢支持！',
-                createTime: '2024-01-07 11:32:00',
-                likes: 1,
-                isLiked: false,
-                replyTo: '王五',
-                replyToId: 1,
-                replies: []
-              }
-            ]
-          },
-          {
-            id: 2,
-            userId: 1,
-            userName: postData.value.authorName,
-            userAvatar: postData.value.authorAvatar,
-            content: '谢谢支持！',
-            createTime: '2024-01-07 11:35:00',
-            likes: 3,
-            isLiked: false,
-            replyTo: '李四',
-            replyToId: 1,
-            replies: []
-          }
-        ],
-        showReplyInput: false,
-        replyText: ''
-      },
-      {
-        id: 2,
-        userId: 4,
-        userName: '赵六',
-        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-        content: '感谢分享，期待更多内容！',
-        createTime: '2024-01-07 12:00:00',
-        likes: 3,
-        isLiked: false,
-        replies: [],
-        showReplyInput: false,
-        replyText: ''
-      }
-    ]
-  } catch (error) {
+    const result = await getPostComments(postData.value.id, {
+      page: 1,
+      pageSize: 100 // 获取所有评论
+    })
+    // 为每个评论添加前端需要的属性
+    comments.value = result.list.map(comment => ({
+      ...comment,
+      showReplyInput: false,
+      replyText: '',
+      replies: comment.replies || []
+    }))
+  } catch (error: any) {
     console.error('加载评论失败:', error)
-    ElMessage.error('加载评论失败')
+    ElMessage.error(error.message || '加载评论失败')
+    comments.value = []
   }
 }
 
@@ -605,16 +549,14 @@ const handleLike = async () => {
   
   liking.value = true
   try {
-    // 这里应该调用API点赞
-    // await likePost(postData.value.id)
-    
-    postData.value.isLiked = !postData.value.isLiked
-    postData.value.likes += postData.value.isLiked ? 1 : -1
-    
-    ElMessage.success(postData.value.isLiked ? '点赞成功' : '取消点赞')
-  } catch (error) {
+    const action = postData.value.isLiked ? 'unlike' : 'like'
+    const response = await likePost(postData.value.id, action)
+    postData.value.isLiked = response.liked
+    postData.value.likes = response.likes
+    ElMessage.success(response.liked ? '点赞成功' : '取消点赞')
+  } catch (error: any) {
     console.error('点赞失败:', error)
-    ElMessage.error('操作失败')
+    ElMessage.error(error.message || '操作失败')
   } finally {
     liking.value = false
   }
@@ -632,87 +574,27 @@ const handleShare = () => {
 }
 
 // 收藏/取消收藏
-const handleCollect = () => {
+const handleCollect = async () => {
   try {
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    const favoritesKey = `user_${currentUserId}_favorites`
-    
-    // 从localStorage读取收藏列表
-    const favoritesStr = localStorage.getItem(favoritesKey)
-    let favorites: any[] = []
-    
-    if (favoritesStr) {
-      try {
-        favorites = JSON.parse(favoritesStr)
-      } catch (e) {
-        console.warn('解析收藏列表失败:', e)
-        favorites = []
-      }
-    }
-    
-    if (isCollected.value) {
-      // 取消收藏：从列表中移除
-      favorites = favorites.filter((fav: any) => fav.id !== postData.value.id)
-      isCollected.value = false
-      ElMessage.success('已取消收藏')
-    } else {
-      // 添加收藏：将帖子信息添加到列表
-      const postToFavorite = {
-        id: postData.value.id,
-        title: postData.value.title,
-        description: postData.value.content?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
-        author: postData.value.authorName,
-        createTime: postData.value.createTime,
-        views: postData.value.views,
-        comments: commentCount.value,
-        likes: postData.value.likes,
-        tags: postData.value.tags || [],
-        image: postData.value.cover || '',
-        favoriteTime: new Date().toISOString() // 收藏时间
-      }
-      
-      // 检查是否已存在
-      const exists = favorites.some((fav: any) => fav.id === postData.value.id)
-      if (!exists) {
-        favorites.unshift(postToFavorite) // 添加到开头
-        isCollected.value = true
-        ElMessage.success('收藏成功')
-      } else {
-        ElMessage.warning('该帖子已在收藏列表中')
-      }
-    }
-    
-    // 保存到localStorage
-    localStorage.setItem(favoritesKey, JSON.stringify(favorites))
+    const action = isCollected.value ? 'uncollect' : 'collect'
+    const response = await collectPost(postData.value.id, action)
+    isCollected.value = response.collected
+    ElMessage.success(response.collected ? '收藏成功' : '已取消收藏')
     
     // 触发收藏更新事件（用于更新个人中心的收藏数量）
     window.dispatchEvent(new CustomEvent('favoritesUpdated', {
-      detail: { userId: currentUserId, favorites }
+      detail: { postId: postData.value.id, collected: response.collected }
     }))
-  } catch (error) {
+  } catch (error: any) {
     console.error('收藏操作失败:', error)
-    ElMessage.error('操作失败，请稍后重试')
+    ElMessage.error(error.message || '操作失败，请稍后重试')
   }
 }
 
-// 检查是否已收藏
+// 检查是否已收藏（从帖子详情中获取）
 const checkIfCollected = () => {
-  try {
-    const currentUserId = 1 // 当前用户ID（实际应该从登录状态获取）
-    const favoritesKey = `user_${currentUserId}_favorites`
-    const favoritesStr = localStorage.getItem(favoritesKey)
-    
-    if (favoritesStr) {
-      try {
-        const favorites = JSON.parse(favoritesStr)
-        isCollected.value = favorites.some((fav: any) => fav.id === postData.value.id)
-      } catch (e) {
-        console.warn('检查收藏状态失败:', e)
-      }
-    }
-  } catch (error) {
-    console.error('检查收藏状态失败:', error)
-  }
+  // 收藏状态已经从getPostDetail返回的isCollected字段中获取
+  // 这里不需要额外调用API
 }
 
 // 编辑帖子
@@ -735,17 +617,12 @@ const handleDelete = () => {
     distinguishCancelAndClose: true
   }).then(async () => {
     try {
-      // 这里应该调用API删除帖子
-      // await deletePost(postData.value.id)
-      
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+      await deletePost(postData.value.id)
       ElMessage.success('帖子已删除')
       router.push('/practices')
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除失败:', error)
-      ElMessage.error('删除失败，请稍后重试')
+      ElMessage.error(error.message || '删除失败，请稍后重试')
     }
   }).catch(() => {
     // 用户取消
@@ -761,29 +638,23 @@ const handleSubmitComment = async () => {
 
   submitting.value = true
   try {
-    // 这里应该调用API提交评论
-    // await submitComment(postData.value.id, newComment.value)
-    
-    const comment = {
-      id: Date.now(),
-      userId: currentUserId.value,
-      userName: currentUserName.value,
-      userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-      content: newComment.value,
-      createTime: new Date().toLocaleString('zh-CN'),
-      likes: 0,
-      isLiked: false,
-      replies: [],
+    const comment = await createComment(postData.value.id, {
+      content: newComment.value
+    })
+    // 添加前端需要的属性
+    comments.value.unshift({
+      ...comment,
       showReplyInput: false,
-      replyText: ''
-    }
-    
-    comments.value.unshift(comment)
+      replyText: '',
+      replies: comment.replies || []
+    })
     newComment.value = ''
     ElMessage.success('评论发表成功')
-  } catch (error) {
+    // 重新加载评论以获取最新数量
+    await loadComments()
+  } catch (error: any) {
     console.error('发表评论失败:', error)
-    ElMessage.error('发表评论失败')
+    ElMessage.error(error.message || '发表评论失败')
   } finally {
     submitting.value = false
   }
@@ -792,14 +663,13 @@ const handleSubmitComment = async () => {
 // 点赞评论
 const handleCommentLike = async (comment: any) => {
   try {
-    // 这里应该调用API点赞评论
-    // await likeComment(comment.id)
-    
-    comment.isLiked = !comment.isLiked
-    comment.likes = (comment.likes || 0) + (comment.isLiked ? 1 : -1)
-  } catch (error) {
+    const action = comment.isLiked ? 'unlike' : 'like'
+    const response = await likeComment(comment.id, action)
+    comment.isLiked = response.liked
+    comment.likes = response.likes
+  } catch (error: any) {
     console.error('点赞失败:', error)
-    ElMessage.error('操作失败')
+    ElMessage.error(error.message || '操作失败')
   }
 }
 
@@ -967,12 +837,8 @@ const handleDeleteComment = (comment: any) => {
   ).then(async () => {
     deletingComment.value = true
     try {
-      // 这里应该调用API删除评论
-      // await deleteComment(comment.id)
+      await deleteComment(comment.id)
       // 注意：后端应该自动删除该评论下的所有回复（包括嵌套回复）
-      
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 300))
       
       // 从评论列表中移除该评论（包括其所有回复）
       // 由于是扁平化结构，删除评论时会自动删除其下的所有回复
@@ -983,9 +849,11 @@ const handleDeleteComment = (comment: any) => {
       } else {
         ElMessage.warning('未找到要删除的评论')
       }
-    } catch (error) {
+      // 重新加载评论以更新数量
+      await loadComments()
+    } catch (error: any) {
       console.error('删除评论失败:', error)
-      ElMessage.error('删除失败，请稍后重试')
+      ElMessage.error(error.message || '删除失败，请稍后重试')
     } finally {
       deletingComment.value = false
     }
@@ -1040,6 +908,19 @@ const handleDeleteReply = (comment: any, reply: any) => {
 
 // 初始化
 onMounted(async () => {
+  try {
+    // 获取当前用户信息
+    const user = await getCurrentUser()
+    currentUser.value = {
+      id: user.id,
+      name: user.name,
+      avatar: user.avatar
+    }
+    isAdmin.value = user.roles?.includes('admin') || false
+  } catch (error) {
+    console.warn('获取当前用户信息失败:', error)
+  }
+  
   await loadPostDetail()
   if (postData.value.id) {
     await loadComments()
