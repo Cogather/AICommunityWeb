@@ -405,9 +405,14 @@ const notifyNavbarUpdate = () => {
 
 // 事件处理函数
 const handleAwardTypeChange = ((e: CustomEvent) => {
+  console.log('UsersView: 接收到awardTypeChange事件', e.detail)
   if (e.detail?.type) {
-    awardType.value = e.detail.type as 'individual' | 'team';
-    notifyNavbarUpdate();
+    const newType = e.detail.type as 'individual' | 'team'
+    console.log('UsersView: 切换awardType从', awardType.value, '到', newType)
+    awardType.value = newType
+    // 保存到localStorage，以便页面刷新后保持状态
+    localStorage.setItem('users_award_type', newType)
+    notifyNavbarUpdate()
   }
 }) as EventListener;
 
@@ -431,10 +436,7 @@ const handleStorageChange = (e: StorageEvent) => {
 };
 
 onMounted(async () => {
-  // 初始化加载团队奖项
-  teamAwards.value = await loadTeamAwards();
-  
-  // 监听导航栏的切换事件（需要在加载数据之前设置，确保能接收到事件）
+  // 先设置事件监听器（确保能接收到导航栏发送的事件）
   window.addEventListener('awardTypeChange', handleAwardTypeChange);
   window.addEventListener('teamAwardYearChange', handleTeamAwardYearChange);
   window.addEventListener('teamAwardIndexChange', handleTeamAwardIndexChange);
@@ -442,8 +444,18 @@ onMounted(async () => {
   // 初始化时也监听storage事件（跨标签页同步）
   window.addEventListener('storage', handleStorageChange);
   
+  // 初始化加载团队奖项
+  teamAwards.value = await loadTeamAwards();
+  
   // 通知导航栏当前状态
   notifyNavbarUpdate();
+  
+  // 检查URL参数或localStorage中是否有保存的awardType
+  const savedAwardType = localStorage.getItem('users_award_type') as 'individual' | 'team' | null
+  if (savedAwardType && (savedAwardType === 'individual' || savedAwardType === 'team')) {
+    awardType.value = savedAwardType
+    notifyNavbarUpdate()
+  }
 });
 
 onBeforeUnmount(() => {

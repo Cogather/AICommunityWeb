@@ -19,13 +19,28 @@ export interface TeamAward {
 }
 
 // 获取团队荣誉列表
+// 注意：后端可能还没有实现此接口，需要后端添加TeamAwardController
+// 后端返回: Result<{ list: TeamAward[] }>
 export const getTeamAwards = async (year?: string): Promise<{ list: TeamAward[] }> => {
-  return request.get<{ list: TeamAward[] }>('/team-awards', {
-    params: year ? { year } : {}
-  }) as Promise<{ list: TeamAward[] }>
+  try {
+    const result = await request.get<{ list: TeamAward[] }>('/team-awards', {
+      params: year ? { year } : {}
+    }) as unknown as { list: TeamAward[] }
+    return result || { list: [] }
+  } catch {
+    // 如果接口不存在，返回空列表
+    return { list: [] }
+  }
 }
 
 // 获取团队荣誉详情
+// 注意：后端可能还没有实现此接口，需要后端添加
+// 后端返回: Result<TeamAward>
 export const getTeamAwardDetail = async (id: number): Promise<TeamAward> => {
-  return request.get<TeamAward>(`/team-awards/${id}`) as Promise<TeamAward>
+  try {
+    return await request.get<TeamAward>(`/team-awards/${id}`) as Promise<TeamAward>
+  } catch {
+    // 如果接口不存在，返回空对象
+    return { id: 0, title: '', year: new Date().getFullYear(), images: [] }
+  }
 }

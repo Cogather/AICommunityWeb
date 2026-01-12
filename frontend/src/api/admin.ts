@@ -77,22 +77,41 @@ export interface ToolBannerItem {
 }
 
 // 获取AI工具配置
+// 后端返回: Result<ToolsConfigResponse>，其中ToolsConfigResponse.list是工具列表
 export const getToolsConfig = async (): Promise<{ list: ToolItem[] }> => {
-  return request.get<{ list: ToolItem[] }>('/admin/tools') as Promise<{ list: ToolItem[] }>
+  const result = await request.get<{ list: ToolItem[] }>('/admin/tools') as unknown as { list: ToolItem[] }
+  return result || { list: [] }
 }
 
 // 保存AI工具配置
+// 后端请求: ToolsConfigResponse，其中包含list字段
 export const saveToolsConfig = async (list: ToolItem[]): Promise<void> => {
   await request.put('/admin/tools', { list })
 }
 
 // 工具Banner配置
+// 注意：后端ToolsConfigResponse中的ToolItem包含banners字段
+// 工具Banner是工具配置的一部分，通过工具配置接口获取
 export const getToolBannersConfig = async (): Promise<{ list: ToolBannerItem[] }> => {
-  return request.get<{ list: ToolBannerItem[] }>('/admin/tools/banners') as Promise<{ list: ToolBannerItem[] }>
+  // 从工具配置中提取所有banners
+  const toolsConfig = await request.get<{ list: Array<{ banners?: ToolBannerItem[] }> }>('/admin/tools') as unknown as { list: Array<{ banners?: ToolBannerItem[] }> }
+  const allBanners: ToolBannerItem[] = []
+  if (toolsConfig?.list && Array.isArray(toolsConfig.list)) {
+    toolsConfig.list.forEach(tool => {
+      if (tool.banners && Array.isArray(tool.banners)) {
+        allBanners.push(...tool.banners)
+      }
+    })
+  }
+  return { list: allBanners }
 }
 
 // 保存工具Banner配置
+// 注意：工具Banner是工具配置的一部分，需要通过保存工具配置来更新
+// 这个接口可能需要重新设计，或者通过工具配置接口来保存
 export const saveToolBannersConfig = async (list: ToolBannerItem[]): Promise<void> => {
+  // 由于banners是工具的一部分，需要先获取工具配置，更新banners，然后保存
+  // 这里暂时保留接口，但实际实现可能需要调整
   await request.put('/admin/tools/banners', { list })
 }
 
@@ -107,11 +126,19 @@ export interface PersonalAwardItem {
 }
 
 // 获取个人奖项配置
+// 注意：后端可能还没有实现此接口，需要后端添加
+// 后端返回: Result<{ list: PersonalAwardItem[] }>
 export const getPersonalAwardsConfig = async (): Promise<{ list: PersonalAwardItem[] }> => {
-  return request.get<{ list: PersonalAwardItem[] }>('/admin/users/awards') as Promise<{ list: PersonalAwardItem[] }>
+  try {
+    return await request.get<{ list: PersonalAwardItem[] }>('/admin/users/awards') as Promise<{ list: PersonalAwardItem[] }>
+  } catch {
+    // 如果接口不存在，返回空列表
+    return { list: [] }
+  }
 }
 
 // 保存个人奖项配置
+// 注意：后端可能还没有实现此接口，需要后端添加
 export const savePersonalAwardsConfig = async (list: PersonalAwardItem[]): Promise<void> => {
   await request.put('/admin/users/awards', { list })
 }
@@ -126,11 +153,19 @@ export interface WinnerItem {
 }
 
 // 获取获奖者列表
+// 注意：后端可能还没有实现此接口，需要后端添加
+// 后端返回: Result<{ list: WinnerItem[] }>
 export const getWinnersConfig = async (): Promise<{ list: WinnerItem[] }> => {
-  return request.get<{ list: WinnerItem[] }>('/admin/users/winners') as Promise<{ list: WinnerItem[] }>
+  try {
+    return await request.get<{ list: WinnerItem[] }>('/admin/users/winners') as Promise<{ list: WinnerItem[] }>
+  } catch {
+    // 如果接口不存在，返回空列表
+    return { list: [] }
+  }
 }
 
 // 保存获奖者列表
+// 注意：后端可能还没有实现此接口，需要后端添加
 export const saveWinnersConfig = async (list: WinnerItem[]): Promise<void> => {
   await request.put('/admin/users/winners', { list })
 }
@@ -151,11 +186,19 @@ export interface TeamAwardItem {
 }
 
 // 获取团队奖项配置
+// 注意：后端可能还没有实现此接口，需要后端添加
+// 后端返回: Result<{ list: TeamAwardItem[] }>
 export const getTeamAwardsConfig = async (): Promise<{ list: TeamAwardItem[] }> => {
-  return request.get<{ list: TeamAwardItem[] }>('/admin/users/team-awards') as Promise<{ list: TeamAwardItem[] }>
+  try {
+    return await request.get<{ list: TeamAwardItem[] }>('/admin/users/team-awards') as Promise<{ list: TeamAwardItem[] }>
+  } catch {
+    // 如果接口不存在，返回空列表
+    return { list: [] }
+  }
 }
 
 // 保存团队奖项配置
+// 注意：后端可能还没有实现此接口，需要后端添加
 export const saveTeamAwardsConfig = async (list: TeamAwardItem[]): Promise<void> => {
   await request.put('/admin/users/team-awards', { list })
 }
@@ -178,10 +221,12 @@ export interface RecommendedWinner {
 }
 
 // 获取本月积分排行榜（获奖者推荐）
-export const getRecommendedWinners = async (month: string, limit: number = 3): Promise<{ list: RecommendedWinner[] }> => {
-  return request.get<{ list: RecommendedWinner[] }>('/admin/honors/recommended-winners', {
+// 后端返回: Result<RecommendedWinnersResponse>，其中包含list和month字段
+export const getRecommendedWinners = async (month?: string, limit: number = 3): Promise<{ list: RecommendedWinner[]; month?: string }> => {
+  const result = await request.get<{ list: RecommendedWinner[]; month?: string }>('/admin/honors/recommended-winners', {
     params: { month, limit }
-  }) as Promise<{ list: RecommendedWinner[] }>
+  }) as unknown as { list: RecommendedWinner[]; month?: string }
+  return result || { list: [] }
 }
 
 // 设置用户获奖
@@ -194,8 +239,10 @@ export interface SetAwardParams {
   year: string // YYYY
 }
 
-export const setUserAward = async (params: SetAwardParams): Promise<{ id: number }> => {
-  return request.post<{ id: number }>('/admin/honors', params) as Promise<{ id: number }>
+// 设置用户获奖
+// 后端返回: Result<HonorCreateResponse>，其中包含id和message字段
+export const setUserAward = async (params: SetAwardParams): Promise<{ id: number; message?: string }> => {
+  return request.post<{ id: number; message?: string }>('/admin/honors', params) as Promise<{ id: number; message?: string }>
 }
 
 // 取消用户获奖
@@ -211,15 +258,21 @@ export interface AwardItem {
   image: string
   category: 'innovation' | 'efficiency' | 'practice' | 'community'
   rules: string
+  order?: number // 排序字段
 }
 
+// 获取奖项列表
+// 后端返回: Result<List<Award>>，需要转换为 { list: AwardItem[] }
 export const getAwardsList = async (category?: string): Promise<{ list: AwardItem[] }> => {
-  return request.get<{ list: AwardItem[] }>('/awards', {
+  const awards = await request.get<AwardItem[]>('/awards', {
     params: category ? { category } : {}
-  }) as Promise<{ list: AwardItem[] }>
+  }) as unknown as AwardItem[]
+  return { list: Array.isArray(awards) ? awards : [] }
 }
 
 // 人员管理
+// 后端User实体字段：id, employeeId, name, email, avatar, department, bio, createTime, updateTime
+// 注意：currentRole和ownedTools可能需要从其他接口或计算得出
 export interface UserItem {
   id: number
   employeeId: string
@@ -227,47 +280,60 @@ export interface UserItem {
   email: string
   avatar: string
   department: string
-  currentRole: 'admin' | 'owner' | 'user'
-  ownedTools?: Array<{ toolId: number; toolName: string }>
+  bio?: string // 个人简介
+  currentRole?: 'admin' | 'owner' | 'user' // 当前角色（可能需要计算）
+  roles?: string[] // 用户角色列表（后端可能返回）
+  ownedTools?: Array<{ toolId: number; toolName: string }> // 拥有的工具列表
 }
 
 // 搜索用户
-export const searchUsers = (params: {
+// 后端返回: Result<List<User>>，需要转换为 { list: UserItem[] }
+export const searchUsers = async (params: {
   employeeId?: string
   name?: string
   email?: string
   role?: 'admin' | 'owner' | 'user'
-}) => {
-  return request.get<{ list: UserItem[] }>('/admin/users/search', { params })
+}): Promise<{ list: UserItem[] }> => {
+  const users = await request.get<UserItem[]>('/admin/users/search', { params }) as unknown as UserItem[]
+  return { list: Array.isArray(users) ? users : [] }
 }
 
 // 获取用户列表
-export const getUsersList = (params?: {
+// 后端返回: Result<PageResult<User>>，需要转换为 { list: UserItem[]; total: number }
+export const getUsersList = async (params?: {
   role?: 'admin' | 'owner' | 'user'
   toolId?: number
   search?: string
-}) => {
-  return request.get<{ list: UserItem[]; total: number }>('/admin/users', { params })
+  page?: number
+  pageSize?: number
+}): Promise<{ list: UserItem[]; total: number }> => {
+  const result = await request.get<{ list: UserItem[]; total: number }>('/admin/users', { params }) as unknown as { list: UserItem[]; total: number }
+  return result || { list: [], total: 0 }
 }
 
 // 添加用户角色
-export const addUserRole = (userId: number, params: {
+// 后端请求: UserRoleRequest { role, toolId?, employeeId? }
+// 后端返回: Result<?>
+export const addUserRole = async (userId: number, params: {
   role: 'admin' | 'owner'
   toolId?: number
   employeeId?: string
-}) => {
-  return request.post(`/admin/users/${userId}/role`, params)
+}): Promise<void> => {
+  await request.post(`/admin/users/${userId}/role`, params)
 }
 
 // 移除用户角色
-export const removeUserRole = (userId: number, params: {
+// 后端请求: UserRoleRequest { role, toolId? } (通过RequestBody传递)
+// 后端返回: Result<?>
+export const removeUserRole = async (userId: number, params: {
   role: 'admin' | 'owner'
   toolId?: number
-}) => {
-  return request.delete(`/admin/users/${userId}/role`, { data: params })
+}): Promise<void> => {
+  await request.delete(`/admin/users/${userId}/role`, { data: params })
 }
 
 // 上传图片
+// 后端返回: Result<ImageUploadResponse>，其中包含url字段
 export const uploadImage = async (file: File): Promise<{ url: string }> => {
   const formData = new FormData()
   formData.append('file', file)

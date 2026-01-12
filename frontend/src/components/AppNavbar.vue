@@ -16,7 +16,7 @@
           class="users-dropdown"
         >
           <span class="nav-item users-nav-link" :class="{ 'router-link-active': isUsersPage }">
-            <RouterLink to="/users" class="nav-link-inner">AI使用达人</RouterLink>
+            <span class="nav-link-text">AI使用达人</span>
             <span class="dropdown-arrow">▼</span>
           </span>
           <template #dropdown>
@@ -196,22 +196,32 @@ watch(() => route.path, (newPath) => {
   loadTeamAwardsForMenu()
 }, { immediate: true })
 
+// 处理AI使用达人链接点击（已移除，因为现在RouterLink和dropdown分开）
+
 // 处理下拉菜单命令
 const handleUsersMenuCommand = (command: string) => {
+  console.log('AppNavbar: 下拉菜单命令', command)
   const [type, value] = command.split(':')
   if (type === 'awardType') {
     currentAwardType.value = value as 'individual' | 'team'
-    // 如果不在/users页面，先跳转，然后发送事件
+    // 点击下拉菜单项时，跳转到/users页面并发送事件
     if (route.path !== '/users') {
       router.push('/users').then(() => {
         // 等待页面加载完成后再发送事件
         setTimeout(() => {
+          console.log('AppNavbar: 发送awardTypeChange事件', value)
           window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
-        }, 100)
+        }, 150)
+      }).catch((err) => {
+        console.error('AppNavbar: 路由跳转失败', err)
       })
     } else {
       // 如果已经在/users页面，直接发送事件
-      window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
+      console.log('AppNavbar: 已在/users页面，直接发送awardTypeChange事件', value)
+      // 使用nextTick确保组件已更新
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
+      }, 50)
     }
   }
 }
@@ -491,25 +501,23 @@ const handleCommand = (command: string) => {
   .users-nav-link {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    cursor: pointer;
+    gap: 0;
+    cursor: default !important; /* 不是pointer，表示不可点击 */
     position: relative;
     outline: none !important;
     border: none !important;
     box-shadow: none !important;
-    color: #333 !important; /* 和其他导航项一样的颜色 */
-    font-weight: 700 !important; /* 加粗字体 */
+    color: #333 !important;
+    font-weight: 700 !important;
+    padding: 8px 16px;
+    text-decoration: none;
+    background: transparent !important;
+    user-select: none; /* 禁止选中文字 */
 
-    .nav-link-inner {
-      text-decoration: none;
-      color: inherit !important;
-      outline: none !important;
-      font-weight: 700 !important; /* 确保RouterLink内的文字也是700 */
-    }
-    
-    :deep(a) {
-      font-weight: 700 !important; /* 确保RouterLink的字体粗细 */
-      color: inherit !important;
+    .nav-link-text {
+      color: inherit;
+      font-weight: 700;
+      pointer-events: none; /* 禁止点击 */
     }
 
     .dropdown-arrow {
@@ -518,11 +526,19 @@ const handleCommand = (command: string) => {
       transition: transform 0.3s ease;
       display: inline-block;
       line-height: 1;
+      margin-left: 2px;
+      pointer-events: none; /* 禁止点击 */
     }
 
-    &:hover .dropdown-arrow {
-      transform: rotate(180deg);
-      color: #1e40af;
+    &:hover {
+      color: #1e40af !important;
+      background: transparent !important;
+      cursor: default !important; /* 悬停时也是default */
+      
+      .dropdown-arrow {
+        transform: rotate(180deg);
+        color: #1e40af;
+      }
     }
 
     &:focus,
@@ -531,9 +547,14 @@ const handleCommand = (command: string) => {
       outline: none !important;
       border: none !important;
       box-shadow: none !important;
+      background: transparent !important;
+      cursor: default !important;
     }
 
     &.router-link-active {
+      color: #1e3a8a !important;
+      background: transparent !important;
+      
       &::after {
         display: none; /* 不显示选中框 */
       }
@@ -542,6 +563,9 @@ const handleCommand = (command: string) => {
 
   :deep(.el-dropdown) {
     outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
     
     &:focus,
     &:focus-visible,
@@ -549,7 +573,16 @@ const handleCommand = (command: string) => {
       outline: none !important;
       border: none !important;
       box-shadow: none !important;
+      background: transparent !important;
     }
+  }
+  
+  :deep(.el-dropdown__trigger) {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    cursor: default !important;
   }
 }
 
