@@ -328,7 +328,7 @@ onMounted(() => {
   // 监听配置更新
   window.addEventListener('adminConfigUpdated', handleConfigUpdate)
 
-  // 检查路由参数
+  // 检查路由参数（优先从query参数获取toolId）
   const toolId = route.query.toolId
   if (toolId) {
     const id = Number(toolId)
@@ -340,14 +340,36 @@ onMounted(() => {
       selectedToolId.value = 'other'
       isToolOwner.value = false
     }
-  } else {
-    // 如果没有toolId参数，默认选择第一个工具
-    if (tools.value.length > 0 && tools.value[0]) {
-      selectedToolId.value = tools.value[0].id
-      // 检查是否为工具Owner
-      checkToolOwner(tools.value[0].id)
+    } else {
+      // 如果没有toolId参数，尝试从路径中匹配工具名称
+      const pathMatch = route.path.match(/\/tools\/([^/?]+)/)
+      if (pathMatch) {
+        const toolName = pathMatch[1]
+        const matchedTool = tools.value.find((t: any) => {
+          // 尝试匹配工具名称（不区分大小写）
+          const toolNameFromLink = t.name.toLowerCase().replace(/\s+/g, '-')
+          return toolNameFromLink === toolName.toLowerCase() || 
+                 t.name.toLowerCase() === toolName.toLowerCase()
+        })
+        if (matchedTool) {
+          selectedToolId.value = matchedTool.id
+          checkToolOwner(matchedTool.id)
+        } else {
+          // 如果路径匹配失败，默认选择第一个工具
+          if (tools.value.length > 0 && tools.value[0]) {
+            selectedToolId.value = tools.value[0].id
+            checkToolOwner(tools.value[0].id)
+          }
+        }
+      } else {
+        // 如果没有toolId参数和路径匹配，默认选择第一个工具
+        if (tools.value.length > 0 && tools.value[0]) {
+          selectedToolId.value = tools.value[0].id
+          // 检查是否为工具Owner
+          checkToolOwner(tools.value[0].id)
+        }
+      }
     }
-  }
 })
 
 // 监听selectedToolId变化，自动检查权限

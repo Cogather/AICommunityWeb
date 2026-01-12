@@ -41,7 +41,7 @@
           <div class="glass-card honor-section">
             <!-- 顶部标题条 -->
             <div class="honor-header-bar">
-              <h3 class="header-title">AI使用达人</h3>
+              <h3 class="header-title">AI使用达人·荣誉殿堂</h3>
               <el-button 
                 text 
                 size="small" 
@@ -53,7 +53,42 @@
             </div>
             
             <div class="honor-split-container" style="padding: 20px;">
-              <!-- AI使用达人 -->
+              <!-- 左边：荣誉殿堂 -->
+              <div class="honor-hall">
+                <div class="honor-banner" @click="router.push('/users')" style="cursor: pointer;">
+                  <img 
+                    v-if="honorBannerImage" 
+                    :src="honorBannerImage" 
+                    alt="荣誉殿堂" 
+                    class="banner-image"
+                  />
+                  <div v-else class="banner-placeholder">
+                    <el-icon><Trophy /></el-icon>
+                    <span>荣誉殿堂</span>
+                  </div>
+                  <div class="banner-overlay">
+                    <div class="banner-content">
+                      <h3>荣誉殿堂</h3>
+                      <p>见证每一个闪耀时刻</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="awards-grid">
+                  <div 
+                    v-for="award in honorAwards" 
+                    :key="award.id"
+                    class="honor-ribbon-btn"
+                    @click="router.push('/award-rules')"
+                  >
+                    <div class="ribbon-shape">
+                      <span class="ribbon-text">{{ award.name }}</span>
+                      <div class="gold-shine"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右边：AI使用达人 -->
               <div class="ai-users">
                 <div class="users-header">
                   <h4>AI使用达人</h4>
@@ -123,7 +158,7 @@
             </div>
             <div class="text-list">
               <div 
-                v-for="practice in practices.slice(0, 5)" 
+                v-for="practice in practices.training.slice(0, 5)" 
                 :key="practice.id" 
                 class="list-row"
                 @click="handlePracticeClick(practice)"
@@ -157,7 +192,7 @@
             </div>
             <div class="text-list">
               <div 
-                v-for="practice in practices.slice(0, 5)" 
+                v-for="practice in practices.trainingBattle.slice(0, 5)" 
                 :key="'train-' + practice.id" 
                 class="list-row"
                 @click="handlePracticeClick(practice)"
@@ -190,15 +225,20 @@
               </el-button>
             </div>
             <div class="text-list">
-              <p 
-                v-for="n in 5" 
-                :key="n" 
+              <div 
+                v-for="practice in practices.userExchange.slice(0, 5)" 
+                :key="'exchange-' + practice.id" 
                 class="list-row"
-                @click="router.push('/empowerment')"
+                @click="handlePracticeClick(practice)"
               >
-                <span class="tag blue">讨论</span>
-                如何使用 Agent 提升代码开发效率？
-              </p>
+                <div class="practice-content">
+                  <h4 class="practice-title">{{ practice.title }}</h4>
+                  <div class="practice-meta">
+                    <span class="practice-author">{{ practice.author }}</span>
+                    <span class="practice-time">{{ practice.time }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -299,18 +339,74 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowRight, ChatDotRound, Bell, Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
+import { getHonor, getTools, getToolBanners, getPractices } from '../api/home'
 
 const router = useRouter()
 
+// 荣誉殿堂配置
+const loadHonorConfig = async () => {
+  try {
+    // 优先从API获取
+    const response = await getHonor()
+    if (response && response.honor) {
+      return {
+        bannerImage: response.honor.bannerImage || '',
+        awards: response.honor.awards || []
+      }
+    }
+  } catch (e) {
+    console.error('从API加载荣誉殿堂配置失败，使用localStorage:', e)
+  }
+  
+  // 降级到localStorage
+  try {
+    const saved = localStorage.getItem('admin_honor_config')
+    if (saved) {
+      const config = JSON.parse(saved)
+      return {
+        bannerImage: config.bannerImage || '',
+        awards: config.awards || []
+      }
+    }
+  } catch (e) {
+    console.error('加载荣誉殿堂配置失败:', e)
+  }
+  
+  // 默认数据
+  return {
+    bannerImage: 'https://picsum.photos/800/300?random=30',
+    awards: [
+      { id: 1, name: '年度最佳贡献奖', desc: '2026年度', image: 'https://picsum.photos/200/150?random=31' },
+      { id: 2, name: 'AI创新突破奖', desc: '2026年度', image: 'https://picsum.photos/200/150?random=32' },
+      { id: 3, name: '效率提升大师', desc: '2026年度', image: 'https://picsum.photos/200/150?random=33' },
+      { id: 4, name: '社区贡献奖', desc: '2026年度', image: 'https://picsum.photos/200/150?random=34' }
+    ]
+  }
+}
+
+const honorConfig = ref({ bannerImage: '', awards: [] })
+const honorBannerImage = computed(() => honorConfig.value.bannerImage)
+const honorAwards = computed(() => honorConfig.value.awards)
+
+// 初始化加载所有配置
+onMounted(async () => {
+  honorConfig.value = await loadHonorConfig()
+  tools.value = await loadTools()
+  toolZoneBanners.value = await loadToolBanners()
+  practices.value = await loadPractices()
+})
+
 // 监听配置更新
-const handleConfigUpdate = () => {
+const handleConfigUpdate = async () => {
   newsList.value = loadNewsList()
-  tools.value = loadTools()
-  toolZoneBanners.value = loadToolBanners()
+  tools.value = await loadTools()
+  toolZoneBanners.value = await loadToolBanners()
+  honorConfig.value = await loadHonorConfig()
+  practices.value = await loadPractices()
 }
 
 onMounted(() => {
@@ -322,38 +418,85 @@ onUnmounted(() => {
 })
 
 // AI优秀实践数据
-const practices = ref([
-  {
-    id: 1,
-    title: '大模型在工业设计中的落地应用案例分享',
-    author: '张工程师',
-    time: '2小时前'
-  },
-  {
-    id: 2,
-    title: '如何利用AI提升代码质量和开发效率',
-    author: '李开发者',
-    time: '5小时前'
-  },
-  {
-    id: 3,
-    title: 'AI辅助测试的最佳实践与经验总结',
-    author: '王测试',
-    time: '昨天'
-  },
-  {
-    id: 4,
-    title: '多模态模型在医疗影像分析中的应用',
-    author: '赵医生',
-    time: '2天前'
-  },
-  {
-    id: 5,
-    title: '构建企业级AI知识库的完整方案',
-    author: '陈架构师',
-    time: '3天前'
+const loadPractices = async () => {
+  try {
+    // 优先从API获取
+    const response = await getPractices()
+    if (response) {
+      return {
+        training: response.training || [],
+        trainingBattle: response.trainingBattle || [],
+        userExchange: response.userExchange || []
+      }
+    }
+  } catch (e) {
+    console.error('从API加载AI优秀实践失败，使用默认数据:', e)
   }
-])
+  
+  // 默认数据
+  return {
+    training: [
+      {
+        id: 1,
+        title: '大模型在工业设计中的落地应用案例分享',
+        author: '张工程师',
+        time: '2小时前',
+        category: 'training'
+      },
+      {
+        id: 2,
+        title: '如何利用AI提升代码质量和开发效率',
+        author: '李开发者',
+        time: '5小时前',
+        category: 'training'
+      },
+      {
+        id: 3,
+        title: 'AI辅助测试的最佳实践与经验总结',
+        author: '王测试',
+        time: '昨天',
+        category: 'training'
+      },
+      {
+        id: 4,
+        title: '多模态模型在医疗影像分析中的应用',
+        author: '赵医生',
+        time: '2天前',
+        category: 'training'
+      },
+      {
+        id: 5,
+        title: '构建企业级AI知识库的完整方案',
+        author: '陈架构师',
+        time: '3天前',
+        category: 'training'
+      }
+    ],
+    trainingBattle: [
+      {
+        id: 6,
+        title: 'AI训战实战案例：智能客服系统优化',
+        author: '刘产品',
+        time: '1小时前',
+        category: 'training-battle'
+      },
+      {
+        id: 7,
+        title: '大模型在代码审查中的应用实践',
+        author: '周开发',
+        time: '3小时前',
+        category: 'training-battle'
+      }
+    ],
+    userExchange: []
+  }
+}
+
+const practices = ref({
+  training: [],
+  trainingBattle: [],
+  userExchange: []
+} as { training: any[], trainingBattle: any[], userExchange: any[] })
 
 // Mock Data - 从localStorage读取配置，如果没有则使用默认值
 const loadNewsList = () => {
@@ -402,8 +545,27 @@ const loadNewsList = () => {
 const newsList = ref(loadNewsList())
 
 
-// AI工具列表配置 - 从localStorage读取配置
-const loadTools = () => {
+// AI工具列表配置
+const loadTools = async () => {
+  try {
+    // 优先从API获取
+    const response = await getTools()
+    if (response && response.list && response.list.length > 0) {
+      return response.list.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        desc: item.desc || '',
+        logo: item.logo || '',
+        // 如果link已配置，使用配置的link；否则生成默认link（包含toolId参数）
+        link: item.link || `/tools?toolId=${item.id}`,
+        color: item.color || '#409eff'
+      }))
+    }
+  } catch (e) {
+    console.error('从API加载工具列表失败，使用localStorage:', e)
+  }
+  
+  // 降级到localStorage
   try {
     const saved = localStorage.getItem('admin_tools_config')
     if (saved) {
@@ -413,13 +575,16 @@ const loadTools = () => {
         name: item.name,
         desc: item.desc || '',
         logo: item.logo || '',
-        link: item.link || `/tools/${item.name.toLowerCase()}`,
+        // 如果link已配置，使用配置的link；否则生成默认link（包含toolId参数）
+        link: item.link || `/tools?toolId=${item.id || index + 1}`,
         color: item.color || '#409eff'
       }))
     }
   } catch (e) {
     console.error('加载工具配置失败:', e)
   }
+  
+  // 默认数据
   return [
     { 
       id: 1,
@@ -480,7 +645,7 @@ const loadTools = () => {
   ]
 }
 
-const tools = ref(loadTools())
+const tools = ref([] as any[])
 
 // AI工具专区Banner配置 - 从localStorage读取配置
 const loadToolBanners = () => {
@@ -524,25 +689,63 @@ const getColSpan = (count: number) => {
 
 // 处理工具点击跳转
 const handleToolClick = (tool: any) => {
-  // 跳转到工具专区页面，并传递toolId参数
-  router.push({
-    path: '/tools',
-    query: {
-      toolId: tool.id
-    }
-  })
-}
-
-// 处理工具平台点击跳转（悬浮面板）
-const handleToolPlatformClick = (tool: any) => {
+  // 如果配置了link，使用link跳转（link应该包含toolId参数用于过滤）
   if (tool.link) {
     if (tool.link.startsWith('http')) {
       window.open(tool.link, '_blank')
     } else {
-      router.push(tool.link)
+      // 解析link，确保包含toolId参数
+      try {
+        const linkUrl = new URL(tool.link, window.location.origin)
+        // 如果link中没有toolId参数，自动添加
+        if (!linkUrl.searchParams.has('toolId')) {
+          linkUrl.searchParams.set('toolId', String(tool.id))
+          router.push(linkUrl.pathname + linkUrl.search)
+        } else {
+          router.push(tool.link)
+        }
+      } catch (e) {
+        // 如果link不是完整URL，直接使用并添加toolId参数
+        const separator = tool.link.includes('?') ? '&' : '?'
+        router.push(`${tool.link}${separator}toolId=${tool.id}`)
+      }
     }
   } else {
-    // 如果没有link，跳转到工具专区
+    // 如果没有link，跳转到工具专区，并传递toolId参数
+    router.push({
+      path: '/tools',
+      query: {
+        toolId: tool.id
+      }
+    })
+  }
+}
+
+// 处理工具平台点击跳转（悬浮面板）
+const handleToolPlatformClick = (tool: any) => {
+  // 如果配置了link，使用link跳转（link应该包含toolId参数用于过滤）
+  if (tool.link) {
+    if (tool.link.startsWith('http')) {
+      window.open(tool.link, '_blank')
+    } else {
+      // 解析link，确保包含toolId参数
+      try {
+        const linkUrl = new URL(tool.link, window.location.origin)
+        // 如果link中没有toolId参数，自动添加
+        if (!linkUrl.searchParams.has('toolId')) {
+          linkUrl.searchParams.set('toolId', String(tool.id))
+          router.push(linkUrl.pathname + linkUrl.search)
+        } else {
+          router.push(tool.link)
+        }
+      } catch (e) {
+        // 如果link不是完整URL，直接使用并添加toolId参数
+        const separator = tool.link.includes('?') ? '&' : '?'
+        router.push(`${tool.link}${separator}toolId=${tool.id}`)
+      }
+    }
+  } else {
+    // 如果没有link，跳转到工具专区，并传递toolId参数
     router.push({
       path: '/tools',
       query: {
@@ -1161,6 +1364,19 @@ const toolZoneBanners = ref(loadToolBanners())
   display: flex;
   gap: 20px;
   height: 100%;
+  position: relative;
+
+  /* 灰色虚线分割线 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    border-left: 1px dashed #d1d5db; /* 灰色虚线 */
+    transform: translateX(-50%);
+  }
 }
 
 /* 左边：荣誉殿堂 */
@@ -1203,7 +1419,7 @@ const toolZoneBanners = ref(loadToolBanners())
   
   .banner-content {
     text-align: center;
-    color: #000000; /* 改为黑色 */
+    color: #fff;
     
     h3 {
       margin: 0 0 8px 0;
@@ -1219,66 +1435,109 @@ const toolZoneBanners = ref(loadToolBanners())
       text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
     }
   }
+  
+  .banner-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #fff;
+    gap: 12px;
+    
+    .el-icon {
+      font-size: 48px;
+    }
+    
+    span {
+      font-size: 20px;
+      font-weight: 700;
+    }
+  }
 }
 
-/* 奖项网格 - 小卡片+小logo */
+/* 奖项网格 - 金色绶带样式 */
 .awards-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
 
-.award-card-small {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 12px;
+.honor-ribbon-btn {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0.85;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.3s ease;
+  justify-content: center;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
+    transform: translateY(-4px) scale(1.05);
+    opacity: 1;
   }
-  
-  .award-logo-small {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.1);
-    
-    .award-logo-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+}
+
+.ribbon-shape {
+  position: relative;
+  /* 黄金透明渐变 */
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.25));
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 10px 24px;
+  min-width: 140px;
+  text-align: center;
+  color: #78350f; /* 深褐金文字 */
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: 4px;
+  border-bottom: 3px solid rgba(217, 119, 6, 0.4); /* 底部厚度感 */
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.15);
+  overflow: hidden;
+  width: 100%;
+}
+
+.ribbon-text {
+  position: relative;
+  z-index: 1;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gold-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  transform: skewX(-20deg);
+  animation: shine 4s infinite;
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
   }
-  
-  .award-content-small {
-    flex: 1;
-    min-width: 0;
-    
-    h4 {
-      margin: 0 0 4px 0;
-      font-size: 14px;
-      font-weight: 600;
-      color: #000000; /* 黑色 */
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    
-    p {
-      margin: 0;
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.7); /* 黑色，70% 透明度 */
-    }
+  50%, 100% {
+    left: 150%;
   }
+}
+
+.honor-ribbon-btn:hover .ribbon-shape {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.5), rgba(255, 165, 0, 0.5));
+  border-color: rgba(255, 215, 0, 0.9);
+  color: #451a03;
+  box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
 }
 
 /* 中间分割线 */

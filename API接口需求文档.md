@@ -8,8 +8,7 @@
 1. **首页轮播图** - 管理员在后台配置轮播图内容、图片、链接等
 2. **荣誉殿堂** - 管理员在后台配置Banner图片和奖项列表
    - **注意**: AI使用达人（Top用户）由系统根据用户荣誉数量动态计算，无需配置
-3. **社区头条** - 管理员在后台配置头条内容
-4. **AI工具配置** - 管理员在后台配置：
+3. **AI工具配置** - 管理员在后台配置：
    - 工具列表（工具名称、描述、Logo、颜色）
    - 工具跳转路由路径
    - 工具Banner图
@@ -54,10 +53,11 @@
 ### 首页相关接口
 1. **首页轮播图** - `GET /api/home/carousel`
 2. **AI使用达人（荣誉殿堂）** - `GET /api/home/honor` (包含topUsers)
-3. **社区头条** - `GET /api/home/honor` (包含news)
-4. **AI工具专区Banner和工具列表** - `GET /api/tools`
-5. **AI优秀实践帖子列表** - `GET /api/posts?zone=practices`
-6. **赋能交流帖子列表** - `GET /api/posts?zone=empowerment`
+3. **AI工具列表** - `GET /api/tools`
+4. **AI工具Banner列表** - `GET /api/tools/banners`
+5. **AI优秀实践内容（三块列表）** - `GET /api/home/practices`
+6. **AI优秀实践帖子列表** - `GET /api/posts?zone=practices`
+7. **赋能交流帖子列表** - `GET /api/posts?zone=empowerment`
 
 ### AI优秀实践页面接口
 1. **帖子列表（含搜索排序）** - `GET /api/posts?zone=practices&search=xxx&sort=xxx`
@@ -73,6 +73,8 @@
 4. **荣誉时光轴** - `GET /api/honors?view=timeline&page=xxx`
 5. **个人用户时光轴** - `GET /api/honors?view=timeline&user=xxx&page=xxx`
 6. **奖项规则** - `GET /api/awards/:id/rules`
+7. **团队荣誉列表** - `GET /api/team-awards`
+8. **团队荣誉详情** - `GET /api/team-awards/:id`
 
 ### AI工具专区页面接口
 1. **获取工具列表** - `GET /api/tools`
@@ -151,8 +153,7 @@
    - [用户个人中心](#3-获取当前用户信息)
 2. [首页](#首页)
    - [首页轮播图](#1-获取首页轮播图管理后台配置)
-   - [AI使用达人（荣誉殿堂）](#2-获取荣誉殿堂和社区头条信息管理后台配置)
-   - [社区头条](#2-获取荣誉殿堂和社区头条信息管理后台配置)
+   - [AI使用达人（荣誉殿堂）](#2-获取荣誉殿堂信息管理后台配置)
    - [AI工具专区（Banner和工具列表）](#3-获取ai工具列表管理后台配置)
    - [AI优秀实践](#4-获取ai优秀实践帖子列表接口动态数据)
    - [赋能交流](#5-获取赋能交流帖子列表接口动态数据)
@@ -322,7 +323,7 @@
 ## 首页
 
 > **重要说明**: 首页数据分为两类：
-> 1. **管理后台配置数据**：轮播图、荣誉殿堂、工具配置、社区头条 - 这些数据由管理员在后台配置，前端通过接口读取
+> 1. **管理后台配置数据**：轮播图、荣誉殿堂、工具配置 - 这些数据由管理员在后台配置，前端通过接口读取
 > 2. **接口动态数据**：AI优秀实践、赋能交流的帖子列表 - 这些数据通过接口动态获取
 
 ### 1. 获取首页轮播图（管理后台配置）
@@ -347,13 +348,12 @@
 - **使用页面**: `HomeView.vue` (HeroCarousel组件)
 - **配置页面**: `AdminView.vue` (首页管理-轮播图配置)
 
-### 2. 获取荣誉殿堂和社区头条信息（管理后台配置）
+### 2. 获取荣誉殿堂信息（管理后台配置）
 - **接口**: `GET /api/home/honor`
-- **说明**: 一次性获取荣誉殿堂模块和社区头条的所有数据，包括：
+- **说明**: 获取荣誉殿堂模块的所有数据，包括：
   - 荣誉殿堂Banner图片
   - 奖项列表
   - AI使用达人（Top用户）
-  - 社区头条列表
 - **响应数据**:
   ```json
   {
@@ -377,18 +377,6 @@
           "department": "string"
         }
       ]
-    },
-    "news": {
-      "list": [
-        {
-          "id": "number",
-          "title": "string",
-          "image": "string",
-          "date": "string",
-          "link": "string",
-          "order": "number"
-        }
-      ]
     }
   }
   ```
@@ -396,17 +384,96 @@
 - **配置页面**: 
   - `AdminView.vue` (首页管理-荣誉殿堂Banner配置)
   - `AdminView.vue` (首页管理-荣誉殿堂奖项配置)
-  - `AdminView.vue` (首页管理-社区头条配置)
 - **数据说明**:
   - `honor.bannerImage`: 荣誉殿堂Banner图片URL（管理后台配置）
   - `honor.awards`: 奖项列表（管理后台配置）
   - `honor.topUsers`: AI使用达人Top用户列表（动态计算，根据用户荣誉数量排序）
-  - `news.list`: 社区头条列表（管理后台配置，默认返回前4条）
 
 ### 3. 获取AI工具列表（管理后台配置）
 - **接口**: `GET /api/tools`
-- **查询参数**: `featured` (boolean, 是否只获取推荐工具)
-- **说明**: 工具列表、工具路由、工具Banner都由管理后台配置
+- **查询参数**: `featured` (boolean, 可选，是否只获取推荐工具)
+- **说明**: 工具列表、工具路由都由管理后台配置
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "name": "string",
+        "desc": "string",
+        "logo": "string",
+        "color": "string",
+        "link": "string" // 跳转路由，如 "/tools?toolId=1" 或 "/tools/testmate?toolId=1"，用于跳转到工具专区并过滤显示对应工具的内容
+      }
+    ]
+  }
+  ```
+- **使用页面**: `HomeView.vue` (首页-工具列表), `ToolsView.vue` (工具专区页面)
+- **数据说明**:
+  - `link`: 跳转路由路径，点击工具按钮后会跳转到此路径。如果link中包含`toolId`参数，工具专区页面会自动选中对应的工具并过滤显示该工具的内容。如果link不包含`toolId`参数，系统会自动添加`toolId`参数。
+  - 例如：`/tools?toolId=1` 或 `/tools/testmate?toolId=1` 都会跳转到工具专区并自动选中ID为1的工具
+
+### 3.1. 获取AI工具Banner列表（管理后台配置）
+- **接口**: `GET /api/tools/banners`
+- **说明**: 获取AI工具专区的Banner轮播图列表，由管理后台配置
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "image": "string",
+        "title": "string",
+        "desc": "string",
+        "order": "number"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `HomeView.vue` (首页-AI工具专区Banner)
+
+### 4. 获取AI优秀实践内容（首页三块列表）
+- **接口**: `GET /api/home/practices`
+- **说明**: 获取首页AI优秀实践模块的三块列表内容（培训赋能、AI训战、用户交流）
+- **响应数据**:
+  ```json
+  {
+    "training": [
+      {
+        "id": "number",
+        "title": "string",
+        "author": "string",
+        "time": "string",
+        "category": "training"
+      }
+    ],
+    "trainingBattle": [
+      {
+        "id": "number",
+        "title": "string",
+        "author": "string",
+        "time": "string",
+        "category": "training-battle"
+      }
+    ],
+    "userExchange": [
+      {
+        "id": "number",
+        "title": "string",
+        "author": "string",
+        "time": "string",
+        "category": "user-exchange"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `HomeView.vue` (首页-AI优秀实践模块)
+- **数据说明**:
+  - `training`: 培训赋能列表（默认返回前5条）
+  - `trainingBattle`: AI训战列表（默认返回前5条）
+  - `userExchange`: 用户交流列表（默认返回前5条）
+
+### 5. 获取AI工具列表（管理后台配置）
 - **响应数据**:
   ```json
   {
@@ -441,7 +508,7 @@
   - 工具专区页面的工具筛选按钮（除了"其他工具"）都来自此接口返回的工具列表
   - "其他工具"是前端固定的，不在工具配置中
 
-### 4. 获取AI优秀实践帖子列表（接口动态数据）
+### 5. 获取AI优秀实践帖子列表（接口动态数据）
 - **接口**: `GET /api/posts`
 - **查询参数**: 
   - `zone`: "practices"
@@ -449,9 +516,11 @@
   - `sort`: "newest" | "hot"
 - **说明**: 动态获取AI优秀实践专区的帖子列表
 - **响应数据**: 见"帖子相关-获取帖子列表"
-- **使用页面**: `HomeView.vue` (AI优秀实践模块)
+- **使用页面**: `PracticesView.vue` (AI优秀实践页面)
 
-### 5. 获取赋能交流帖子列表（接口动态数据）
+### 6. 获取赋能交流帖子列表（接口动态数据）
+
+### 7. 获取赋能交流帖子列表（接口动态数据）
 - **接口**: `GET /api/posts`
 - **查询参数**: 
   - `zone`: "empowerment"
@@ -461,7 +530,7 @@
 - **响应数据**: 见"帖子相关-获取帖子列表"
 - **使用页面**: `HomeView.vue` (赋能交流模块)
 
-### 6. 获取扶摇Agent应用置顶帖子（管理后台配置）
+### 8. 获取扶摇Agent应用置顶帖子（管理后台配置）
 - **接口**: `GET /api/agent/featured-post`
 - **说明**: 获取扶摇Agent应用页面的置顶帖子，由管理后台配置
 - **响应数据**:
@@ -1627,6 +1696,53 @@
   ```
 - **使用页面**: `HomeView.vue`, `AwardRulesView.vue`, `AdminView.vue` (获奖者推荐-设置评奖)
 
+### 6. 获取团队荣誉列表
+- **接口**: `GET /api/team-awards`
+- **查询参数**:
+  - `year`: string (可选，筛选年份，格式：YYYY，如 "2026")
+- **说明**: 获取团队荣誉列表，支持按年份筛选
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "title": "string",
+        "year": "number",
+        "images": [
+          {
+            "id": "number",
+            "image": "string",
+            "winnerName": "string"
+          }
+        ]
+      }
+    ]
+  }
+  ```
+- **使用页面**: `UsersView.vue` (AI使用达人页面-团队荣誉)
+
+### 7. 获取团队荣誉详情
+- **接口**: `GET /api/team-awards/:id`
+- **路径参数**:
+  - `id`: number (团队奖项ID)
+- **响应数据**:
+  ```json
+  {
+    "id": "number",
+    "title": "string",
+    "year": "number",
+    "images": [
+      {
+        "id": "number",
+        "image": "string",
+        "winnerName": "string"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `UsersView.vue` (AI使用达人页面-团队荣誉)
+
 
 
 ---
@@ -1815,13 +1931,12 @@
 
 ## 管理后台
 
-> **重要说明**: 管理后台用于配置首页的静态内容，包括轮播图、荣誉殿堂、工具配置、社区头条等。这些配置数据会被首页读取并显示。
-> 
+> **重要说明**: 管理后台用于配置首页的静态内容，包括轮播图、荣誉殿堂、工具配置等。这些配置数据会被首页读取并显示。
+>
 > **保存各个页面配置接口**：管理后台的所有配置接口都使用 `PUT` 方法保存配置，包括：
 > - 首页轮播图配置
 > - 荣誉殿堂Banner配置
 > - 荣誉殿堂奖项配置
-> - 社区头条配置
 > - AI工具配置
 > - 扶摇Agent应用置顶帖子配置
 > - 推荐封面配置
@@ -1927,46 +2042,7 @@
 - **使用页面**: `AdminView.vue` (首页管理-荣誉殿堂奖项配置)
 - **注意**: AI使用达人（topUsers）不需要在后台配置，由系统根据用户荣誉数量动态计算
 
-### 7. 获取社区头条配置
-- **接口**: `GET /api/admin/home/news`
-- **响应数据**:
-  ```json
-  {
-    "list": [
-      {
-        "id": "number",
-        "title": "string",
-        "image": "string",
-        "date": "string",
-        "link": "string",
-        "order": "number"
-      }
-    ]
-  }
-  ```
-- **使用页面**: `AdminView.vue` (首页管理-社区头条配置)
-
-### 8. 保存社区头条配置
-- **接口**: `PUT /api/admin/home/news`
-- **请求参数**:
-  ```json
-  {
-    "list": [
-      {
-        "id": "number",
-        "title": "string",
-        "image": "string",
-        "date": "string",
-        "link": "string",
-        "order": "number"
-      }
-    ]
-  }
-  ```
-- **说明**: 保存后，首页通过 `GET /api/home/honor` 统一读取（与荣誉殿堂数据一起返回）
-- **使用页面**: `AdminView.vue` (首页管理-社区头条配置)
-
-### 9. 获取AI工具配置
+### 7. 获取AI工具配置
 - **接口**: `GET /api/admin/tools`
 - **响应数据**:
   ```json
@@ -2048,7 +2124,7 @@
   ```
 - **使用页面**: `AdminView.vue` (管理后台-扶摇Agent应用置顶帖子配置)
 
-### 12. 保存扶摇Agent应用置顶帖子配置
+### 11. 保存扶摇Agent应用置顶帖子配置
 - **接口**: `PUT /api/admin/agent/featured-post`
 - **请求参数**:
   ```json
@@ -2073,7 +2149,7 @@
   - 如果提供id字段，可以关联到已存在的帖子，此时会同步更新帖子的封面图等信息
 - **使用页面**: `AdminView.vue` (管理后台-扶摇Agent应用置顶帖子配置)
 
-### 13. 获取推荐封面配置
+### 12. 获取推荐封面配置
 - **接口**: `GET /api/admin/posts/recommended-covers`
 - **说明**: 获取当前配置的推荐封面列表，用于管理后台编辑
 - **响应数据**:
@@ -2091,7 +2167,7 @@
   ```
 - **使用页面**: `AdminView.vue` (管理后台-推荐封面配置)
 
-### 14. 保存推荐封面配置
+### 13. 保存推荐封面配置
 - **接口**: `PUT /api/admin/posts/recommended-covers`
 - **请求参数**:
   ```json
@@ -2109,7 +2185,7 @@
 - **说明**: 保存推荐封面配置后，发帖页面通过 `GET /api/posts/recommended-covers` 读取
 - **使用页面**: `AdminView.vue` (管理后台-推荐封面配置)
 
-### 15. 搜索用户（通过工号搜索人员的接口）
+### 14. 搜索用户（通过工号搜索人员的接口）
 - **接口**: `GET /api/admin/users/search`
 - **说明**: 通过工号、姓名或邮箱搜索用户，用于人员管理添加用户
 - **查询参数**:
@@ -2137,7 +2213,7 @@
   ```
 - **使用页面**: `AdminView.vue` (管理后台-人员管理)
 
-### 15.1. 搜索管理员（搜索管理员姓名的接口）
+### 14.1. 搜索管理员（搜索管理员姓名的接口）
 - **接口**: `GET /api/admin/users/search`
 - **说明**: 搜索管理员用户，用于管理后台搜索管理员
 - **查询参数**:
@@ -2147,7 +2223,7 @@
 - **响应数据**: 同"搜索用户"
 - **使用页面**: `AdminView.vue` (管理后台-人员管理-搜索管理员)
 
-### 16. 获取用户列表
+### 15. 获取用户列表
 - **接口**: `GET /api/admin/users`
 - **查询参数**:
   - `role`: "admin" | "owner" | "user" (可选，筛选角色)
@@ -2182,7 +2258,7 @@
   - 可以筛选不同角色的用户
   - 可以查看工具Owner及其拥有的工具列表
 
-### 17. 添加管理员
+### 16. 添加管理员
 - **接口**: `POST /api/admin/users/:userId/role`
 - **请求参数**:
   ```json
@@ -2194,7 +2270,7 @@
 - **说明**: 将用户设置为管理员角色
 - **使用页面**: `AdminView.vue` (管理后台-人员管理)
 
-### 18. 添加工具Owner
+### 17. 添加工具Owner
 - **接口**: `POST /api/admin/users/:userId/role`
 - **请求参数**:
   ```json
@@ -2214,7 +2290,7 @@
   ```
 - **使用页面**: `AdminView.vue` (管理后台-人员管理)
 
-### 19. 移除用户角色
+### 18. 移除用户角色
 - **接口**: `DELETE /api/admin/users/:userId/role`
 - **请求参数**:
   ```json
@@ -2226,7 +2302,7 @@
 - **说明**: 移除用户的指定角色（管理员或工具Owner）
 - **使用页面**: `AdminView.vue` (管理后台-人员管理)
 
-### 20. 获取本月积分排行榜（获奖者推荐接口）
+### 19. 获取本月积分排行榜（获奖者推荐接口）
 - **接口**: `GET /api/admin/honors/recommended-winners`
 - **说明**: 获取本月积分靠前的用户，用于管理员推荐评奖
 - **查询参数**: 
@@ -2260,7 +2336,7 @@
   - 排除管理员用户的积分
   - 按积分从高到低排序，返回Top 3
 
-### 21. 设置用户获奖（获奖者推荐接口）
+### 20. 设置用户获奖（获奖者推荐接口）
 - **接口**: `POST /api/admin/honors`
 - **说明**: 为推荐的用户设置获奖记录，用于管理后台获奖者推荐功能
 - **请求参数**:
@@ -2294,7 +2370,7 @@
   - 奖项名称必须从管理后台配置的奖项列表中选择，只有配置了的奖项才能被选择
   - 获奖时间使用年月格式，系统会自动提取年份用于展示和统计
 
-### 21.1. 通过已添加的奖项获取获奖者可选奖项（通过已添加的奖项获取获奖者可选奖项的接口）
+### 20.1. 通过已添加的奖项获取获奖者可选奖项（通过已添加的奖项获取获奖者可选奖项的接口）
 - **接口**: `GET /api/awards?category=xxx`
 - **说明**: 根据奖项分类获取可选奖项列表，用于获奖者推荐时选择奖项
 - **查询参数**:
@@ -2305,12 +2381,132 @@
   - 只返回指定分类下已配置的奖项
   - 用于获奖者推荐时，管理员只能从已配置的奖项中选择
 
-### 22. 取消用户获奖
+### 21. 取消用户获奖
 - **接口**: `DELETE /api/admin/honors/:id`
 - **说明**: 删除已设置的获奖记录
 - **使用页面**: `AdminView.vue` (管理后台-AI使用达人管理-获奖者推荐)
 
-### 23. 上传图片
+### 22. 获取个人奖项配置
+- **接口**: `GET /api/admin/users/awards`
+- **说明**: 获取个人奖项配置列表，用于管理后台编辑
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "name": "string",
+        "description": "string",
+        "order": "number"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (AI使用达人管理-个人奖项设置-奖项设置)
+
+### 23. 保存个人奖项配置
+- **接口**: `PUT /api/admin/users/awards`
+- **请求参数**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "name": "string",
+        "description": "string",
+        "order": "number"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (AI使用达人管理-个人奖项设置-奖项设置)
+
+### 24. 获取获奖者列表
+- **接口**: `GET /api/admin/users/winners`
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "name": "string",
+        "category": "innovation" | "efficiency" | "practice" | "community",
+        "awardName": "string",
+        "awardTime": "string" // YYYY-MM
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (AI使用达人管理-个人奖项设置-获奖者管理)
+
+### 25. 保存获奖者列表
+- **接口**: `PUT /api/admin/users/winners`
+- **请求参数**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "name": "string",
+        "category": "innovation" | "efficiency" | "practice" | "community",
+        "awardName": "string",
+        "awardTime": "string" // YYYY-MM
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (AI使用达人管理-个人奖项设置-获奖者管理)
+
+### 26. 获取团队奖项配置
+- **接口**: `GET /api/admin/users/team-awards`
+- **说明**: 获取团队奖项配置列表，用于管理后台编辑
+- **响应数据**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "title": "string",
+        "year": "number",
+        "images": [
+          {
+            "id": "number",
+            "image": "string",
+            "winnerName": "string"
+          }
+        ],
+        "order": "number"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (AI使用达人管理-团队奖项设置)
+
+### 27. 保存团队奖项配置
+- **接口**: `PUT /api/admin/users/team-awards`
+- **请求参数**:
+  ```json
+  {
+    "list": [
+      {
+        "id": "number",
+        "title": "string",
+        "year": "number",
+        "images": [
+          {
+            "id": "number",
+            "image": "string",
+            "winnerName": "string"
+          }
+        ],
+        "order": "number"
+      }
+    ]
+  }
+  ```
+- **使用页面**: `AdminView.vue` (AI使用达人管理-团队奖项设置)
+
+### 28. 上传图片
 - **接口**: `POST /api/admin/upload/image`
 - **请求类型**: `multipart/form-data`
 - **请求参数**: `file` (File)
@@ -2330,11 +2526,10 @@
 ```
 首页加载
   ├── 获取轮播图配置 (GET /api/home/carousel) ← 管理后台配置
-  ├── 获取荣誉殿堂和社区头条 (GET /api/home/honor) ← 管理后台配置 + 动态数据
+  ├── 获取荣誉殿堂 (GET /api/home/honor) ← 管理后台配置 + 动态数据
   │   ├── 荣誉殿堂Banner图片
   │   ├── 奖项列表
-  │   ├── AI使用达人Top用户（动态计算）
-  │   └── 社区头条列表
+  │   └── AI使用达人Top用户（动态计算）
   ├── 获取工具列表 (GET /api/tools) ← 管理后台配置
   │   ├── 工具列表（名称、描述、Logo、颜色、路由）
   │   └── 工具Banner图
@@ -2375,8 +2570,6 @@
   ├── 配置首页轮播图 (PUT /api/admin/home/carousel)
   │   └── 首页读取 (GET /api/home/carousel)
   ├── 配置荣誉殿堂 (PUT /api/admin/home/honor-banner, PUT /api/admin/home/honor-awards)
-  ├── 配置社区头条 (PUT /api/admin/home/news)
-  │   └── 首页统一读取 (GET /api/home/honor) - 同时返回荣誉殿堂和社区头条数据
   ├── 配置AI工具 (PUT /api/admin/tools)
   │   ├── 配置工具列表、路由、Banner
   │   ├── 工具列表用于：

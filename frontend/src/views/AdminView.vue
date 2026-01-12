@@ -1010,6 +1010,30 @@ import type { UploadProps } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
+import {
+  getCarouselConfig,
+  saveCarouselConfig,
+  getHonorBannerConfig,
+  saveHonorBannerConfig,
+  getHonorAwardsConfig,
+  saveHonorAwardsConfig,
+  getToolsConfig,
+  saveToolsConfig,
+  getToolBannersConfig,
+  saveToolBannersConfig,
+  getPersonalAwardsConfig,
+  savePersonalAwardsConfig,
+  getWinnersConfig,
+  saveWinnersConfig,
+  getTeamAwardsConfig,
+  saveTeamAwardsConfig,
+  getRecommendedWinners,
+  setUserAward,
+  cancelUserAward,
+  getAwardsList,
+  uploadImage,
+  type AdminCarouselItem
+} from '../api/admin'
 
 const router = useRouter()
 
@@ -1032,15 +1056,9 @@ const fileToBase64 = (file: File): Promise<string> => {
   })
 }
 
-// 轮播图列表
-interface CarouselItem {
-  id: number
-  image: string
+// 轮播图列表（扩展AdminCarouselItem，添加imageType字段）
+interface CarouselItem extends Omit<AdminCarouselItem, 'imageType'> {
   imageType: 'url' | 'upload'
-  link: string
-  showContent: boolean
-  title: string
-  desc: string
 }
 
 const carouselList = ref<CarouselItem[]>([
@@ -1051,7 +1069,8 @@ const carouselList = ref<CarouselItem[]>([
     link: '/practice',
     showContent: true,
     title: 'AI 优秀实践',
-    desc: '探索大模型在企业级应用中的最佳落地场景，驱动业务数智化转型。'
+    desc: '探索大模型在企业级应用中的最佳落地场景，驱动业务数智化转型。',
+    order: 1
   }
 ])
 
@@ -1996,11 +2015,20 @@ const loadRecommendedWinners = async () => {
 
   loadingRecommended.value = true
   try {
-    // 模拟API调用：GET /api/admin/honors/recommended-winners?month=YYYY-MM&limit=3
-    // 实际应该调用真实API
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 模拟数据：从localStorage或生成mock数据
+    // 调用API获取推荐用户
+    const response = await getRecommendedWinners(recommendedMonth.value, 3)
+    if (response && response.list) {
+      recommendedWinnersList.value = response.list
+      // 同时保存到localStorage作为备份
+      localStorage.setItem(`recommended_winners_${recommendedMonth.value}`, JSON.stringify(response.list))
+      return
+    }
+  } catch (e) {
+    console.error('从API加载推荐用户失败，使用localStorage:', e)
+  }
+  
+  // 降级到localStorage
+  try {
     const savedData = localStorage.getItem(`recommended_winners_${recommendedMonth.value}`)
     if (savedData) {
       recommendedWinnersList.value = JSON.parse(savedData)
@@ -2066,11 +2094,18 @@ const loadRecommendedWinners = async () => {
 const loadAwardsFromApi = async (category?: string) => {
   loadingAwards.value = true
   try {
-    // 模拟API调用：GET /api/awards?category=xxx
-    // 实际应该调用真实API
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // 从localStorage获取已配置的奖项（实际应该从接口获取）
+    // 调用API获取奖项列表
+    const response = await getAwardsList(category)
+    if (response && response.list) {
+      apiAwardsList.value = response.list
+      return
+    }
+  } catch (e) {
+    console.error('从API获取奖项列表失败，使用localStorage:', e)
+  }
+  
+  // 降级到localStorage
+  try {
     const savedAwards = localStorage.getItem('admin_awards_list')
     let awards: AwardItem[] = []
     if (savedAwards) {
@@ -2080,10 +2115,6 @@ const loadAwardsFromApi = async (category?: string) => {
     }
     
     // 转换为API格式的奖项列表
-    // 注意：这里需要根据实际的API响应格式来调整
-    // 假设API返回的category字段对应关系：
-    // '年度奖项' -> 'innovation' | 'efficiency' | 'practice' | 'community'
-    // 这里需要根据实际配置的奖项分类来映射
     apiAwardsList.value = awards.map(award => ({
       id: award.id,
       name: award.name,
@@ -2189,28 +2220,20 @@ const handleConfirmSetAward = async () => {
 
     settingAward.value = true
 
-    // 模拟API调用：POST /api/admin/honors
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 创建荣誉记录
-    const honorId = Date.now()
     // 从获奖时间（YYYY-MM）中提取年份
     const year = awardForm.value.awardDate.split('-')[0]
-    
-    const honorRecord = {
-      id: honorId,
+
+    // 调用API设置用户获奖
+    const response = await setUserAward({
       userId: currentAwardUser.value.id,
-      awardId: awardForm.value.awardId,
+      awardId: awardForm.value.awardId!,
       awardName: selectedAward.name,
       awardDate: awardForm.value.awardDate,
       category: awardForm.value.category,
       year: year
-    }
+    })
 
-    // 保存到localStorage（实际应该保存到后端）
-    const honors = JSON.parse(localStorage.getItem('admin_honors') || '[]')
-    honors.push(honorRecord)
-    localStorage.setItem('admin_honors', JSON.stringify(honors))
+    const honorId = response?.id || Date.now()
 
     // 更新推荐用户列表中的状态
     const userIndex = recommendedWinnersList.value.findIndex(u => u.id === currentAwardUser.value!.id)
@@ -2251,13 +2274,8 @@ const handleCancelAward = (user: RecommendedWinner) => {
     }
   ).then(async () => {
     try {
-      // 模拟API调用：DELETE /api/admin/honors/:id
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // 从localStorage删除荣誉记录
-      const honors = JSON.parse(localStorage.getItem('admin_honors') || '[]')
-      const updatedHonors = honors.filter((h: any) => h.id !== user.honorId)
-      localStorage.setItem('admin_honors', JSON.stringify(updatedHonors))
+      // 调用API取消用户获奖
+      await cancelUserAward(user.honorId!)
 
       // 更新推荐用户列表中的状态
       const userIndex = recommendedWinnersList.value.findIndex(u => u.id === user.id)
@@ -2491,10 +2509,22 @@ const handleSave = async () => {
   }
 }
 
-// 更新组件数据（使用localStorage存储，实际应该通过store或API）
-const updateComponentsData = () => {
-  // 保存到localStorage（实际应该保存到后端）
+// 更新组件数据（保存到API，同时保存到localStorage作为备份）
+const updateComponentsData = async () => {
   try {
+    // 保存到API
+    await Promise.all([
+      saveCarouselConfig(carouselList.value),
+      saveHonorBannerConfig({ bannerImage: honorConfig.value.bannerImage }),
+      saveHonorAwardsConfig(honorConfig.value.awards),
+      saveTeamAwardsConfig(teamAwardsList.value),
+      saveToolsConfig(toolsList.value),
+      saveToolBannersConfig(toolBannersList.value),
+      savePersonalAwardsConfig(awardsList.value),
+      saveWinnersConfig(winnersList.value)
+    ])
+    
+    // 同时保存到localStorage作为备份
     localStorage.setItem('admin_carousel_config', JSON.stringify(carouselList.value))
     localStorage.setItem('admin_honor_config', JSON.stringify(honorConfig.value))
     localStorage.setItem('admin_team_awards_config', JSON.stringify(teamAwardsList.value))
@@ -2510,7 +2540,20 @@ const updateComponentsData = () => {
     // 触发storage事件，通知其他页面更新
     window.dispatchEvent(new Event('adminConfigUpdated'))
   } catch (e) {
-    console.error('保存配置到localStorage失败:', e)
+    console.error('保存配置失败:', e)
+    // 如果API保存失败，至少保存到localStorage
+    try {
+      localStorage.setItem('admin_carousel_config', JSON.stringify(carouselList.value))
+      localStorage.setItem('admin_honor_config', JSON.stringify(honorConfig.value))
+      localStorage.setItem('admin_team_awards_config', JSON.stringify(teamAwardsList.value))
+      localStorage.setItem('admin_tools_config', JSON.stringify(toolsList.value))
+      localStorage.setItem('admin_tool_banners_config', JSON.stringify(toolBannersList.value))
+      localStorage.setItem('admin_awards_list', JSON.stringify(awardsList.value))
+      localStorage.setItem('admin_winners_list', JSON.stringify(winnersList.value))
+      window.dispatchEvent(new Event('adminConfigUpdated'))
+    } catch (localError) {
+      console.error('保存到localStorage也失败:', localError)
+    }
   }
 }
 

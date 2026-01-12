@@ -1,26 +1,5 @@
 <template>
   <div class="honor-wall-container">
-
-    <div class="top-nav-container">
-      <div class="glass-nav-wrapper">
-        <div
-          class="nav-item"
-          :class="{ active: awardType === 'individual' }"
-          @click="awardType = 'individual'"
-        >
-          <el-icon><UserFilled /></el-icon> 个人风采
-        </div>
-        <div
-          class="nav-item"
-          :class="{ active: awardType === 'team' }"
-          @click="awardType = 'team'"
-        >
-          <el-icon><Trophy /></el-icon> 团队荣誉
-        </div>
-        <div class="nav-glider" :class="awardType"></div>
-      </div>
-    </div>
-
     <div class="hud-dashboard">
 
       <div v-show="awardType === 'individual'" class="fade-in-content">
@@ -129,8 +108,21 @@
             >
               <div class="image-card-wrapper">
                 <img :src="img.image" :alt="img.winnerName" class="award-image" />
-                <div class="image-title-bar">
-                  <span class="title-text">{{ img.winnerName }}</span>
+                <!-- 团队名称框 -->
+                <div class="team-name-box">
+                  <div class="team-name-text">{{ img.winnerName }}</div>
+                  <div v-if="img.teamField" class="team-field-text">{{ img.teamField }}</div>
+                </div>
+                <!-- 送花功能 -->
+                <div class="flower-action" @click.stop="handleGiveFlowerToTeam(img)">
+                  <FlowerIcon 
+                    :filled="img.hasGivenFlower" 
+                    :size="20" 
+                    :color="img.hasGivenFlower ? '#f472b6' : '#9ca3af'" 
+                    :strokeColor="'#6b7280'" 
+                    class="flower-icon-clickable" 
+                  />
+                  <span class="flower-count">{{ img.flowers || 0 }}</span>
                 </div>
               </div>
             </div>
@@ -211,9 +203,10 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
   Grid, Timer, Trophy, OfficeBuilding, TrendCharts, Medal,
-  Star, UserFilled, ArrowLeft, ArrowRight
+  Star, ArrowLeft, ArrowRight
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
+import { getTeamAwards } from '../api/users';
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
@@ -253,7 +246,7 @@ const honorList = ref<HonorItem[]>([
 ]);
 
 // --- 状态 ---
-const awardType = ref<'individual' | 'team'>('team'); // 默认展示团队奖看效果
+const awardType = ref<'individual' | 'team'>('individual'); // 默认展示个人风采
 const currentViewMode = ref<ViewMode>('grid');
 const filterScope = ref<'all' | 'mine'>('all');
 const searchQuery = ref('');
@@ -273,6 +266,18 @@ const activeTeamAwardIndex = ref<number>(0);
 const handleYearChange = (year: string) => {
   selectedYear.value = year;
   activeTeamAwardIndex.value = 0;
+  notifyNavbarUpdate();
+};
+
+// 处理团队荣誉送花
+const handleGiveFlowerToTeam = (img: TeamAwardImage) => {
+  if (img.hasGivenFlower) {
+    ElMessage.warning('已送过花');
+    return;
+  }
+  img.flowers = (img.flowers || 0) + 1;
+  img.hasGivenFlower = true;
+  ElMessage.success('送花成功！');
 };
 
 // 团队奖数据 - 从localStorage加载
@@ -280,7 +285,10 @@ interface TeamAwardImage {
   id: number;
   image: string;
   imageType: 'url' | 'upload';
-  winnerName: string;
+  winnerName: string; // 团队名称
+  teamField?: string; // 团队领域
+  flowers?: number; // 花朵数
+  hasGivenFlower?: boolean; // 是否已送花
 }
 
 interface TeamAward {
@@ -290,7 +298,32 @@ interface TeamAward {
   images: TeamAwardImage[];
 }
 
-const loadTeamAwards = (): TeamAward[] => {
+// 加载团队奖项数据
+const loadTeamAwards = async (): Promise<TeamAward[]> => {
+  try {
+    // 优先从API获取
+    const response = await getTeamAwards() as { list: TeamAward[] };
+    if (response && response.list && response.list.length > 0) {
+      return response.list.map((item: TeamAward) => ({
+        id: item.id,
+        title: item.title,
+        year: String(item.year || new Date().getFullYear()),
+        images: item.images.map((img: TeamAwardImage) => ({
+          id: img.id,
+          image: img.image,
+          imageType: 'url' as const,
+          winnerName: img.winnerName,
+          teamField: img.teamField || '',
+          flowers: img.flowers || 0,
+          hasGivenFlower: img.hasGivenFlower || false
+        }))
+      }));
+    }
+  } catch (e) {
+    console.error('从API加载团队奖项失败，使用localStorage:', e);
+  }
+  
+  // 降级到localStorage
   try {
     const saved = localStorage.getItem('admin_team_awards_config');
     if (saved) {
@@ -311,6 +344,7 @@ const loadTeamAwards = (): TeamAward[] => {
   } catch (e) {
     console.error('加载团队奖项配置失败:', e);
   }
+  
   // 默认数据
   return [
     {
@@ -318,8 +352,8 @@ const loadTeamAwards = (): TeamAward[] => {
       title: '年度最佳AI创新团队',
       year: '2026',
       images: [
-        { id: 1, image: 'https://picsum.photos/800/600?random=101', imageType: 'url', winnerName: '架构平台部AI团队' },
-        { id: 2, image: 'https://picsum.photos/800/600?random=102', imageType: 'url', winnerName: '效能工程部' }
+        { id: 1, image: 'https://picsum.photos/800/600?random=101', imageType: 'url', winnerName: '架构平台部AI团队', teamField: 'AI技术研发', flowers: 15, hasGivenFlower: false },
+        { id: 2, image: 'https://picsum.photos/800/600?random=102', imageType: 'url', winnerName: '效能工程部', teamField: '工程效能', flowers: 12, hasGivenFlower: false }
       ]
     },
     {
@@ -327,7 +361,7 @@ const loadTeamAwards = (): TeamAward[] => {
       title: 'AI效能提升先锋',
       year: '2026',
       images: [
-        { id: 3, image: 'https://picsum.photos/800/600?random=103', imageType: 'url', winnerName: 'UED 设计中心' }
+        { id: 3, image: 'https://picsum.photos/800/600?random=103', imageType: 'url', winnerName: 'UED 设计中心', teamField: '设计创新', flowers: 18, hasGivenFlower: false }
       ]
     },
     {
@@ -335,38 +369,89 @@ const loadTeamAwards = (): TeamAward[] => {
       title: 'AI设计创新金奖',
       year: '2025',
       images: [
-        { id: 4, image: 'https://picsum.photos/800/600?random=104', imageType: 'url', winnerName: '开源办公室' }
+        { id: 4, image: 'https://picsum.photos/800/600?random=104', imageType: 'url', winnerName: '开源办公室', teamField: '开源社区', flowers: 20, hasGivenFlower: false }
       ]
     }
   ];
 };
 
-const teamAwards = ref<TeamAward[]>(loadTeamAwards());
+const teamAwards = ref<TeamAward[]>([]);
 
 // 监听配置更新
-const handleConfigUpdate = () => {
-  teamAwards.value = loadTeamAwards();
+const handleConfigUpdate = async () => {
+  teamAwards.value = await loadTeamAwards();
   // 如果当前选中的年份没有奖项了，切换到最新年份
   const firstYear = teamAwardYears.value[0];
   if (currentTeamAwards.value.length === 0 && teamAwardYears.value.length > 0 && firstYear) {
     selectedYear.value = firstYear;
   }
   activeTeamAwardIndex.value = 0;
+  // 通知导航栏更新
+  notifyNavbarUpdate();
 };
 
-onMounted(() => {
+// 通知导航栏更新团队荣誉数据
+const notifyNavbarUpdate = () => {
+  window.dispatchEvent(new CustomEvent('teamAwardsUpdate', {
+    detail: {
+      awardType: awardType.value,
+      years: teamAwardYears.value,
+      selectedYear: selectedYear.value,
+      currentTeamAwards: currentTeamAwards.value,
+      activeTeamAwardIndex: activeTeamAwardIndex.value
+    }
+  }));
+};
+
+// 事件处理函数
+const handleAwardTypeChange = ((e: CustomEvent) => {
+  if (e.detail?.type) {
+    awardType.value = e.detail.type as 'individual' | 'team';
+    notifyNavbarUpdate();
+  }
+}) as EventListener;
+
+const handleTeamAwardYearChange = ((e: CustomEvent) => {
+  if (e.detail?.year) {
+    selectedYear.value = e.detail.year;
+    activeTeamAwardIndex.value = 0;
+  }
+}) as EventListener;
+
+const handleTeamAwardIndexChange = ((e: CustomEvent) => {
+  if (e.detail?.index !== undefined) {
+    activeTeamAwardIndex.value = e.detail.index;
+  }
+}) as EventListener;
+
+const handleStorageChange = (e: StorageEvent) => {
+  if (e.key === 'admin_team_awards_config') {
+    handleConfigUpdate();
+  }
+};
+
+onMounted(async () => {
+  // 初始化加载团队奖项
+  teamAwards.value = await loadTeamAwards();
+  
+  // 监听导航栏的切换事件（需要在加载数据之前设置，确保能接收到事件）
+  window.addEventListener('awardTypeChange', handleAwardTypeChange);
+  window.addEventListener('teamAwardYearChange', handleTeamAwardYearChange);
+  window.addEventListener('teamAwardIndexChange', handleTeamAwardIndexChange);
   window.addEventListener('adminConfigUpdated', handleConfigUpdate);
   // 初始化时也监听storage事件（跨标签页同步）
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'admin_team_awards_config') {
-      handleConfigUpdate();
-    }
-  });
+  window.addEventListener('storage', handleStorageChange);
+  
+  // 通知导航栏当前状态
+  notifyNavbarUpdate();
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('awardTypeChange', handleAwardTypeChange);
+  window.removeEventListener('teamAwardYearChange', handleTeamAwardYearChange);
+  window.removeEventListener('teamAwardIndexChange', handleTeamAwardIndexChange);
   window.removeEventListener('adminConfigUpdated', handleConfigUpdate);
-  window.removeEventListener('storage', handleConfigUpdate);
+  window.removeEventListener('storage', handleStorageChange);
 });
 
 const teamAwardYears = computed(() => {
@@ -384,6 +469,11 @@ const currentTeamAward = computed(() => {
   }
   return null;
 });
+
+// 监听状态变化，通知导航栏
+watch([awardType, selectedYear, activeTeamAwardIndex, currentTeamAwards], () => {
+  notifyNavbarUpdate();
+}, { deep: true });
 
 // --- Computed Logic (保持原有逻辑) ---
 const processedList = computed(() => {
@@ -419,12 +509,12 @@ const leaderboardData = computed(() => {
   const map = new Map<string, LeaderboardUser>();
   processedList.value.forEach(item => {
     if (!map.has(item.name)) {
-      map.set(item.name, { 
-        name: item.name, 
-        department: item.department, 
-        avatar: item.avatar, 
-        count: 0, 
-        totalFlowers: 0 
+      map.set(item.name, {
+        name: item.name,
+        department: item.department,
+        avatar: item.avatar,
+        count: 0,
+        totalFlowers: 0
       });
     }
     const user = map.get(item.name);
@@ -465,11 +555,11 @@ const currentTimelineUser = computed(() => {
   const userItems = honorList.value.filter(item => item.name === currentTimelineUserName.value);
   const firstItem = userItems[0];
   if (!firstItem) return null;
-  return { 
-    name: firstItem.name, 
-    avatar: firstItem.avatar, 
-    department: firstItem.department, 
-    totalFlowers: userItems.reduce((s, i) => s + (i.flowers || 0), 0) 
+  return {
+    name: firstItem.name,
+    avatar: firstItem.avatar,
+    department: firstItem.department,
+    totalFlowers: userItems.reduce((s, i) => s + (i.flowers || 0), 0)
   };
 });
 
@@ -509,73 +599,13 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   position: relative;
 }
 
-/* ================== 1. 顶部自定义玻璃导航 ================== */
-.top-nav-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.glass-nav-wrapper {
-  position: relative;
-  display: flex;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 5px;
-  border-radius: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-  width: 320px;
-  height: 52px;
-}
-
-.nav-item {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  z-index: 2;
-  cursor: pointer;
-  color: #555;
-  font-weight: 700;
-  font-size: 15px;
-  transition: color 0.3s ease;
-  user-select: none;
-
-  &.active {
-    color: #fff;
-  }
-}
-
-.nav-glider {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  width: calc(50% - 5px);
-  height: calc(100% - 10px);
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border-radius: 40px;
-  z-index: 1;
-  transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), background 0.3s;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-
-  &.team {
-    transform: translateX(100%);
-    /* 团队奖时切换为金色系或保持一致，这里用金色区分 */
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-  }
-}
-
-/* ================== 2. 团队奖：流光时光轴 ================== */
+/* ================== 1. 团队奖：流光时光轴 ================== */
 .luminous-timeline-wrapper {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px 0;
+  padding: 10px 0 30px 0;
   margin-bottom: 16px;
   overflow: visible; /* 允许光效溢出 */
 }
@@ -597,7 +627,7 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   );
   z-index: 0;
   border-radius: 999px;
-  box-shadow: 
+  box-shadow:
     0 0 20px rgba(99, 102, 241, 0.6),
     0 0 40px rgba(34, 211, 238, 0.4),
     0 0 60px rgba(244, 114, 182, 0.3);
@@ -689,8 +719,7 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   transform: scale(1.1);
 }
 
-
-/* ================== 3. 团队奖：黄金透明绶带按钮 ================== */
+/* ================== 2. 团队奖：黄金透明绶带按钮 ================== */
 .gold-ribbon-row {
   display: flex;
   flex-wrap: wrap; /* 如果屏幕太小允许换行，但设计意图是一行 */
@@ -724,16 +753,6 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   color: #78350f; /* 深褐金文字 */
   font-weight: 800;
   font-size: 15px;
-
-  /* 制作绶带形状：右侧有个燕尾切口 */
-  clip-path: polygon(
-    0% 0%,
-    100% 0%,
-    95% 50%,
-    100% 100%,
-    0% 100%,
-    5% 50% /* 左侧内凹，像连在一起的丝带 */
-  );
 
   /* 或者更简单的圆角矩形 + 装饰 */
   clip-path: none;
@@ -772,8 +791,7 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   100% { left: 200%; }
 }
 
-
-/* ================== 4. 团队奖：预览卡片 ================== */
+/* ================== 3. 团队奖：预览卡片 ================== */
 // 团队奖项多图网格
 .team-award-images-grid {
   display: grid;
@@ -793,7 +811,7 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
@@ -816,23 +834,70 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   object-fit: cover;
 }
 
-.image-title-bar {
+/* 团队名称框 */
+.team-name-box {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.4), transparent);
-  padding: 20px 16px 16px;
-  display: flex;
-  align-items: center;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2;
 }
 
-.title-text {
-  color: #fff;
+.team-name-text {
+  color: #1e293b;
   font-size: 16px;
   font-weight: 700;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.team-field-text {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* 送花功能 */
+.flower-action {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(244, 114, 182, 0.2);
+  }
+}
+
+.flower-icon-clickable {
+  transition: all 0.3s ease;
+}
+
+.flower-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ec4899;
+  min-width: 20px;
+  text-align: center;
 }
 
 .empty-images {
@@ -879,34 +944,34 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 .zoom-fade-enter-from, .zoom-fade-leave-to { opacity: 0; transform: scale(0.98); }
 
 /* --- 个人奖核心样式（完整版） --- */
-.card-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-  gap: 16px; 
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .honor-card-3d {
   position: relative;
   height: 320px;
   perspective: 1000px;
-  
-  &.innovation { 
-    --theme-color: #0891b2; 
+
+  &.innovation {
+    --theme-color: #0891b2;
     --bg-grad: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0ea5e9 100%);
     --trophy-color: linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #155e75 100%);
   }
-  &.efficiency { 
-    --theme-color: #7c3aed; 
+  &.efficiency {
+    --theme-color: #7c3aed;
     --bg-grad: linear-gradient(135deg, #d8b4fe 0%, #c084fc 50%, #a855f7 100%);
     --trophy-color: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
   }
-  &.practice { 
-    --theme-color: #7c3aed; 
-    --bg-grad: linear-gradient(135deg, #d8b4fe 0%, #c084fc 50%, #a855f7 100%); 
+  &.practice {
+    --theme-color: #7c3aed;
+    --bg-grad: linear-gradient(135deg, #d8b4fe 0%, #c084fc 50%, #a855f7 100%);
     --trophy-color: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
   }
-  &.community { 
-    --theme-color: #059669; 
+  &.community {
+    --theme-color: #059669;
     --bg-grad: linear-gradient(135deg, #6ee7b7 0%, #34d399 50%, #10b981 100%);
     --trophy-color: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
   }
@@ -915,14 +980,14 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--theme-color);
   }
-  &:hover .bg-decoration-icon { 
-    transform: rotate(-10deg) scale(1.25); 
-    opacity: 0.25; 
+  &:hover .bg-decoration-icon {
+    transform: rotate(-10deg) scale(1.25);
+    opacity: 0.25;
     filter: drop-shadow(0 6px 12px rgba(99, 102, 241, 0.3));
   }
-  &:hover .halo-ring { 
-    transform: rotate(180deg) scale(1.1); 
-    border-color: var(--theme-color); 
+  &:hover .halo-ring {
+    transform: rotate(180deg) scale(1.1);
+    border-color: var(--theme-color);
   }
 }
 
@@ -971,30 +1036,30 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 }
 
 .bg-decoration-circle {
-  position: absolute; 
-  top: -50px; 
-  right: -50px; 
-  width: 200px; 
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
   height: 200px;
   background: var(--bg-grad);
-  border-radius: 50%; 
-  filter: blur(40px); 
-  opacity: 0.4; 
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.4;
   z-index: 0;
   box-shadow: 0 0 60px rgba(99, 102, 241, 0.2);
 }
 
 .bg-decoration-icon {
-  position: absolute; 
-  bottom: -15px; 
-  right: -15px; 
-  font-size: 150px; 
-  opacity: 0.2; 
-  z-index: 0; 
+  position: absolute;
+  bottom: -15px;
+  right: -15px;
+  font-size: 150px;
+  opacity: 0.2;
+  z-index: 0;
   transition: all 0.5s;
   transform-origin: center;
   color: var(--theme-color);
-  
+
   :deep(svg) {
     width: 100%;
     height: 100%;
@@ -1008,78 +1073,78 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 .honor-card-3d.practice .bg-decoration-icon { color: #7c3aed; }
 .honor-card-3d.community .bg-decoration-icon { color: #059669; }
 
-.card-top { 
-  display: flex; 
-  align-items: center; 
-  gap: 12px; 
-  margin-bottom: 12px; 
-  z-index: 1; 
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  z-index: 1;
 }
 
-.avatar-halo { 
-  position: relative; 
-  cursor: pointer; 
+.avatar-halo {
+  position: relative;
+  cursor: pointer;
 }
 
 .halo-ring {
-  position: absolute; 
-  inset: -4px; 
+  position: absolute;
+  inset: -4px;
   border-radius: 50%;
   border: 2px dashed #cbd5e1;
   transition: all 0.8s ease;
 }
 
-.user-avatar { 
-  border: 2px solid #fff; 
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-  cursor: pointer; 
+.user-avatar {
+  border: 2px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  cursor: pointer;
 }
 
-.user-info { 
-  flex: 1; 
+.user-info {
+  flex: 1;
 }
 
-.user-name { 
-  font-size: 16px; 
-  font-weight: 900; 
-  color: #0f172a; 
-  margin-bottom: 2px; 
+.user-name {
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 2px;
 }
 
 .dept-badge {
-  display: inline-block; 
-  font-size: 12px; 
-  padding: 3px 10px; 
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1); 
-  color: #334155; 
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  color: #334155;
   font-weight: 700;
 }
 
 .year-ribbon {
-  background: var(--theme-color); 
+  background: var(--theme-color);
   color: #fff;
-  padding: 4px 8px; 
+  padding: 4px 8px;
   border-radius: 8px 0 8px 0;
-  font-weight: 800; 
+  font-weight: 800;
   font-size: 11px;
   box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
 }
 
 .award-center {
-  flex: 1; 
-  display: flex; 
-  flex-direction: column; 
-  justify-content: center; 
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: flex-start;
-  text-align: left; 
+  text-align: left;
   z-index: 1;
 }
 
 .award-name {
-  font-size: 17px; 
-  line-height: 1.3; 
-  color: #020617; 
+  font-size: 17px;
+  line-height: 1.3;
+  color: #020617;
   margin: 0 0 10px 0;
   font-weight: 900;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
@@ -1101,7 +1166,7 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   cursor: pointer;
   transition: color 0.3s ease;
   font-weight: 500;
-  
+
   &:hover {
     color: #334155;
   }
@@ -1109,12 +1174,12 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 
 .card-bottom {
   border-top: 1px solid rgba(0,0,0,0.08);
-  padding-top: 12px; 
+  padding-top: 12px;
   margin-top: 8px;
-  display: flex; 
-  justify-content: space-between; 
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  font-size: 12px; 
+  font-size: 12px;
   z-index: 1;
 }
 
@@ -1135,9 +1200,9 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   padding: 4px 8px;
   border-radius: 12px;
   transition: all 0.3s ease;
-  
-  &:hover { 
-    background: rgba(244,114,182,0.1); 
+
+  &:hover {
+    background: rgba(244,114,182,0.1);
   }
 }
 
@@ -1154,134 +1219,136 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 }
 
 /* HUD & Layout 基础 */
-.hud-dashboard { 
-  margin-bottom: 24px; 
-  position: relative; 
-  z-index: 5; 
+.hud-dashboard {
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 5;
 }
 
-.hud-top-row { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  gap: 20px; 
+.hud-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-left: 0;
 }
 
-.glass-pill { 
-  background: rgba(255,255,255,0.85); 
-  backdrop-filter: blur(20px); 
-  border: 1px solid rgba(255,255,255,0.9); 
-  border-radius: 99px; 
-  padding: 5px; 
-  display: flex; 
+.glass-pill {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 99px;
+  padding: 5px;
+  display: flex;
 }
 
-.mode-tab { 
-  padding: 8px 18px; 
-  border-radius: 99px; 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  cursor: pointer; 
-  color: #64748b; 
-  font-weight: 600; 
+.mode-tab {
+  padding: 8px 18px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #64748b;
+  font-weight: 600;
   transition: all 0.3s;
-  
-  &.active { 
-    color: #fff; 
-    background: linear-gradient(135deg, #6366f1, #3b82f6); 
+
+  &.active {
+    color: #fff;
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
   }
 }
 
-.toggle-switch { 
-  width: 130px; 
-  cursor: pointer; 
-  position: relative; 
+.toggle-switch {
+  width: 130px;
+  cursor: pointer;
+  position: relative;
   display: flex;
   align-items: center;
-  
-  span { 
-    flex: 1; 
-    text-align: center; 
-    z-index: 2; 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: #64748b; 
+
+  span {
+    flex: 1;
+    text-align: center;
+    z-index: 2;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
     transition: color 0.3s;
     position: relative;
     padding: 8px 0;
-    
-    &.active { 
-      color: #fff; 
-    } 
-  } 
-  
-  .switch-track { 
-    position: absolute; 
-    width: 50%; 
+
+    &.active {
+      color: #fff;
+    }
+  }
+
+  .switch-track {
+    position: absolute;
+    width: 50%;
     height: calc(100% - 10px);
-    background: #0f172a; 
-    border-radius: 99px; 
-    left: 5px; 
+    background: #0f172a;
+    border-radius: 99px;
+    left: 5px;
     top: 5px;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
-    
-    &.is-mine { 
-      left: calc(50% + 5px); 
-      background: #4f46e5; 
-    } 
-  } 
+
+    &.is-mine {
+      left: calc(50% + 5px);
+      background: #4f46e5;
+    }
+  }
 }
 
-.secondary-filter-bar { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 16px; 
-  padding: 16px 20px;
+.secondary-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
   /* 去掉背景 */
+  align-items: flex-start;
 }
 
-.filter-type-switcher { 
-  display: flex; 
+.filter-type-switcher {
+  display: flex;
   align-items: center;
-  gap: 8px; 
+  gap: 8px;
   padding: 4px;
-  background: rgba(255,255,255,0.8); 
-  border-radius: 12px; 
+  background: rgba(255,255,255,0.8);
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.85);
-  width: fit-content; 
+  width: fit-content;
 }
 
-.filter-type-tab { 
-  padding: 8px 16px; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  font-size: 13px; 
+.filter-type-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
   font-weight: 600;
-  display: flex; 
-  gap: 6px; 
-  align-items: center; 
+  display: flex;
+  gap: 6px;
+  align-items: center;
   transition: all 0.3s;
   color: #64748b;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.8);
     color: #4f46e5;
   }
-  
-  &.active { 
-    background: linear-gradient(135deg, #6366f1, #8b5cf6); 
-    color: #fff; 
+
+  &.active {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-  } 
+  }
 }
 
-.chip-scroll-wrapper { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
+.chip-scroll-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   position: relative;
 }
 
@@ -1294,33 +1361,33 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   backdrop-filter: blur(10px);
   color: #475569 !important;
   transition: all 0.3s;
-  
+
   &:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.95) !important;
     color: #4f46e5 !important;
     transform: scale(1.05);
   }
-  
+
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
-  
+
   .el-icon {
     font-size: 16px;
   }
 }
 
-.chip-container { 
-  display: flex; 
-  gap: 10px; 
-  overflow-x: auto; 
+.chip-container {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 4px;
   flex: 1;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  
+
   &::-webkit-scrollbar {
     display: none;
   }
@@ -1332,7 +1399,7 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 
 .crystal-input {
   width: 200px;
-  
+
   :deep(.el-input__wrapper) {
     border-radius: 99px;
     background: rgba(255, 255, 255, 0.85) !important;
@@ -1341,29 +1408,29 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
     border: 1px solid rgba(255,255,255,0.85);
     transition: all 0.3s;
     height: 32px;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.95) !important;
       border-color: rgba(99, 102, 241, 0.3);
     }
-    
+
     &.is-focus {
       background: rgba(255, 255, 255, 0.95) !important;
       border-color: #6366f1;
       box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
     }
   }
-  
+
   :deep(.el-input__inner) {
     color: #1e293b;
     font-weight: 500;
     font-size: 13px;
-    
+
     &::placeholder {
       color: #94a3b8;
     }
   }
-  
+
   :deep(.el-input__prefix) {
     .el-icon {
       font-size: 14px;
@@ -1372,49 +1439,49 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   }
 }
 
-.gem-chip { 
-  padding: 6px 16px; 
-  border-radius: 12px; 
-  background: rgba(255,255,255,0.8); 
-  cursor: pointer; 
-  white-space: nowrap; 
-  font-size: 13px; 
+.gem-chip {
+  padding: 6px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.8);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 13px;
   font-weight: 600;
   color: #475569;
   transition: all 0.3s;
-  
+
   &:hover {
     background: rgba(255,255,255,0.9);
     transform: translateY(-2px);
   }
-  
-  &.active { 
-    background: rgba(255,255,255,0.95); 
-    color: #4f46e5; 
-    border: 1px solid #c7d2fe; 
-    font-weight: 700; 
+
+  &.active {
+    background: rgba(255,255,255,0.95);
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
+    font-weight: 700;
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
-  } 
+  }
 }
 
-.cyber-layout { 
-  display: flex; 
-  gap: 30px; 
-  align-items: flex-start; 
-  z-index: 2; 
+.cyber-layout {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  z-index: 2;
   position: relative;
 }
 
-.view-area { 
-  flex: 1; 
-  min-width: 0; 
+.view-area {
+  flex: 1;
+  min-width: 0;
 }
 
-.ranking-sidebar { 
-  width: 340px; 
-  flex-shrink: 0; 
-  position: sticky; 
-  top: 20px; 
+.ranking-sidebar {
+  width: 340px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 20px;
 }
 
 /* 排行榜完整样式 */
@@ -1430,57 +1497,57 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 
 .panel-header {
   padding: 24px;
-  display: flex; 
-  align-items: center; 
+  display: flex;
+  align-items: center;
   gap: 12px;
   background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0));
 }
 
 .header-icon {
-  width: 40px; 
-  height: 40px; 
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: #fff; 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 12px;
-  font-size: 20px; 
+  font-size: 20px;
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.5);
 }
 
-.header-text h3 { 
-  margin: 0; 
-  font-size: 17px; 
-  font-weight: 900; 
-  color: #0f172a; 
+.header-text h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: #0f172a;
 }
 
-.header-text span { 
-  font-size: 11px; 
-  letter-spacing: 1px; 
-  color: #475569; 
-  font-weight: 800; 
+.header-text span {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #475569;
+  font-weight: 800;
 }
 
-.ranking-list { 
-  padding: 0 16px 24px 16px; 
+.ranking-list {
+  padding: 0 16px 24px 16px;
 }
 
 .rank-row {
-  display: flex; 
-  align-items: center; 
-  padding: 12px; 
+  display: flex;
+  align-items: center;
+  padding: 12px;
   margin-bottom: 8px;
-  border-radius: 16px; 
+  border-radius: 16px;
   transition: all 0.3s;
   background: transparent;
-  
-  &:hover { 
-    background: rgba(255,255,255,0.85); 
-    transform: translateX(4px); 
+
+  &:hover {
+    background: rgba(255,255,255,0.85);
+    transform: translateX(4px);
   }
-  
+
   &.rank-1 {
     background: linear-gradient(90deg, rgba(254, 243, 199, 0.8), transparent);
     border: 1px solid rgba(251, 191, 36, 0.4);
@@ -1504,40 +1571,40 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   }
 }
 
-.rank-badge { 
-  width: 24px; 
-  font-weight: 900; 
-  font-style: italic; 
-  text-align: center; 
-  font-size: 17px; 
-  color: #64748b; 
+.rank-badge {
+  width: 24px;
+  font-weight: 900;
+  font-style: italic;
+  text-align: center;
+  font-size: 17px;
+  color: #64748b;
 }
 
-.rank-avatar { 
-  margin: 0 12px; 
-  border: 2px solid #fff; 
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
-  cursor: pointer; 
+.rank-avatar {
+  margin: 0 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  cursor: pointer;
 }
 
-.rank-details { 
-  flex: 1; 
+.rank-details {
+  flex: 1;
 }
 
-.r-name { 
-  font-weight: 800; 
-  color: #0f172a; 
-  font-size: 15px; 
+.r-name {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 15px;
 }
 
-.r-dept { 
-  font-size: 12px; 
-  color: #475569; 
-  font-weight: 600; 
+.r-dept {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
 }
 
-.rank-stat { 
-  text-align: right; 
+.rank-stat {
+  text-align: right;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1550,11 +1617,11 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   gap: 4px;
 }
 
-.num { 
-  display: block; 
-  font-weight: 900; 
-  font-size: 17px; 
-  line-height: 1; 
+.num {
+  display: block;
+  font-weight: 900;
+  font-size: 17px;
+  line-height: 1;
 }
 
 .num.flowers {
@@ -1563,16 +1630,16 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   font-weight: 900;
 }
 
-.unit { 
-  font-size: 11px; 
-  color: #475569; 
-  font-weight: 700; 
+.unit {
+  font-size: 11px;
+  color: #475569;
+  font-weight: 700;
 }
 
 /* Timeline 完整样式 */
-.timeline-container { 
-  position: relative; 
-  padding: 0 20px 20px 20px; 
+.timeline-container {
+  position: relative;
+  padding: 0 20px 20px 20px;
 }
 
 .timeline-user-header {
@@ -1610,13 +1677,13 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   .stat-value {
     font-size: 18px;
     font-weight: 800;
     color: #0f172a;
   }
-  
+
   .stat-label {
     font-size: 13px;
     color: #64748b;
@@ -1627,7 +1694,7 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 .back-to-all-timeline {
   color: #64748b;
   font-weight: 600;
-  
+
   &:hover {
     color: #4f46e5;
   }
@@ -1651,10 +1718,10 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   border-radius: 999px;
 }
 
-.year-header { 
-  position: relative; 
-  margin-bottom: 20px; 
-  padding-left: 90px; 
+.year-header {
+  position: relative;
+  margin-bottom: 20px;
+  padding-left: 90px;
 }
 
 .year-text {
@@ -1675,77 +1742,77 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   margin-bottom: 30px;
 }
 
-.t-item { 
-  display: flex; 
-  align-items: center; 
-  margin-bottom: 24px; 
-  position: relative; 
+.t-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  position: relative;
 }
 
-.t-node { 
-  width: 12px; 
-  height: 12px; 
-  border-radius: 50%; 
-  background: #3b82f6; 
-  border: 3px solid #fff; 
-  box-shadow: 0 0 0 2px #dbeafe; 
-  position: absolute; 
-  left: 55px; 
-  z-index: 2; 
+.t-node {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #dbeafe;
+  position: absolute;
+  left: 55px;
+  z-index: 2;
 }
 
 .t-card {
-  margin-left: 90px; 
-  flex: 1; 
-  display: flex; 
-  align-items: center; 
-  gap: 16px; 
+  margin-left: 90px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   padding: 16px;
-  background: rgba(255,255,255,0.9); 
+  background: rgba(255,255,255,0.9);
   border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
   transition: transform 0.3s;
-  
-  &:hover { 
-    transform: translateX(10px); 
-    background: rgba(255,255,255,0.95); 
+
+  &:hover {
+    transform: translateX(10px);
+    background: rgba(255,255,255,0.95);
   }
-  
+
   &.innovation { border-left: 4px solid #06b6d4; }
   &.efficiency { border-left: 4px solid #8b5cf6; }
   &.practice { border-left: 4px solid #8b5cf6; }
   &.community { border-left: 4px solid #10b981; }
 }
 
-.t-avatar { 
-  cursor: pointer; 
+.t-avatar {
+  cursor: pointer;
 }
 
-.t-info { 
+.t-info {
   flex: 1;
 }
 
-.t-title { 
-  font-weight: 700; 
-  color: #1e293b; 
-  margin-bottom: 4px; 
+.t-title {
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
   cursor: pointer;
-  
+
   &:hover {
     color: #4f46e5;
   }
 }
 
-.t-meta { 
-  font-size: 12px; 
-  color: #64748b; 
+.t-meta {
+  font-size: 12px;
+  color: #64748b;
 }
 
 /* 分页样式 */
-.pagination-bar { 
-  display: flex; 
-  justify-content: center; 
-  margin-top: 30px; 
+.pagination-bar {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
   padding: 20px 0;
 }
 
@@ -1760,24 +1827,24 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 
 /* 响应式 */
 @media (max-width: 1024px) {
-  .cyber-layout { 
-    flex-direction: column; 
-  } 
-  
-  .ranking-sidebar { 
-    width: 100%; 
-    position: static; 
+  .cyber-layout {
+    flex-direction: column;
   }
-  
-  .preview-container { 
-    flex-direction: column; 
+
+  .ranking-sidebar {
+    width: 100%;
+    position: static;
   }
-  
+
+  .preview-container {
+    flex-direction: column;
+  }
+
   .hud-top-row {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .card-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }

@@ -9,7 +9,38 @@
       <nav class="nav-menu">
         <RouterLink to="/" class="nav-item">首页</RouterLink>
         <RouterLink to="/practices" class="nav-item">AI优秀实践</RouterLink>
-        <RouterLink to="/users" class="nav-item">AI使用达人</RouterLink>
+        <el-dropdown 
+          trigger="hover" 
+          placement="bottom" 
+          @command="handleUsersMenuCommand"
+          class="users-dropdown"
+        >
+          <span class="nav-item users-nav-link" :class="{ 'router-link-active': isUsersPage }">
+            <RouterLink to="/users" class="nav-link-inner">AI使用达人</RouterLink>
+            <span class="dropdown-arrow">▼</span>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu class="users-dropdown-menu">
+              <!-- 个人风采和团队荣誉切换 -->
+              <div class="dropdown-section">
+                <el-dropdown-item 
+                  command="awardType:individual"
+                  :class="{ active: currentAwardType === 'individual' }"
+                >
+                  <el-icon><UserFilled /></el-icon>
+                  <span>个人风采</span>
+                </el-dropdown-item>
+                <el-dropdown-item 
+                  command="awardType:team"
+                  :class="{ active: currentAwardType === 'team' }"
+                >
+                  <el-icon><Trophy /></el-icon>
+                  <span>团队荣誉</span>
+                </el-dropdown-item>
+              </div>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <RouterLink to="/tools" class="nav-item">AI工具专区</RouterLink>
         <RouterLink to="/agent" class="nav-item">扶摇Agent应用</RouterLink>
         <RouterLink to="/empowerment" class="nav-item">赋能交流</RouterLink>
@@ -105,8 +136,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { 
   User, 
   SwitchButton, 
@@ -117,12 +148,101 @@ import {
   Star,
   Collection,
   Bell,
-  Calendar
+  Calendar,
+  UserFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getUnreadMessageCount } from '../utils/message'
+import { getTeamAwards } from '../api/users'
 
 const router = useRouter()
+const route = useRoute()
+
+// 判断是否在AI使用达人页面
+const isUsersPage = computed(() => route.path === '/users')
+
+// 团队荣誉相关状态（用于下拉菜单）
+const currentAwardType = ref<'individual' | 'team'>('individual')
+const teamAwardYears = ref<string[]>([])
+const selectedYear = ref<string>('')
+const currentTeamAwards = ref<any[]>([])
+const activeTeamAwardIndex = ref<number>(0)
+
+// 加载团队荣誉数据（用于下拉菜单）
+const loadTeamAwardsForMenu = async () => {
+  try {
+    const response = await getTeamAwards() as { list: any[] }
+    if (response && response.list && response.list.length > 0) {
+      const years = Array.from(new Set(response.list.map(a => String(a.year || new Date().getFullYear()))))
+        .sort((a, b) => Number(b) - Number(a))
+      teamAwardYears.value = years
+      if (years.length > 0 && !selectedYear.value) {
+        selectedYear.value = years[0]
+      }
+      updateCurrentTeamAwards()
+    }
+  } catch (e) {
+    console.error('加载团队荣誉数据失败:', e)
+  }
+}
+
+// 更新当前年份的奖项列表（通过事件从UsersView获取）
+const updateCurrentTeamAwards = () => {
+  // 通过事件从UsersView获取，这里只负责显示
+}
+
+// 监听路由变化，加载团队荣誉数据
+watch(() => route.path, (newPath) => {
+  loadTeamAwardsForMenu()
+}, { immediate: true })
+
+// 处理下拉菜单命令
+const handleUsersMenuCommand = (command: string) => {
+  const [type, value] = command.split(':')
+  if (type === 'awardType') {
+    currentAwardType.value = value as 'individual' | 'team'
+    // 如果不在/users页面，先跳转，然后发送事件
+    if (route.path !== '/users') {
+      router.push('/users').then(() => {
+        // 等待页面加载完成后再发送事件
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
+        }, 100)
+      })
+    } else {
+      // 如果已经在/users页面，直接发送事件
+      window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
+    }
+  }
+}
+
+// 监听团队荣誉数据更新事件
+const handleTeamAwardsUpdate = (event: CustomEvent) => {
+  if (event.detail?.awardType) {
+    currentAwardType.value = event.detail.awardType
+  }
+  if (event.detail?.years) {
+    teamAwardYears.value = event.detail.years
+  }
+  if (event.detail?.selectedYear) {
+    selectedYear.value = event.detail.selectedYear
+  }
+  if (event.detail?.currentTeamAwards) {
+    currentTeamAwards.value = event.detail.currentTeamAwards
+  }
+  if (event.detail?.activeTeamAwardIndex !== undefined) {
+    activeTeamAwardIndex.value = event.detail.activeTeamAwardIndex
+  }
+}
+
+onMounted(() => {
+  loadTeamAwardsForMenu()
+  window.addEventListener('teamAwardsUpdate', handleTeamAwardsUpdate as EventListener)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('teamAwardsUpdate', handleTeamAwardsUpdate as EventListener)
+})
 
 // 登录状态（实际应该从 store 或 API 获取）
 const isLoggedIn = ref(true) // 暂时设为 true 用于测试
@@ -198,7 +318,7 @@ const handleLogin = () => {
   ElMessage.info('登录功能开发中')
 }
 
-// 处理下拉菜单命令
+// 处理用户下拉菜单命令
 const handleCommand = (command: string) => {
   console.log('AppNavbar: 下拉菜单命令', command)
   switch (command) {
@@ -296,6 +416,24 @@ const handleCommand = (command: string) => {
     }
   }
 
+  &.users-nav-link {
+    font-weight: 700; /* 加粗字体 */
+    color: #333; /* 和其他导航项一样的颜色 */
+    
+    &.router-link-active {
+      font-weight: 700; /* 选中时也保持加粗，不显示下划线 */
+      color: #1e3a8a; /* 选中时的颜色 */
+      
+      &::after {
+        display: none; /* 不显示选中框 */
+      }
+    }
+    
+    &:hover {
+      color: #1e40af; /* 悬停时的颜色 */
+    }
+  }
+
   &.admin-link {
     color: #f59e0b;
     font-weight: 700;
@@ -309,6 +447,142 @@ const handleCommand = (command: string) => {
       
       &::after {
         background-color: #f59e0b;
+      }
+    }
+  }
+
+  &.dropdown-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+
+    .nav-link-inner {
+      text-decoration: none;
+      color: inherit;
+      display: inline-block;
+    }
+
+    .dropdown-arrow {
+      font-size: 10px;
+      color: #666;
+      transition: transform 0.3s ease;
+      margin-left: 4px;
+      display: inline-block;
+      line-height: 1;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    &:hover .dropdown-arrow {
+      transform: rotate(180deg);
+      color: #1e40af;
+    }
+  }
+}
+
+.users-dropdown {
+  display: inline-block;
+  
+  :deep(.el-dropdown__caret-button) {
+    display: none;
+  }
+
+  .users-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #333 !important; /* 和其他导航项一样的颜色 */
+    font-weight: 700 !important; /* 加粗字体 */
+
+    .nav-link-inner {
+      text-decoration: none;
+      color: inherit !important;
+      outline: none !important;
+      font-weight: 700 !important; /* 确保RouterLink内的文字也是700 */
+    }
+    
+    :deep(a) {
+      font-weight: 700 !important; /* 确保RouterLink的字体粗细 */
+      color: inherit !important;
+    }
+
+    .dropdown-arrow {
+      font-size: 10px;
+      color: #666;
+      transition: transform 0.3s ease;
+      display: inline-block;
+      line-height: 1;
+    }
+
+    &:hover .dropdown-arrow {
+      transform: rotate(180deg);
+      color: #1e40af;
+    }
+
+    &:focus,
+    &:focus-visible,
+    &:active {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    &.router-link-active {
+      &::after {
+        display: none; /* 不显示选中框 */
+      }
+    }
+  }
+
+  :deep(.el-dropdown) {
+    outline: none !important;
+    
+    &:focus,
+    &:focus-visible,
+    &:active {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+}
+
+.users-dropdown-menu {
+  min-width: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+
+  .dropdown-section {
+    padding: 8px 0;
+
+    .section-title {
+      padding: 8px 20px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #909399;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    :deep(.el-dropdown-menu__item) {
+      padding: 10px 20px;
+      font-size: 14px;
+      color: #606266;
+
+      &.active {
+        color: #409eff;
+        background-color: rgba(64, 158, 255, 0.1);
+        font-weight: 600;
+      }
+
+      &:hover {
+        background-color: rgba(64, 158, 255, 0.05);
       }
     }
   }
@@ -364,6 +638,9 @@ const handleCommand = (command: string) => {
 .user-dropdown-menu {
   :deep(.el-dropdown-menu__item) {
     padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 }
 
