@@ -78,7 +78,7 @@
                     v-for="award in honorAwards" 
                     :key="award.id"
                     class="honor-ribbon-btn"
-                    @click="router.push('/award-rules')"
+                    @click="handleAwardClick(award)"
                   >
                     <div class="ribbon-shape">
                       <span class="ribbon-text">{{ award.name }}</span>
@@ -388,9 +388,35 @@ const loadHonorConfig = async () => {
   }
 }
 
-const honorConfig = ref({ bannerImage: '', awards: [] })
+const honorConfig = ref({ bannerImage: '', awards: [] as Array<{ id: number; name: string; desc?: string; image?: string; year?: string }> })
 const honorBannerImage = computed(() => honorConfig.value.bannerImage)
 const honorAwards = computed(() => honorConfig.value.awards)
+
+// 处理荣誉殿堂奖项点击 - 跳转到团队荣誉页面
+const handleAwardClick = (award: { id: number; name: string; desc?: string; year?: string }) => {
+  // 从 desc 字段提取年份，如 "2026年度" -> "2026"
+  let year = award.year
+  if (!year && award.desc) {
+    const match = award.desc.match(/(\d{4})/)
+    if (match) {
+      year = match[1]
+    }
+  }
+  // 如果没有年份，使用当前年份
+  if (!year) {
+    year = new Date().getFullYear().toString()
+  }
+  
+  // 跳转到 AI使用达人页面，并传递参数
+  router.push({
+    path: '/users',
+    query: {
+      type: 'team',           // 切换到团队荣誉
+      year: year,             // 选中的年份
+      award: award.name       // 选中的奖项名称
+    }
+  })
+}
 
 // 初始化加载所有配置
 onMounted(async () => {

@@ -108,21 +108,28 @@
             >
               <div class="image-card-wrapper">
                 <img :src="img.image" :alt="img.winnerName" class="award-image" />
-                <!-- 团队名称框 -->
-                <div class="team-name-box">
-                  <div class="team-name-text">{{ img.winnerName }}</div>
-                  <div v-if="img.teamField" class="team-field-text">{{ img.teamField }}</div>
-                </div>
-                <!-- 送花功能 -->
-                <div class="flower-action" @click.stop="handleGiveFlowerToTeam(img)">
-                  <FlowerIcon
-                    :filled="img.hasGivenFlower"
-                    :size="20"
-                    :color="img.hasGivenFlower ? '#f472b6' : '#9ca3af'"
-                    :strokeColor="'#6b7280'"
-                    class="flower-icon-clickable"
-                  />
-                  <span class="flower-count">{{ img.flowers || 0 }}</span>
+                <!-- 右下角拟态七彩玻璃信息框 -->
+                <div class="team-info-glass-box">
+                  <div class="glass-rainbow-border"></div>
+                  <div class="glass-content">
+                    <div class="team-info-section">
+                      <div class="team-name-text">{{ img.winnerName }}</div>
+                      <div class="team-field-text">{{ img.teamField || '技术领域' }}</div>
+                    </div>
+                    <button
+                      class="flower-gift-btn-mini"
+                      :class="{ 'is-given': img.hasGivenFlower }"
+                      @click.stop="handleGiveFlowerToTeam(img)"
+                    >
+                      <FlowerIcon
+                        :filled="img.hasGivenFlower"
+                        :size="14"
+                        :color="img.hasGivenFlower ? '#ec4899' : '#94a3b8'"
+                        :strokeColor="img.hasGivenFlower ? '#be185d' : '#64748b'"
+                      />
+                      <span class="flower-count-mini">{{ img.flowers || 0 }}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -148,7 +155,27 @@
                   <div class="year-ribbon"><span>{{ item.year }}</span></div>
                 </div>
                 <div class="award-center"><h3 class="award-name" @click.stop="handleAwardClick(item.awardName)">{{ item.awardName }}</h3><el-tooltip v-if="item.achievement" :content="item.achievement" placement="top" effect="dark" :show-after="300"><div class="achievement-text">{{ item.achievement }}</div></el-tooltip></div>
-                <div class="card-bottom"><span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span><div class="flower-section" @click.stop="handleGiveFlower(item)"><FlowerIcon :filled="item.hasGivenFlower" :size="18" :color="item.hasGivenFlower ? '#f472b6' : '#9ca3af'" :strokeColor="'#6b7280'" class="flower-icon-clickable" /><span class="flower-count">{{ item.flowers || 0 }}</span></div></div>
+                <div class="card-bottom">
+                  <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
+                  <button
+                    class="flower-section-btn"
+                    :class="{ 'is-given': item.hasGivenFlower }"
+                    @click.stop="handleGiveFlower(item)"
+                  >
+                    <span class="flower-icon-container">
+                      <FlowerIcon
+                        :filled="item.hasGivenFlower"
+                        :size="16"
+                        :color="item.hasGivenFlower ? '#ec4899' : '#94a3b8'"
+                        :strokeColor="item.hasGivenFlower ? '#be185d' : '#64748b'"
+                        class="flower-icon-anim"
+                      />
+                      <span v-if="!item.hasGivenFlower" class="flower-particles"></span>
+                    </span>
+                    <span class="flower-label">{{ item.hasGivenFlower ? '已送' : '送花' }}</span>
+                    <span class="flower-num">{{ item.flowers || 0 }}</span>
+                  </button>
+                </div>
               </div>
             </div>
         </transition-group>
@@ -458,11 +485,39 @@ onMounted(async () => {
   // 通知导航栏当前状态
   notifyNavbarUpdate();
 
-  // 检查URL参数或localStorage中是否有保存的awardType
-  const savedAwardType = localStorage.getItem('users_award_type') as 'individual' | 'team' | null
-  if (savedAwardType && (savedAwardType === 'individual' || savedAwardType === 'team')) {
-    awardType.value = savedAwardType
+  // 检查URL参数中是否有指定跳转到团队荣誉的参数
+  const urlType = route.query.type as string
+  const urlYear = route.query.year as string
+  const urlAward = route.query.award as string
+
+  if (urlType === 'team') {
+    // 切换到团队荣誉视图
+    awardType.value = 'team'
+    localStorage.setItem('users_award_type', 'team')
+
+    // 如果指定了年份，切换到对应年份
+    if (urlYear && teamAwardYears.value.includes(urlYear)) {
+      selectedYear.value = urlYear
+    }
+
+    // 如果指定了奖项名称，查找并选中对应奖项
+    if (urlAward) {
+      const awardIndex = currentTeamAwards.value.findIndex(
+        a => a.title === urlAward || a.title.includes(urlAward)
+      )
+      if (awardIndex !== -1) {
+        activeTeamAwardIndex.value = awardIndex
+      }
+    }
+
     notifyNavbarUpdate()
+  } else {
+    // 检查localStorage中是否有保存的awardType
+    const savedAwardType = localStorage.getItem('users_award_type') as 'individual' | 'team' | null
+    if (savedAwardType && (savedAwardType === 'individual' || savedAwardType === 'team')) {
+      awardType.value = savedAwardType
+      notifyNavbarUpdate()
+    }
   }
 });
 
@@ -616,6 +671,35 @@ const handleCurrentChange = (val: number) => { currentPage.value = val; window.s
 watch(filterScope, (v) => { if (v === 'mine') { currentViewMode.value = 'grid'; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; } });
 watch(() => route.query.view, (v) => { if (v === 'timeline') { currentViewMode.value = 'timeline'; filterScope.value = 'all'; currentTimelineUserName.value = (route.query.user as string) || null; } else { currentViewMode.value = 'grid'; currentTimelineUserName.value = null; } }, { immediate: true });
 watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline') currentTimelineUserName.value = (v as string) || null; });
+
+// 监听从首页跳转过来的团队荣誉参数
+watch(() => route.query.type, (newType) => {
+  if (newType === 'team') {
+    awardType.value = 'team'
+    localStorage.setItem('users_award_type', 'team')
+
+    const urlYear = route.query.year as string
+    const urlAward = route.query.award as string
+
+    // 切换年份
+    if (urlYear && teamAwardYears.value.includes(urlYear)) {
+      selectedYear.value = urlYear
+    }
+
+    // 查找并选中对应奖项
+    nextTick(() => {
+      if (urlAward) {
+        const awardIndex = currentTeamAwards.value.findIndex(
+          a => a.title === urlAward || a.title.includes(urlAward)
+        )
+        if (awardIndex !== -1) {
+          activeTeamAwardIndex.value = awardIndex
+        }
+      }
+      notifyNavbarUpdate()
+    })
+  }
+});
 </script>
 
 <style scoped lang="scss">
@@ -829,34 +913,37 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 // 团队奖项多图网格
 .team-award-images-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  max-width: 1200px;
+  grid-template-columns: repeat(2, 1fr); /* 一行2个，图片更宽 */
+  gap: 30px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 20px 0;
+  padding: 20px 60px; /* 左右留出空间给溢出的玻璃框 */
 }
 
 .team-award-image-card {
   position: relative;
-  border-radius: 16px;
-  overflow: hidden;
+  border-radius: 12px;
+  overflow: visible; /* 允许子元素溢出 */
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  margin-bottom: 40px; /* 为玻璃框留出空间 */
+  margin-right: 30px; /* 右边留出玻璃框溢出空间 */
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   }
 }
 
 .image-card-wrapper {
   position: relative;
   width: 100%;
-  padding-bottom: 75%; // 4:3 比例
-  overflow: hidden;
+  padding-bottom: 56%; /* 16:9 宽屏比例 */
+  overflow: visible; /* 允许玻璃框溢出 */
+  border-radius: 12px;
 }
 
 .award-image {
@@ -866,72 +953,316 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 12px;
 }
 
-/* 团队名称框 */
-.team-name-box {
+/* 右下角拟态七彩玻璃信息框 - 右下角，部分在图片外 */
+.team-info-glass-box {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 8px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 2;
+  bottom: -30px; /* 底部在图片外 */
+  right: -20px; /* 右边也在图片外 */
+  min-width: 200px;
+  max-width: 280px;
+  border-radius: 12px;
+  overflow: visible;
+  z-index: 10;
+
+  /* 七彩玻璃背景 - 更加绚丽 */
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 235, 245, 0.88) 20%,
+    rgba(235, 245, 255, 0.88) 40%,
+    rgba(240, 255, 245, 0.88) 60%,
+    rgba(255, 250, 235, 0.88) 80%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+
+  /* 更强的阴影效果 */
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 2px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.05);
+
+  /* 细微边框增强玻璃感 */
+  border: 1px solid rgba(255, 255, 255, 0.6);
+
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 16px 50px rgba(0, 0, 0, 0.18),
+      0 6px 16px rgba(0, 0, 0, 0.12),
+      inset 0 2px 2px rgba(255, 255, 255, 1);
+  }
+}
+
+/* 七彩边框效果 */
+.glass-rainbow-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    #f472b6 0%,
+    #c084fc 20%,
+    #60a5fa 40%,
+    #34d399 60%,
+    #fbbf24 80%,
+    #f472b6 100%
+  );
+  background-size: 200% 100%;
+  animation: rainbow-flow 3s linear infinite;
+}
+
+@keyframes rainbow-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.glass-content {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: row; /* 水平排列 */
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.team-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
 .team-name-text {
   color: #1e293b;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.4;
-  margin-bottom: 4px;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
 }
 
 .team-field-text {
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   line-height: 1.3;
-}
-
-/* 送花功能 */
-.flower-action {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 20px;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  gap: 4px;
+  white-space: nowrap;
 
-  &:hover {
-    background: rgba(255, 255, 255, 1);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(244, 114, 182, 0.2);
+  &::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f472b6, #c084fc, #60a5fa);
+    flex-shrink: 0;
   }
 }
 
-.flower-icon-clickable {
+/* 迷你送花按钮 */
+.flower-gift-btn-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.15);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 3px 10px rgba(236, 72, 153, 0.25);
+  }
+
+  &.is-given {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+
+    .flower-count-mini {
+      color: #fff;
+    }
+  }
+}
+
+.flower-count-mini {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ec4899;
+}
+
+/* 拟物化送花按钮 */
+.flower-gift-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+
+  /* 未送花状态 - 粉色渐变 */
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%);
+  color: #be185d;
+  box-shadow:
+    0 4px 12px rgba(236, 72, 153, 0.25),
+    0 2px 4px rgba(236, 72, 153, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(190, 24, 93, 0.1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+
+  &:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow:
+      0 6px 20px rgba(236, 72, 153, 0.35),
+      0 4px 8px rgba(236, 72, 153, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+    &::before {
+      left: 100%;
+    }
+
+    .flower-icon-animated {
+      animation: flower-bounce 0.6s ease;
+    }
+
+    .flower-sparkle {
+      opacity: 1;
+    }
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* 已送花状态 */
+  &.is-given {
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+    color: #9ca3af;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    cursor: default;
+
+    &:hover {
+      transform: none;
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+      .flower-icon-animated {
+        animation: none;
+      }
+    }
+  }
+}
+
+.flower-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flower-icon-animated {
   transition: all 0.3s ease;
 }
 
-.flower-count {
-  font-size: 14px;
+@keyframes flower-bounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.2) rotate(-10deg); }
+  50% { transform: scale(1.3) rotate(10deg); }
+  75% { transform: scale(1.1) rotate(-5deg); }
+}
+
+/* 闪烁粒子效果 */
+.flower-sparkle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+
+  &::before,
+  &::after {
+    content: '✨';
+    position: absolute;
+    font-size: 8px;
+    animation: sparkle-float 1s ease infinite;
+  }
+
+  &::before {
+    top: -6px;
+    left: 50%;
+    animation-delay: 0s;
+  }
+
+  &::after {
+    top: 0;
+    right: -4px;
+    animation-delay: 0.3s;
+  }
+}
+
+@keyframes sparkle-float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-4px) scale(1.2);
+    opacity: 1;
+  }
+}
+
+.flower-text {
+  white-space: nowrap;
+}
+
+.flower-count-badge {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
   font-weight: 700;
   color: #ec4899;
-  min-width: 20px;
-  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .empty-images {
@@ -1226,30 +1557,158 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
   backdrop-filter: blur(4px);
 }
 
-.flower-section {
+/* 个人荣誉送花按钮 - 拟物化设计 */
+.flower-section-btn {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 20px;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+
+  /* 默认状态 - 柔和粉色 */
+  background: linear-gradient(135deg, #fff1f5 0%, #fce7f3 50%, #fbcfe8 100%);
+  color: #be185d;
+  box-shadow:
+    0 2px 8px rgba(236, 72, 153, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(190, 24, 93, 0.1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    transition: left 0.4s ease;
+  }
 
   &:hover {
-    background: rgba(244,114,182,0.1);
+    transform: translateY(-2px) scale(1.08);
+    box-shadow:
+      0 4px 16px rgba(236, 72, 153, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+    &::before {
+      left: 100%;
+    }
+
+    .flower-icon-anim {
+      animation: flower-wiggle 0.5s ease;
+    }
+
+    .flower-particles {
+      opacity: 1;
+    }
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.95);
+  }
+
+  /* 已送花状态 */
+  &.is-given {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #94a3b8;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    cursor: default;
+
+    &:hover {
+      transform: none;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+      .flower-icon-anim {
+        animation: none;
+      }
+    }
   }
 }
 
-.flower-count {
-  font-size: 13px;
+.flower-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flower-icon-anim {
+  transition: all 0.3s ease;
+}
+
+@keyframes flower-wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  20% { transform: rotate(-15deg) scale(1.1); }
+  40% { transform: rotate(15deg) scale(1.2); }
+  60% { transform: rotate(-10deg) scale(1.15); }
+  80% { transform: rotate(10deg) scale(1.1); }
+}
+
+/* 飘散粒子效果 */
+.flower-particles {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+
+  &::before,
+  &::after {
+    content: '🌸';
+    position: absolute;
+    font-size: 6px;
+    animation: particle-drift 0.8s ease infinite;
+  }
+
+  &::before {
+    top: -4px;
+    left: 2px;
+  }
+
+  &::after {
+    top: -2px;
+    right: -2px;
+    animation-delay: 0.2s;
+  }
+}
+
+@keyframes particle-drift {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-8px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.flower-label {
+  white-space: nowrap;
+}
+
+.flower-num {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #ec4899;
-  min-width: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  min-width: 18px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 6px;
-  border-radius: 6px;
-  backdrop-filter: blur(4px);
 }
 
 /* HUD & Layout 基础 */
