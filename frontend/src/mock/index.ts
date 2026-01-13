@@ -2397,6 +2397,29 @@ export const getHonorList = async (params?: {
   return { list, total, page, pageSize, totalPages }
 }
 
+// 首页AI使用达人展示用 - 获取最新获奖者
+export interface LatestWinner {
+  id: number
+  name: string
+  avatar?: string
+  awardName: string
+}
+
+export const getLatestWinners = async (limit: number = 9): Promise<{ list: LatestWinner[] }> => {
+  await delay()
+  // 按获奖日期降序排列，取最新的limit条
+  const sorted = [...mockHonorList]
+    .sort((a, b) => new Date(b.awardDate).getTime() - new Date(a.awardDate).getTime())
+    .slice(0, limit)
+    .map(item => ({
+      id: item.id,
+      name: item.name,
+      avatar: item.avatar,
+      awardName: item.awardName
+    }))
+  return { list: sorted }
+}
+
 // Mock荣誉数据
 const mockHonorsData: Honor[] = [
   {

@@ -679,6 +679,68 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
 
 ---
 
+## 11. 获取最新获奖者列表（首页展示用）
+
+### 接口信息
+
+| 项目 | 说明 |
+|------|------|
+| 接口路径 | `GET /api/honor/latest-winners` |
+| 接口描述 | 获取最新的个人获奖者列表，用于首页"AI使用达人"区域展示 |
+| 权限要求 | 无需登录 |
+
+### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| limit | number | 否 | 返回数量，默认9 |
+
+### 响应数据
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "name": "林星辰",
+        "avatar": "https://example.com/avatar/linxc.jpg",
+        "awardName": "2026年度 AI 技术突破奖"
+      },
+      {
+        "id": 2,
+        "name": "Sarah",
+        "avatar": "https://example.com/avatar/sarah.jpg",
+        "awardName": "最佳 AI 辅助设计实践"
+      },
+      {
+        "id": 3,
+        "name": "张伟",
+        "avatar": "https://example.com/avatar/zhangwei.jpg",
+        "awardName": "Copilot 效能提升大师"
+      }
+    ]
+  }
+}
+```
+
+### 字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | number | 是 | 荣誉记录ID |
+| name | string | 是 | 获奖者姓名 |
+| avatar | string | 否 | 获奖者头像URL |
+| awardName | string | 是 | 奖项名称 |
+
+### 排序规则
+
+返回的列表按照获奖日期（awardDate）降序排列，即最新获奖的排在前面。
+
+---
+
 ## 接口汇总
 
 | 序号 | 接口路径 | 方法 | 描述 |
@@ -693,6 +755,7 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
 | 8 | `/api/honor/award-rules` | GET | 获取奖项规则说明（返回所有奖项及其描述） |
 | 9 | `/api/honor/awards` | POST | 保存单个奖项 |
 | 10 | `/api/honor/awards/{id}` | DELETE | 删除奖项 |
+| 11 | `/api/honor/latest-winners` | GET | 获取最新获奖者列表（首页展示用） |
 
 ---
 

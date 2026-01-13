@@ -92,13 +92,23 @@
               <div class="ai-users">
                 <div class="users-header">
                   <h4>AI使用达人</h4>
-                  <el-tag effect="dark" round size="small" color="#626aef">TOP</el-tag>
+                  <el-tag effect="dark" round size="small" color="#626aef">最新</el-tag>
                 </div>
-                <div class="users-grid">
-                  <div class="user-card" v-for="i in 6" :key="i">
-                    <el-avatar :size="50" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-                    <span class="user-name">User_{{ 100 + i }}</span>
-                    <span class="user-level">Lv.{{ 10 - i }}</span>
+                <div class="users-grid winners-grid">
+                  <div 
+                    class="winner-card" 
+                    v-for="winner in latestWinners" 
+                    :key="winner.id"
+                    @click="router.push({ path: '/users', query: { keyword: winner.name } })"
+                  >
+                    <el-avatar 
+                      :size="40" 
+                      :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" 
+                    />
+                    <div class="winner-info">
+                      <span class="winner-name">{{ winner.name }}</span>
+                      <span class="winner-award">{{ winner.awardName }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -343,7 +353,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
-import { getHonor, getTools, getPractices, getNews, getToolBanners } from '../mock'
+import { getHonor, getTools, getPractices, getNews, getToolBanners, getLatestWinners, type LatestWinner } from '../mock'
 
 const router = useRouter()
 
@@ -378,6 +388,18 @@ const honorConfig = ref({ bannerImage: '', awards: [] as Array<{ id: number; nam
 const honorBannerImage = computed(() => honorConfig.value.bannerImage)
 const honorAwards = computed(() => honorConfig.value.awards)
 
+// AI使用达人 - 最新获奖者列表
+const latestWinners = ref<LatestWinner[]>([])
+const loadLatestWinners = async () => {
+  try {
+    const response = await getLatestWinners(9)
+    latestWinners.value = response.list
+  } catch (e) {
+    console.error('加载最新获奖者失败:', e)
+    latestWinners.value = []
+  }
+}
+
 // 处理荣誉殿堂奖项点击 - 跳转到团队荣誉页面
 const handleAwardClick = (award: { id: number; name: string; desc?: string; year?: string }) => {
   // 从 desc 字段提取年份，如 "2026年度" -> "2026"
@@ -407,6 +429,7 @@ const handleAwardClick = (award: { id: number; name: string; desc?: string; year
 // 初始化加载所有配置
 onMounted(async () => {
   honorConfig.value = await loadHonorConfig()
+  await loadLatestWinners()
   tools.value = await loadTools()
   toolZoneBanners.value = await loadToolBanners()
   practices.value = await loadPractices()
@@ -1611,6 +1634,66 @@ const toolZoneBanners = ref(loadToolBanners())
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+}
+
+/* AI使用达人 - 最新获奖者网格 */
+.winners-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.winner-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .winner-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .winner-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .winner-award {
+    font-size: 10px;
+    color: #6b7280;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.1));
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
 }
 
 .user-card {
