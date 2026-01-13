@@ -1331,17 +1331,149 @@ export const collectPost = async (id: number, action: 'collect' | 'uncollect'): 
   return { collected: post.isCollected }
 }
 
-export const getRecommendedCovers = async (): Promise<any[]> => {
+export const getRecommendedCovers = async (params?: { zone?: string; count?: number }): Promise<any[]> => {
   await delay()
-  return [
-    { id: 1, url: 'https://picsum.photos/800/400?random=cover1' },
-    { id: 2, url: 'https://picsum.photos/800/400?random=cover2' }
+  const count = params?.count || 3
+  const covers = [
+    { id: 1, url: 'https://picsum.photos/800/400?random=cover1', name: '科技蓝' },
+    { id: 2, url: 'https://picsum.photos/800/400?random=cover2', name: '简约白' },
+    { id: 3, url: 'https://picsum.photos/800/400?random=cover3', name: '渐变紫' },
+    { id: 4, url: 'https://picsum.photos/800/400?random=cover4', name: '活力橙' },
+    { id: 5, url: 'https://picsum.photos/800/400?random=cover5', name: '清新绿' }
   ]
+  return covers.slice(0, count)
 }
 
-export const saveDraft = async (_data: any): Promise<any> => {
+// 草稿存储（模拟后端存储）
+// 草稿双重保存策略：
+// - 前端 localStorage: 短时间存储（2秒防抖自动保存）
+// - 后端服务器: 长时间存储（每3分钟同步一次）
+let mockDraftStorage: any = null
+
+export const saveDraft = async (data: any): Promise<any> => {
   await delay()
-  return { draftId: 'draft_' + Date.now(), savedAt: new Date().toISOString(), message: '保存成功' }
+  // 使用传入的 savedAt 时间（用于前后端草稿时间比较）
+  const savedAt = data.savedAt || new Date().toISOString()
+  mockDraftStorage = {
+    draftId: mockDraftStorage?.draftId || ('draft_' + Date.now()),
+    ...data,
+    savedAt
+  }
+  console.log('[Mock API] 草稿已保存到后端:', savedAt)
+  return {
+    code: 200,
+    message: '保存成功',
+    data: {
+      draftId: mockDraftStorage.draftId,
+      savedAt: mockDraftStorage.savedAt
+    }
+  }
+}
+
+export const getDraft = async (): Promise<any> => {
+  await delay()
+  if (mockDraftStorage) {
+    console.log('[Mock API] 获取后端草稿:', mockDraftStorage.savedAt)
+    return {
+      code: 200,
+      message: 'success',
+      data: mockDraftStorage
+    }
+  }
+  console.log('[Mock API] 后端无草稿')
+  return {
+    code: 200,
+    message: 'success',
+    data: null
+  }
+}
+
+export const deleteDraft = async (): Promise<any> => {
+  await delay()
+  mockDraftStorage = null
+  console.log('[Mock API] 后端草稿已删除')
+  return { code: 200, message: '删除成功', data: null }
+}
+
+// 获取专区标签
+export const getZoneTags = async (params: { zone: string; toolId?: number | null }): Promise<{ list: Array<{ name: string; count: number }> }> => {
+  await delay()
+  const { zone, toolId } = params
+
+  // 根据专区和工具返回不同的标签
+  if (zone === 'practices') {
+    return {
+      list: [
+        { name: '自然语言处理', count: 15 },
+        { name: '计算机视觉', count: 12 },
+        { name: '深度学习', count: 18 },
+        { name: 'AI伦理', count: 6 },
+        { name: '机器学习', count: 14 },
+        { name: '机器人', count: 8 },
+        { name: '数据科学', count: 10 },
+        { name: '生成式AI', count: 20 },
+        { name: 'PyTorch', count: 9 },
+        { name: 'TensorFlow', count: 7 }
+      ]
+    }
+  }
+
+  if (zone === 'tools') {
+    // 非"其他工具"时只返回固定标签
+    if (toolId !== null && toolId !== undefined && toolId !== -1) {
+      return {
+        list: [
+          { name: '操作指导', count: 25 },
+          { name: '优秀使用', count: 30 }
+        ]
+      }
+    }
+    // "其他工具"返回通用标签
+    return {
+      list: [
+        { name: '新手', count: 8 },
+        { name: '进阶', count: 12 },
+        { name: '最佳实践', count: 15 },
+        { name: '技巧', count: 10 },
+        { name: '案例', count: 7 },
+        { name: '教程', count: 9 },
+        { name: '优化', count: 6 },
+        { name: '通用', count: 5 }
+      ]
+    }
+  }
+
+  if (zone === 'agent') {
+    return {
+      list: [
+        { name: 'Agent应用', count: 12 },
+        { name: '工作流', count: 8 },
+        { name: '自动化', count: 15 },
+        { name: '智能编排', count: 10 },
+        { name: '案例分享', count: 9 },
+        { name: '开发指南', count: 5 }
+      ]
+    }
+  }
+
+  if (zone === 'empowerment') {
+    return {
+      list: [
+        { name: '讨论', count: 20 },
+        { name: '提问', count: 15 },
+        { name: '分享', count: 18 },
+        { name: '经验', count: 12 },
+        { name: '工具', count: 10 },
+        { name: '技巧', count: 14 },
+        { name: '案例', count: 8 },
+        { name: '教程', count: 6 },
+        { name: '最佳实践', count: 9 },
+        { name: '问题解决', count: 7 }
+      ]
+    }
+  }
+
+  return { list: [] }
 }
 
 export const getPostComments = async (postId: number, params?: any): Promise<PageResult<Comment>> => {
