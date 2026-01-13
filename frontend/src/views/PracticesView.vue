@@ -27,7 +27,7 @@
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
                 :page-sizes="[10, 15, 20, 30, 50]"
-                :total="filteredPosts.length"
+                :total="filteredNormalPosts.length"
                 layout="total, sizes, prev, pager, next, jumper"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange"
@@ -68,10 +68,22 @@
 
             <!-- 标签筛选 -->
             <div class="sidebar-section">
+              <div class="section-header-with-reset">
+                <h3>标签筛选</h3>
+                <el-button 
+                  v-if="selectedTag" 
+                  text 
+                  size="small" 
+                  class="reset-btn"
+                  @click="handleResetTag"
+                >
+                  <el-icon><Refresh /></el-icon>
+                  重置
+                </el-button>
+              </div>
               <TagFilter
                 :tags="displayedTags"
                 :selected-tag="selectedTag"
-                title="标签筛选"
                 @tag-click="handleTagClick"
               />
             </div>
@@ -341,10 +353,10 @@ const topContributors = ref([
   { id: 5, name: '陈架构师', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' }
 ])
 
-// 过滤后的帖子
-const filteredPosts = computed(() => {
-  // 合并精华帖和普通帖子
-  let result = [...featuredPosts.value, ...posts.value]
+// 过滤后的普通帖子（不包含精华帖，精华帖始终显示）
+const filteredNormalPosts = computed(() => {
+  // 只过滤普通帖子
+  let result = [...posts.value]
 
   // 按标签过滤（排除"全部"）
   if (selectedTag.value && selectedTag.value !== '全部') {
@@ -388,11 +400,16 @@ const filteredPosts = computed(() => {
   return result
 })
 
-// 分页后的帖子
+// 用于统计的过滤后帖子（包含精华帖和普通帖子）
+const filteredPosts = computed(() => {
+  return [...featuredPosts.value, ...filteredNormalPosts.value]
+})
+
+// 分页后的帖子（只分页普通帖子，精华帖始终显示）
 const paginatedPosts = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return filteredPosts.value.slice(start, end)
+  return filteredNormalPosts.value.slice(start, end)
 })
 
 // 最热的3个帖子（按浏览量排序，用于右侧分栏顶部展示）
@@ -467,6 +484,12 @@ const handleDepartmentClick = (departmentName: string) => {
 // 重置部门过滤
 const handleResetDepartment = () => {
   selectedDepartment.value = null
+  currentPage.value = 1
+}
+
+// 重置标签过滤
+const handleResetTag = () => {
+  selectedTag.value = null
   currentPage.value = 1
 }
 
