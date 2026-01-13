@@ -84,10 +84,10 @@ import {
   markAllMessagesAsRead,
   deleteMessage,
   getUnreadMessageCount,
+  getCurrentUser,
   MessageType,
   type Message
-} from '../api/message'
-import { getCurrentUser } from '../api/user'
+} from '../mock'
 
 const router = useRouter()
 const loading = ref(false)

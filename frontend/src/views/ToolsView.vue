@@ -136,52 +136,11 @@
 
           <!-- 普通工具：活动宣传 -->
           <div v-else class="activities-section">
-            <h3 class="section-title">近期活动</h3>
-
-            <!-- 活动轮播 -->
-            <el-carousel
-              :interval="5000"
-              height="400px"
-              indicator-position="outside"
-              :arrow="'hover'"
-              class="activities-carousel"
-            >
-              <el-carousel-item
-                v-for="activity in currentToolActivities"
-                :key="activity.id"
-              >
-                <div class="activity-card">
-                  <div class="activity-image">
-                    <img :src="activity.image || activity.cover" :alt="activity.title" />
-                    <div class="activity-badge" v-if="activity.type">
-                      {{ activity.type === 'activity' ? '活动' : '赋能' }}
-                    </div>
-                  </div>
-                  <div class="activity-content">
-                    <h4 class="activity-title">{{ activity.title }}</h4>
-                    <p class="activity-desc">{{ activity.desc }}</p>
-                    <div class="activity-meta">
-                      <span class="activity-date">
-                        <el-icon><Calendar /></el-icon>
-                        {{ activity.date }}
-                      </span>
-                      <span class="activity-location" v-if="activity.location">
-                        <el-icon><Location /></el-icon>
-                        {{ activity.location }}
-                      </span>
-                    </div>
-                    <el-button type="primary" class="activity-btn" @click="handleActivityClick(activity)">
-                      了解详情
-                    </el-button>
-                  </div>
-                </div>
-              </el-carousel-item>
-            </el-carousel>
-
-            <!-- 空状态 -->
-            <div v-if="currentToolActivities.length === 0" class="empty-state">
-              <el-empty description="暂无近期活动" />
-            </div>
+            <ActivityCarousel
+              :activities="currentToolActivities"
+              title="近期活动与培训"
+              @activity-click="handleActivityClick"
+            />
           </div>
         </el-col>
       </el-row>
@@ -220,11 +179,7 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { checkToolOwner } from '../api/tool'
-import { getCurrentUser } from '../api/user'
-import { getActivities } from '../api/activity'
-import { getPosts } from '../api/practices'
-import type { Post } from '../api/practices'
+import { checkToolOwner as checkToolOwnerAPI, getCurrentUser, getActivities, getPosts, type Post } from '../mock'
 
 const router = useRouter()
 const route = useRoute()
@@ -328,6 +283,13 @@ const displayedDepartments = computed(() => {
   return departments.sort((a, b) => b.postCount - a.postCount)
 })
 
+const tools = ref<any[]>([])
+
+// 监听配置更新
+const handleConfigUpdate = async () => {
+  tools.value = await loadTools()
+}
+
 // 页面加载时检查路由参数
 onMounted(async () => {
   // 加载工具列表
@@ -345,13 +307,13 @@ onMounted(async () => {
     if (!isNaN(id) && tools.value.some((t: any) => t.id === id)) {
       selectedToolId.value = id
       // 检查是否为工具Owner
-      checkToolOwner(id)
+      await checkToolOwner(id)
     } else if (toolId === 'other') {
       selectedToolId.value = 'other'
       isToolOwner.value = false
     }
-    } else {
-      // 如果没有toolId参数，尝试从路径中匹配工具名称
+  } else {
+    // 如果没有toolId参数，尝试从路径中匹配工具名称
       const pathMatch = route.path.match(/\/tools\/([^/?]+)/)
       if (pathMatch) {
         const toolName = pathMatch[1]
@@ -363,12 +325,12 @@ onMounted(async () => {
         })
         if (matchedTool) {
           selectedToolId.value = matchedTool.id
-          checkToolOwner(matchedTool.id)
+          await checkToolOwner(matchedTool.id)
         } else {
           // 如果路径匹配失败，默认选择第一个工具
           if (tools.value.length > 0 && tools.value[0]) {
             selectedToolId.value = tools.value[0].id
-            checkToolOwner(tools.value[0].id)
+            await checkToolOwner(tools.value[0].id)
           }
         }
       } else {
@@ -376,7 +338,7 @@ onMounted(async () => {
         if (tools.value.length > 0 && tools.value[0]) {
           selectedToolId.value = tools.value[0].id
           // 检查是否为工具Owner
-          checkToolOwner(tools.value[0].id)
+          await checkToolOwner(tools.value[0].id)
         }
       }
     }
@@ -395,17 +357,17 @@ watch(selectedToolId, async (newToolId) => {
   }
 })
 
+// 当前激活的帖子分类
+const activePostTab = ref<'guide' | 'excellent'>('guide')
+
 onUnmounted(() => {
   window.removeEventListener('adminConfigUpdated', handleConfigUpdate)
 })
 
-// 当前激活的帖子分类
-const activePostTab = ref<'guide' | 'excellent'>('guide')
-
 // 工具列表 - 从API加载
 const loadTools = async () => {
   try {
-    const { getTools } = await import('../api/home')
+    const { getTools } = await import('../mock')
     const toolsList = await getTools()
     return toolsList.map((item: any) => ({
       id: item.id,
@@ -466,15 +428,9 @@ const loadTools = async () => {
       desc: '数据转换工具',
       logo: 'https://picsum.photos/80/80?random=7',
       color: '#73d13d'
-    },
+    }
   ]
-}
-
-const tools = ref<any[]>([])
-
-// 监听配置更新
-const handleConfigUpdate = async () => {
-  tools.value = await loadTools()
+  }
 }
 
 // 所有帖子数据
@@ -565,7 +521,7 @@ const checkToolOwner = async (toolId: number) => {
     isAdmin.value = user.roles?.includes('admin') || false
     
     // 检查是否为工具Owner
-    const ownerResponse = await checkToolOwner(toolId)
+    const ownerResponse = await checkToolOwnerAPI(toolId)
     isToolOwner.value = ownerResponse.isOwner || false
   } catch (error: any) {
     console.error('检查工具Owner权限失败:', error)
@@ -661,9 +617,9 @@ const paginatedPosts = computed(() => {
   return filteredPosts.value.slice(start, end)
 })
 
-// 当前工具的活动（已在activities computed中处理）
+// 当前工具的活动
 const currentToolActivities = computed(() => {
-  return activities.value
+  return allActivities.value
 })
 
 // 颜色池 - 为不同标签提供不同颜色
@@ -1087,112 +1043,7 @@ const handleCurrentChange = (val: number) => {
   text-align: center;
 }
 
-/* 活动区域 */
-.activities-section {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.section-title {
-  margin: 0 0 20px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #000;
-}
-
-.activities-carousel {
-  :deep(.el-carousel__item) {
-    padding: 0;
-  }
-}
-
-.activity-card {
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-
-  .activity-image {
-    position: relative;
-    width: 100%;
-    height: 200px;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .activity-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      padding: 4px 12px;
-      background: rgba(64, 158, 255, 0.9);
-      color: #fff;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-  }
-
-  .activity-content {
-    padding: 16px;
-
-    .activity-title {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: #000;
-    }
-
-    .activity-desc {
-      margin: 0 0 12px 0;
-      font-size: 13px;
-      color: #666;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .activity-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 16px;
-      font-size: 12px;
-      color: #999;
-
-      .activity-date,
-      .activity-location {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-
-        .el-icon {
-          font-size: 14px;
-        }
-      }
-    }
-
-    .activity-btn {
-      width: 100%;
-    }
-  }
-}
+/* ActivityCarousel 组件已有自己的样式，不需要额外定义 */
 
 .empty-tool-selection {
   padding: 100px 20px;

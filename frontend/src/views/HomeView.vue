@@ -343,7 +343,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowRight, ChatDotRound, Bell, Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
-import { getHonor, getTools, getToolBanners, getPractices } from '../api/home'
+import { getHonor, getTools, getToolBanners, getPractices } from '../mock'
 
 const router = useRouter()
 

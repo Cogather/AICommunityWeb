@@ -348,10 +348,11 @@ import {
   collectPost, 
   deletePost,
   getPostComments,
-  createComment
-} from '../api/post'
-import { likeComment, deleteComment } from '../api/comment'
-import { getCurrentUser } from '../api/user'
+  createComment,
+  likeComment,
+  deleteComment,
+  getCurrentUser
+} from '../mock'
 import {
   View,
   ChatDotRound,
@@ -456,6 +457,9 @@ const getTagType = (tag: string) => {
 
 // 判断是否是楼主
 const isAuthor = (userName: string) => {
+  if (!userName || !postData.value.authorName) {
+    return false
+  }
   return userName === postData.value.authorName
 }
 

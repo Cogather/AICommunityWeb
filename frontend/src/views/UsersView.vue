@@ -115,12 +115,12 @@
                 </div>
                 <!-- 送花功能 -->
                 <div class="flower-action" @click.stop="handleGiveFlowerToTeam(img)">
-                  <FlowerIcon 
-                    :filled="img.hasGivenFlower" 
-                    :size="20" 
-                    :color="img.hasGivenFlower ? '#f472b6' : '#9ca3af'" 
-                    :strokeColor="'#6b7280'" 
-                    class="flower-icon-clickable" 
+                  <FlowerIcon
+                    :filled="img.hasGivenFlower"
+                    :size="20"
+                    :color="img.hasGivenFlower ? '#f472b6' : '#9ca3af'"
+                    :strokeColor="'#6b7280'"
+                    class="flower-icon-clickable"
                   />
                   <span class="flower-count">{{ img.flowers || 0 }}</span>
                 </div>
@@ -206,8 +206,7 @@ import {
   Star, ArrowLeft, ArrowRight
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
-import { getTeamAwards } from '../api/users'
-import { giveFlower } from '../api/honor'
+import { getTeamAwards, giveFlower } from '../mock'
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
@@ -331,7 +330,7 @@ const loadTeamAwards = async (): Promise<TeamAward[]> => {
   } catch (e) {
     console.error('从API加载团队奖项失败，使用localStorage:', e);
   }
-  
+
   // 降级到localStorage
   try {
     const saved = localStorage.getItem('admin_team_awards_config');
@@ -353,7 +352,7 @@ const loadTeamAwards = async (): Promise<TeamAward[]> => {
   } catch (e) {
     console.error('加载团队奖项配置失败:', e);
   }
-  
+
   // 默认数据
   return [
     {
@@ -452,13 +451,13 @@ onMounted(async () => {
   window.addEventListener('adminConfigUpdated', handleConfigUpdate);
   // 初始化时也监听storage事件（跨标签页同步）
   window.addEventListener('storage', handleStorageChange);
-  
+
   // 初始化加载团队奖项
   teamAwards.value = await loadTeamAwards();
-  
+
   // 通知导航栏当前状态
   notifyNavbarUpdate();
-  
+
   // 检查URL参数或localStorage中是否有保存的awardType
   const savedAwardType = localStorage.getItem('users_award_type') as 'individual' | 'team' | null
   if (savedAwardType && (savedAwardType === 'individual' || savedAwardType === 'team')) {

@@ -191,7 +191,17 @@
                   <img :src="activity.cover" :alt="activity.title" />
                 </div>
                 <div class="activity-content">
-                  <h3 class="activity-title">{{ activity.title }}</h3>
+                  <div class="activity-title-row">
+                    <h3 class="activity-title">{{ activity.title }}</h3>
+                    <el-button
+                      type="default"
+                      size="small"
+                      @click.stop="handleActivityClick(activity)"
+                      class="view-detail-btn"
+                    >
+                      查看详情
+                    </el-button>
+                  </div>
                   <p class="activity-desc">{{ activity.description || activity.content?.substring(0, 100) }}</p>
                   <div class="activity-meta">
                     <span class="activity-date">
@@ -206,12 +216,12 @@
                     <el-tag :type="activity.status === 'ongoing' ? 'success' : activity.status === 'upcoming' ? 'warning' : 'info'" size="small">
                       {{ getActivityStatusName(activity.status) }}
                     </el-tag>
+                  </div>
+                  <div class="activity-actions">
                     <span class="activity-registered-count">
                       <el-icon><User /></el-icon>
                       已报名：{{ activity.registeredCount || 0 }} 人
                     </span>
-                  </div>
-                  <div class="activity-actions">
                     <el-button
                       type="primary"
                       size="small"
@@ -219,13 +229,6 @@
                     >
                       <el-icon><View /></el-icon>
                       查看报名详情
-                    </el-button>
-                    <el-button
-                      type="default"
-                      size="small"
-                      @click.stop="handleActivityClick(activity)"
-                    >
-                      查看详情
                     </el-button>
                   </div>
                 </div>
@@ -261,22 +264,30 @@
         </div>
         <div class="registrations-list" v-if="registrations.length > 0">
           <div
-            v-for="registration in registrations"
+            v-for="(registration, index) in registrations"
             :key="registration.id"
             class="registration-item"
           >
-            <el-avatar :size="40" :src="registration.userAvatar" class="registration-avatar">
+            <div class="registration-number">{{ index + 1 }}</div>
+            <el-avatar :size="48" :src="registration.userAvatar" class="registration-avatar">
               {{ registration.userName?.charAt(0) || 'U' }}
             </el-avatar>
             <div class="registration-info">
               <div class="registration-name">{{ registration.userName }}</div>
               <div class="registration-meta">
-                <span v-if="registration.employeeId">工号：{{ registration.employeeId }}</span>
-                <span v-if="registration.department">部门：{{ registration.department }}</span>
+                <div class="meta-item" v-if="registration.employeeId">
+                  <span class="meta-label">工号：</span>
+                  <span class="meta-value">{{ registration.employeeId }}</span>
+                </div>
+                <div class="meta-item" v-if="registration.department">
+                  <span class="meta-label">部门：</span>
+                  <span class="meta-value">{{ registration.department }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">报名时间：</span>
+                  <span class="meta-value">{{ registration.registerTime }}</span>
+                </div>
               </div>
-            </div>
-            <div class="registration-time">
-              {{ registration.registerTime }}
             </div>
           </div>
         </div>
@@ -305,11 +316,11 @@ import {
   getUserFavorites,
   getUserComments,
   getUserActivities,
-  getUserCreatedActivities
-} from '../api/user'
-import type { Post } from '../api/practices'
-import type { Comment } from '../api/user'
-import type { Activity } from '../api/activity'
+  getUserCreatedActivities,
+  type Post,
+  type Comment,
+  type Activity
+} from '../mock'
 
 const router = useRouter()
 const route = useRoute()
@@ -442,38 +453,6 @@ const loadMyCreatedActivities = async (userId: number) => {
   } catch (error: any) {
     console.error('加载发布活动列表失败:', error)
     ElMessage.error(error.message || '加载发布活动列表失败')
-    myCreatedActivities.value = []
-  }
-}
-      // 模拟数据
-      myCreatedActivities.value = [
-        {
-          id: 1,
-          title: 'AI工具使用培训活动',
-          description: '分享AI工具的使用技巧和最佳实践',
-          content: '本次活动将详细介绍各种AI工具的使用方法...',
-          cover: 'https://picsum.photos/400/300?random=10',
-          date: '2024-04-15',
-          type: 'training',
-          status: 'upcoming',
-          registeredCount: 15,
-          createTime: '2024-04-01 10:00:00'
-        },
-        {
-          id: 2,
-          title: 'AI应用创新大赛',
-          description: '展示你的AI应用创新项目',
-          cover: 'https://picsum.photos/400/300?random=11',
-          date: '2024-04-20',
-          type: 'competition',
-          status: 'upcoming',
-          registeredCount: 8,
-          createTime: '2024-04-02 14:30:00'
-        }
-      ]
-    }
-  } catch (error) {
-    console.error('加载发布活动列表失败:', error)
     myCreatedActivities.value = []
   }
 }
@@ -971,8 +950,9 @@ onBeforeUnmount(() => {
 // 活动列表样式
 .activities-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 20px;
+  max-width: 100%;
 }
 
 .activity-item {
@@ -980,23 +960,67 @@ onBeforeUnmount(() => {
   flex-direction: column;
   transition: all 0.3s ease;
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  max-width: 100%;
+  
+  // 活动卡片使用更小的内边距
+  &.glass-card {
+    padding: 5px;
+  }
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    border-color: rgba(64, 158, 255, 0.2);
   }
 
   .activity-image {
     width: 100%;
-    height: 180px;
+    height: 160px;
     overflow: hidden;
     border-radius: 12px 12px 0 0;
-    margin: -24px -24px 16px -24px;
+    margin: -5px -5px 8px -5px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
+      z-index: 1;
+    }
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center center;
+      display: block;
+      transition: transform 0.3s ease;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100%;
+      min-height: 100%;
+    }
+  }
+
+  &:hover {
+    .activity-image img {
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    .activity-title-row .activity-title {
+      color: #409eff;
     }
   }
 
@@ -1005,126 +1029,211 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding: 0 2px;
 
-    .activity-title {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: #333;
+    .activity-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+
+      .activity-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        line-height: 1.4;
+        transition: color 0.2s;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .view-detail-btn {
+        flex-shrink: 0;
+      }
     }
 
     .activity-desc {
       margin: 0;
       color: #666;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.6;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      min-height: 40px;
     }
 
-  .activity-meta {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    font-size: 13px;
-    color: #999;
-    margin-bottom: 12px;
-
-    span {
+    .activity-meta {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .activity-date {
+        color: #666;
+      }
     }
 
-    .activity-registered-count {
-      margin-left: auto;
-      color: #409eff;
-      font-weight: 500;
-    }
-  }
+    .activity-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      min-width: 0;
+      width: 100%;
 
-  .activity-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+      .activity-registered-count {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #409eff;
+        font-weight: 500;
+        background: rgba(64, 158, 255, 0.1);
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+
+        .el-icon {
+          font-size: 12px;
+        }
+      }
+    }
   }
 }
 
 // 报名详情对话框样式
 .registrations-dialog {
   min-height: 200px;
-  max-height: 500px;
+  max-height: 600px;
   overflow-y: auto;
 
   .registrations-header {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(64, 158, 255, 0.1);
 
     .total-count {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
       color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &::before {
+        content: '';
+        width: 4px;
+        height: 16px;
+        background: #409eff;
+        border-radius: 2px;
+      }
     }
   }
 
   .registrations-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .registration-item {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: rgba(250, 250, 250, 0.8);
-    border-radius: 8px;
-    transition: all 0.2s;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: #f8f9fa;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.95);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border-color: rgba(64, 158, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .registration-number {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #409eff, #66b1ff);
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
     }
 
     .registration-avatar {
       flex-shrink: 0;
+      border: 2px solid rgba(64, 158, 255, 0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .registration-info {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 12px;
+      min-width: 0;
 
       .registration-name {
-        font-size: 14px;
-        font-weight: 500;
+        font-size: 16px;
+        font-weight: 600;
         color: #333;
+        margin-bottom: 4px;
       }
 
       .registration-meta {
-        font-size: 12px;
-        color: #999;
         display: flex;
-        gap: 12px;
+        flex-direction: column;
+        gap: 8px;
+
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          line-height: 1.6;
+
+          .meta-label {
+            color: #666;
+            font-weight: 500;
+            min-width: 70px;
+          }
+
+          .meta-value {
+            color: #333;
+            font-weight: 400;
+            flex: 1;
+          }
+        }
       }
     }
-
-    .registration-time {
-      font-size: 12px;
-      color: #999;
-      flex-shrink: 0;
-    }
   }
-}
 }
 
 @media (max-width: 768px) {

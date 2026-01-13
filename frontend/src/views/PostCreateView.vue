@@ -231,11 +231,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, nextTick, watch, shallowRef } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createPost, updatePost, saveDraft, getRecommendedCovers } from '../api/post'
-import { getTools } from '../api/home'
+import { createPost, updatePost, saveDraft, getRecommendedCovers, getTools, getPostDetail } from '../mock'
 import type { InputInstance } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
@@ -253,6 +252,7 @@ const formRef = ref()
 const tagInputRef = ref<InputInstance>()
 const publishing = ref(false)
 const recommending = ref(false)
+const postLoading = ref(false)
 const tagInputVisible = ref(false)
 const tagInputValue = ref('')
 const lastSaveTime = ref('')
@@ -755,8 +755,8 @@ const handleTagClose = (tag: string) => {
   if (!isPresetTag(tag)) {
     const index = formData.value.tags.indexOf(tag)
     if (index > -1) {
-    formData.value.tags.splice(index, 1)
-    handleAutoSave()
+      formData.value.tags.splice(index, 1)
+      handleAutoSave()
     }
   }
 }
@@ -796,7 +796,7 @@ const beforeCoverUpload = (file: File) => {
 // 选择推荐封面
 const handleSelectRecommendedCover = (coverUrl: string) => {
   formData.value.cover = coverUrl
-    handleAutoSave()
+  handleAutoSave()
   ElMessage.success('已选择推荐封面')
 }
 
@@ -980,7 +980,7 @@ const checkAndLoadDraft = () => {
         ).then(() => {
           // 用户选择继续编辑
           loadDraft(draft)
-        }        ).catch((action) => {
+        }).catch((action) => {
           // 用户选择重新开始
           if (action === 'cancel') {
             // 清除草稿
@@ -1081,7 +1081,6 @@ const loadPostForEdit = async () => {
 
   try {
     postLoading.value = true
-    const { getPostDetail } = await import('../api/post')
     const post = await getPostDetail(Number(postId))
     
     // 填充表单数据
@@ -1100,13 +1099,15 @@ const loadPostForEdit = async () => {
     
     // 设置编辑器内容
     if (editorRef.value) {
-      editorRef.value.setHtml(mockPostData.content)
+      editorRef.value.setHtml(post.content || '')
       updateWordCount()
     }
     
   } catch (error) {
     console.error('加载帖子失败:', error)
     ElMessage.error('加载帖子失败')
+  } finally {
+    postLoading.value = false
   }
 }
 

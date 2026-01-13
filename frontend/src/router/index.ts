@@ -45,7 +45,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/post/create',
     name: 'PostCreate',
-    component: () => import('../views/PostCreateView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/PostCreateView.vue')
   },
   {
     path: '/post/:id',
@@ -65,7 +65,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/profile',
     name: 'Profile',
-    component: () => import('../views/ProfileView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/ProfileView.vue')
   },
   {
     path: '/messages',

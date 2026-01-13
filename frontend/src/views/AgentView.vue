@@ -133,12 +133,7 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { getFeaturedPost } from '../api/agent'
-import { checkToolOwner } from '../api/tool'
-import { getCurrentUser } from '../api/user'
-import { getActivities } from '../api/activity'
-import { getPosts } from '../api/practices'
-import type { Post } from '../api/practices'
+import { getFeaturedPost, checkToolOwner, getCurrentUser, getActivities, getPosts, type Post } from '../mock'
 
 const router = useRouter()
 
@@ -191,7 +186,7 @@ const allTags = ref<Array<{ name: string; count: number }>>([
 // 加载标签列表
 const loadTags = async () => {
   try {
-    const { getTags } = await import('../api/practices')
+    const { getTags } = await import('../mock')
     const result = await getTags({
       zone: 'agent',
       toolId: -1

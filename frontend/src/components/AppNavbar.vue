@@ -153,7 +153,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getUnreadMessageCount } from '../utils/message'
-import { getTeamAwards } from '../api/users'
+import { getTeamAwards } from '../mock'
 
 const router = useRouter()
 const route = useRoute()

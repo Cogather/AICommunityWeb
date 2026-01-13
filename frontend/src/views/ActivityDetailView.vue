@@ -22,7 +22,7 @@
           </div>
           
           <div class="activity-info">
-            <div class="tool-info">
+            <div class="tool-info" v-if="activityData.toolName">
               <el-tag type="primary" size="large">{{ activityData.toolName }}</el-tag>
             </div>
             <!-- 突出显示活动时间 -->
@@ -59,7 +59,7 @@
               {{ isRegistered ? '已报名' : '报名参加' }}
             </el-button>
           </div>
-          <div class="actions-right" v-if="isAdmin">
+          <div class="actions-right" v-if="isAdmin || isToolOwner">
             <el-button
               type="warning"
               size="large"
@@ -88,8 +88,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, Calendar, UserFilled, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getActivityDetail, registerActivity, cancelRegistration, deleteActivity } from '../api/activity'
-import { getCurrentUser } from '../api/user'
+import { getActivityDetail, registerActivity, cancelRegistration, deleteActivity, getCurrentUser, checkToolOwner } from '../mock'
 
 const router = useRouter()
 const route = useRoute()
@@ -97,8 +96,9 @@ const route = useRoute()
 const loading = ref(true)
 const registering = ref(false)
 
-// 管理员状态
+// 管理员状态和工具Owner状态
 const isAdmin = ref(false)
+const isToolOwner = ref(false)
 
 // 活动数据
 const activityData = ref({
@@ -158,6 +158,17 @@ const loadActivity = async () => {
     
     // 检查报名状态
     isRegistered.value = activity.isRegistered || false
+    
+    // 检查管理员权限和工具Owner权限
+    if (activity.toolId) {
+      try {
+        const ownerResponse = await checkToolOwner(activity.toolId)
+        isToolOwner.value = ownerResponse.isOwner || false
+      } catch (error) {
+        console.error('检查工具Owner权限失败:', error)
+        isToolOwner.value = false
+      }
+    }
     
     // 检查管理员权限
     isAdmin.value = activity.canDelete || activity.canEdit || false

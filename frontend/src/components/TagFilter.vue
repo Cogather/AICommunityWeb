@@ -13,7 +13,7 @@
         :style="getTagStyle(tag.name)"
         @click="handleTagClick(tag.name)"
       >
-        <span v-if="tag.name === '全部'">{{ tag.name }}</span>
+        <span v-if="tag.name === '全部'">{{ tag.name }} ({{ tag.count }})</span>
         <span v-else>#{{ tag.name }} ({{ tag.count }})</span>
       </el-tag>
     </div>

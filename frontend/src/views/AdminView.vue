@@ -1032,8 +1032,8 @@ import {
   cancelUserAward,
   getAwardsList,
   uploadImage,
-  type AdminCarouselItem
-} from '../api/admin'
+  type CarouselItem as AdminCarouselItem
+} from '../mock'
 
 const router = useRouter()
 

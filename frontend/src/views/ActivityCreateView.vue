@@ -127,9 +127,7 @@ import { ElMessage } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
-import { createActivity, updateActivity } from '../api/activity'
-import { getActivityDetail } from '../api/activity'
-import { getTools } from '../api/home'
+import { createActivity, updateActivity, getActivityDetail, getTools } from '../mock'
 import {
   Plus,
   Delete,
