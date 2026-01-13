@@ -127,7 +127,7 @@ import { ElMessage } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
-import { createActivity, updateActivity, getTools } from '../mock'
+import { createActivity, updateActivity, getTools, getActivityDetail } from '../mock'
 import {
   Plus,
   Delete,
@@ -342,48 +342,24 @@ const loadActivityForEdit = async () => {
           sessionStorage.removeItem('editing_activity')
           return
         } else {
-          console.warn('sessionStorage中的活动ID不匹配，继续从localStorage查找')
+          console.warn('sessionStorage中的活动ID不匹配，继续从mock API查找')
         }
       } catch (e) {
         console.warn('解析sessionStorage数据失败:', e)
       }
     }
     
-    // 从localStorage获取活动数据（实际应该从API获取）
-    const activitiesStr = localStorage.getItem('admin_activities')
-    console.log('从localStorage获取活动数据，key: admin_activities')
-    
-    if (!activitiesStr || activitiesStr === '[]') {
-      console.warn('活动列表为空或不存在')
-      ElMessage.warning('未找到活动数据，请确保活动已保存')
-      return
-    }
-    
-    const activities = JSON.parse(activitiesStr)
-    console.log('所有活动数量:', activities.length)
-    console.log('查找活动ID:', activityId, '类型:', typeof activityId)
-    
-    // 尝试多种ID匹配方式
+    // 从mock API获取活动数据
     const activityIdNum = Number(activityId)
-    const activity = activities.find((a: any) => {
-      // 严格匹配数字ID
-      if (typeof a.id === 'number' && a.id === activityIdNum) {
-        return true
-      }
-      // 字符串匹配
-      if (String(a.id) === String(activityId)) {
-        return true
-      }
-      return false
-    })
+    console.log('从mock API获取活动数据，ID:', activityIdNum)
+    
+    const activity = await getActivityDetail(activityIdNum)
     
     if (activity) {
-      console.log('从localStorage找到活动:', activity)
+      console.log('从mock API找到活动:', activity)
       fillFormData(activity)
     } else {
       console.error('未找到活动')
-      console.error('查找ID:', activityId, '类型:', typeof activityId)
-      console.error('活动列表中的所有ID:', activities.map((a: any) => ({ id: a.id, type: typeof a.id, title: a.title })))
       ElMessage.error(`活动不存在，ID: ${activityId}`)
     }
   } catch (error: any) {

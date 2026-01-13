@@ -65,8 +65,9 @@
             <!-- 帖子列表 -->
             <PostList
               :posts="paginatedPosts"
-              :featured-posts="[]"
-              :show-featured-tag="false"
+              :featured-posts="selectedToolId === 'other' ? featuredPostsArray : []"
+              :show-featured-tag="selectedToolId === 'other'"
+              :show-tags="selectedToolId === 'other'"
               @post-click="handlePostClick"
             />
 
@@ -179,7 +180,7 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { checkToolOwner as checkToolOwnerAPI, getCurrentUser, getActivities, getPosts, type Post } from '../mock'
+import { checkToolOwner as checkToolOwnerAPI, getCurrentUser, getActivities, getPosts, getToolFeaturedPost, type Post } from '../mock'
 
 const router = useRouter()
 const route = useRoute()
@@ -195,6 +196,14 @@ const checkingOwner = ref(false)
 // 标签和部门选择
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
+
+// 精华帖子（仅"其他工具"使用）
+const featuredPost = ref<any>(null)
+
+// 将单个精华帖子转换为数组（供PostList组件使用）
+const featuredPostsArray = computed(() => {
+  return featuredPost.value ? [featuredPost.value] : []
+})
 
 // 分页
 const currentPage = ref(1)
@@ -450,7 +459,7 @@ const loadPosts = async (toolId?: number) => {
   try {
     const result = await getPosts({
       zone: 'tools',
-      toolId: toolId || undefined,
+      toolId: toolId !== undefined ? toolId : undefined,  // 正确处理 toolId=0 的情况
       page: 1,
       pageSize: 100 // 获取所有帖子
     })
@@ -468,6 +477,27 @@ const loadPosts = async (toolId?: number) => {
     console.error('加载帖子列表失败:', error)
     ElMessage.error(error.message || '加载帖子列表失败')
     allPosts.value = []
+  }
+}
+
+// 加载精华帖子（仅"其他工具"使用）
+const loadFeaturedPost = async () => {
+  try {
+    const response = await getToolFeaturedPost(0)
+    if (response.post) {
+      featuredPost.value = {
+        ...response.post,
+        image: response.post.image || response.post.cover || '',
+        createTime: typeof response.post.createTime === 'string' 
+          ? response.post.createTime 
+          : new Date(response.post.createTime).toLocaleDateString('zh-CN')
+      }
+    } else {
+      featuredPost.value = null
+    }
+  } catch (error) {
+    console.error('加载精华帖子失败:', error)
+    featuredPost.value = null
   }
 }
 
@@ -508,10 +538,13 @@ const selectTool = async (toolId: number | string) => {
     await checkToolOwner(toolId)
     await loadPosts(toolId)
     await loadActivities(toolId)
+    featuredPost.value = null // 普通工具没有精华帖子
   } else {
+    // "其他工具"
     isToolOwner.value = false
     await loadPosts(0)
     await loadActivities(0)
+    await loadFeaturedPost() // 加载精华帖子
   }
 }
 

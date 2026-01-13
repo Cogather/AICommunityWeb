@@ -5,8 +5,27 @@
 AI工具专区页面用于展示公司内部AI工具的使用指导、优秀实践和相关活动培训信息。页面主要功能包括：
 - 工具列表展示与切换
 - 普通工具：操作指导/优秀使用帖子分类 + 近期活动培训
-- 其他工具：帖子列表 + 标签筛选 + 部门归类
+- 其他工具：精华帖子展示 + 帖子列表 + 标签筛选 + 部门归类
 - 工具Owner/管理员发布活动功能
+
+> **说明**：普通工具（TestMate、CodeMate等）没有精华帖子功能，只有"其他工具"（toolId=0）支持精华帖子展示。
+
+---
+
+## 接口概览
+
+| 接口 | 说明 | 适用范围 |
+|-----|------|---------|
+| 获取工具列表 | 获取所有工具信息 | 全部 |
+| 获取工具帖子列表 | 获取帖子列表 | 全部 |
+| 获取工具活动列表 | 获取活动列表 | 普通工具 |
+| 检查工具Owner权限 | 检查权限 | 全部 |
+| 获取标签统计 | 获取标签统计 | 其他工具 |
+| 获取部门统计 | 获取部门归类 | 其他工具 |
+| **获取精华帖子** | 获取精华/置顶帖子 | **其他工具专有** |
+| 发布活动 | 发布活动/培训 | 普通工具 |
+| 获取活动详情 | 获取活动详情 | 普通工具 |
+| 报名/取消报名 | 活动报名管理 | 普通工具 |
 
 ---
 
@@ -114,14 +133,21 @@ GET /api/tools/posts
 
 | 参数 | 类型 | 必填 | 说明 |
 |-----|------|------|------|
-| toolId | number | 是 | 工具ID，0表示"其他工具" |
+| toolId | number | 是 | 工具ID（0=其他工具，>0=具体工具） |
 | category | string | 否 | 帖子分类：guide-操作指导，excellent-优秀使用 |
 | tag | string | 否 | 标签筛选 |
 | department | string | 否 | 部门筛选 |
 | keyword | string | 否 | 搜索关键词 |
-| sortBy | string | 否 | 排序方式：newest-最新，hot-最热，comments-评论最多 |
+| sortBy | string | 否 | 排序方式：newest-最新，hot-最热，comments-评论最多，likes-点赞最多 |
 | page | number | 否 | 页码，默认1 |
 | pageSize | number | 否 | 每页条数，默认15 |
+
+> **与扶摇Agent共用**：此接口与扶摇Agent应用完全共用，通过 `toolId` 区分数据范围（-1=扶摇Agent，0=其他工具，>0=具体工具）。
+>
+> **重要说明**：
+> - **普通工具（toolId>0）**：没有精华帖子功能，帖子通过 `category`（guide/excellent）分类
+> - **其他工具（toolId=0）**：有精华帖子功能，但此接口**不返回精华帖子**。精华帖子需通过 `GET /api/tools/featured-post?toolId=0` 单独获取
+> - 前端将精华帖子传入 `PostList` 组件的 `featuredPosts` 属性，实现在列表内置顶显示
 
 **响应**
 
@@ -145,8 +171,8 @@ GET /api/tools/posts
         "category": "guide",
         "tags": ["新手", "入门"],
         "views": 1580,
-        "likes": 89,
         "comments": 23,
+        "likes": 89,
         "createTime": "2026-01-10T10:30:00Z",
         "updateTime": "2026-01-10T10:30:00Z"
       }
@@ -160,25 +186,25 @@ GET /api/tools/posts
 
 **响应字段说明**
 
-| 字段 | 类型 | 说明 |
-|-----|------|------|
-| id | number | 帖子唯一标识 |
-| title | string | 帖子标题 |
-| description | string | 帖子摘要/描述 |
-| cover | string | 封面图URL |
-| author | string | 作者名称 |
-| authorId | number | 作者用户ID |
-| authorAvatar | string | 作者头像URL |
-| department | string | 作者所属部门 |
-| toolId | number | 关联工具ID，0表示其他工具 |
-| toolName | string | 关联工具名称 |
-| category | string | 帖子分类：guide/excellent |
-| tags | array | 帖子标签数组 |
-| views | number | 浏览量 |
-| likes | number | 点赞数 |
-| comments | number | 评论数 |
-| createTime | string | 创建时间（ISO 8601格式） |
-| updateTime | string | 更新时间（ISO 8601格式） |
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| id | number | ✅ | 帖子唯一标识 |
+| title | string | ✅ | 帖子标题 |
+| description | string | ✅ | 帖子摘要/描述 |
+| cover | string | ❌ | 封面图URL |
+| author | string | ✅ | 作者名称 |
+| authorId | number | ✅ | 作者用户ID |
+| authorAvatar | string | ❌ | 作者头像URL |
+| department | string | ❌ | 作者所属部门 |
+| toolId | number | ✅ | 关联工具ID（0=其他工具，>0=具体工具） |
+| toolName | string | ❌ | 关联工具名称 |
+| category | string | ❌ | 帖子分类：guide/excellent |
+| tags | array | ❌ | 帖子标签数组 |
+| views | number | ✅ | 浏览量 |
+| comments | number | ✅ | 评论数 |
+| likes | number | ✅ | 点赞数 |
+| createTime | string | ✅ | 创建时间（ISO 8601格式） |
+| updateTime | string | ❌ | 更新时间（ISO 8601格式） |
 
 ---
 
@@ -260,6 +286,25 @@ GET /api/tools/activities
 | status | string | 活动状态：upcoming/ongoing/ended |
 | createTime | string | 创建时间（ISO 8601格式） |
 
+> **与扶摇Agent共用**：此接口与扶摇Agent应用完全共用，通过 `toolId` 区分数据范围。
+> 
+> **前端数据转换说明**：
+> 
+> `ActivityCarousel` 组件需要以下字段格式，前端需进行数据转换：
+> 
+> ```typescript
+> // 将API返回的活动数据转换为组件所需格式
+> activities.value = result.list.map((a) => ({
+>   id: a.id,
+>   type: a.type || 'activity',
+>   title: a.title,
+>   desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
+>   date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
+>   location: a.location || '',
+>   image: a.cover || ''
+> }))
+> ```
+
 ---
 
 ### 4. 检查工具Owner权限
@@ -286,7 +331,8 @@ GET /api/tools/{toolId}/check-owner
   "message": "success",
   "data": {
     "isOwner": true,
-    "permissions": ["edit", "publish_activity", "manage_posts"]
+    "toolId": 1,
+    "permissions": ["publish_activity", "manage_posts", "set_featured"]
   }
 }
 ```
@@ -296,15 +342,16 @@ GET /api/tools/{toolId}/check-owner
 | 字段 | 类型 | 说明 |
 |-----|------|------|
 | isOwner | boolean | 是否为工具Owner |
+| toolId | number | 工具ID |
 | permissions | array | 用户拥有的权限列表 |
 
 **权限说明**
 
 | 权限 | 说明 |
 |-----|------|
-| edit | 编辑工具信息 |
 | publish_activity | 发布活动/培训 |
-| manage_posts | 管理帖子（置顶、删除等） |
+| manage_posts | 管理帖子（删除等） |
+| set_featured | 设置置顶帖子 |
 
 ---
 
@@ -456,7 +503,144 @@ GET /api/tools/{toolId}/departments
 
 ---
 
-### 7. 发布活动
+### 7. 获取精华帖子（其他工具专有）
+
+获取"其他工具"区域的精华/置顶帖子。此接口仅适用于toolId=0的"其他工具"。
+
+> **说明**：普通工具（TestMate、CodeMate等）没有精华帖子功能，它们通过"操作指导"和"优秀使用"分类来组织内容。
+>
+> **精华帖子特性**：
+> - 精华帖子在**帖子列表内**置顶显示（不是单独展示区域）
+> - 精华帖子不参与分页、搜索、标签筛选和排序
+> - 前端需单独请求精华帖子，在PostList组件中作为featuredPosts传入
+
+**请求**
+
+```
+GET /api/tools/featured-post
+```
+
+**请求参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| toolId | number | 是 | 工具ID，此接口仅支持toolId=0 |
+
+**响应**
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "post": {
+      "id": 301,
+      "title": "AI工具使用效率提升指南",
+      "description": "本文汇总了各类AI工具的使用技巧，帮助你提升工作效率...",
+      "image": "https://example.com/covers/featured-other.jpg",
+      "cover": "https://example.com/covers/featured-other.jpg",
+      "author": "张三",
+      "authorId": 101,
+      "authorAvatar": "https://example.com/avatars/user101.jpg",
+      "tags": ["效率提升", "最佳实践", "工具汇总"],
+      "views": 3580,
+      "comments": 125,
+      "likes": 268,
+      "featured": true,
+      "createTime": "2026-01-08T10:30:00Z"
+    }
+  }
+}
+```
+
+**响应字段说明**
+
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| post | object\|null | ✅ | 精华帖子对象，无精华帖子时为null |
+| post.id | number | ✅ | 帖子ID |
+| post.title | string | ✅ | 帖子标题 |
+| post.description | string | ✅ | 帖子摘要 |
+| post.image | string | ❌ | 帖子封面图（优先使用） |
+| post.cover | string | ❌ | 帖子封面图（备用字段，与image二选一） |
+| post.author | string | ✅ | 作者名称 |
+| post.authorId | number | ❌ | 作者ID |
+| post.authorAvatar | string | ❌ | 作者头像 |
+| post.tags | array | ❌ | 标签列表（数组） |
+| post.views | number | ✅ | 浏览量 |
+| post.comments | number | ✅ | 评论数 |
+| post.likes | number | ❌ | 点赞数 |
+| post.featured | boolean | ✅ | 是否为精华帖子（始终为true） |
+| post.createTime | string | ✅ | 创建时间（ISO 8601格式或日期字符串） |
+
+> **与扶摇Agent的区别**：
+> - 扶摇Agent：精华帖子在帖子列表外单独展示（大图卡片样式）
+> - AI工具专区（其他工具）：精华帖子在帖子列表内置顶显示（与普通帖子相同样式，带"精华"标签）
+> 
+> **前端处理说明**：
+> ```typescript
+> // 将精华帖子传入PostList组件的featuredPosts属性
+> const featuredPostsArray = computed(() => {
+>   return featuredPost.value ? [featuredPost.value] : []
+> })
+> 
+> // PostList组件会将精华帖子置顶显示在列表顶部
+> <PostList
+>   :posts="paginatedPosts"
+>   :featured-posts="featuredPostsArray"
+>   :show-featured-tag="true"
+>   @post-click="handlePostClick"
+> />
+> ```
+> 
+> - 封面图：前端使用 `post.image || post.cover` 兼容两个字段
+> - 日期：前端会判断类型并格式化
+> - 精华帖子通过单独接口获取，不随筛选条件重新请求
+
+---
+
+### 8. 设置精华帖子（其他工具专有）
+
+管理员或Owner设置/取消"其他工具"的精华帖子。
+
+**请求**
+
+```
+PUT /api/tools/featured-post
+```
+
+**请求体**
+
+```json
+{
+  "toolId": 0,
+  "postId": 301
+}
+```
+
+**请求字段说明**
+
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| toolId | number | 是 | 工具ID，此接口仅支持toolId=0 |
+| postId | number | 是 | 帖子ID，设置为null或0表示取消精华 |
+
+**响应**
+
+```json
+{
+  "code": 200,
+  "message": "设置成功",
+  "data": {
+    "postId": 301,
+    "setTime": "2026-01-13T16:00:00Z"
+  }
+}
+```
+
+---
+
+### 9. 发布活动
 
 工具Owner或管理员发布新活动/培训。
 
@@ -522,7 +706,7 @@ POST /api/tools/activities
 
 ---
 
-### 8. 获取活动详情
+### 10. 获取活动详情
 
 获取单个活动的详细信息。
 
@@ -590,7 +774,7 @@ GET /api/tools/activities/{activityId}
 
 ---
 
-### 9. 报名活动
+### 11. 报名活动
 
 用户报名参加活动。
 
@@ -632,7 +816,7 @@ POST /api/tools/activities/{activityId}/join
 
 ---
 
-### 10. 取消报名
+### 12. 取消报名
 
 用户取消活动报名。
 
@@ -660,6 +844,40 @@ DELETE /api/tools/activities/{activityId}/join
 
 ---
 
+## 共用接口说明
+
+以下接口与扶摇Agent应用完全共用，通过 `toolId` 区分数据范围：
+
+| toolId值 | 说明 |
+|---------|------|
+| -1 | 扶摇Agent应用 |
+| 0 | 其他工具 |
+| >0 | 具体工具（如TestMate=1，CodeMate=2等） |
+
+### 与扶摇Agent共用的接口
+
+| 接口 | 路径 | 说明 |
+|-----|------|------|
+| 检查Owner权限 | `GET /api/tools/{toolId}/check-owner` | 统一权限检查 |
+| 获取帖子列表 | `GET /api/tools/posts` | 统一帖子列表接口 |
+| 获取标签统计 | `GET /api/tools/{toolId}/tags` | 统一标签统计接口 |
+| 获取活动列表 | `GET /api/tools/activities` | 统一活动列表接口 |
+| 发布活动 | `POST /api/tools/activities` | 统一发布活动接口 |
+| 获取活动详情 | `GET /api/tools/activities/{activityId}` | 获取单个活动详情 |
+| 报名活动 | `POST /api/tools/activities/{activityId}/join` | 用户报名活动 |
+| 取消报名 | `DELETE /api/tools/activities/{activityId}/join` | 用户取消报名 |
+
+### 专有接口差异
+
+| 功能 | AI工具专区（其他工具） | 扶摇Agent |
+|-----|---------------------|-----------|
+| 精华帖子 | `GET/PUT /api/tools/featured-post?toolId=0` | `GET/PUT /api/agent/featured-post` |
+| 部门统计 | `GET /api/tools/{toolId}/departments` | 不适用 |
+
+> 详细接口说明请参考 [扶摇Agent应用接口文档](./扶摇Agent应用接口文档.md)
+
+---
+
 ## 错误码说明
 
 | 错误码 | 说明 |
@@ -667,7 +885,7 @@ DELETE /api/tools/activities/{activityId}/join
 | 200 | 请求成功 |
 | 400 | 请求参数错误 |
 | 401 | 未登录或登录已过期 |
-| 403 | 无权限（非工具Owner尝试发布活动等） |
+| 403 | 无权限（非工具Owner尝试发布活动/设置精华等） |
 | 404 | 资源不存在 |
 | 500 | 服务器内部错误 |
 

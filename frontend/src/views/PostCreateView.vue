@@ -234,7 +234,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createPost, updatePost, getRecommendedCovers, getTools, getPostDetail } from '../mock'
+import { createPost, updatePost, getRecommendedCovers, getTools, getPostDetail, saveDraft } from '../mock'
+
+// 内存中的草稿存储
+let memoryDraft: any = null
 import type { InputInstance } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
@@ -859,12 +862,18 @@ const handleAutoSave = () => {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
   }
-  autoSaveTimer = setTimeout(() => {
+  autoSaveTimer = setTimeout(async () => {
     const draft = {
       ...formData.value,
       savedAt: new Date().toISOString()
     }
-    localStorage.setItem('post_draft', JSON.stringify(draft))
+    memoryDraft = draft
+    // 也调用mock API保存草稿
+    try {
+      await saveDraft(draft)
+    } catch (e) {
+      console.error('保存草稿失败:', e)
+    }
     lastSaveTime.value = new Date().toLocaleTimeString('zh-CN', {
       hour: '2-digit',
       minute: '2-digit',
@@ -874,7 +883,7 @@ const handleAutoSave = () => {
 }
 
 // 手动保存草稿（仅在新建模式下）
-const handleSaveDraft = () => {
+const handleSaveDraft = async () => {
   // 编辑模式下不保存草稿
   if (isEditMode.value) {
     return
@@ -884,7 +893,13 @@ const handleSaveDraft = () => {
     ...formData.value,
     savedAt: new Date().toISOString()
   }
-  localStorage.setItem('post_draft', JSON.stringify(draft))
+  memoryDraft = draft
+  // 也调用mock API保存草稿
+  try {
+    await saveDraft(draft)
+  } catch (e) {
+    console.error('保存草稿失败:', e)
+  }
   lastSaveTime.value = new Date().toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -951,7 +966,7 @@ const handlePublish = async () => {
 
       // 清除草稿（仅在新建模式下）
       if (!isEditMode.value) {
-        localStorage.removeItem('post_draft')
+        memoryDraft = null
       }
     } catch (error: any) {
       console.error('发布失败:', error)
@@ -1018,10 +1033,10 @@ const handlePublish = async () => {
 
 // 检查并加载草稿
 const checkAndLoadDraft = () => {
-  const draftStr = localStorage.getItem('post_draft')
-  if (draftStr) {
+  // 从内存草稿中读取
+  if (memoryDraft) {
     try {
-      const draft = JSON.parse(draftStr)
+      const draft = memoryDraft
       // 检查草稿是否有内容
       const hasDraftContent = draft.title || 
                               draft.summary || 
@@ -1045,7 +1060,7 @@ const checkAndLoadDraft = () => {
           // 用户选择重新开始
           if (action === 'cancel') {
             // 清除草稿
-            localStorage.removeItem('post_draft')
+            memoryDraft = null
             // 清空表单
             formData.value = {
               zone: 'practices',
@@ -1072,7 +1087,7 @@ const checkAndLoadDraft = () => {
     } catch (error) {
       console.error('检查草稿失败:', error)
       // 如果解析失败，清除无效的草稿
-      localStorage.removeItem('post_draft')
+      memoryDraft = null
     }
   }
 }
@@ -1081,15 +1096,9 @@ const checkAndLoadDraft = () => {
 const loadDraft = (draft?: any) => {
   let draftData = draft
   if (!draftData) {
-    const draftStr = localStorage.getItem('post_draft')
-    if (!draftStr) return
-    
-    try {
-      draftData = JSON.parse(draftStr)
-    } catch (error) {
-      console.error('加载草稿失败:', error)
-      return
-    }
+    // 从内存草稿读取
+    if (!memoryDraft) return
+    draftData = memoryDraft
   }
   
   formData.value = { ...draftData }

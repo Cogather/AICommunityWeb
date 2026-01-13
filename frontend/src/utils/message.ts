@@ -22,18 +22,77 @@ export interface Message {
   createdAt: string
 }
 
+// 内存中的消息存储（替代localStorage）
+const messagesStore: Map<number, Message[]> = new Map()
+
+// 初始化mock消息数据
+const initMockMessages = (userId: number): Message[] => {
+  return [
+    {
+      id: 1,
+      type: MessageType.POST_COMMENT,
+      title: '帖子评论通知',
+      content: '张三 评论了您的帖子《AI技术实践分享》',
+      userId: userId,
+      relatedId: 1,
+      relatedType: 'post',
+      fromUserId: 2,
+      fromUserName: '张三',
+      read: false,
+      createdAt: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: 2,
+      type: MessageType.ACTIVITY_REGISTRATION,
+      title: '活动报名通知',
+      content: '李四 报名参加了您发布的活动《扶摇Agent新手入门培训》',
+      userId: userId,
+      relatedId: 1,
+      relatedType: 'activity',
+      fromUserId: 3,
+      fromUserName: '李四',
+      read: false,
+      createdAt: new Date(Date.now() - 7200000).toISOString()
+    },
+    {
+      id: 3,
+      type: MessageType.POST_LIKE,
+      title: '点赞通知',
+      content: '王五 赞了您的帖子《使用扶摇Agent实现智能代码生成》',
+      userId: userId,
+      relatedId: 101,
+      relatedType: 'post',
+      fromUserId: 4,
+      fromUserName: '王五',
+      read: true,
+      createdAt: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+      id: 4,
+      type: MessageType.COMMENT_REPLY,
+      title: '回复通知',
+      content: '赵六 回复了您的评论',
+      userId: userId,
+      relatedId: 1,
+      relatedType: 'comment',
+      fromUserId: 5,
+      fromUserName: '赵六',
+      read: true,
+      createdAt: new Date(Date.now() - 172800000).toISOString()
+    }
+  ]
+}
+
 // 获取用户消息列表
 export const getUserMessages = (userId: number): Message[] => {
-  const messagesStr = localStorage.getItem(`user_messages_${userId}`)
-  if (!messagesStr) return []
-  try {
-    const messages = JSON.parse(messagesStr)
-    return messages.sort((a: Message, b: Message) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-  } catch {
-    return []
+  if (!messagesStore.has(userId)) {
+    // 初始化mock数据
+    messagesStore.set(userId, initMockMessages(userId))
   }
+  const messages = messagesStore.get(userId) || []
+  return messages.sort((a: Message, b: Message) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
 }
 
 // 获取未读消息数量
@@ -52,7 +111,7 @@ export const addMessage = (message: Omit<Message, 'id' | 'read' | 'createdAt'>):
     createdAt: new Date().toISOString()
   }
   messages.unshift(newMessage)
-  localStorage.setItem(`user_messages_${message.userId}`, JSON.stringify(messages))
+  messagesStore.set(message.userId, messages)
   
   // 触发消息更新事件
   window.dispatchEvent(new CustomEvent('messageUpdated', { detail: { userId: message.userId } }))
@@ -64,7 +123,7 @@ export const markMessageAsRead = (userId: number, messageId: number): void => {
   const message = messages.find(msg => msg.id === messageId)
   if (message) {
     message.read = true
-    localStorage.setItem(`user_messages_${userId}`, JSON.stringify(messages))
+    messagesStore.set(userId, messages)
     window.dispatchEvent(new CustomEvent('messageUpdated', { detail: { userId } }))
   }
 }
@@ -75,7 +134,7 @@ export const markAllMessagesAsRead = (userId: number): void => {
   messages.forEach(msg => {
     msg.read = true
   })
-  localStorage.setItem(`user_messages_${userId}`, JSON.stringify(messages))
+  messagesStore.set(userId, messages)
   window.dispatchEvent(new CustomEvent('messageUpdated', { detail: { userId } }))
 }
 
@@ -83,7 +142,7 @@ export const markAllMessagesAsRead = (userId: number): void => {
 export const deleteMessage = (userId: number, messageId: number): void => {
   const messages = getUserMessages(userId)
   const filtered = messages.filter(msg => msg.id !== messageId)
-  localStorage.setItem(`user_messages_${userId}`, JSON.stringify(filtered))
+  messagesStore.set(userId, filtered)
   window.dispatchEvent(new CustomEvent('messageUpdated', { detail: { userId } }))
 }
 
@@ -106,5 +165,4 @@ export const sendActivityRegistrationMessage = (
     fromUserName: registrantName
   })
 }
-
 

@@ -26,7 +26,7 @@
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
                 :page-sizes="[10, 15, 20, 30, 50]"
-                :total="filteredPosts.length"
+                :total="totalPosts"
                 layout="total, sizes, prev, pager, next, jumper"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange"
@@ -65,11 +65,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
+import { getEmpowermentFeaturedPosts, getEmpowermentPosts, getEmpowermentTags } from '../mock'
 
 const router = useRouter()
 
@@ -83,162 +84,94 @@ const selectedTag = ref<string | null>(null)
 // 分页
 const currentPage = ref(1)
 const pageSize = ref(15)
+const totalPosts = ref(0)
 
-// 所有标签（包含"全部"选项）
-const displayedTags = computed(() => {
-  // 获取所有帖子（包括精华帖和普通帖子）
-  const allPosts = [...featuredPosts.value, ...posts.value]
-  
-  // 统计每个标签的数量
-  const tagCountMap = new Map<string, number>()
-  allPosts.forEach(post => {
-    if (post.tags && Array.isArray(post.tags)) {
-      post.tags.forEach(tag => {
-        tagCountMap.set(tag, (tagCountMap.get(tag) || 0) + 1)
-      })
-    }
-  })
-  
-  // 构建标签列表，包含"全部"
-  const tags: Array<{ name: string; count: number }> = [
-    { name: '全部', count: allPosts.length }
-  ]
-  
-  // 添加其他标签
-  const tagNames = ['讨论', '提问', '分享', '经验', '工具', '技巧', '案例', '教程', '最佳实践', '问题解决', 'Agent', 'Prompt', '微调']
-  tagNames.forEach(tagName => {
-    const count = tagCountMap.get(tagName) || 0
-    if (count > 0) {
-      tags.push({ name: tagName, count })
-    }
-  })
-  
-  return tags
-})
-
-// 精华帖（置顶）
-const featuredPosts = ref([
-  {
-    id: 1,
-    title: '如何高效使用Agent提升开发效率',
-    description: '分享使用Agent工具在开发过程中的最佳实践和技巧。',
-    author: '张工程师',
-    createTime: '2024年4月10日',
-    views: 1250,
-    comments: 45,
-    likes: 128,
-    tags: ['讨论', 'Agent'],
-    image: 'https://picsum.photos/800/400?random=10',
-    featured: true
-  }
-])
+// 精华帖（置顶，不参与分页和筛选）
+const featuredPosts = ref<any[]>([])
 
 // 普通帖子
-const posts = ref([
-  {
-    id: 2,
-    title: 'Prompt工程的最佳实践分享',
-    description: '如何编写高质量的Prompt，提升AI模型输出效果。',
-    author: '李开发者',
-    createTime: '2024年4月',
-    views: 890,
-    comments: 32,
-    likes: 75,
-    tags: ['分享', 'Prompt'],
-    image: 'https://picsum.photos/400/300?random=11'
-  },
-  {
-    id: 3,
-    title: '大模型微调 vs 提示工程的选择',
-    description: '讨论在不同场景下应该选择微调还是提示工程。',
-    author: '王测试',
-    createTime: '60分钟前',
-    views: 650,
-    comments: 18,
-    likes: 42,
-    tags: ['讨论', '微调'],
-    image: 'https://picsum.photos/400/300?random=12'
-  },
-  {
-    id: 4,
-    title: 'AI工具链的构建与优化',
-    description: '分享如何构建高效的AI工具链，提升团队协作效率。',
-    author: '赵医生',
-    createTime: '2024年4月20日',
-    views: 520,
-    comments: 15,
-    likes: 28,
-    tags: ['工具', '经验'],
-    image: 'https://picsum.photos/400/300?random=13'
-  },
-  {
-    id: 5,
-    title: '如何解决Agent执行中的常见问题',
-    description: '总结Agent使用过程中遇到的问题及解决方案。',
-    author: '陈架构师',
-    createTime: '2024年4月20日',
-    views: 720,
-    comments: 28,
-    likes: 65,
-    tags: ['问题解决', 'Agent'],
-    image: 'https://picsum.photos/400/300?random=14'
-  },
-  {
-    id: 6,
-    title: 'Prompt模板库分享',
-    description: '分享常用的Prompt模板，提高工作效率。',
-    author: '刘设计师',
-    createTime: '2024年4月19日',
-    views: 450,
-    comments: 12,
-    likes: 19,
-    tags: ['分享', 'Prompt'],
-    image: 'https://picsum.photos/400/300?random=15'
+const posts = ref<any[]>([])
+
+// 标签列表
+const displayedTags = ref<Array<{ name: string; count: number }>>([])
+
+// 加载精华帖子（只加载一次，不随筛选条件变化）
+const loadFeaturedPosts = async () => {
+  try {
+    const response = await getEmpowermentFeaturedPosts()
+    featuredPosts.value = response.list.map(post => ({
+      ...post,
+      image: post.image || post.cover || '',
+      createTime: formatDate(post.createTime)
+    }))
+  } catch (error) {
+    console.error('加载精华帖子失败:', error)
   }
-])
+}
 
-// 过滤后的帖子
-const filteredPosts = computed(() => {
-  // 合并精华帖和普通帖子
-  let result = [...featuredPosts.value, ...posts.value]
-
-  // 按标签过滤（排除"全部"）
-  if (selectedTag.value && selectedTag.value !== '全部') {
-    result = result.filter(post => 
-      post.tags && post.tags.includes(selectedTag.value!)
-    )
+// 加载普通帖子（随筛选条件变化重新加载）
+const loadPosts = async () => {
+  try {
+    const response = await getEmpowermentPosts({
+      tag: selectedTag.value || undefined,
+      keyword: searchKeyword.value || undefined,
+      sortBy: sortBy.value,
+      page: currentPage.value,
+      pageSize: pageSize.value
+    })
+    posts.value = response.list.map(post => ({
+      ...post,
+      image: post.image || post.cover || '',
+      createTime: formatDate(post.createTime)
+    }))
+    totalPosts.value = response.total
+  } catch (error) {
+    console.error('加载帖子列表失败:', error)
   }
+}
 
-  // 搜索过滤
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(post => 
-      post.title.toLowerCase().includes(keyword) ||
-      post.author.toLowerCase().includes(keyword) ||
-      (post.description && post.description.toLowerCase().includes(keyword))
-    )
+// 加载标签统计
+const loadTags = async () => {
+  try {
+    const response = await getEmpowermentTags()
+    displayedTags.value = response.list
+  } catch (error) {
+    console.error('加载标签失败:', error)
   }
+}
 
-  // 排序
-  if (sortBy.value === 'hot') {
-    result.sort((a, b) => b.views - a.views)
-  } else if (sortBy.value === 'comments') {
-    result.sort((a, b) => (b.comments || 0) - (a.comments || 0))
-  } else if (sortBy.value === 'likes') {
-    result.sort((a, b) => (b.likes || 0) - (a.likes || 0))
-  } else {
-    // 按时间排序（这里简化处理）
-    result.sort((a, b) => b.id - a.id)
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch {
+    return dateStr
   }
+}
 
-  return result
+// 页面加载时获取数据
+onMounted(async () => {
+  await Promise.all([
+    loadFeaturedPosts(),
+    loadPosts(),
+    loadTags()
+  ])
 })
 
-// 分页后的帖子
+// 过滤后的帖子（现在由API完成筛选，这里直接返回posts）
+const filteredPosts = computed(() => {
+  return posts.value
+})
+
+// 分页后的帖子（现在由API完成分页，这里直接返回posts）
 const paginatedPosts = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredPosts.value.slice(start, end)
+  return posts.value
 })
 
 // 获取标签类型
@@ -262,17 +195,18 @@ const _getTagType = (tag: string) => {
   return typeMap[tag] || 'info'
 }
 
-// 处理标签切换
 // 处理搜索
-const handleSearch = (keyword: string) => {
+const handleSearch = async (keyword: string) => {
   searchKeyword.value = keyword
   currentPage.value = 1 // 重置到第一页
+  await loadPosts()
 }
 
 // 处理排序
-const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
+const handleSort = async (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
   sortBy.value = sort
   currentPage.value = 1 // 重置到第一页
+  await loadPosts()
 }
 
 // 处理发帖
@@ -284,7 +218,7 @@ const _handlePostCreate = () => {
 }
 
 // 处理标签点击
-const handleTagClick = (tagName: string) => {
+const handleTagClick = async (tagName: string) => {
   if (tagName === '全部') {
     // 点击"全部"时清除标签过滤
     selectedTag.value = null
@@ -295,17 +229,20 @@ const handleTagClick = (tagName: string) => {
     selectedTag.value = tagName
   }
   currentPage.value = 1 // 重置到第一页
+  await loadPosts()
 }
 
 // 处理分页大小变化
-const handleSizeChange = (val: number) => {
+const handleSizeChange = async (val: number) => {
   pageSize.value = val
   currentPage.value = 1 // 重置到第一页
+  await loadPosts()
 }
 
 // 处理当前页变化
-const handleCurrentChange = (val: number) => {
+const handleCurrentChange = async (val: number) => {
   currentPage.value = val
+  await loadPosts()
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }

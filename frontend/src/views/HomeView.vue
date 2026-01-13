@@ -343,7 +343,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
-import { getHonor, getTools, getPractices } from '../mock'
+import { getHonor, getTools, getPractices, getNews, getToolBanners } from '../mock'
 
 const router = useRouter()
 
@@ -356,20 +356,6 @@ const loadHonorConfig = async () => {
       return {
         bannerImage: response.honor.bannerImage || '',
         awards: response.honor.awards || []
-      }
-    }
-  } catch (e) {
-    console.error('从API加载荣誉殿堂配置失败，使用localStorage:', e)
-  }
-
-  // 降级到localStorage
-  try {
-    const saved = localStorage.getItem('admin_honor_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return {
-        bannerImage: config.bannerImage || '',
-        awards: config.awards || []
       }
     }
   } catch (e) {
@@ -424,11 +410,12 @@ onMounted(async () => {
   tools.value = await loadTools()
   toolZoneBanners.value = await loadToolBanners()
   practices.value = await loadPractices()
+  await loadNewsList()
 })
 
 // 监听配置更新
 const handleConfigUpdate = async () => {
-  newsList.value = loadNewsList()
+  await loadNewsList()
   tools.value = await loadTools()
   toolZoneBanners.value = await loadToolBanners()
   honorConfig.value = await loadHonorConfig()
@@ -524,23 +511,26 @@ const practices = ref({
   userExchange: []
 } as { training: any[], trainingBattle: any[], userExchange: any[] })
 
-// Mock Data - 从localStorage读取配置，如果没有则使用默认值
-const loadNewsList = () => {
+// 新闻数据 - 从mock API加载
+const newsList = ref<any[]>([])
+
+const loadNewsList = async () => {
   try {
-    const saved = localStorage.getItem('admin_news_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.map((item: any) => ({
+    const response = await getNews()
+    if (response && response.list && response.list.length > 0) {
+      newsList.value = response.list.map((item: any) => ({
         title: item.title,
         date: item.date,
         image: item.image,
         link: item.link || '/news'
       }))
+      return
     }
   } catch (e) {
     console.error('加载头条配置失败:', e)
   }
-  return [
+  // 默认数据
+  newsList.value = [
     {
       title: '【大模型专题】多模态模型在医疗影像中的最新应用突破',
       date: '刚刚',
@@ -568,13 +558,10 @@ const loadNewsList = () => {
   ]
 }
 
-const newsList = ref(loadNewsList())
 
-
-// AI工具列表配置
+// AI工具列表配置 - 从mock API加载
 const loadTools = async () => {
   try {
-    // 优先从API获取
     const response = await getTools()
     if (response && response.list && response.list.length > 0) {
       return response.list.map((item: any) => ({
@@ -582,32 +569,12 @@ const loadTools = async () => {
         name: item.name,
         desc: item.desc || '',
         logo: item.logo || '',
-        // 如果link已配置，使用配置的link；否则生成默认link（包含toolId参数）
         link: item.link || `/tools?toolId=${item.id}`,
         color: item.color || '#409eff'
       }))
     }
   } catch (e) {
-    console.error('从API加载工具列表失败，使用localStorage:', e)
-  }
-
-  // 降级到localStorage
-  try {
-    const saved = localStorage.getItem('admin_tools_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.map((item: any, index: number) => ({
-        id: item.id || index + 1,
-        name: item.name,
-        desc: item.desc || '',
-        logo: item.logo || '',
-        // 如果link已配置，使用配置的link；否则生成默认link（包含toolId参数）
-        link: item.link || `/tools?toolId=${item.id || index + 1}`,
-        color: item.color || '#409eff'
-      }))
-    }
-  } catch (e) {
-    console.error('加载工具配置失败:', e)
+    console.error('加载工具列表失败:', e)
   }
 
   // 默认数据
@@ -673,13 +640,12 @@ const loadTools = async () => {
 
 const tools = ref([] as any[])
 
-// AI工具专区Banner配置 - 从localStorage读取配置
-const loadToolBanners = () => {
+// AI工具专区Banner配置 - 从mock API加载
+const loadToolBanners = async () => {
   try {
-    const saved = localStorage.getItem('admin_tool_banners_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.map((item: any) => ({
+    const response = await getToolBanners()
+    if (response && response.list && response.list.length > 0) {
+      return response.list.map((item: any) => ({
         title: item.title || '',
         desc: item.desc || '',
         image: item.image || ''
@@ -688,6 +654,7 @@ const loadToolBanners = () => {
   } catch (e) {
     console.error('加载工具Banner配置失败:', e)
   }
+  // 默认数据
   return [
     {
       title: '最新 AI 工具推荐',

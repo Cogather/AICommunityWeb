@@ -14,12 +14,12 @@
         <div class="post-header">
           <el-tag type="success" size="small" v-if="showFeaturedTag">精华</el-tag>
           <h3 class="post-title">{{ post.title }}</h3>
-          <el-tag v-if="post.tag" :type="getTagType(post.tag)" size="small">
+          <el-tag v-if="_props.showTags && post.tag" :type="getTagType(post.tag)" size="small">
             {{ post.tag }}
           </el-tag>
         </div>
         <p class="post-description" v-if="post.description">{{ post.description }}</p>
-        <div class="post-tags" v-if="post.tags && post.tags.length > 0">
+        <div class="post-tags" v-if="_props.showTags && post.tags && post.tags.length > 0">
           <el-tag
             v-for="tag in post.tags"
             :key="tag"
@@ -75,12 +75,12 @@
         <div class="post-header">
           <el-tag v-if="post.featured" type="success" size="small">精华</el-tag>
           <h3 class="post-title">{{ post.title }}</h3>
-          <el-tag v-if="post.tag" :type="getTagType(post.tag)" size="small">
+          <el-tag v-if="_props.showTags && post.tag" :type="getTagType(post.tag)" size="small">
             {{ post.tag }}
           </el-tag>
         </div>
         <p class="post-description" v-if="post.description">{{ post.description }}</p>
-        <div class="post-tags" v-if="post.tags && post.tags.length > 0">
+        <div class="post-tags" v-if="_props.showTags && post.tags && post.tags.length > 0">
           <el-tag
             v-for="tag in post.tags"
             :key="tag"
@@ -151,11 +151,13 @@ interface Props {
   posts: Post[]
   featuredPosts?: Post[]
   showFeaturedTag?: boolean
+  showTags?: boolean  // 是否显示帖子标签
 }
 
 const _props = withDefaults(defineProps<Props>(), {
   featuredPosts: () => [],
-  showFeaturedTag: true
+  showFeaturedTag: true,
+  showTags: true
 })
 
 const emit = defineEmits<{

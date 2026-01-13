@@ -73,7 +73,7 @@
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
               :page-sizes="[10, 15, 20, 30, 50]"
-              :total="filteredPosts.length"
+              :total="totalPosts"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleSizeChange"
               @current-change="handleCurrentChange"
@@ -105,9 +105,9 @@
       </el-col>
     </el-row>
 
-    <!-- 发布活动悬浮按钮（工具owner和管理员可见） -->
+    <!-- 发布活动悬浮按钮（工具Owner和管理员可见） -->
     <el-tooltip 
-      v-if="isAgentOwner || isAdmin"
+      v-if="isToolOwner || isAdmin"
       content="发布活动" 
       placement="left"
     >
@@ -132,32 +132,32 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { getFeaturedPost, checkToolOwner, getCurrentUser, getActivities } from '../mock'
+import { getFeaturedPost, checkToolOwner, getCurrentUser, getActivities, getPosts } from '../mock'
 
 const router = useRouter()
 
 // 选中的标签
 const selectedTag = ref<string | null>(null)
 
-// 扶摇Agent应用Owner权限检查
-const isAgentOwner = ref(false)
+// 工具Owner权限检查
+const isToolOwner = ref(false)
 const isAdmin = ref(false) // 是否为管理员
 const checkingOwner = ref(false)
 
-// 检查是否为扶摇Agent应用Owner或管理员
-const checkAgentOwner = async () => {
+// 检查是否为工具Owner或管理员
+const checkToolOwnerPermission = async () => {
   checkingOwner.value = true
   try {
     // 获取当前用户信息
     const user = await getCurrentUser()
     isAdmin.value = user.roles?.includes('admin') || false
     
-    // 检查是否为扶摇Agent应用Owner（toolId为-1表示扶摇Agent应用）
+    // 检查是否为工具Owner（toolId为-1表示扶摇Agent应用）
     const ownerResponse = await checkToolOwner(-1)
-    isAgentOwner.value = ownerResponse.isOwner || false
+    isToolOwner.value = ownerResponse.isOwner || false
   } catch (error: any) {
-    console.error('检查扶摇Agent应用Owner权限失败:', error)
-    isAgentOwner.value = false
+    console.error('检查工具Owner权限失败:', error)
+    isToolOwner.value = false
     isAdmin.value = false
   } finally {
     checkingOwner.value = false
@@ -187,14 +187,13 @@ const loadTags = async () => {
   try {
     const { getTags } = await import('../mock')
     const result = await getTags({
-      zone: 'agent',
       toolId: -1
     })
     // 构建标签列表，包含"全部"
     const tags: Array<{ name: string; count: number }> = [
-      { name: '全部', count: allPosts.value.length }
+      { name: '全部', count: totalPosts.value }
     ]
-    result.list.forEach(tag => {
+    result.list.forEach((tag: { name: string; count?: number }) => {
       tags.push({ name: tag.name, count: tag.count || 0 })
     })
     allTags.value = tags
@@ -202,7 +201,7 @@ const loadTags = async () => {
     console.error('加载标签列表失败:', error)
     // 使用默认标签
     allTags.value = [
-      { name: '全部', count: allPosts.value.length },
+      { name: '全部', count: totalPosts.value },
       { name: 'Agent应用', count: 0 },
       { name: '工作流', count: 0 },
       { name: '自动化', count: 0 },
@@ -231,7 +230,7 @@ const loadActivities = async () => {
       title: a.title,
       desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
       date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
-      location: '',
+      location: a.location || '',
       image: a.cover || ''
     }))
   } catch (error) {
@@ -265,79 +264,51 @@ const loadFeaturedPost = async () => {
 }
 
 // 所有帖子
-const allPosts = ref([
-  {
-    id: 1,
-    title: '使用扶摇 Agent 实现智能代码生成',
-    description: '分享如何使用扶摇 Agent 编排引擎实现智能代码生成功能，提升开发效率。',
-    author: '张工程师',
-    createTime: '2024年4月12日',
-    views: 890,
-    comments: 45,
-    likes: 98,
-    tag: 'Agent应用',
-    image: 'https://picsum.photos/400/300?random=21'
-  },
-  {
-    id: 2,
-    title: '扶摇工作流编排实战案例',
-    description: '通过实际案例展示如何利用扶摇 Agent 编排复杂的工作流程。',
-    author: '李开发者',
-    createTime: '2024年4月10日',
-    views: 720,
-    comments: 32,
-    likes: 75,
-    tag: '工作流',
-    image: 'https://picsum.photos/400/300?random=22'
-  },
-  {
-    id: 3,
-    title: 'Agent 自动化测试实践',
-    description: '介绍如何使用扶摇 Agent 进行自动化测试，提高测试效率和覆盖率。',
-    author: '王测试',
-    createTime: '2024年4月8日',
-    views: 650,
-    comments: 28,
-    likes: 62,
-    tag: '自动化',
-    image: 'https://picsum.photos/400/300?random=23'
-  },
-  {
-    id: 4,
-    title: '智能编排最佳实践',
-    description: '总结扶摇 Agent 智能编排的最佳实践和注意事项。',
-    author: '陈架构师',
-    createTime: '2024年4月6日',
-    views: 580,
-    comments: 25,
-    likes: 48,
-    tag: '智能编排',
-    image: 'https://picsum.photos/400/300?random=24'
-  },
-  {
-    id: 5,
-    title: '扶摇 Agent 在企业级应用中的应用',
-    description: '分享扶摇 Agent 在企业级应用中的实际应用案例和经验。',
-    author: '赵医生',
-    createTime: '2024年4月5日',
-    views: 520,
-    comments: 20,
-    likes: 38,
-    tag: '案例分享',
-    image: 'https://picsum.photos/400/300?random=25'
+const allPosts = ref<any[]>([])
+const totalPosts = ref(0)
+
+// 加载帖子列表
+const loadPosts = async () => {
+  try {
+    const result = await getPosts({
+      toolId: -1, // toolId为-1表示扶摇Agent应用
+      tag: selectedTag.value || undefined,
+      keyword: searchKeyword.value || undefined,
+      sortBy: sortBy.value,
+      page: currentPage.value,
+      pageSize: pageSize.value
+    })
+    allPosts.value = result.list.map((p: any) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description || p.summary || '',
+      author: p.author || p.authorName,
+      createTime: typeof p.createTime === 'string' 
+        ? p.createTime 
+        : new Date(p.createTime).toLocaleDateString('zh-CN'),
+      views: p.views,
+      comments: p.comments,
+      likes: p.likes,
+      tag: p.tag,
+      tags: p.tags,
+      image: p.image || p.cover || ''
+    }))
+    totalPosts.value = result.total
+  } catch (error) {
+    console.error('加载帖子列表失败:', error)
+    allPosts.value = []
+    totalPosts.value = 0
   }
-])
+}
 
 // 过滤后的帖子（后端已处理搜索、排序、标签过滤，这里直接使用）
 const filteredPosts = computed(() => {
   return allPosts.value
 })
 
-// 分页后的帖子
+// 分页后的帖子（后端已分页，直接使用）
 const paginatedPosts = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredPosts.value.slice(start, end)
+  return filteredPosts.value
 })
 
 // 获取标签类型
@@ -426,7 +397,7 @@ const handlePostCreate = () => {
 
 // 页面加载时检查权限
 onMounted(async () => {
-  await checkAgentOwner()
+  await checkToolOwnerPermission()
   await loadFeaturedPost()
   await loadActivities()
   await loadPosts()

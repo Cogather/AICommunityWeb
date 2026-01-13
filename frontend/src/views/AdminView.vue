@@ -362,7 +362,58 @@
         <!-- 赋能交流管理 -->
         <el-tab-pane label="赋能交流管理" name="empowerment">
           <div class="tab-content">
+            <!-- 精华帖子管理 -->
             <div class="config-section">
+              <div class="section-header">
+                <h2>精华帖子管理</h2>
+                <el-button type="primary" @click="handleAddEmpowermentFeaturedPost">
+                  <el-icon><Plus /></el-icon>
+                  添加精华帖子
+                </el-button>
+              </div>
+
+              <el-alert
+                title="说明：赋能交流页面的精华帖子会置顶显示在帖子列表顶部，不参与分页、搜索、标签筛选和排序"
+                type="info"
+                :closable="false"
+                style="margin-bottom: 24px;"
+              />
+
+              <div class="featured-posts-list">
+                <div
+                  v-for="(item, index) in empowermentFeaturedPostsList"
+                  :key="item.id"
+                  class="featured-post-item"
+                >
+                  <el-form :model="item" label-width="120px">
+                    <el-form-item label="帖子URL">
+                      <el-input
+                        v-model="item.url"
+                        placeholder="请输入帖子URL，例如：/post/123 或 https://example.com/post/123"
+                      />
+                    </el-form-item>
+                    <el-form-item label="备注">
+                      <el-input
+                        v-model="item.note"
+                        placeholder="可选：添加备注信息，便于管理"
+                      />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="danger" @click="handleDeleteEmpowermentFeaturedPost(index)">
+                        删除
+                      </el-button>
+                    </el-form-item>
+                  </el-form>
+                </div>
+              </div>
+
+              <div v-if="empowermentFeaturedPostsList.length === 0" class="empty-state">
+                <el-empty description="暂无精华帖子，点击上方按钮添加" />
+              </div>
+            </div>
+
+            <!-- 精选合集管理 -->
+            <div class="config-section" style="margin-top: 40px;">
               <div class="section-header">
                 <h2>精选合集管理</h2>
                 <el-button type="primary" @click="handleAddFeaturedCollection">
@@ -408,6 +459,60 @@
 
               <div v-if="featuredCollectionsList.length === 0" class="empty-state">
                 <el-empty description="暂无精选合集，点击上方按钮添加" />
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
+
+        <!-- AI工具专区管理 -->
+        <el-tab-pane label="AI工具专区管理" name="toolsZone">
+          <div class="tab-content">
+            <div class="config-section">
+              <div class="section-header">
+                <h2>其他工具 - 精华帖子管理</h2>
+                <el-button type="primary" @click="handleAddOtherToolsFeaturedPost">
+                  <el-icon><Plus /></el-icon>
+                  添加精华帖子
+                </el-button>
+              </div>
+
+              <el-alert
+                title="说明：此功能仅适用于AI工具专区的'其他工具'分类。普通工具（TestMate、CodeMate等）使用'操作指导'和'优秀使用'分类组织内容，无精华帖子功能。精华帖子在帖子列表内置顶显示。"
+                type="info"
+                :closable="false"
+                style="margin-bottom: 24px;"
+              />
+
+              <div class="featured-posts-list">
+                <div
+                  v-for="(item, index) in otherToolsFeaturedPostsList"
+                  :key="item.id"
+                  class="featured-post-item"
+                >
+                  <el-form :model="item" label-width="120px">
+                    <el-form-item label="帖子URL">
+                      <el-input
+                        v-model="item.url"
+                        placeholder="请输入帖子URL，例如：/post/301 或 https://example.com/post/301"
+                      />
+                    </el-form-item>
+                    <el-form-item label="备注">
+                      <el-input
+                        v-model="item.note"
+                        placeholder="可选：添加备注信息，便于管理"
+                      />
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="danger" @click="handleDeleteOtherToolsFeaturedPost(index)">
+                        删除
+                      </el-button>
+                    </el-form-item>
+                  </el-form>
+                </div>
+              </div>
+
+              <div v-if="otherToolsFeaturedPostsList.length === 0" class="empty-state">
+                <el-empty description="暂无精华帖子，点击上方按钮添加" />
               </div>
             </div>
           </div>
@@ -1017,10 +1122,25 @@ import {
   savePersonalAwardsConfig,
   saveWinnersConfig,
   saveTeamAwardsConfig,
+  saveEmpowermentFeaturedPostsConfig,
+  saveOtherToolsFeaturedPostsConfig,
   getRecommendedWinners,
   setUserAward,
   cancelUserAward,
   getAwardsList,
+  getCarouselConfig,
+  getHonorBannerConfig,
+  getHonorAwardsConfig,
+  getToolsConfig,
+  getToolBannersConfig,
+  getTeamAwardsConfig,
+  getActivities,
+  getActivityDetail,
+  createActivity,
+  updateActivity,
+  getUsersList,
+  getEmpowermentFeaturedPostsConfig,
+  getOtherToolsFeaturedPostsConfig,
   type CarouselItem as AdminCarouselItem
 } from '../mock'
 
@@ -1348,6 +1468,36 @@ const featuredCollectionsList = ref<FeaturedCollectionItem[]>([
   }
 ])
 
+// 赋能交流精华帖子列表
+interface EmpowermentFeaturedPostItem {
+  id: number
+  url: string
+  note: string
+}
+
+const empowermentFeaturedPostsList = ref<EmpowermentFeaturedPostItem[]>([
+  {
+    id: 1,
+    url: '/post/201',
+    note: '如何高效使用Agent提升开发效率'
+  }
+])
+
+// AI工具专区 - 其他工具精华帖子列表
+interface OtherToolsFeaturedPostItem {
+  id: number
+  url: string
+  note: string
+}
+
+const otherToolsFeaturedPostsList = ref<OtherToolsFeaturedPostItem[]>([
+  {
+    id: 1,
+    url: '/post/301',
+    note: 'AI工具使用效率提升指南'
+  }
+])
+
 // 用户列表
 interface UserItem {
   id: number
@@ -1436,29 +1586,22 @@ const allUsersList = ref<UserItem[]>([
   }
 ])
 
-// 从localStorage加载所有用户列表（如果有的话）
-const loadAllUsers = () => {
+// 从mock API加载所有用户列表
+const loadAllUsers = async () => {
   try {
-    const saved = localStorage.getItem('all_users_list')
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        allUsersList.value = parsed
-      }
+    const response = await getUsersList()
+    if (response && response.list && response.list.length > 0) {
+      allUsersList.value = response.list
     }
   } catch (e) {
     console.warn('加载用户列表失败:', e)
   }
 }
 
-// 保存用户列表到localStorage
+// 保存用户列表（mock API不需要实际保存）
 const saveUsersList = () => {
-  try {
-    localStorage.setItem('all_users_list', JSON.stringify(allUsersList.value))
-    localStorage.setItem('admin_users_list', JSON.stringify(usersList.value))
-  } catch (e) {
-    console.warn('保存用户列表失败:', e)
-  }
+  // Mock mode: 数据已在内存中更新
+  console.log('用户列表已更新（mock模式）')
 }
 
 // 过滤后的管理员列表（只显示管理员）
@@ -1529,7 +1672,7 @@ const handleAddAdmin = () => {
     ElMessage.success(`已将 ${user.name} 添加为管理员`)
   }
   
-  // 保存到localStorage
+  // 保存用户列表
   saveUsersList()
   
   // 关闭对话框并重置表单
@@ -1558,7 +1701,7 @@ const handleRemoveAdmin = (user: UserItem) => {
     
     ElMessage.success(`已将 ${user.name} 移除管理员身份`)
     
-    // 保存到localStorage
+    // 保存用户列表
     saveUsersList()
   }).catch(() => {
     // 用户取消
@@ -1566,28 +1709,14 @@ const handleRemoveAdmin = (user: UserItem) => {
 }
 
 // 初始化时加载用户列表
-onMounted(() => {
-  loadAllUsers()
-  // 从localStorage加载管理员列表
-  try {
-    const saved = localStorage.getItem('admin_users_list')
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // 只加载管理员
-        const admins = parsed.filter((u: UserItem) => u.currentRole === 'admin')
-        if (admins.length > 0) {
-          usersList.value = admins
-        }
-      }
-    } else {
-      // 如果没有保存的数据，初始化时只保留管理员
-      usersList.value = usersList.value.filter(u => u.currentRole === 'admin')
-      saveUsersList()
-    }
-  } catch (e) {
-    console.warn('加载管理员列表失败:', e)
-    // 如果加载失败，初始化时只保留管理员
+onMounted(async () => {
+  await loadAllUsers()
+  // 从mock数据中筛选管理员
+  const admins = allUsersList.value.filter((u: UserItem) => u.currentRole === 'admin')
+  if (admins.length > 0) {
+    usersList.value = admins
+  } else {
+    // 如果没有管理员，使用默认数据
     usersList.value = usersList.value.filter(u => u.currentRole === 'admin')
   }
 })
@@ -1722,47 +1851,25 @@ const _handlePublishActivity = async () => {
 
     publishingActivity.value = true
 
-    // 这里应该调用API发布活动
-    // await publishActivity(activityForm.value)
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // 保存到localStorage（实际应该保存到后端）
+    // 使用mock API保存活动
     const selectedTool = allToolsList.value.find(t => t.id === activityForm.value.toolId)
     
-    const activities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
+    const activityData = {
+      toolId: activityForm.value.toolId,
+      toolName: selectedTool?.name || '未知工具',
+      title: activityForm.value.title,
+      date: activityForm.value.date,
+      cover: activityForm.value.cover,
+      content: activityForm.value.content
+    }
     
     if (editingActivityId.value) {
       // 编辑模式：更新现有活动
-      const index = activities.findIndex((a: any) => a.id === editingActivityId.value)
-      if (index !== -1) {
-        activities[index] = {
-          ...activities[index],
-          toolId: activityForm.value.toolId,
-          toolName: selectedTool?.name || '未知工具',
-          title: activityForm.value.title,
-          date: activityForm.value.date,
-          cover: activityForm.value.cover,
-          content: activityForm.value.content
-        }
-      }
+      await updateActivity(editingActivityId.value, activityData)
     } else {
       // 新建模式：添加新活动
-      const activityId = Date.now()
-      const activityData = {
-        id: activityId,
-        toolId: activityForm.value.toolId,
-        toolName: selectedTool?.name || '未知工具',
-        title: activityForm.value.title,
-        date: activityForm.value.date,
-        cover: activityForm.value.cover,
-        content: activityForm.value.content
-      }
-      activities.push(activityData)
+      await createActivity(activityData)
     }
-    
-    localStorage.setItem('admin_activities', JSON.stringify(activities))
 
     publishingActivity.value = false
     showPublishActivityDialog.value = false
@@ -2004,26 +2111,13 @@ const loadRecommendedWinners = async () => {
 
   loadingRecommended.value = true
   try {
-    // 调用API获取推荐用户
+    // 调用mock API获取推荐用户
     const response = await getRecommendedWinners(recommendedMonth.value, 3)
     if (response && response.list) {
       recommendedWinnersList.value = response.list
-      // 同时保存到localStorage作为备份
-      localStorage.setItem(`recommended_winners_${recommendedMonth.value}`, JSON.stringify(response.list))
-      return
-    }
-  } catch (e) {
-    console.error('从API加载推荐用户失败，使用localStorage:', e)
-  }
-  
-  // 降级到localStorage
-  try {
-    const savedData = localStorage.getItem(`recommended_winners_${recommendedMonth.value}`)
-    if (savedData) {
-      recommendedWinnersList.value = JSON.parse(savedData)
     } else {
-      // 生成模拟数据（Top 3用户）
-      const mockUsers: RecommendedWinner[] = [
+      // 使用默认mock数据
+      recommendedWinnersList.value = [
         {
           id: 2,
           employeeId: 'E001',
@@ -2067,9 +2161,6 @@ const loadRecommendedWinners = async () => {
           hasAwarded: false
         }
       ]
-      
-      recommendedWinnersList.value = mockUsers
-      localStorage.setItem(`recommended_winners_${recommendedMonth.value}`, JSON.stringify(mockUsers))
     }
   } catch (error) {
     console.error('加载推荐用户失败:', error)
@@ -2083,39 +2174,25 @@ const loadRecommendedWinners = async () => {
 const loadAwardsFromApi = async (category?: string) => {
   loadingAwards.value = true
   try {
-    // 调用API获取奖项列表
+    // 调用mock API获取奖项列表
     const response = await getAwardsList(category)
     if (response && response.list) {
       apiAwardsList.value = response.list
-      return
-    }
-  } catch (e) {
-    console.error('从API获取奖项列表失败，使用localStorage:', e)
-  }
-  
-  // 降级到localStorage
-  try {
-    const savedAwards = localStorage.getItem('admin_awards_list')
-    let awards: AwardItem[] = []
-    if (savedAwards) {
-      awards = JSON.parse(savedAwards)
     } else {
-      awards = awardsList.value
-    }
-    
-    // 转换为API格式的奖项列表
-    apiAwardsList.value = awards.map(award => ({
-      id: award.id,
-      name: award.name,
-      desc: award.description || '',
-      image: '',
-      category: mapCategoryToApiCategory(award.category),
-      rules: award.description || ''
-    }))
-    
-    // 如果有指定分类，只返回该分类的奖项
-    if (category) {
-      apiAwardsList.value = apiAwardsList.value.filter(a => a.category === category)
+      // 使用本地奖项列表作为默认值
+      apiAwardsList.value = awardsList.value.map(award => ({
+        id: award.id,
+        name: award.name,
+        desc: award.description || '',
+        image: '',
+        category: mapCategoryToApiCategory(award.category),
+        rules: award.description || ''
+      }))
+      
+      // 如果有指定分类，只返回该分类的奖项
+      if (category) {
+        apiAwardsList.value = apiAwardsList.value.filter(a => a.category === category)
+      }
     }
   } catch (error) {
     console.error('获取奖项列表失败:', error)
@@ -2229,12 +2306,6 @@ const handleConfirmSetAward = async () => {
     if (userIndex !== -1) {
       recommendedWinnersList.value[userIndex].hasAwarded = true
       recommendedWinnersList.value[userIndex].honorId = honorId
-      
-      // 更新localStorage中的推荐用户数据
-      localStorage.setItem(
-        `recommended_winners_${recommendedMonth.value}`,
-        JSON.stringify(recommendedWinnersList.value)
-      )
     }
 
     settingAward.value = false
@@ -2271,12 +2342,6 @@ const handleCancelAward = (user: RecommendedWinner) => {
       if (userIndex !== -1) {
         recommendedWinnersList.value[userIndex].hasAwarded = false
         recommendedWinnersList.value[userIndex].honorId = undefined
-        
-        // 更新localStorage中的推荐用户数据
-        localStorage.setItem(
-          `recommended_winners_${recommendedMonth.value}`,
-          JSON.stringify(recommendedWinnersList.value)
-        )
       }
 
       ElMessage.success('已取消评奖')
@@ -2327,6 +2392,48 @@ const handleDeleteFeaturedCollection = (index: number) => {
     type: 'warning'
   }).then(() => {
     featuredCollectionsList.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+// 添加赋能交流精华帖子
+const handleAddEmpowermentFeaturedPost = () => {
+  empowermentFeaturedPostsList.value.push({
+    id: Date.now(),
+    url: '',
+    note: ''
+  })
+}
+
+// 删除赋能交流精华帖子
+const handleDeleteEmpowermentFeaturedPost = (index: number) => {
+  ElMessageBox.confirm('确定要删除这个精华帖子吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    empowermentFeaturedPostsList.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+// 添加AI工具专区其他工具精华帖子
+const handleAddOtherToolsFeaturedPost = () => {
+  otherToolsFeaturedPostsList.value.push({
+    id: Date.now(),
+    url: '',
+    note: ''
+  })
+}
+
+// 删除AI工具专区其他工具精华帖子
+const handleDeleteOtherToolsFeaturedPost = (index: number) => {
+  ElMessageBox.confirm('确定要删除这个精华帖子吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    otherToolsFeaturedPostsList.value.splice(index, 1)
     ElMessage.success('删除成功')
   }).catch(() => {})
 }
@@ -2498,10 +2605,10 @@ const handleSave = async () => {
   }
 }
 
-// 更新组件数据（保存到API，同时保存到localStorage作为备份）
+// 更新组件数据（保存到mock API）
 const updateComponentsData = async () => {
   try {
-    // 保存到API
+    // 保存到mock API
     await Promise.all([
       saveCarouselConfig(carouselList.value),
       saveHonorBannerConfig({ bannerImage: honorConfig.value.bannerImage }),
@@ -2510,39 +2617,15 @@ const updateComponentsData = async () => {
       saveToolsConfig(toolsList.value),
       saveToolBannersConfig(toolBannersList.value),
       savePersonalAwardsConfig(awardsList.value),
-      saveWinnersConfig(winnersList.value)
+      saveWinnersConfig(winnersList.value),
+      saveEmpowermentFeaturedPostsConfig(empowermentFeaturedPostsList.value),
+      saveOtherToolsFeaturedPostsConfig(otherToolsFeaturedPostsList.value)
     ])
     
-    // 同时保存到localStorage作为备份
-    localStorage.setItem('admin_carousel_config', JSON.stringify(carouselList.value))
-    localStorage.setItem('admin_honor_config', JSON.stringify(honorConfig.value))
-    localStorage.setItem('admin_team_awards_config', JSON.stringify(teamAwardsList.value))
-    localStorage.setItem('admin_tools_config', JSON.stringify(toolsList.value))
-    localStorage.setItem('admin_tool_banners_config', JSON.stringify(toolBannersList.value))
-    localStorage.setItem('admin_featured_posts', JSON.stringify(featuredPostsList.value))
-    localStorage.setItem('admin_awards_list', JSON.stringify(awardsList.value))
-    localStorage.setItem('admin_winners_list', JSON.stringify(winnersList.value))
-    localStorage.setItem('admin_agent_pinned_posts', JSON.stringify(agentPinnedPostsList.value))
-    localStorage.setItem('admin_featured_collections', JSON.stringify(featuredCollectionsList.value))
-    localStorage.setItem('admin_users_list', JSON.stringify(usersList.value))
-    
-    // 触发storage事件，通知其他页面更新
+    // 触发事件，通知其他页面更新
     window.dispatchEvent(new Event('adminConfigUpdated'))
   } catch (e) {
     console.error('保存配置失败:', e)
-    // 如果API保存失败，至少保存到localStorage
-    try {
-      localStorage.setItem('admin_carousel_config', JSON.stringify(carouselList.value))
-      localStorage.setItem('admin_honor_config', JSON.stringify(honorConfig.value))
-      localStorage.setItem('admin_team_awards_config', JSON.stringify(teamAwardsList.value))
-      localStorage.setItem('admin_tools_config', JSON.stringify(toolsList.value))
-      localStorage.setItem('admin_tool_banners_config', JSON.stringify(toolBannersList.value))
-      localStorage.setItem('admin_awards_list', JSON.stringify(awardsList.value))
-      localStorage.setItem('admin_winners_list', JSON.stringify(winnersList.value))
-      window.dispatchEvent(new Event('adminConfigUpdated'))
-    } catch (localError) {
-      console.error('保存到localStorage也失败:', localError)
-    }
   }
 }
 
@@ -2562,52 +2645,58 @@ const handleReset = () => {
 // 加载配置
 const loadConfig = async () => {
   try {
-    // 从localStorage加载配置（实际应该从API加载）
-    const carouselConfig = localStorage.getItem('admin_carousel_config')
-    if (carouselConfig) {
-      const config = JSON.parse(carouselConfig)
-      carouselList.value = config.map((item: any) => ({
+    // 从mock API加载配置
+    const [carouselResponse, honorBannerResponse, honorAwardsResponse, teamAwardsResponse, toolsResponse, toolBannersResponse, empowermentFeaturedResponse, otherToolsFeaturedResponse] = await Promise.all([
+      getCarouselConfig(),
+      getHonorBannerConfig(),
+      getHonorAwardsConfig(),
+      getTeamAwardsConfig(),
+      getToolsConfig(),
+      getToolBannersConfig(),
+      getEmpowermentFeaturedPostsConfig(),
+      getOtherToolsFeaturedPostsConfig()
+    ])
+    
+    if (carouselResponse && carouselResponse.list) {
+      carouselList.value = carouselResponse.list.map((item: any) => ({
         ...item,
-        imageType: item.imageType || (item.image ? 'url' : 'url')
+        imageType: item.imageType || 'url'
       }))
     }
     
-    const honorConfigData = localStorage.getItem('admin_honor_config')
-    if (honorConfigData) {
-      const config = JSON.parse(honorConfigData)
+    if (honorBannerResponse) {
       honorConfig.value = {
-        ...config,
-        bannerImageType: config.bannerImageType || (config.bannerImage ? 'url' : 'url')
+        ...honorConfig.value,
+        bannerImage: honorBannerResponse.bannerImage || '',
+        bannerImageType: honorBannerResponse.bannerImageType || 'url'
       }
     }
     
-    const teamAwardsConfig = localStorage.getItem('admin_team_awards_config')
-    if (teamAwardsConfig) {
-      const config = JSON.parse(teamAwardsConfig)
-      teamAwardsList.value = config.map((item: any) => ({
+    if (honorAwardsResponse && honorAwardsResponse.list) {
+      honorConfig.value.awards = honorAwardsResponse.list
+    }
+    
+    if (teamAwardsResponse && teamAwardsResponse.list) {
+      teamAwardsList.value = teamAwardsResponse.list.map((item: any) => ({
         ...item,
         images: item.images ? item.images.map((img: any) => ({
           ...img,
-          imageType: img.imageType || (img.image ? 'url' : 'url')
+          imageType: img.imageType || 'url'
         })) : []
       }))
     }
     
-    const toolsConfig = localStorage.getItem('admin_tools_config')
-    if (toolsConfig) {
-      const config = JSON.parse(toolsConfig)
-      toolsList.value = config.map((item: any) => ({
+    if (toolsResponse && toolsResponse.list) {
+      toolsList.value = toolsResponse.list.map((item: any) => ({
         ...item,
-        logoType: item.logoType || (item.logo ? 'url' : 'url')
+        logoType: item.logoType || 'url'
       }))
     }
     
-    const toolBannersConfig = localStorage.getItem('admin_tool_banners_config')
-    if (toolBannersConfig) {
-      const config = JSON.parse(toolBannersConfig)
-      toolBannersList.value = config.map((item: any) => ({
+    if (toolBannersResponse && toolBannersResponse.list) {
+      toolBannersList.value = toolBannersResponse.list.map((item: any) => ({
         ...item,
-        imageType: item.imageType || (item.image ? 'url' : 'url')
+        imageType: item.imageType || 'url'
       }))
     }
     
@@ -2638,6 +2727,24 @@ const loadConfig = async () => {
     })
     if (!honorConfig.value.bannerImageType) {
       honorConfig.value.bannerImageType = honorConfig.value.bannerImage ? 'url' : 'url'
+    }
+    
+    // 加载赋能交流精华帖子配置
+    if (empowermentFeaturedResponse && empowermentFeaturedResponse.list) {
+      empowermentFeaturedPostsList.value = empowermentFeaturedResponse.list.map((item: any) => ({
+        id: item.id || Date.now(),
+        url: item.url || '',
+        note: item.note || ''
+      }))
+    }
+    
+    // 加载AI工具专区其他工具精华帖子配置
+    if (otherToolsFeaturedResponse && otherToolsFeaturedResponse.list) {
+      otherToolsFeaturedPostsList.value = otherToolsFeaturedResponse.list.map((item: any) => ({
+        id: item.id || Date.now(),
+        url: item.url || '',
+        note: item.note || ''
+      }))
     }
   } catch (error) {
     console.error('加载配置失败:', error)
@@ -2671,30 +2778,34 @@ onMounted(() => {
 const pendingActivityContent = ref<string>('')
 
 // 加载活动数据用于编辑
-const loadActivityForEdit = (activityId: number) => {
-  const activities = JSON.parse(localStorage.getItem('admin_activities') || '[]')
-  const activity = activities.find((a: any) => a.id === activityId)
-  
-  if (activity) {
-    editingActivityId.value = activityId
-    activityForm.value = {
-      title: activity.title || '',
-      toolId: activity.toolId,
-      date: activity.date || '',
-      cover: activity.cover || '',
-      content: activity.content || ''
-    }
+const loadActivityForEdit = async (activityId: number) => {
+  try {
+    const activity = await getActivityDetail(activityId)
     
-    // 保存待加载的内容
-    pendingActivityContent.value = activity.content || ''
-    
-    // 如果编辑器已经创建，直接设置内容
-    if (activityEditorRef.value) {
-      activityEditorRef.value.setHtml(pendingActivityContent.value)
-      pendingActivityContent.value = ''
+    if (activity) {
+      editingActivityId.value = activityId
+      activityForm.value = {
+        title: activity.title || '',
+        toolId: activity.toolId || null,
+        date: typeof activity.date === 'string' ? activity.date : (activity.date as Date)?.toISOString?.()?.split('T')[0] || '',
+        cover: activity.cover || '',
+        content: activity.content || ''
+      }
+      
+      // 保存待加载的内容
+      pendingActivityContent.value = activity.content || ''
+      
+      // 如果编辑器已经创建，直接设置内容
+      if (activityEditorRef.value) {
+        activityEditorRef.value.setHtml(pendingActivityContent.value)
+        pendingActivityContent.value = ''
+      }
+    } else {
+      ElMessage.error('活动不存在')
     }
-  } else {
-    ElMessage.error('活动不存在')
+  } catch (e) {
+    console.error('加载活动失败:', e)
+    ElMessage.error('加载活动失败')
   }
 }
 

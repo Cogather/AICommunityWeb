@@ -315,7 +315,7 @@ const handleGiveFlowerToTeam = async (img: TeamAwardImage) => {
   }
 };
 
-// 团队奖数据 - 从localStorage加载
+// 团队奖数据 - 从mock API加载
 interface TeamAwardImage {
   id: number;
   image: string;
@@ -355,29 +355,7 @@ const loadTeamAwards = async (): Promise<TeamAward[]> => {
       }));
     }
   } catch (e) {
-    console.error('从API加载团队奖项失败，使用localStorage:', e);
-  }
-
-  // 降级到localStorage
-  try {
-    const saved = localStorage.getItem('admin_team_awards_config');
-    if (saved) {
-      const config = JSON.parse(saved);
-      interface TeamAwardFromStorage {
-        id: number;
-        title: string;
-        year?: number | string;
-        images?: TeamAwardImage[];
-      }
-      return config.map((item: TeamAwardFromStorage) => ({
-        id: item.id,
-        title: item.title,
-        year: item.year ? String(item.year) : new Date().getFullYear().toString(),
-        images: item.images || []
-      }));
-    }
-  } catch (e) {
-    console.error('加载团队奖项配置失败:', e);
+    console.error('加载团队奖项失败:', e);
   }
 
   // 默认数据
@@ -445,8 +423,6 @@ const handleAwardTypeChange = ((e: CustomEvent) => {
     const newType = e.detail.type as 'individual' | 'team'
     console.log('UsersView: 切换awardType从', awardType.value, '到', newType)
     awardType.value = newType
-    // 保存到localStorage，以便页面刷新后保持状态
-    localStorage.setItem('users_award_type', newType)
     notifyNavbarUpdate()
   }
 }) as EventListener;
@@ -493,7 +469,6 @@ onMounted(async () => {
   if (urlType === 'team') {
     // 切换到团队荣誉视图
     awardType.value = 'team'
-    localStorage.setItem('users_award_type', 'team')
 
     // 如果指定了年份，切换到对应年份
     if (urlYear && teamAwardYears.value.includes(urlYear)) {
@@ -511,14 +486,8 @@ onMounted(async () => {
     }
 
     notifyNavbarUpdate()
-  } else {
-    // 检查localStorage中是否有保存的awardType
-    const savedAwardType = localStorage.getItem('users_award_type') as 'individual' | 'team' | null
-    if (savedAwardType && (savedAwardType === 'individual' || savedAwardType === 'team')) {
-      awardType.value = savedAwardType
-      notifyNavbarUpdate()
-    }
   }
+  // 默认使用初始值 'individual'
 });
 
 onBeforeUnmount(() => {
@@ -676,7 +645,6 @@ watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline')
 watch(() => route.query.type, (newType) => {
   if (newType === 'team') {
     awardType.value = 'team'
-    localStorage.setItem('users_award_type', 'team')
 
     const urlYear = route.query.year as string
     const urlAward = route.query.award as string
