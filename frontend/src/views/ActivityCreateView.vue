@@ -127,7 +127,7 @@ import { ElMessage } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
-import { createActivity, updateActivity, getActivityDetail, getTools } from '../mock'
+import { createActivity, updateActivity, getTools } from '../mock'
 import {
   Plus,
   Delete,
@@ -235,7 +235,7 @@ const editorConfig: Partial<IEditorConfig> = {
           const imageUrl = URL.createObjectURL(file)
           insertFn(imageUrl, file.name)
           ElMessage.success('图片插入成功')
-        } catch (error) {
+        } catch {
           ElMessage.error('图片上传失败')
         }
       }
@@ -365,7 +365,7 @@ const loadActivityForEdit = async () => {
     
     // 尝试多种ID匹配方式
     const activityIdNum = Number(activityId)
-    let activity = activities.find((a: any) => {
+    const activity = activities.find((a: any) => {
       // 严格匹配数字ID
       if (typeof a.id === 'number' && a.id === activityIdNum) {
         return true

@@ -79,8 +79,6 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import {
-  getMessages,
-  markMessageAsRead,
   markAllMessagesAsRead,
   deleteMessage,
   getUnreadMessageCount,

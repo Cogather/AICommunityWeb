@@ -33,7 +33,7 @@
         <div class="post-meta">
           <span class="meta-item">
             <el-icon><User /></el-icon>
-            {{ post.author }}
+            {{ post.author || '匿名用户' }}
           </span>
           <span class="meta-item">
             <el-icon><Clock /></el-icon>
@@ -94,7 +94,7 @@
         <div class="post-meta">
           <span class="meta-item">
             <el-icon><User /></el-icon>
-            {{ post.author }}
+            {{ post.author || '匿名用户' }}
           </span>
           <span class="meta-item">
             <el-icon><Clock /></el-icon>
@@ -129,15 +129,15 @@
 </template>
 
 <script setup lang="ts">
-import { User, Clock, View, ChatDotRound, Star } from '@element-plus/icons-vue'
+import { User, Clock, View, ChatDotRound } from '@element-plus/icons-vue'
 import HeartIcon from './HeartIcon.vue'
 
 interface Post {
   id: number
   title: string
   description?: string
-  author: string
-  createTime: string
+  author?: string
+  createTime: string | Date
   views: number
   comments?: number
   likes?: number
@@ -153,7 +153,7 @@ interface Props {
   showFeaturedTag?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+const _props = withDefaults(defineProps<Props>(), {
   featuredPosts: () => [],
   showFeaturedTag: true
 })

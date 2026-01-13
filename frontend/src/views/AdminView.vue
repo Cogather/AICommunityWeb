@@ -799,7 +799,7 @@
                 <el-table-column prop="email" label="邮箱" width="200" />
                 <el-table-column prop="department" label="部门" width="150" />
                 <el-table-column prop="currentRole" label="角色" width="120">
-                  <template #default="{ row }">
+                  <template #default>
                     <el-tag type="danger">管理员</el-tag>
                   </template>
                 </el-table-column>
@@ -1005,37 +1005,26 @@
 import { ref, computed, onMounted, onBeforeUnmount, shallowRef, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Check, Refresh, Search, Delete } from '@element-plus/icons-vue'
-import type { UploadProps } from 'element-plus'
+import { Plus, Check, Refresh, Search } from '@element-plus/icons-vue'
 import '@wangeditor/editor/dist/css/style.css'
-import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
 import {
-  getCarouselConfig,
   saveCarouselConfig,
-  getHonorBannerConfig,
   saveHonorBannerConfig,
-  getHonorAwardsConfig,
   saveHonorAwardsConfig,
-  getToolsConfig,
   saveToolsConfig,
-  getToolBannersConfig,
   saveToolBannersConfig,
-  getPersonalAwardsConfig,
   savePersonalAwardsConfig,
-  getWinnersConfig,
   saveWinnersConfig,
-  getTeamAwardsConfig,
   saveTeamAwardsConfig,
   getRecommendedWinners,
   setUserAward,
   cancelUserAward,
   getAwardsList,
-  uploadImage,
   type CarouselItem as AdminCarouselItem
 } from '../mock'
 
-const router = useRouter()
+const _router = useRouter()
 
 // 当前标签页
 const activeTab = ref('home')
@@ -1044,7 +1033,7 @@ const usersSubTab = ref('individual')
 const individualSubTab = ref('awards')
 
 // 图片上传处理（使用base64作为临时方案，实际应该上传到服务器）
-const uploadAction = '/api/upload' // 这里需要替换为实际的上传接口
+const _uploadAction = '/api/upload' // 这里需要替换为实际的上传接口
 
 // 将文件转换为base64（临时方案）
 const fileToBase64 = (file: File): Promise<string> => {
@@ -1245,7 +1234,7 @@ const getFilteredAwardsForWinner = (category: string) => {
 }
 
 // 获奖者管理中的分类变化处理
-const handleWinnerCategoryChange = async (winner: WinnerItem, index: number) => {
+const handleWinnerCategoryChange = async (winner: WinnerItem, _index: number) => {
   // 清空已选择的奖项名称
   winner.awardName = ''
   
@@ -1609,7 +1598,7 @@ const showPublishActivityDialog = ref(false)
 const publishingActivity = ref(false)
 const activityFormRef = ref()
 const activityEditorRef = shallowRef<IDomEditor>()
-const editorMode = 'default'
+const _editorMode = 'default'
 const editingActivityId = ref<number | null>(null)
 
 // 所有工具列表（包括扶摇Agent应用）
@@ -1638,7 +1627,7 @@ const activityForm = ref({
 })
 
 // 活动表单验证规则
-const activityRules = {
+const _activityRules = {
   title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }],
   toolId: [{ required: true, message: '请选择工具', trigger: 'change' }],
   date: [{ required: true, message: '请选择活动时间', trigger: 'change' }],
@@ -1647,11 +1636,11 @@ const activityRules = {
 }
 
 // 活动编辑器配置
-const activityToolbarConfig: Partial<IToolbarConfig> = {
+const _activityToolbarConfig: Partial<IToolbarConfig> = {
   excludeKeys: []
 }
 
-const activityEditorConfig: Partial<IEditorConfig> = {
+const _activityEditorConfig: Partial<IEditorConfig> = {
   placeholder: '请输入活动内容...',
   readOnly: false,
   MENU_CONF: {
@@ -1676,7 +1665,7 @@ const activityEditorConfig: Partial<IEditorConfig> = {
           const imageUrl = URL.createObjectURL(file)
           insertFn(imageUrl, file.name)
           ElMessage.success('图片插入成功')
-        } catch (error) {
+        } catch {
           ElMessage.error('图片上传失败')
         }
       }
@@ -1685,7 +1674,7 @@ const activityEditorConfig: Partial<IEditorConfig> = {
 }
 
 // 活动编辑器创建
-const handleActivityEditorCreated = (editor: IDomEditor) => {
+const _handleActivityEditorCreated = (editor: IDomEditor) => {
   activityEditorRef.value = editor
   
   // 如果有待加载的内容（编辑模式），设置编辑器内容
@@ -1698,25 +1687,25 @@ const handleActivityEditorCreated = (editor: IDomEditor) => {
 }
 
 // 活动编辑器内容变化
-const handleActivityEditorChange = (editor: IDomEditor) => {
+const _handleActivityEditorChange = (editor: IDomEditor) => {
   activityForm.value.content = editor.getHtml()
 }
 
 // 活动封面图片选择
-const handleActivityCoverChange = async (file: any) => {
+const _handleActivityCoverChange = async (file: any) => {
   if (!file.raw) return
   try {
     const base64 = await fileToBase64(file.raw)
     activityForm.value.cover = base64
     ElMessage.success('封面图片已加载')
-  } catch (error) {
-    console.error('图片处理失败:', error)
+  } catch (_error) {
+    console.error('图片处理失败:', _error)
     ElMessage.error('图片处理失败')
   }
 }
 
 // 发布活动
-const handlePublishActivity = async () => {
+const _handlePublishActivity = async () => {
   if (!activityFormRef.value) return
 
   try {
@@ -1842,7 +1831,7 @@ const handleImageFileChange = async (file: any, target: any, type: string) => {
 }
 
 // 图片类型切换处理
-const handleImageTypeChange = (item: CarouselItem, index: number) => {
+const handleImageTypeChange = (item: CarouselItem, _index: number) => {
   if (item.imageType === 'url') {
     // 切换到URL模式，清空上传的图片
     // 这里可以根据需要决定是否清空
@@ -1853,11 +1842,11 @@ const handleHonorBannerImageTypeChange = () => {
   // 处理荣誉殿堂banner图片类型切换
 }
 
-const handleTeamAwardImageTypeChange = (img: TeamAwardImageItem, awardIndex: number, imgIndex: number) => {
+const handleTeamAwardImageTypeChange = (_img: TeamAwardImageItem, _awardIndex: number, _imgIndex: number) => {
   // 处理团队奖项图片类型切换
 }
 
-const handleTeamAwardImageFileChange = (file: any, img: TeamAwardImageItem, awardIndex: number, imgIndex: number) => {
+const handleTeamAwardImageFileChange = (file: any, img: TeamAwardImageItem, _awardIndex: number, _imgIndex: number) => {
   handleImageFileChange(file, img, 'teamAwardImage')
 }
 
@@ -1883,7 +1872,7 @@ const handleDeleteTeamAwardImage = (awardIndex: number, imgIndex: number) => {
   }
 }
 
-const handleToolLogoTypeChange = (tool: ToolItem, index: number) => {
+const handleToolLogoTypeChange = (_tool: ToolItem, _index: number) => {
   // 处理工具Logo类型切换
 }
 
@@ -1898,8 +1887,8 @@ const handleAddToolBanner = () => {
   })
 }
 
-// 删除工具Banner
-const handleDeleteToolBanner = (index: number) => {
+// 删除工具Banner（保留参数用于后续实现）
+const handleDeleteToolBanner = (_banner: ToolBannerItem, index: number) => {
   ElMessageBox.confirm('确定要删除这个Banner吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -1929,7 +1918,7 @@ const handleMoveToolBannerDown = (index: number) => {
 }
 
 // 处理工具Banner图片类型切换
-const handleToolBannerImageTypeChange = (banner: ToolBannerItem, index: number) => {
+const handleToolBannerImageTypeChange = (_banner: ToolBannerItem, _index: number) => {
   // 处理工具Banner图片类型切换
 }
 
@@ -2386,7 +2375,7 @@ const handleMoveDown = (index: number) => {
 }
 
 // 添加荣誉殿堂奖项（旧版，保留用于兼容）
-const handleAddHonorAward = () => {
+const _handleAddHonorAward = () => {
   honorConfig.value.awards.push({
     id: Date.now(),
     name: '',
@@ -2396,7 +2385,7 @@ const handleAddHonorAward = () => {
 }
 
 // 删除荣誉殿堂奖项（旧版，保留用于兼容）
-const handleDeleteHonorAward = (index: number) => {
+const _handleDeleteHonorAward = (index: number) => {
   ElMessageBox.confirm('确定要删除这个奖项吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',

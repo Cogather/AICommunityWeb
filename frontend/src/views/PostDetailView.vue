@@ -415,7 +415,7 @@ const currentUserId = computed(() => currentUser.value.id)
 const currentUserName = computed(() => currentUser.value.name)
 
 // 判断是否是当前用户
-const isCurrentUser = (userName: string) => {
+const _isCurrentUser = (userName: string) => {
   return userName === currentUser.value.name
 }
 

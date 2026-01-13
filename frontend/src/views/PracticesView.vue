@@ -48,8 +48,8 @@
                 </h3>
               </div>
               <div class="hot-posts-featured">
-                <div 
-                  v-for="(post, index) in topHotPosts" 
+                <div
+                  v-for="(post, index) in topHotPosts"
                   :key="post.id"
                   class="hot-post-featured-item"
                   :class="`rank-${index + 1}`"
@@ -70,10 +70,10 @@
             <div class="sidebar-section">
               <div class="section-header-with-reset">
                 <h3>标签筛选</h3>
-                <el-button 
-                  v-if="selectedTag" 
-                  text 
-                  size="small" 
+                <el-button
+                  v-if="selectedTag"
+                  text
+                  size="small"
                   class="reset-btn"
                   @click="handleResetTag"
                 >
@@ -92,10 +92,10 @@
             <div class="sidebar-section">
               <div class="section-header-with-reset">
                 <h3>部门归类</h3>
-                <el-button 
-                  v-if="selectedDepartment" 
-                  text 
-                  size="small" 
+                <el-button
+                  v-if="selectedDepartment"
+                  text
+                  size="small"
                   class="reset-btn"
                   @click="handleResetDepartment"
                 >
@@ -104,8 +104,8 @@
                 </el-button>
               </div>
               <div class="department-rankings">
-                <div 
-                  v-for="dept in displayedDepartments" 
+                <div
+                  v-for="dept in displayedDepartments"
                   :key="dept.id"
                   class="department-item"
                   :class="{ active: selectedDepartment === dept.name }"
@@ -126,8 +126,8 @@
             <div class="sidebar-section">
               <h3>热门贡献者</h3>
               <div class="contributors-list">
-                <div 
-                  v-for="contributor in topContributors" 
+                <div
+                  v-for="contributor in topContributors"
                   :key="contributor.id"
                   class="contributor-item"
                   :class="{ active: selectedContributor === contributor.name }"
@@ -169,13 +169,13 @@ const pageSize = ref(15)
 const allTags = computed(() => {
   // 获取所有帖子（包括精华帖和普通帖子）
   const allPosts = [...featuredPosts.value, ...posts.value]
-  
+
   // 根据当前选择的部门过滤帖子
   let filteredPosts = allPosts
   if (selectedDepartment.value) {
     filteredPosts = filteredPosts.filter(post => post.department === selectedDepartment.value)
   }
-  
+
   // 统计每个标签的数量
   const tagCountMap = new Map<string, number>()
   filteredPosts.forEach(post => {
@@ -185,12 +185,12 @@ const allTags = computed(() => {
       })
     }
   })
-  
+
   // 构建标签列表，包含"全部"
   const tags: Array<{ name: string; count: number }> = [
     { name: '全部', count: filteredPosts.length }
   ]
-  
+
   // 添加其他标签
   const tagNames = ['自然语言处理', '计算机视觉', '深度学习', 'AI伦理', '机器学习', '机器人', '数据科学', '生成式AI', 'PyTorch', 'TensorFlow', '项目', 'AI应用', '效率', '自动化', '实践', '已解决', '部署', '活动', 'AI大会']
   tagNames.forEach(tagName => {
@@ -199,7 +199,7 @@ const allTags = computed(() => {
       tags.push({ name: tagName, count })
     }
   })
-  
+
   return tags
 })
 
@@ -296,18 +296,18 @@ const posts = ref([
 const displayedDepartments = computed(() => {
   // 获取所有帖子（包括精华帖和普通帖子）
   const allPosts = [...featuredPosts.value, ...posts.value]
-  
+
   // 根据当前选择的标签过滤帖子
   let filteredPosts = allPosts
   if (selectedTag.value && selectedTag.value !== '全部') {
-    filteredPosts = filteredPosts.filter(post => 
+    filteredPosts = filteredPosts.filter(post =>
       post.tags && post.tags.includes(selectedTag.value!)
     )
   }
-  
+
   // 统计每个部门的发帖数和贡献者
   const deptMap = new Map<string, { postCount: number; contributors: Set<string> }>()
-  
+
   filteredPosts.forEach(post => {
     if (post.department) {
       if (!deptMap.has(post.department)) {
@@ -320,7 +320,7 @@ const displayedDepartments = computed(() => {
       }
     }
   })
-  
+
   // 获取所有部门名称（从所有帖子中提取）
   const allDepts = new Set<string>()
   allPosts.forEach(post => {
@@ -328,7 +328,7 @@ const displayedDepartments = computed(() => {
       allDepts.add(post.department)
     }
   })
-  
+
   // 构建部门列表
   const departments = Array.from(allDepts).map((name, index) => {
     const stats = deptMap.get(name) || { postCount: 0, contributors: new Set() }
@@ -339,7 +339,7 @@ const displayedDepartments = computed(() => {
       contributorCount: stats.contributors.size
     }
   })
-  
+
   // 按发帖数排序
   return departments.sort((a, b) => b.postCount - a.postCount)
 })
@@ -360,7 +360,7 @@ const filteredNormalPosts = computed(() => {
 
   // 按标签过滤（排除"全部"）
   if (selectedTag.value && selectedTag.value !== '全部') {
-    result = result.filter(post => 
+    result = result.filter(post =>
       post.tags && post.tags.includes(selectedTag.value!)
     )
   }
@@ -378,7 +378,7 @@ const filteredNormalPosts = computed(() => {
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(post => 
+    result = result.filter(post =>
       post.title.toLowerCase().includes(keyword) ||
       post.author.toLowerCase().includes(keyword) ||
       (post.description && post.description.toLowerCase().includes(keyword))
@@ -401,7 +401,7 @@ const filteredNormalPosts = computed(() => {
 })
 
 // 用于统计的过滤后帖子（包含精华帖和普通帖子）
-const filteredPosts = computed(() => {
+const _filteredPosts = computed(() => {
   return [...featuredPosts.value, ...filteredNormalPosts.value]
 })
 

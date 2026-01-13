@@ -303,14 +303,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Document, Star, Calendar, Location, User, View } from '@element-plus/icons-vue'
-import { ElMessage, ElDialog, ElMessageBox } from 'element-plus'
+import { Document, Calendar, Location, User, View } from '@element-plus/icons-vue'
+import { ElMessage, ElDialog } from 'element-plus'
 import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'
 import FlowerIcon from '../components/FlowerIcon.vue'
 import {
   getUserProfileByName,
-  getUserProfileById,
   getCurrentUser,
   getUserPosts,
   getUserFavorites,
@@ -318,15 +317,14 @@ import {
   getUserActivities,
   getUserCreatedActivities,
   type Post,
-  type Comment,
-  type Activity
+  type Comment
 } from '../mock'
 
 const router = useRouter()
 const route = useRoute()
 
 // 从UsersView获取用户花朵数量的辅助函数（从用户资料中获取）
-const getUserFlowersFromHonors = (userName: string): number => {
+const _getUserFlowersFromHonors = (_userName: string): number => {
   // 花朵数量已从用户资料API中获取，这里直接返回0（实际应该从userInfo中获取）
   return userInfo.value.flowersCount || 0
 }
@@ -383,7 +381,7 @@ const loadFavoritePosts = async (userId: number) => {
 }
 
 // 监听收藏更新事件
-const handleFavoritesUpdate = async (event: CustomEvent) => {
+const handleFavoritesUpdate = async (_event: CustomEvent) => {
   // 重新加载收藏列表
   if (userInfo.value.id) {
     await loadFavoritePosts(userInfo.value.id)
@@ -458,7 +456,7 @@ const loadMyCreatedActivities = async (userId: number) => {
 }
 
 // 监听活动报名更新事件
-const handleActivityRegistered = async (event: CustomEvent) => {
+const handleActivityRegistered = async (_event: CustomEvent) => {
   // 重新加载报名的活动
   if (userInfo.value.id) {
     await loadRegisteredActivities(userInfo.value.id)

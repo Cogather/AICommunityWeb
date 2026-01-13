@@ -70,8 +70,8 @@
       stroke-width="1.2"
     />
     <!-- 花蕊 -->
-    <circle 
-      cx="12" cy="10" r="2.5" 
+    <circle
+      cx="12" cy="10" r="2.5"
       :fill="filled ? '#fbbf24' : '#fef3c7'"
       :stroke="filled ? '#f59e0b' : '#fcd34d'"
       stroke-width="1"

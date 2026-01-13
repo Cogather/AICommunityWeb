@@ -234,7 +234,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createPost, updatePost, saveDraft, getRecommendedCovers, getTools, getPostDetail } from '../mock'
+import { createPost, updatePost, getRecommendedCovers, getTools, getPostDetail } from '../mock'
 import type { InputInstance } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
@@ -251,7 +251,7 @@ const route = useRoute()
 const formRef = ref()
 const tagInputRef = ref<InputInstance>()
 const publishing = ref(false)
-const recommending = ref(false)
+const _recommending = ref(false)
 const postLoading = ref(false)
 const tagInputVisible = ref(false)
 const tagInputValue = ref('')
@@ -266,7 +266,7 @@ const isEditMode = computed(() => {
 })
 
 // 是否从编辑页面跳转过来（用于新建帖子）
-const isFromEditPage = computed(() => {
+const _isFromEditPage = computed(() => {
   return route.query.fromEdit === 'true'
 })
 
@@ -502,7 +502,7 @@ const editorConfig: Partial<IEditorConfig> = {
           const imageUrl = URL.createObjectURL(file)
           insertFn(imageUrl, file.name)
           ElMessage.success('图片插入成功')
-        } catch (error) {
+        } catch {
           ElMessage.error('图片上传失败')
         }
       }
@@ -534,7 +534,7 @@ const editorConfig: Partial<IEditorConfig> = {
           const videoUrl = URL.createObjectURL(file)
           insertFn(videoUrl)
           ElMessage.success('视频插入成功')
-        } catch (error) {
+        } catch {
           ElMessage.error('视频上传失败')
         }
       }

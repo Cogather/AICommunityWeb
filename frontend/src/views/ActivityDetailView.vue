@@ -88,7 +88,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, Calendar, UserFilled, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getActivityDetail, registerActivity, cancelRegistration, deleteActivity, getCurrentUser, checkToolOwner } from '../mock'
+import { getActivityDetail, registerActivity, deleteActivity, getCurrentUser, checkToolOwner } from '../mock'
 
 const router = useRouter()
 const route = useRoute()

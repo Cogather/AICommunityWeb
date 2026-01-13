@@ -416,12 +416,12 @@ export const getHonor = async (): Promise<{ honor: HonorInfo }> => {
   return { honor: mockHonorInfo }
 }
 
-export const getTools = async (featured?: boolean): Promise<{ list: ToolItem[] }> => {
+export const getTools = async (_featured?: boolean): Promise<{ list: ToolItem[] }> => {
   await delay()
   return { list: mockTools }
 }
 
-export const getToolBanners = async (toolId?: number): Promise<{ list: ToolBannerItem[] }> => {
+export const getToolBanners = async (_toolId?: number): Promise<{ list: ToolBannerItem[] }> => {
   await delay()
   return { list: mockToolBanners }
 }
@@ -556,7 +556,7 @@ export const getRecommendedCovers = async (): Promise<any[]> => {
   ]
 }
 
-export const saveDraft = async (data: any): Promise<any> => {
+export const saveDraft = async (_data: any): Promise<any> => {
   await delay()
   return { draftId: 'draft_' + Date.now(), savedAt: new Date().toISOString(), message: '保存成功' }
 }
@@ -611,7 +611,7 @@ export const deleteComment = async (id: number): Promise<void> => {
 }
 
 // 回复相关
-export const deleteReply = async (id: number): Promise<void> => {
+export const deleteReply = async (_id: number): Promise<void> => {
   await delay()
   // Mock implementation
 }
@@ -724,12 +724,12 @@ export const getHonorInfluence = async (): Promise<any> => {
   return { totalHonors: 0, totalUsers: 0, totalFlowers: 0, categories: [] }
 }
 
-export const getTopUsers = async (params?: any): Promise<PageResult<TopUser>> => {
+export const getTopUsers = async (_params?: any): Promise<PageResult<TopUser>> => {
   await delay()
   return { list: mockHonorInfo.topUsers, total: mockHonorInfo.topUsers.length, page: 1, pageSize: 10 }
 }
 
-export const giveFlower = async (id: number): Promise<any> => {
+export const giveFlower = async (_id: number): Promise<any> => {
   await delay()
   return { flowers: 1, hasGivenFlower: true }
 }
@@ -753,7 +753,7 @@ export const getFeaturedPost = async (): Promise<any> => {
 }
 
 // 用户达人相关
-export const getTeamAwards = async (year?: string): Promise<{ list: TeamAward[] }> => {
+export const getTeamAwards = async (_year?: string): Promise<{ list: TeamAward[] }> => {
   await delay()
   return { list: mockTeamAwards }
 }
@@ -822,7 +822,7 @@ export const getPersonalAwardsConfig = async (): Promise<{ list: any[] }> => {
   return { list: [] }
 }
 
-export const savePersonalAwardsConfig = async (list: any[]): Promise<void> => {
+export const savePersonalAwardsConfig = async (_list: any[]): Promise<void> => {
   await delay()
 }
 
@@ -831,7 +831,7 @@ export const getWinnersConfig = async (): Promise<{ list: any[] }> => {
   return { list: [] }
 }
 
-export const saveWinnersConfig = async (list: any[]): Promise<void> => {
+export const saveWinnersConfig = async (_list: any[]): Promise<void> => {
   await delay()
 }
 
@@ -846,40 +846,40 @@ export const saveTeamAwardsConfig = async (list: TeamAward[]): Promise<void> => 
   mockTeamAwards.push(...list)
 }
 
-export const getRecommendedWinners = async (month?: string, limit: number = 3): Promise<{ list: any[]; month?: string }> => {
+export const getRecommendedWinners = async (month?: string, _limit: number = 3): Promise<{ list: any[]; month?: string }> => {
   await delay()
   return { list: [], month }
 }
 
-export const setUserAward = async (params: any): Promise<{ id: number; message?: string }> => {
+export const setUserAward = async (_params: any): Promise<{ id: number; message?: string }> => {
   await delay()
   return { id: Date.now(), message: '设置成功' }
 }
 
-export const cancelUserAward = async (id: number): Promise<void> => {
+export const cancelUserAward = async (_id: number): Promise<void> => {
   await delay()
 }
 
-export const getAwardsList = async (category?: string): Promise<{ list: any[] }> => {
-  await delay()
-  return { list: [] }
-}
-
-export const searchUsers = async (params: any): Promise<{ list: any[] }> => {
+export const getAwardsList = async (_category?: string): Promise<{ list: any[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const getUsersList = async (params?: any): Promise<{ list: any[]; total: number }> => {
+export const searchUsers = async (_params: any): Promise<{ list: any[] }> => {
+  await delay()
+  return { list: [] }
+}
+
+export const getUsersList = async (_params?: any): Promise<{ list: any[]; total: number }> => {
   await delay()
   return { list: [], total: 0 }
 }
 
-export const addUserRole = async (userId: number, params: any): Promise<void> => {
+export const addUserRole = async (_userId: number, _params: any): Promise<void> => {
   await delay()
 }
 
-export const removeUserRole = async (userId: number, params: any): Promise<void> => {
+export const removeUserRole = async (_userId: number, _params: any): Promise<void> => {
   await delay()
 }
 
@@ -889,22 +889,22 @@ export const uploadImage = async (file: File): Promise<{ url: string }> => {
 }
 
 // 其他
-export const getHotPosts = async (params?: any): Promise<{ list: Post[] }> => {
+export const getHotPosts = async (_params?: any): Promise<{ list: Post[] }> => {
   await delay()
   return { list: mockPosts.slice(0, 10) }
 }
 
-export const getTags = async (params: any): Promise<{ list: any[] }> => {
+export const getTags = async (_params: any): Promise<{ list: any[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const getDepartments = async (params?: any): Promise<{ list: any[] }> => {
+export const getDepartments = async (_params?: any): Promise<{ list: any[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const getTopContributors = async (params?: any): Promise<{ list: any[] }> => {
+export const getTopContributors = async (_params?: any): Promise<{ list: any[] }> => {
   await delay()
   return { list: [] }
 }
@@ -914,7 +914,7 @@ export const getAwardRules = async (id: number): Promise<any> => {
   return { awardId: id, awardName: '奖项名称', rules: '奖项规则' }
 }
 
-export const login = async (data: any): Promise<any> => {
+export const login = async (_data: any): Promise<any> => {
   await delay()
   return { token: 'mock_token', user: mockCurrentUser }
 }

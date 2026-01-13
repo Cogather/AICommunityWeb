@@ -127,13 +127,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Clock, View, ChatDotRound, Calendar, Location, Search, Plus } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { User, Clock, View, ChatDotRound, Plus } from '@element-plus/icons-vue'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { getFeaturedPost, checkToolOwner, getCurrentUser, getActivities, getPosts, type Post } from '../mock'
+import { getFeaturedPost, checkToolOwner, getCurrentUser, getActivities } from '../mock'
 
 const router = useRouter()
 

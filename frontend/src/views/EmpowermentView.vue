@@ -74,7 +74,7 @@ import TagFilter from '../components/TagFilter.vue'
 const router = useRouter()
 
 // 模拟管理员状态，实际应该从用户信息中获取
-const isAdmin = ref(false)
+const _isAdmin = ref(false)
 
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>('newest')
@@ -242,7 +242,7 @@ const paginatedPosts = computed(() => {
 })
 
 // 获取标签类型
-const getTagType = (tag: string) => {
+const _getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
     '精华': 'success',
     '讨论': 'info',
@@ -276,7 +276,7 @@ const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
 }
 
 // 处理发帖
-const handlePostCreate = () => {
+const _handlePostCreate = () => {
   console.log('点击发布帖子，准备跳转到 /post/create')
   router.push('/post/create').catch((err) => {
     console.error('路由跳转失败:', err)

@@ -8,7 +8,7 @@
         :arrow="'always'"
         class="ai-carousel"
       >
-        <el-carousel-item v-for="(item, index) in slides" :key="item.id" class="ai-carousel-item">
+        <el-carousel-item v-for="item in slides" :key="item.id" class="ai-carousel-item">
           
           <div class="slide-card" @click="handleSlideClick(item)" :style="{ cursor: item.link ? 'pointer' : 'default' }">
             <img :src="item.image" :alt="item.title" class="slide-bg" />
