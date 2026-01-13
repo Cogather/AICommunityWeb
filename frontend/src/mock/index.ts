@@ -2355,14 +2355,14 @@ export const getHonorList = async (params?: {
   totalPages: number
 }> => {
   await delay()
-  
+
   let filtered = [...mockHonorList]
-  
+
   // 按范围筛选
   if (params?.scope === 'mine') {
     filtered = filtered.filter(item => item.isMine)
   }
-  
+
   // 按筛选类型筛选
   if (params?.filterType && params?.filterValue && params.filterValue !== '全部') {
     if (params.filterType === 'award') {
@@ -2371,40 +2371,93 @@ export const getHonorList = async (params?: {
       filtered = filtered.filter(item => item.department === params.filterValue)
     }
   }
-  
+
   // 按关键词搜索
   if (params?.keyword) {
     const kw = params.keyword.toLowerCase()
-    filtered = filtered.filter(item => 
+    filtered = filtered.filter(item =>
       item.name.toLowerCase().includes(kw) ||
       item.awardName.toLowerCase().includes(kw) ||
       item.department.toLowerCase().includes(kw)
     )
   }
-  
+
   // 时光轴模式下按用户筛选
   if (params?.view === 'timeline' && params?.userName) {
     filtered = filtered.filter(item => item.name === params.userName)
   }
-  
+
   const page = params?.page || 1
   const pageSize = params?.pageSize || 16
   const total = filtered.length
   const totalPages = Math.ceil(total / pageSize)
   const start = (page - 1) * pageSize
   const list = filtered.slice(start, start + pageSize)
-  
+
   return { list, total, page, pageSize, totalPages }
 }
 
+// Mock荣誉数据
+const mockHonorsData: Honor[] = [
+  {
+    id: 1,
+    name: '2026年度 AI 技术突破奖',
+    description: '表彰在AI技术方案上有重大突破的个人',
+    image: 'https://picsum.photos/200/200?random=honor1',
+    category: 'innovation',
+    awardDate: '2026-01-05'
+  },
+  {
+    id: 2,
+    name: '最佳 AI 辅助设计实践',
+    description: '在AI辅助设计领域表现突出',
+    image: 'https://picsum.photos/200/200?random=honor2',
+    category: 'practice',
+    awardDate: '2025-12-20'
+  },
+  {
+    id: 3,
+    name: 'Copilot 效能提升大师',
+    description: '在工程效能提升方面贡献突出',
+    image: 'https://picsum.photos/200/200?random=honor3',
+    category: 'efficiency',
+    awardDate: '2025-11-15'
+  },
+  {
+    id: 4,
+    name: 'AI 社区贡献之星',
+    description: '在社区布道和知识传播方面表现突出',
+    image: 'https://picsum.photos/200/200?random=honor4',
+    category: 'community',
+    awardDate: '2025-10-10'
+  }
+]
+
 export const getHonors = async (params?: PaginationParams): Promise<PageResult<Honor>> => {
   await delay()
-  return { list: [], total: 0, page: params?.page || 1, pageSize: params?.pageSize || 15 }
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || 15
+  return {
+    list: mockHonorsData,
+    total: mockHonorsData.length,
+    page,
+    pageSize
+  }
 }
 
 export const getHonorInfluence = async (): Promise<HonorInfluence> => {
   await delay()
-  return { totalHonors: 0, totalUsers: 0, totalFlowers: 0, categories: [] }
+  return {
+    totalHonors: 156,
+    totalUsers: 89,
+    totalFlowers: 2580,
+    categories: [
+      { name: '技术创新', count: 45 },
+      { name: '效能提升', count: 38 },
+      { name: '最佳实践', count: 42 },
+      { name: '社区贡献', count: 31 }
+    ]
+  }
 }
 
 export const getTopUsers = async (_params?: PaginationParams): Promise<PageResult<TopUser>> => {
@@ -2476,7 +2529,7 @@ export const getHonorTimeline = async (userName?: string): Promise<{
   }>
 }> => {
   await delay()
-  
+
   // 如果指定了用户名，返回该用户的时光轴
   if (userName) {
     return {
@@ -2516,7 +2569,7 @@ export const getHonorTimeline = async (userName?: string): Promise<{
       ]
     }
   }
-  
+
   // 返回所有用户的时光轴
   return {
     user: null,
@@ -2583,7 +2636,7 @@ export const getToolDepartments = async (toolId: number, tag?: string): Promise<
   }>
 }> => {
   await delay()
-  
+
   // 模拟根据toolId和tag过滤后的部门统计
   const departments = [
     { id: 1, name: '研发部', postCount: 45, contributorCount: 12 },
@@ -2592,7 +2645,7 @@ export const getToolDepartments = async (toolId: number, tag?: string): Promise<
     { id: 4, name: '数据部', postCount: 22, contributorCount: 8 },
     { id: 5, name: '测试部', postCount: 18, contributorCount: 5 }
   ]
-  
+
   console.log(`[Mock API] 获取工具专区部门统计 (toolId: ${toolId}, tag: ${tag})`)
   return { list: departments }
 }
@@ -3027,18 +3080,101 @@ interface WinnerConfig {
   year?: number
 }
 
+// Mock 个人奖项配置数据
+const mockPersonalAwardsConfig: PersonalAwardConfig[] = [
+  {
+    id: 1,
+    name: '技术创新奖',
+    description: '表彰在AI技术方案上有重大突破的个人或团队',
+    category: 'innovation',
+    criteria: ['提交创新方案不少于2篇', '落地至少1个生产项目', '产出技术分享或专利'],
+    cycle: '年度'
+  },
+  {
+    id: 2,
+    name: '效能提升奖',
+    description: '在工程效能、自动化与质量提升方面贡献突出',
+    category: 'efficiency',
+    criteria: ['引入自动化工具并落地', '显著降低缺陷率或提升交付速度'],
+    cycle: '季度'
+  },
+  {
+    id: 3,
+    name: '最佳实践奖',
+    description: '在业务场景中形成可复制的AI最佳实践并推广',
+    category: 'practice',
+    criteria: ['形成完整案例文档', '内部分享不少于2场', '被至少一个团队复用'],
+    cycle: '季度'
+  },
+  {
+    id: 4,
+    name: '社区贡献奖',
+    description: '对社区布道、开源贡献或知识传播有突出表现',
+    category: 'community',
+    criteria: ['发布高质量文章/视频', '组织或参与社区活动', '持续开源贡献'],
+    cycle: '年度'
+  }
+]
+
+// Mock 获奖者配置数据
+const mockWinnersConfigData: WinnerConfig[] = [
+  {
+    id: 1,
+    name: '林星辰',
+    userId: 1,
+    userName: '林星辰',
+    awardTime: '2026-01',
+    awardName: '技术创新奖',
+    awardId: 1,
+    year: 2026
+  },
+  {
+    id: 2,
+    name: 'Sarah',
+    userId: 2,
+    userName: 'Sarah',
+    awardTime: '2025-12',
+    awardName: '最佳实践奖',
+    awardId: 3,
+    year: 2025
+  },
+  {
+    id: 3,
+    name: '张伟',
+    userId: 3,
+    userName: '张伟',
+    awardTime: '2025-11',
+    awardName: '效能提升奖',
+    awardId: 2,
+    year: 2025
+  },
+  {
+    id: 4,
+    name: '王芳',
+    userId: 4,
+    userName: '王芳',
+    awardTime: '2025-10',
+    awardName: '社区贡献奖',
+    awardId: 4,
+    year: 2025
+  }
+]
+
 export const getPersonalAwardsConfig = async (): Promise<{ list: PersonalAwardConfig[] }> => {
   await delay()
-  return { list: [] }
+  return { list: mockPersonalAwardsConfig }
 }
 
 export const savePersonalAwardsConfig = async (_list: PersonalAwardConfig[]): Promise<void> => {
   await delay()
+  // 保存到mock数据
+  mockPersonalAwardsConfig.length = 0
+  mockPersonalAwardsConfig.push(..._list)
 }
 
 export const getWinnersConfig = async (): Promise<{ list: WinnerConfig[] }> => {
   await delay()
-  return { list: [] }
+  return { list: mockWinnersConfigData }
 }
 
 export const saveWinnersConfig = async (_list: WinnerConfig[]): Promise<void> => {
@@ -3161,9 +3297,92 @@ export interface AwardListItem {
   cycle?: string          // 评选周期：年度/季度/月度
 }
 
+// Mock 推荐获奖者数据
+const mockRecommendedWinnersData: RecommendedWinner[] = [
+  {
+    id: 1,
+    employeeId: 'E001',
+    name: '张三',
+    avatar: 'https://picsum.photos/100/100?random=rw1',
+    department: '架构平台部',
+    points: 2850,
+    postsCount: 28,
+    commentsCount: 156,
+    activitiesCount: 12,
+    likesReceived: 420,
+    favoritesReceived: 85,
+    hasAwarded: false,
+    honorId: undefined
+  },
+  {
+    id: 2,
+    employeeId: 'E002',
+    name: '李四',
+    avatar: 'https://picsum.photos/100/100?random=rw2',
+    department: '效能工程部',
+    points: 2450,
+    postsCount: 22,
+    commentsCount: 128,
+    activitiesCount: 8,
+    likesReceived: 380,
+    favoritesReceived: 72,
+    hasAwarded: false,
+    honorId: undefined
+  },
+  {
+    id: 3,
+    employeeId: 'E003',
+    name: '王五',
+    avatar: 'https://picsum.photos/100/100?random=rw3',
+    department: 'UED 设计中心',
+    points: 2180,
+    postsCount: 18,
+    commentsCount: 95,
+    activitiesCount: 15,
+    likesReceived: 320,
+    favoritesReceived: 58,
+    hasAwarded: true,
+    honorId: 101
+  },
+  {
+    id: 4,
+    employeeId: 'E004',
+    name: '赵六',
+    avatar: 'https://picsum.photos/100/100?random=rw4',
+    department: '数据部',
+    points: 1980,
+    postsCount: 15,
+    commentsCount: 82,
+    activitiesCount: 6,
+    likesReceived: 275,
+    favoritesReceived: 45,
+    hasAwarded: false,
+    honorId: undefined
+  },
+  {
+    id: 5,
+    employeeId: 'E005',
+    name: '钱七',
+    avatar: 'https://picsum.photos/100/100?random=rw5',
+    department: '算法部',
+    points: 1850,
+    postsCount: 12,
+    commentsCount: 68,
+    activitiesCount: 10,
+    likesReceived: 245,
+    favoritesReceived: 38,
+    hasAwarded: false,
+    honorId: undefined
+  }
+]
+
 export const getRecommendedWinners = async (month?: string, _limit: number = 3): Promise<{ list: RecommendedWinner[]; month?: string }> => {
   await delay()
-  return { list: [], month }
+  // 返回按积分排序的推荐获奖者
+  const sortedList = [...mockRecommendedWinnersData]
+    .sort((a, b) => b.points - a.points)
+    .slice(0, _limit)
+  return { list: sortedList, month: month || new Date().toISOString().slice(0, 7) }
 }
 
 export const setUserAward = async (_params: SetUserAwardParams): Promise<{ id: number; message?: string }> => {
@@ -3276,9 +3495,31 @@ export const deleteAward = async (id: number): Promise<{ success: boolean; messa
   return { success: false, message: '奖项不存在' }
 }
 
-export const searchUsers = async (_params: SearchUsersParams): Promise<{ list: UserListItem[] }> => {
+export const searchUsers = async (params: SearchUsersParams): Promise<{ list: UserListItem[] }> => {
   await delay()
-  return { list: [] }
+  let list = [...mockUsersList]
+
+  // 关键词搜索
+  if (params?.keyword) {
+    const keyword = params.keyword.toLowerCase()
+    list = list.filter(u =>
+      u.name.toLowerCase().includes(keyword) ||
+      u.email.toLowerCase().includes(keyword) ||
+      u.employeeId.toLowerCase().includes(keyword)
+    )
+  }
+
+  // 部门筛选
+  if (params?.department) {
+    list = list.filter(u => u.department === params.department)
+  }
+
+  // 角色筛选
+  if (params?.role) {
+    list = list.filter(u => u.currentRole === params.role)
+  }
+
+  return { list }
 }
 
 // Mock 用户列表数据
@@ -3468,14 +3709,103 @@ interface LoginResponse {
   user: UserProfile
 }
 
+// Mock 部门数据
+const mockDepartmentsData: Department[] = [
+  { id: 1, name: '架构平台部', code: 'ARCH' },
+  { id: 2, name: 'UED 设计中心', code: 'UED' },
+  { id: 3, name: '效能工程部', code: 'EFF' },
+  { id: 4, name: '开源办公室', code: 'OSS' },
+  { id: 5, name: '数据部', code: 'DATA' },
+  { id: 6, name: '算法部', code: 'ALG' },
+  { id: 7, name: '研发部', code: 'RD' },
+  { id: 8, name: '产品部', code: 'PM' },
+  { id: 9, name: '技术部', code: 'TECH' },
+  { id: 10, name: '测试部', code: 'QA' },
+  { id: 11, name: '运维部', code: 'OPS' },
+  { id: 12, name: '移动开发部', code: 'MOBILE' }
+]
+
+// Mock 热门贡献者数据
+const mockContributorsData: Contributor[] = [
+  {
+    id: 1,
+    name: '张工程师',
+    avatar: 'https://picsum.photos/100/100?random=c1',
+    department: '研发部',
+    postsCount: 28,
+    likesCount: 420
+  },
+  {
+    id: 2,
+    name: '李开发者',
+    avatar: 'https://picsum.photos/100/100?random=c2',
+    department: '技术部',
+    postsCount: 22,
+    likesCount: 356
+  },
+  {
+    id: 3,
+    name: '王测试',
+    avatar: 'https://picsum.photos/100/100?random=c3',
+    department: '测试部',
+    postsCount: 18,
+    likesCount: 289
+  },
+  {
+    id: 4,
+    name: '赵医生',
+    avatar: 'https://picsum.photos/100/100?random=c4',
+    department: '产品部',
+    postsCount: 15,
+    likesCount: 245
+  },
+  {
+    id: 5,
+    name: '陈架构师',
+    avatar: 'https://picsum.photos/100/100?random=c5',
+    department: '架构平台部',
+    postsCount: 12,
+    likesCount: 198
+  },
+  {
+    id: 6,
+    name: '刘设计师',
+    avatar: 'https://picsum.photos/100/100?random=c6',
+    department: 'UED 设计中心',
+    postsCount: 10,
+    likesCount: 175
+  },
+  {
+    id: 7,
+    name: '孙数据师',
+    avatar: 'https://picsum.photos/100/100?random=c7',
+    department: '数据部',
+    postsCount: 9,
+    likesCount: 156
+  },
+  {
+    id: 8,
+    name: '周算法师',
+    avatar: 'https://picsum.photos/100/100?random=c8',
+    department: '算法部',
+    postsCount: 8,
+    likesCount: 142
+  }
+]
+
 export const getDepartments = async (_params?: PaginationParams): Promise<{ list: Department[] }> => {
   await delay()
-  return { list: [] }
+  return { list: mockDepartmentsData }
 }
 
-export const getTopContributors = async (_params?: PaginationParams): Promise<{ list: Contributor[] }> => {
+export const getTopContributors = async (params?: PaginationParams): Promise<{ list: Contributor[] }> => {
   await delay()
-  return { list: [] }
+  const pageSize = params?.pageSize || 10
+  // 按发帖数排序并返回前N个
+  const sortedList = [...mockContributorsData]
+    .sort((a, b) => b.postsCount - a.postsCount)
+    .slice(0, pageSize)
+  return { list: sortedList }
 }
 
 export const getAwardRulesById = async (id: number): Promise<AwardRules> => {
