@@ -59,7 +59,7 @@
                                 class="image-uploader"
                                 :auto-upload="false"
                                 :show-file-list="false"
-                                :on-change="(file) => handleImageFileChange(file, item, 'carousel')"
+                                :on-change="createFileHandler(item as Record<string, unknown>, 'carousel')"
                                 :before-upload="beforeImageUpload"
                                 accept="image/*"
                               >
@@ -132,7 +132,7 @@
                           class="image-uploader"
                           :auto-upload="false"
                           :show-file-list="false"
-                          :on-change="(file) => handleImageFileChange(file, honorConfig, 'honorBanner')"
+                          :on-change="createFileHandler(honorConfig as unknown as Record<string, unknown>, 'honorBanner')"
                           :before-upload="beforeImageUpload"
                           accept="image/*"
                         >
@@ -192,7 +192,7 @@
                                 class="image-uploader"
                                 :auto-upload="false"
                                 :show-file-list="false"
-                                :on-change="(file) => handleImageFileChange(file, banner, 'toolBanner')"
+                                :on-change="createFileHandler(banner as Record<string, unknown>, 'toolBanner')"
                                 :before-upload="beforeImageUpload"
                                 accept="image/*"
                               >
@@ -212,7 +212,7 @@
                             />
                           </el-form-item>
                           <el-form-item>
-                            <el-button type="danger" @click="handleDeleteToolBanner(index)">
+                            <el-button type="danger" @click="handleDeleteToolBanner(banner, index)">
                               删除
                             </el-button>
                             <el-button @click="handleMoveToolBannerUp(index)" :disabled="index === 0">
@@ -269,7 +269,7 @@
                               class="image-uploader"
                               :auto-upload="false"
                               :show-file-list="false"
-                              :on-change="(file) => handleImageFileChange(file, tool, 'tool')"
+                              :on-change="createFileHandler(tool as Record<string, unknown>, 'tool')"
                               :before-upload="beforeImageUpload"
                               accept="image/*"
                             >
@@ -551,7 +551,7 @@
                       </div>
 
                       <el-alert
-                        title="说明：每添加或修改一个奖项后会自动保存到后端，获奖者管理中可直接选择已保存的奖项名称"
+                        title="说明：此处设置的奖项信息（名称、描述、评选标准、周期）会直接展示在AI使用达人页面的「奖项规则说明」弹窗中"
                         type="info"
                         :closable="false"
                         style="margin-bottom: 24px;"
@@ -575,10 +575,50 @@
                               <el-input
                                 v-model="award.description"
                                 type="textarea"
-                                :rows="4"
-                                placeholder="请输入奖项描述（将展示在奖项详情里）"
+                                :rows="2"
+                                placeholder="请输入奖项简要描述"
                                 @blur="handleAwardFieldChange(award)"
                               />
+                            </el-form-item>
+                            <el-form-item label="评选周期">
+                              <el-select v-model="award.cycle" placeholder="请选择评选周期" style="width: 200px;">
+                                <el-option
+                                  v-for="option in cycleOptions"
+                                  :key="option.value"
+                                  :label="option.label"
+                                  :value="option.value"
+                                />
+                              </el-select>
+                            </el-form-item>
+                            <el-form-item label="评选标准">
+                              <div class="criteria-editor">
+                                <div 
+                                  v-for="(criterion, cIndex) in award.criteria" 
+                                  :key="cIndex" 
+                                  class="criterion-item"
+                                >
+                                  <el-input 
+                                    v-model="award.criteria[cIndex]" 
+                                    placeholder="请输入评选标准"
+                                    style="flex: 1;"
+                                  />
+                                  <el-button 
+                                    type="danger" 
+                                    :icon="Delete" 
+                                    circle 
+                                    size="small"
+                                    @click="award.criteria.splice(cIndex, 1)"
+                                  />
+                                </div>
+                                <el-button 
+                                  type="primary" 
+                                  :icon="Plus" 
+                                  size="small"
+                                  @click="award.criteria.push('')"
+                                >
+                                  添加评选标准
+                                </el-button>
+                              </div>
                             </el-form-item>
                             <el-form-item>
                               <el-button 
@@ -835,7 +875,7 @@
                                   class="image-uploader"
                                   :auto-upload="false"
                                   :show-file-list="false"
-                                  :on-change="(file) => handleTeamAwardImageFileChange(file, img, index, imgIndex)"
+                                  :on-change="createTeamAwardImageFileHandler(img, index, imgIndex)"
                                   :before-upload="beforeImageUpload"
                                   accept="image/*"
                                 >
@@ -1075,10 +1115,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, shallowRef, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Check, Refresh, Search } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, type UploadFile } from 'element-plus'
+import { Plus, Check, Refresh, Search, Delete } from '@element-plus/icons-vue'
 import '@wangeditor/editor/dist/css/style.css'
-import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
+// @ts-expect-error - 编辑器组件暂时保留导入供后续使用
+import { Editor as _Editor, Toolbar as _Toolbar } from '@wangeditor/editor-for-vue'
+// 编辑器类型定义
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
 import {
   saveCarouselConfig,
@@ -1099,7 +1141,7 @@ import {
   getToolsConfig,
   getToolBannersConfig,
   getTeamAwardsConfig,
-  getActivities,
+  getActivities as _getActivities,
   getActivityDetail,
   createActivity,
   updateActivity,
@@ -1108,8 +1150,13 @@ import {
   removeFeaturedPost,
   saveAward,
   deleteAward,
+  getEmpowermentFeaturedPostsConfig,
+  saveEmpowermentFeaturedPostsConfig,
+  getOtherToolsFeaturedPostsConfig,
+  saveOtherToolsFeaturedPostsConfig,
   type CarouselItem as AdminCarouselItem,
-  type Post
+  type Post,
+  type RecommendedWinner
 } from '../mock'
 import { sendAwardNotificationMessage } from '../utils/message'
 
@@ -1351,20 +1398,29 @@ const handleRemoveFeatured = async (post: Post, zone: string) => {
   })
 }
 
-// 奖项列表
+// 奖项列表（与奖项规则说明共用数据）
 interface AwardItem {
   id: number
   name: string
   category: string
   description: string
-  saving?: boolean   // 正在保存中
-  saved?: boolean    // 已保存到后端
+  criteria: string[]    // 评选标准列表
+  cycle: string         // 评选周期：年度/季度/月度
+  saving?: boolean      // 正在保存中
+  saved?: boolean       // 已保存到后端
 }
 
 const awardsList = ref<AwardItem[]>([])
 
+// 评选周期选项
+const cycleOptions = [
+  { value: '年度', label: '年度' },
+  { value: '季度', label: '季度' },
+  { value: '月度', label: '月度' }
+]
+
 // 格式化日期时间
-const formatDateTime = (dateStr: string) => {
+const _formatDateTime = (dateStr: string) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return date.toLocaleString('zh-CN', {
@@ -1376,7 +1432,7 @@ const formatDateTime = (dateStr: string) => {
   })
 }
 
-// 加载奖项列表
+// 加载奖项列表（从后端获取已有配置）
 const loadAwardsListFromApi = async () => {
   try {
     const result = await getAwardsList()
@@ -1385,6 +1441,8 @@ const loadAwardsListFromApi = async () => {
       name: award.name,
       category: award.category || '',
       description: award.description || '',
+      criteria: award.criteria || [],          // 评选标准
+      cycle: award.cycle || '年度',            // 评选周期
       saved: true // 从后端加载的都是已保存的
     }))
   } catch (error) {
@@ -1392,7 +1450,7 @@ const loadAwardsListFromApi = async () => {
   }
 }
 
-// 保存单个奖项
+// 保存单个奖项（包含评选标准和周期）
 const handleSaveAwardManually = async (award: AwardItem) => {
   if (!award.name.trim()) {
     ElMessage.warning('请输入奖项名称')
@@ -1404,14 +1462,16 @@ const handleSaveAwardManually = async (award: AwardItem) => {
     const result = await saveAward({
       id: award.saved ? award.id : undefined, // 已保存的传id，新增的不传
       name: award.name,
-      description: award.description
+      description: award.description,
+      criteria: award.criteria,    // 保存评选标准
+      cycle: award.cycle           // 保存评选周期
     })
     // 更新本地数据
     award.id = result.id
     award.saved = true
     ElMessage.success('奖项保存成功')
     // 刷新奖项名称列表供获奖者管理使用
-    await loadAwardNamesForWinner()
+    await loadAwardNames()
   } catch (error) {
     console.error('保存奖项失败:', error)
     ElMessage.error('保存奖项失败')
@@ -1432,6 +1492,7 @@ interface WinnerItem {
   name: string
   awardTime: string
   awardName: string
+  category?: string
 }
 
 const winnersList = ref<WinnerItem[]>([
@@ -1468,23 +1529,7 @@ const loadAwardNames = async () => {
   }
 }
 
-// 获奖者推荐相关
-interface RecommendedWinner {
-  id: number
-  employeeId: string
-  name: string
-  avatar: string
-  department: string
-  points: number
-  postsCount: number
-  commentsCount: number
-  activitiesCount: number
-  likesReceived: number
-  favoritesReceived: number
-  hasAwarded: boolean
-  honorId?: number // 如果已评奖，记录荣誉ID
-}
-
+// 获奖者推荐相关（使用从 mock 导入的 RecommendedWinner 类型）
 const recommendedWinnersList = ref<RecommendedWinner[]>([])
 const loadingRecommended = ref(false)
 const recommendedMonth = ref<string>('')
@@ -1523,7 +1568,8 @@ const awardForm = ref({
   userId: null as number | null,
   awardId: null as number | null,
   awardName: '',
-  awardDate: ''
+  awardDate: '',
+  category: '' as string | undefined
 })
 
 // 评奖表单验证规则
@@ -1798,8 +1844,8 @@ const handleRemoveAdmin = (user: UserItem) => {
   ).then(() => {
     // 将角色改为普通用户
     const userIndex = usersList.value.findIndex(u => u.id === user.id)
-    if (userIndex !== -1) {
-      usersList.value[userIndex].currentRole = 'user'
+    if (userIndex !== -1 && usersList.value[userIndex]) {
+      usersList.value[userIndex]!.currentRole = 'user'
       // 从列表中移除（因为只显示管理员和工具Owner）
       usersList.value = usersList.value.filter(u => u.currentRole === 'admin' || u.currentRole === 'tool_owner')
     }
@@ -1929,7 +1975,7 @@ const _handleActivityEditorChange = (editor: IDomEditor) => {
 }
 
 // 活动封面图片选择
-const _handleActivityCoverChange = async (file: any) => {
+const _handleActivityCoverChange = async (file: UploadFile) => {
   if (!file.raw) return
   try {
     const base64 = await fileToBase64(file.raw)
@@ -2008,8 +2054,13 @@ const beforeImageUpload = (file: File) => {
   return true
 }
 
+// 创建带类型的文件处理包装函数，用于模板中
+const createFileHandler = (target: Record<string, unknown>, type: string) => {
+  return (file: UploadFile) => handleImageFileChange(file, target, type)
+}
+
 // 图片文件选择处理（使用base64作为临时方案）
-const handleImageFileChange = async (file: any, target: any, type: string) => {
+const handleImageFileChange = async (file: UploadFile, target: Record<string, unknown>, type: string) => {
   if (!file.raw) return
   
   try {
@@ -2061,8 +2112,13 @@ const handleTeamAwardImageTypeChange = (_img: TeamAwardImageItem, _awardIndex: n
   // 处理团队奖项图片类型切换
 }
 
-const handleTeamAwardImageFileChange = (file: any, img: TeamAwardImageItem, _awardIndex: number, _imgIndex: number) => {
-  handleImageFileChange(file, img, 'teamAwardImage')
+const handleTeamAwardImageFileChange = (file: UploadFile, img: TeamAwardImageItem, _awardIndex: number, _imgIndex: number) => {
+  handleImageFileChange(file, img as unknown as Record<string, unknown>, 'teamAwardImage')
+}
+
+// 创建团队奖项图片文件处理包装函数
+const createTeamAwardImageFileHandler = (img: TeamAwardImageItem, awardIndex: number, imgIndex: number) => {
+  return (file: UploadFile) => handleTeamAwardImageFileChange(file, img, awardIndex, imgIndex)
 }
 
 // 添加团队奖项图片
@@ -2118,18 +2174,18 @@ const handleDeleteToolBanner = (_banner: ToolBannerItem, index: number) => {
 
 // 上移工具Banner
 const handleMoveToolBannerUp = (index: number) => {
-  if (index > 0) {
-    const temp = toolBannersList.value[index]
-    toolBannersList.value[index] = toolBannersList.value[index - 1]
+  if (index > 0 && toolBannersList.value[index] && toolBannersList.value[index - 1]) {
+    const temp = toolBannersList.value[index]!
+    toolBannersList.value[index] = toolBannersList.value[index - 1]!
     toolBannersList.value[index - 1] = temp
   }
 }
 
 // 下移工具Banner
 const handleMoveToolBannerDown = (index: number) => {
-  if (index < toolBannersList.value.length - 1) {
-    const temp = toolBannersList.value[index]
-    toolBannersList.value[index] = toolBannersList.value[index + 1]
+  if (index < toolBannersList.value.length - 1 && toolBannersList.value[index] && toolBannersList.value[index + 1]) {
+    const temp = toolBannersList.value[index]!
+    toolBannersList.value[index] = toolBannersList.value[index + 1]!
     toolBannersList.value[index + 1] = temp
   }
 }
@@ -2139,17 +2195,17 @@ const handleToolBannerImageTypeChange = (_banner: ToolBannerItem, _index: number
   // 处理工具Banner图片类型切换
 }
 
-// 添加精华帖子
-const handleAddFeaturedPost = () => {
+// 添加精华帖子（保留供后续使用）
+const _handleAddFeaturedPost = () => {
   featuredPostsList.value.push({
     id: Date.now(),
-    url: '',
+    postId: null,
     note: ''
   })
 }
 
-// 删除精华帖子
-const handleDeleteFeaturedPost = (index: number) => {
+// 删除精华帖子（保留供后续使用）
+const _handleDeleteFeaturedPost = (index: number) => {
   ElMessageBox.confirm('确定要删除这个精华帖子吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -2167,6 +2223,8 @@ const handleAddAward = () => {
     name: '',
     category: '',
     description: '',
+    criteria: [],      // 初始化评选标准为空数组
+    cycle: '年度',     // 默认评选周期为年度
     saving: false,
     saved: false  // 新增的奖项标记为未保存
   })
@@ -2175,6 +2233,7 @@ const handleAddAward = () => {
 // 删除奖项
 const handleDeleteAward = async (index: number) => {
   const award = awardsList.value[index]
+  if (!award) return
   
   ElMessageBox.confirm('确定要删除这个奖项吗？', '提示', {
     confirmButtonText: '确定',
@@ -2199,7 +2258,7 @@ const handleDeleteAward = async (index: number) => {
     awardsList.value.splice(index, 1)
     ElMessage.success('删除成功')
     // 刷新奖项名称列表
-    await loadAwardNamesForWinner()
+    await loadAwardNames()
   }).catch(() => {})
 }
 
@@ -2301,14 +2360,22 @@ const loadRecommendedWinners = async () => {
   }
 }
 
-// 从接口获取奖项列表
-const loadAwardsFromApi = async (category?: string) => {
+// 从接口获取奖项列表（保留供后续使用）
+const _loadAwardsFromApi = async (category?: string) => {
   loadingAwards.value = true
   try {
     // 调用mock API获取奖项列表
     const response = await getAwardsList(category)
     if (response && response.list) {
-      apiAwardsList.value = response.list
+      // 将 AwardListItem 转换为 ApiAwardItem 格式
+      apiAwardsList.value = response.list.map(item => ({
+        id: item.id,
+        name: item.name,
+        desc: item.description || '',
+        image: '',
+        category: mapCategoryToApiCategory(item.category || '') as 'innovation' | 'efficiency' | 'practice' | 'community',
+        rules: item.description || ''
+      }))
     } else {
       // 使用本地奖项列表作为默认值
       apiAwardsList.value = awardsList.value.map(award => ({
@@ -2406,7 +2473,8 @@ const handleConfirmSetAward = async () => {
     settingAward.value = true
 
     // 从获奖时间（YYYY-MM）中提取年份
-    const year = awardForm.value.awardDate.split('-')[0]
+    const yearStr = awardForm.value.awardDate.split('-')[0]
+    const year = yearStr ? parseInt(yearStr, 10) : new Date().getFullYear()
 
     // 调用API设置用户获奖
     const response = await setUserAward({
@@ -2422,9 +2490,9 @@ const handleConfirmSetAward = async () => {
 
     // 更新推荐用户列表中的状态
     const userIndex = recommendedWinnersList.value.findIndex(u => u.id === currentAwardUser.value!.id)
-    if (userIndex !== -1) {
-      recommendedWinnersList.value[userIndex].hasAwarded = true
-      recommendedWinnersList.value[userIndex].honorId = honorId
+    if (userIndex !== -1 && recommendedWinnersList.value[userIndex]) {
+      recommendedWinnersList.value[userIndex]!.hasAwarded = true
+      recommendedWinnersList.value[userIndex]!.honorId = honorId
     }
 
     // 发送奖项通知消息给获奖者
@@ -2433,7 +2501,7 @@ const handleConfirmSetAward = async () => {
       currentAwardUser.value.name,         // 获奖者姓名
       awardForm.value.awardId!,            // 奖项ID
       selectedAward.name,                  // 奖项名称
-      awardForm.value.category,            // 奖项分类
+      awardForm.value.category || '',      // 奖项分类
       awardForm.value.awardDate            // 获奖时间
     )
 
@@ -2468,9 +2536,9 @@ const handleCancelAward = (user: RecommendedWinner) => {
 
       // 更新推荐用户列表中的状态
       const userIndex = recommendedWinnersList.value.findIndex(u => u.id === user.id)
-      if (userIndex !== -1) {
-        recommendedWinnersList.value[userIndex].hasAwarded = false
-        recommendedWinnersList.value[userIndex].honorId = undefined
+      if (userIndex !== -1 && recommendedWinnersList.value[userIndex]) {
+        recommendedWinnersList.value[userIndex]!.hasAwarded = false
+        recommendedWinnersList.value[userIndex]!.honorId = undefined
       }
 
       ElMessage.success('已取消评奖')
@@ -2483,17 +2551,17 @@ const handleCancelAward = (user: RecommendedWinner) => {
   })
 }
 
-// 添加扶摇Agent应用置顶帖子
-const handleAddAgentPinnedPost = () => {
+// 添加扶摇Agent应用置顶帖子（保留供后续使用）
+const _handleAddAgentPinnedPost = () => {
   agentPinnedPostsList.value.push({
     id: Date.now(),
-    url: '',
+    postId: null,
     note: ''
   })
 }
 
-// 删除扶摇Agent应用置顶帖子
-const handleDeleteAgentPinnedPost = (index: number) => {
+// 删除扶摇Agent应用置顶帖子（保留供后续使用）
+const _handleDeleteAgentPinnedPost = (index: number) => {
   ElMessageBox.confirm('确定要删除这个置顶帖子吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -2508,7 +2576,7 @@ const handleDeleteAgentPinnedPost = (index: number) => {
 const handleAddFeaturedCollection = () => {
   featuredCollectionsList.value.push({
     id: Date.now(),
-    url: '',
+    postId: null,
     note: ''
   })
 }
@@ -2525,8 +2593,8 @@ const handleDeleteFeaturedCollection = (index: number) => {
   }).catch(() => {})
 }
 
-// 添加赋能交流精华帖子
-const handleAddEmpowermentFeaturedPost = () => {
+// 添加赋能交流精华帖子（保留供后续使用）
+const _handleAddEmpowermentFeaturedPost = () => {
   empowermentFeaturedPostsList.value.push({
     id: Date.now(),
     postId: null,
@@ -2534,8 +2602,8 @@ const handleAddEmpowermentFeaturedPost = () => {
   })
 }
 
-// 删除赋能交流精华帖子
-const handleDeleteEmpowermentFeaturedPost = (index: number) => {
+// 删除赋能交流精华帖子（保留供后续使用）
+const _handleDeleteEmpowermentFeaturedPost = (index: number) => {
   ElMessageBox.confirm('确定要删除这个精华帖子吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -2546,8 +2614,8 @@ const handleDeleteEmpowermentFeaturedPost = (index: number) => {
   }).catch(() => {})
 }
 
-// 添加AI工具专区其他工具精华帖子
-const handleAddOtherToolsFeaturedPost = () => {
+// 添加AI工具专区其他工具精华帖子（保留供后续使用）
+const _handleAddOtherToolsFeaturedPost = () => {
   otherToolsFeaturedPostsList.value.push({
     id: Date.now(),
     postId: null,
@@ -2555,8 +2623,8 @@ const handleAddOtherToolsFeaturedPost = () => {
   })
 }
 
-// 删除AI工具专区其他工具精华帖子
-const handleDeleteOtherToolsFeaturedPost = (index: number) => {
+// 删除AI工具专区其他工具精华帖子（保留供后续使用）
+const _handleDeleteOtherToolsFeaturedPost = (index: number) => {
   ElMessageBox.confirm('确定要删除这个精华帖子吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -2594,18 +2662,18 @@ const handleDeleteCarousel = (index: number) => {
 
 // 上移轮播图
 const handleMoveUp = (index: number) => {
-  if (index > 0) {
-    const temp = carouselList.value[index]
-    carouselList.value[index] = carouselList.value[index - 1]
+  if (index > 0 && carouselList.value[index] && carouselList.value[index - 1]) {
+    const temp = carouselList.value[index]!
+    carouselList.value[index] = carouselList.value[index - 1]!
     carouselList.value[index - 1] = temp
   }
 }
 
 // 下移轮播图
 const handleMoveDown = (index: number) => {
-  if (index < carouselList.value.length - 1) {
-    const temp = carouselList.value[index]
-    carouselList.value[index] = carouselList.value[index + 1]
+  if (index < carouselList.value.length - 1 && carouselList.value[index] && carouselList.value[index + 1]) {
+    const temp = carouselList.value[index]!
+    carouselList.value[index] = carouselList.value[index + 1]!
     carouselList.value[index + 1] = temp
   }
 }
@@ -2643,7 +2711,9 @@ const handleAddTeamAward = () => {
         id: Date.now(),
         image: '',
         imageType: 'url',
-        winnerName: ''
+        winnerName: '',
+        teamField: '',
+        story: ''
       }
     ]
   })
@@ -2663,18 +2733,18 @@ const handleDeleteTeamAward = (index: number) => {
 
 // 上移团队奖项
 const handleMoveTeamAwardUp = (index: number) => {
-  if (index > 0) {
-    const temp = teamAwardsList.value[index]
-    teamAwardsList.value[index] = teamAwardsList.value[index - 1]
+  if (index > 0 && teamAwardsList.value[index] && teamAwardsList.value[index - 1]) {
+    const temp = teamAwardsList.value[index]!
+    teamAwardsList.value[index] = teamAwardsList.value[index - 1]!
     teamAwardsList.value[index - 1] = temp
   }
 }
 
 // 下移团队奖项
 const handleMoveTeamAwardDown = (index: number) => {
-  if (index < teamAwardsList.value.length - 1) {
-    const temp = teamAwardsList.value[index]
-    teamAwardsList.value[index] = teamAwardsList.value[index + 1]
+  if (index < teamAwardsList.value.length - 1 && teamAwardsList.value[index] && teamAwardsList.value[index + 1]) {
+    const temp = teamAwardsList.value[index]!
+    teamAwardsList.value[index] = teamAwardsList.value[index + 1]!
     teamAwardsList.value[index + 1] = temp
   }
 }
@@ -2787,9 +2857,9 @@ const loadConfig = async () => {
     ])
     
     if (carouselResponse && carouselResponse.list) {
-      carouselList.value = carouselResponse.list.map((item: any) => ({
+      carouselList.value = carouselResponse.list.map((item) => ({
         ...item,
-        imageType: item.imageType || 'url'
+        imageType: (item.imageType as 'url' | 'upload') || 'url'
       }))
     }
     
@@ -2806,26 +2876,40 @@ const loadConfig = async () => {
     }
     
     if (teamAwardsResponse && teamAwardsResponse.list) {
-      teamAwardsList.value = teamAwardsResponse.list.map((item: any) => ({
-        ...item,
-        images: item.images ? item.images.map((img: any) => ({
-          ...img,
-          imageType: img.imageType || 'url'
+      teamAwardsList.value = teamAwardsResponse.list.map((item) => ({
+        id: item.id,
+        title: item.title,
+        year: item.year,
+        images: item.images ? item.images.map((img) => ({
+          id: img.id,
+          image: img.image,
+          imageType: (img.imageType as 'url' | 'upload') || 'url',
+          winnerName: img.winnerName,
+          teamField: img.teamField || '',
+          story: img.story || ''
         })) : []
       }))
     }
     
     if (toolsResponse && toolsResponse.list) {
-      toolsList.value = toolsResponse.list.map((item: any) => ({
-        ...item,
-        logoType: item.logoType || 'url'
+      toolsList.value = toolsResponse.list.map((item) => ({
+        id: item.id,
+        name: item.name,
+        desc: item.desc || '',
+        logo: item.logo || '',
+        logoType: 'url' as 'url' | 'upload',
+        color: item.color || '',
+        link: item.link || ''
       }))
     }
     
     if (toolBannersResponse && toolBannersResponse.list) {
-      toolBannersList.value = toolBannersResponse.list.map((item: any) => ({
-        ...item,
-        imageType: item.imageType || 'url'
+      toolBannersList.value = toolBannersResponse.list.map((item) => ({
+        id: item.id,
+        image: item.image,
+        title: item.title,
+        desc: item.desc,
+        imageType: (item.imageType as 'url' | 'upload') || 'url'
       }))
     }
     
@@ -2860,7 +2944,7 @@ const loadConfig = async () => {
     
     // 加载赋能交流精华帖子配置
     if (empowermentFeaturedResponse && empowermentFeaturedResponse.list) {
-      empowermentFeaturedPostsList.value = empowermentFeaturedResponse.list.map((item: any) => ({
+      empowermentFeaturedPostsList.value = empowermentFeaturedResponse.list.map((item) => ({
         id: item.id || Date.now(),
         postId: item.postId ?? null,
         note: item.note || ''
@@ -2869,7 +2953,7 @@ const loadConfig = async () => {
     
     // 加载AI工具专区其他工具精华帖子配置
     if (otherToolsFeaturedResponse && otherToolsFeaturedResponse.list) {
-      otherToolsFeaturedPostsList.value = otherToolsFeaturedResponse.list.map((item: any) => ({
+      otherToolsFeaturedPostsList.value = otherToolsFeaturedResponse.list.map((item) => ({
         id: item.id || Date.now(),
         postId: item.postId ?? null,
         note: item.note || ''
@@ -2946,7 +3030,7 @@ const handleCloseActivityDialog = () => {
   // 清理编辑器
   if (activityEditorRef.value) {
     activityEditorRef.value.destroy()
-    activityEditorRef.value = undefined as any
+    activityEditorRef.value = undefined
   }
   // 重置表单
   editingActivityId.value = null
@@ -3161,7 +3245,7 @@ onBeforeUnmount(() => {
 // 奖项列表
 .awards-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
   gap: 24px;
 
   .award-item {
@@ -3169,6 +3253,20 @@ onBeforeUnmount(() => {
     border-radius: 12px;
     padding: 20px;
     border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 评选标准编辑器
+.criteria-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+
+  .criterion-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 }
 

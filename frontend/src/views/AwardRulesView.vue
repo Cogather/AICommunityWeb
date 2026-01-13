@@ -5,7 +5,12 @@
       <h2>奖项规则说明</h2>
     </div>
 
-    <div class="award-rules-content">
+    <div v-if="loading" class="loading-container">
+      <el-icon class="is-loading"><Loading /></el-icon>
+      <span>加载中...</span>
+    </div>
+
+    <div v-else class="award-rules-content">
       <div
         v-for="rule in awardRules"
         :key="rule.name"
@@ -31,19 +36,34 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Loading } from '@element-plus/icons-vue'
+import { getAwardRules, type AwardRuleDetail } from '../mock'
 
 const router = useRouter()
 const route = useRoute()
 
-const awardRules = [
-  { name: '技术创新奖', description: '表彰在AI技术方案上有重大突破的个人或团队', criteria: ['提交创新方案不少于2篇', '落地至少1个生产项目', '产出技术分享或专利'], cycle: '年度' },
-  { name: '效能提升奖', description: '在工程效能、自动化与质量提升方面贡献突出', criteria: ['引入自动化工具并落地', '显著降低缺陷率或提升交付速度'], cycle: '季度' },
-  { name: '最佳实践奖', description: '在业务场景中形成可复制的AI最佳实践并推广', criteria: ['形成完整案例文档', '内部分享不少于2场', '被至少一个团队复用'], cycle: '季度' },
-  { name: '社区贡献奖', description: '对社区布道、开源贡献或知识传播有突出表现', criteria: ['发布高质量文章/视频', '组织或参与社区活动', '持续开源贡献'], cycle: '年度' }
-]
+// 奖项规则数据 - 从 mock API 获取
+const awardRules = ref<AwardRuleDetail[]>([])
+const loading = ref(false)
+
+// 加载奖项规则数据
+const loadAwardRules = async () => {
+  loading.value = true
+  try {
+    const result = await getAwardRules()
+    awardRules.value = result.list
+  } catch (error) {
+    console.error('加载奖项规则失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadAwardRules()
+})
 
 const activeAward = computed(() => {
   const target = route.query.award
@@ -145,6 +165,24 @@ const handleBack = () => {
   padding-left: 18px;
   color: #475569;
   line-height: 1.8;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  color: #64748b;
+
+  .is-loading {
+    animation: rotate 1s linear infinite;
+  }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
 

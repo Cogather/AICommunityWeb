@@ -10,6 +10,8 @@ export interface CarouselItem {
   desc: string
   link: string
   showContent: boolean
+  order?: number
+  imageType?: 'url' | 'upload'
 }
 
 export interface HonorAward {
@@ -48,7 +50,8 @@ export interface ToolBannerItem {
   image: string
   title: string
   desc: string
-  order: number
+  order?: number
+  imageType?: 'url' | 'upload'
 }
 
 export interface PracticeItem {
@@ -180,7 +183,7 @@ export interface Activity {
   title: string
   content: string
   cover?: string
-  toolId?: number
+  toolId?: number | null
   toolName?: string
   type: 'activity' | 'training' | 'workshop'
   date: string | Date
@@ -237,11 +240,12 @@ export interface Message {
 export interface TeamAward {
   id: number
   title: string
-  year: number
+  year?: number
   images: Array<{
     id: number
     image: string
     winnerName: string
+    imageType?: 'url' | 'upload'
     teamField?: string
     story?: string  // 获奖事迹（HTML富文本）
     flowers?: number
@@ -1387,6 +1391,120 @@ export const getNews = async (): Promise<{ list: NewsItem[] }> => {
   return { list: mockNews }
 }
 
+// 首页赋能交流列表（与赋能交流页面独立）
+export interface HomeEmpowermentItem {
+  id: number
+  title: string
+  tag: string
+  tagType?: string
+  author: string
+  time: string
+}
+
+export const getHomeEmpowerment = async (limit: number = 5): Promise<{ list: HomeEmpowermentItem[] }> => {
+  await delay()
+  const items: HomeEmpowermentItem[] = [
+    {
+      id: 1,
+      title: '如何使用 Agent 提升代码开发效率？',
+      tag: '讨论',
+      tagType: 'blue',
+      author: '张三',
+      time: '2小时前'
+    },
+    {
+      id: 2,
+      title: '分享一个提升工作效率的AI工具使用技巧',
+      tag: '分享',
+      tagType: 'green',
+      author: '李四',
+      time: '3小时前'
+    },
+    {
+      id: 3,
+      title: '关于AI辅助编程的一些疑问',
+      tag: '提问',
+      tagType: 'orange',
+      author: '王五',
+      time: '5小时前'
+    },
+    {
+      id: 4,
+      title: 'Prompt工程最佳实践经验总结',
+      tag: '经验',
+      tagType: 'purple',
+      author: '赵六',
+      time: '6小时前'
+    },
+    {
+      id: 5,
+      title: '推荐几个好用的AI工具',
+      tag: '工具',
+      tagType: 'blue',
+      author: '钱七',
+      time: '8小时前'
+    }
+  ]
+  return { list: items.slice(0, limit) }
+}
+
+// 悬浮工具平台列表（与AI工具专区独立，点击跳转到外部工具平台）
+export interface ToolPlatformItem {
+  id: number
+  name: string
+  desc: string
+  logo: string
+  color: string
+  platformUrl: string  // 外部工具平台链接
+}
+
+export const getToolPlatform = async (): Promise<{ list: ToolPlatformItem[] }> => {
+  await delay()
+  const items: ToolPlatformItem[] = [
+    {
+      id: 1,
+      name: 'TestMate',
+      desc: '自动化测试助手',
+      logo: '🧪',
+      color: '#36cfc9',
+      platformUrl: 'https://testmate.example.com'
+    },
+    {
+      id: 2,
+      name: 'CodeMate',
+      desc: '智能代码补全',
+      logo: '💻',
+      color: '#9254de',
+      platformUrl: 'https://codemate.example.com'
+    },
+    {
+      id: 3,
+      name: '云集',
+      desc: '云端计算集群',
+      logo: '☁️',
+      color: '#597ef7',
+      platformUrl: 'https://yunji.example.com'
+    },
+    {
+      id: 4,
+      name: '云见',
+      desc: '智能监控平台',
+      logo: '👁️',
+      color: '#ff9c6e',
+      platformUrl: 'https://yunjian.example.com'
+    },
+    {
+      id: 5,
+      name: '扶摇',
+      desc: 'Agent编排引擎',
+      logo: '🚀',
+      color: '#4096ff',
+      platformUrl: 'https://fuyao.example.com'
+    }
+  ]
+  return { list: items }
+}
+
 // 用户相关
 export const getCurrentUser = async (): Promise<UserProfile> => {
   await delay()
@@ -1457,9 +1575,65 @@ interface ActivityQueryParams extends PaginationParams {
   status?: string
 }
 
-export const getUserPoints = async (): Promise<{ total: number; details: Array<{ id: number; amount: number; reason: string; time: string }> }> => {
+// 积分历史记录类型
+interface PointsHistoryItem {
+  id: number
+  type: string
+  points: number
+  description: string
+  createdAt: string
+}
+
+// 积分规则类型
+interface PointsRule {
+  action: string
+  points: number
+  description: string
+}
+
+export const getUserPoints = async (): Promise<{
+  totalPoints: number
+  monthlyPoints: number
+  ranking: number
+  pointsHistory: PointsHistoryItem[]
+  pointsRules: PointsRule[]
+}> => {
   await delay()
-  return { total: mockCurrentUser.points, details: [] }
+  return {
+    totalPoints: mockCurrentUser.points,
+    monthlyPoints: 350,
+    ranking: 15,
+    pointsHistory: [
+      {
+        id: 1,
+        type: 'post_publish',
+        points: 50,
+        description: '发布帖子《AI技术实践分享》',
+        createdAt: new Date(Date.now() - 86400000).toISOString()
+      },
+      {
+        id: 2,
+        type: 'comment',
+        points: 5,
+        description: '发表评论',
+        createdAt: new Date(Date.now() - 172800000).toISOString()
+      },
+      {
+        id: 3,
+        type: 'like_received',
+        points: 2,
+        description: '帖子获得点赞',
+        createdAt: new Date(Date.now() - 259200000).toISOString()
+      }
+    ],
+    pointsRules: [
+      { action: 'post_publish', points: 50, description: '发布帖子' },
+      { action: 'comment', points: 5, description: '发表评论' },
+      { action: 'like_received', points: 2, description: '帖子获得点赞' },
+      { action: 'activity_join', points: 10, description: '参与活动' },
+      { action: 'flower_received', points: 10, description: '获得小红花' }
+    ]
+  }
 }
 
 export const getUserPosts = async (_userId: number, params?: PaginationParams): Promise<PageResult<Post>> => {
@@ -2130,6 +2304,99 @@ interface FeaturedPostResponse {
 }
 
 // 荣誉相关
+
+// 个人荣誉项类型（与接口文档一致）
+export interface HonorListItem {
+  id: number
+  name: string           // 获奖者姓名
+  department: string     // 获奖者部门
+  avatar: string         // 获奖者头像URL
+  awardName: string      // 奖项名称
+  awardDate: string      // 获奖日期（YYYY-MM-DD格式）
+  category: string       // 奖项类别：innovation/efficiency/practice/community
+  year: string           // 获奖年份
+  isMine: boolean        // 是否为当前登录用户的荣誉
+  flowers: number        // 收到的花朵数
+  hasGivenFlower: boolean// 当前用户是否已送花
+  achievement?: string   // 获奖成就描述
+}
+
+// Mock 个人荣誉列表数据
+const mockHonorList: HonorListItem[] = [
+  { id: 1, name: '林星辰', department: '架构平台部', avatar: 'https://i.pravatar.cc/150?img=11', awardName: '2026年度 AI 技术突破奖', awardDate: '2026-01-05', category: 'innovation', year: '2026', isMine: true, flowers: 12, hasGivenFlower: false, achievement: '在AI模型优化领域取得重大突破，成功将模型推理速度提升300%。' },
+  { id: 2, name: 'Sarah', department: 'UED 设计中心', avatar: 'https://i.pravatar.cc/150?img=5', awardName: '最佳 AI 辅助设计实践', awardDate: '2025-12-20', category: 'practice', year: '2025', isMine: false, flowers: 15, hasGivenFlower: false, achievement: '创新性地将AI技术应用于设计工作流程。' },
+  { id: 3, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: 'Copilot 效能提升大师', awardDate: '2025-11-15', category: 'efficiency', year: '2025', isMine: false, flowers: 20, hasGivenFlower: true, achievement: '深入研究和应用GitHub Copilot等AI编程工具。' },
+  { id: 4, name: '王芳', department: '开源办公室', avatar: 'https://i.pravatar.cc/150?img=9', awardName: 'AI 社区贡献之星', awardDate: '2025-10-10', category: 'community', year: '2025', isMine: false, flowers: 18, hasGivenFlower: false, achievement: '在开源社区中持续贡献AI相关项目和文档。' },
+  { id: 5, name: '李明', department: '数据部', avatar: 'https://i.pravatar.cc/150?img=12', awardName: '数据智能创新奖', awardDate: '2025-09-20', category: 'innovation', year: '2025', isMine: false, flowers: 22, hasGivenFlower: false, achievement: '开发数据智能分析平台，提升数据处理效率。' },
+  { id: 6, name: '陈静', department: '算法部', avatar: 'https://i.pravatar.cc/150?img=16', awardName: 'AI 算法优化专家', awardDate: '2025-08-15', category: 'efficiency', year: '2025', isMine: false, flowers: 25, hasGivenFlower: true, achievement: '在算法优化领域取得显著成果。' },
+  { id: 7, name: '周杰', department: '架构平台部', avatar: 'https://i.pravatar.cc/150?img=7', awardName: '年度技术创新奖', awardDate: '2024-12-25', category: 'innovation', year: '2024', isMine: false, flowers: 30, hasGivenFlower: false, achievement: '主导多项核心技术创新项目。' },
+  { id: 8, name: '赵敏', department: 'UED 设计中心', avatar: 'https://i.pravatar.cc/150?img=20', awardName: 'AI 设计工具先锋', awardDate: '2024-11-18', category: 'practice', year: '2024', isMine: false, flowers: 16, hasGivenFlower: false, achievement: '推广AI设计工具的应用实践。' },
+  { id: 9, name: '孙鹏', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=15', awardName: '效能提升贡献奖', awardDate: '2024-10-12', category: 'efficiency', year: '2024', isMine: false, flowers: 14, hasGivenFlower: true, achievement: '持续优化研发流程，提升团队效能。' },
+  { id: 10, name: '刘洋', department: '开源办公室', avatar: 'https://i.pravatar.cc/150?img=8', awardName: '开源贡献奖', awardDate: '2024-09-08', category: 'community', year: '2024', isMine: false, flowers: 28, hasGivenFlower: false, achievement: '积极参与开源项目，贡献高质量代码。' },
+  { id: 11, name: '黄婷', department: '数据部', avatar: 'https://i.pravatar.cc/150?img=25', awardName: '数据分析之星', awardDate: '2024-08-22', category: 'practice', year: '2024', isMine: false, flowers: 19, hasGivenFlower: false, achievement: '在数据分析领域表现突出。' },
+  { id: 12, name: '吴强', department: '算法部', avatar: 'https://i.pravatar.cc/150?img=13', awardName: '机器学习创新奖', awardDate: '2024-07-15', category: 'innovation', year: '2024', isMine: false, flowers: 24, hasGivenFlower: true, achievement: '在机器学习模型创新方面取得突破。' }
+]
+
+// 获取个人荣誉列表（与接口文档一致）
+export const getHonorList = async (params?: {
+  page?: number
+  pageSize?: number
+  scope?: 'all' | 'mine'
+  filterType?: 'award' | 'department'
+  filterValue?: string
+  keyword?: string
+  view?: 'grid' | 'timeline'
+  userName?: string
+}): Promise<{
+  list: HonorListItem[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}> => {
+  await delay()
+  
+  let filtered = [...mockHonorList]
+  
+  // 按范围筛选
+  if (params?.scope === 'mine') {
+    filtered = filtered.filter(item => item.isMine)
+  }
+  
+  // 按筛选类型筛选
+  if (params?.filterType && params?.filterValue && params.filterValue !== '全部') {
+    if (params.filterType === 'award') {
+      filtered = filtered.filter(item => item.awardName.includes(params.filterValue!))
+    } else if (params.filterType === 'department') {
+      filtered = filtered.filter(item => item.department === params.filterValue)
+    }
+  }
+  
+  // 按关键词搜索
+  if (params?.keyword) {
+    const kw = params.keyword.toLowerCase()
+    filtered = filtered.filter(item => 
+      item.name.toLowerCase().includes(kw) ||
+      item.awardName.toLowerCase().includes(kw) ||
+      item.department.toLowerCase().includes(kw)
+    )
+  }
+  
+  // 时光轴模式下按用户筛选
+  if (params?.view === 'timeline' && params?.userName) {
+    filtered = filtered.filter(item => item.name === params.userName)
+  }
+  
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || 16
+  const total = filtered.length
+  const totalPages = Math.ceil(total / pageSize)
+  const start = (page - 1) * pageSize
+  const list = filtered.slice(start, start + pageSize)
+  
+  return { list, total, page, pageSize, totalPages }
+}
+
 export const getHonors = async (params?: PaginationParams): Promise<PageResult<Honor>> => {
   await delay()
   return { list: [], total: 0, page: params?.page || 1, pageSize: params?.pageSize || 15 }
@@ -2145,6 +2412,156 @@ export const getTopUsers = async (_params?: PaginationParams): Promise<PageResul
   return { list: mockHonorInfo.topUsers, total: mockHonorInfo.topUsers.length, page: 1, pageSize: 10 }
 }
 
+// 获取荣誉影响力排行榜（与接口文档一致）
+export const getHonorLeaderboard = async (params?: {
+  limit?: number
+  scope?: string
+  filterType?: string
+  filterValue?: string
+}): Promise<{
+  list: Array<{
+    name: string
+    department: string
+    avatar: string
+    count: number
+    totalFlowers: number
+  }>
+}> => {
+  await delay()
+  return {
+    list: [
+      {
+        name: '林星辰',
+        department: '架构平台部',
+        avatar: 'https://picsum.photos/100/100?random=leader1',
+        count: 5,
+        totalFlowers: 58
+      },
+      {
+        name: '张伟',
+        department: '效能工程部',
+        avatar: 'https://picsum.photos/100/100?random=leader2',
+        count: 4,
+        totalFlowers: 45
+      },
+      {
+        name: 'Sarah',
+        department: 'UED 设计中心',
+        avatar: 'https://picsum.photos/100/100?random=leader3',
+        count: 3,
+        totalFlowers: 32
+      }
+    ].slice(0, params?.limit || 10)
+  }
+}
+
+// 获取荣誉时光轴（与接口文档一致）
+export const getHonorTimeline = async (userName?: string): Promise<{
+  user: {
+    name: string
+    avatar: string
+    department: string
+    totalFlowers: number
+  } | null
+  timeline: Array<{
+    year: string
+    items: Array<{
+      id: number
+      name: string
+      avatar: string
+      awardName: string
+      awardDate: string
+      category: string
+    }>
+  }>
+}> => {
+  await delay()
+  
+  // 如果指定了用户名，返回该用户的时光轴
+  if (userName) {
+    return {
+      user: {
+        name: userName,
+        avatar: 'https://picsum.photos/100/100?random=timeline',
+        department: '架构平台部',
+        totalFlowers: 58
+      },
+      timeline: [
+        {
+          year: '2026',
+          items: [
+            {
+              id: 1,
+              name: userName,
+              avatar: 'https://picsum.photos/100/100?random=timeline',
+              awardName: '2026年度 AI 技术突破奖',
+              awardDate: '2026-01-05',
+              category: 'innovation'
+            }
+          ]
+        },
+        {
+          year: '2025',
+          items: [
+            {
+              id: 5,
+              name: userName,
+              avatar: 'https://picsum.photos/100/100?random=timeline',
+              awardName: 'AI 社区贡献之星',
+              awardDate: '2025-06-15',
+              category: 'community'
+            }
+          ]
+        }
+      ]
+    }
+  }
+  
+  // 返回所有用户的时光轴
+  return {
+    user: null,
+    timeline: [
+      {
+        year: '2026',
+        items: [
+          {
+            id: 1,
+            name: '林星辰',
+            avatar: 'https://picsum.photos/100/100?random=t1',
+            awardName: '2026年度 AI 技术突破奖',
+            awardDate: '2026-01-05',
+            category: 'innovation'
+          },
+          {
+            id: 2,
+            name: 'Sarah',
+            avatar: 'https://picsum.photos/100/100?random=t2',
+            awardName: '最佳 AI 辅助设计实践',
+            awardDate: '2025-12-20',
+            category: 'practice'
+          }
+        ]
+      }
+    ]
+  }
+}
+
+// 获取荣誉部门列表（用于筛选）
+export const getHonorDepartments = async (): Promise<{ list: string[] }> => {
+  await delay()
+  return {
+    list: [
+      '全部',
+      '架构平台部',
+      'UED 设计中心',
+      '效能工程部',
+      '开源办公室',
+      '数据部',
+      '算法部'
+    ]
+  }
+}
+
 export const giveFlower = async (_id: number): Promise<{ flowers: number; hasGivenFlower: boolean }> => {
   await delay()
   return { flowers: 1, hasGivenFlower: true }
@@ -2154,6 +2571,30 @@ export const giveFlower = async (_id: number): Promise<{ flowers: number; hasGiv
 export const getToolDetail = async (id: number): Promise<ToolItem | undefined> => {
   await delay()
   return mockTools.find(t => t.id === id) || mockTools[0]
+}
+
+// 获取工具专区部门统计（与接口文档一致）
+export const getToolDepartments = async (toolId: number, tag?: string): Promise<{
+  list: Array<{
+    id: number
+    name: string
+    postCount: number
+    contributorCount: number
+  }>
+}> => {
+  await delay()
+  
+  // 模拟根据toolId和tag过滤后的部门统计
+  const departments = [
+    { id: 1, name: '研发部', postCount: 45, contributorCount: 12 },
+    { id: 2, name: '技术部', postCount: 38, contributorCount: 9 },
+    { id: 3, name: '算法部', postCount: 25, contributorCount: 6 },
+    { id: 4, name: '数据部', postCount: 22, contributorCount: 8 },
+    { id: 5, name: '测试部', postCount: 18, contributorCount: 5 }
+  ]
+  
+  console.log(`[Mock API] 获取工具专区部门统计 (toolId: ${toolId}, tag: ${tag})`)
+  return { list: departments }
 }
 
 export const checkToolOwner = async (id: number): Promise<ToolOwnerCheck> => {
@@ -2518,9 +2959,9 @@ export const saveCarouselConfig = async (list: CarouselItem[]): Promise<void> =>
   mockCarousel.push(...list)
 }
 
-export const getHonorBannerConfig = async (): Promise<{ bannerImage: string }> => {
+export const getHonorBannerConfig = async (): Promise<{ bannerImage: string; bannerImageType?: 'url' | 'upload' }> => {
   await delay()
-  return { bannerImage: mockHonorInfo.bannerImage }
+  return { bannerImage: mockHonorInfo.bannerImage, bannerImageType: 'url' }
 }
 
 export const saveHonorBannerConfig = async (config: { bannerImage: string }): Promise<void> => {
@@ -2561,21 +3002,29 @@ export const saveToolBannersConfig = async (list: ToolBannerItem[]): Promise<voi
 }
 
 // 个人奖项配置类型
+// 个人奖项配置类型（兼容管理后台的 AwardItem）
 interface PersonalAwardConfig {
   id: number
   name: string
-  description: string
-  year: number
+  description?: string
+  category?: string
+  criteria?: string[]
+  cycle?: string
+  year?: number
+  saving?: boolean
+  saved?: boolean
 }
 
-// 获奖者配置类型
+// 获奖者配置类型（兼容管理后台的 WinnerItem）
 interface WinnerConfig {
   id: number
-  userId: number
-  userName: string
-  awardId: number
-  awardName: string
-  year: number
+  name?: string
+  awardTime?: string
+  awardName?: string
+  userId?: number
+  userName?: string
+  awardId?: number
+  year?: number
 }
 
 export const getPersonalAwardsConfig = async (): Promise<{ list: PersonalAwardConfig[] }> => {
@@ -2608,7 +3057,7 @@ export const getEmpowermentFeaturedPostsConfig = async (): Promise<{ list: Array
   }
 }
 
-export const saveEmpowermentFeaturedPostsConfig = async (_list: Array<{ id: number; postId: number; note: string }>): Promise<void> => {
+export const saveEmpowermentFeaturedPostsConfig = async (_list: Array<{ id: number; postId: number | null; note: string }>): Promise<void> => {
   await delay()
   // 在实际场景中，这里会更新精华帖子列表
   console.log('保存赋能交流精华帖子配置:', _list)
@@ -2630,7 +3079,7 @@ export const getOtherToolsFeaturedPostsConfig = async (): Promise<{ list: Array<
   return { list: [] }
 }
 
-export const saveOtherToolsFeaturedPostsConfig = async (_list: Array<{ id: number; postId: number; note: string }>): Promise<void> => {
+export const saveOtherToolsFeaturedPostsConfig = async (_list: Array<{ id: number; postId: number | null; note: string }>): Promise<void> => {
   await delay()
   // 在实际场景中，这里会更新精华帖子列表
   console.log('保存AI工具专区其他工具精华帖子配置:', _list)
@@ -2648,19 +3097,30 @@ export const saveTeamAwardsConfig = async (list: TeamAward[]): Promise<void> => 
 }
 
 // 推荐获奖者类型
-interface RecommendedWinner {
+// 推荐获奖者类型（兼容 AdminView 中的 RecommendedWinner）
+export interface RecommendedWinner {
   id: number
-  userId: number
-  userName: string
-  userAvatar: string
+  employeeId: string
+  name: string
+  avatar: string
   department: string
-  reason: string
+  points: number
+  postsCount: number
+  commentsCount: number
+  activitiesCount: number
+  likesReceived: number
+  favoritesReceived: number
+  hasAwarded: boolean
+  honorId?: number
 }
 
 // 设置奖项参数类型
 interface SetUserAwardParams {
   userId: number
   awardId: number
+  awardName?: string
+  awardDate?: string
+  category?: string
   year?: number
   reason?: string
 }
@@ -2691,12 +3151,14 @@ interface RoleParams {
   toolId?: number
 }
 
-// 奖项列表项类型
-interface AwardListItem {
+// 奖项列表项类型（管理后台设置，同时用于奖项规则说明展示）
+export interface AwardListItem {
   id: number
   name: string
-  description?: string
-  category?: string
+  description?: string    // 奖项简要描述
+  category?: string       // 奖项类别
+  criteria?: string[]     // 评选标准列表
+  cycle?: string          // 评选周期：年度/季度/月度
 }
 
 export const getRecommendedWinners = async (month?: string, _limit: number = 3): Promise<{ list: RecommendedWinner[]; month?: string }> => {
@@ -2713,13 +3175,36 @@ export const cancelUserAward = async (_id: number): Promise<void> => {
   await delay()
 }
 
-// Mock 奖项列表数据
+// Mock 奖项列表数据（管理后台设置，同时用于奖项规则说明展示）
 const mockAwardsList: AwardListItem[] = [
-  { id: 1, name: '2026年度 AI 技术突破奖', description: '表彰在AI技术领域取得重大突破和创新的个人' },
-  { id: 2, name: '最佳 AI 辅助设计实践', description: '表彰将AI技术创新性应用于设计工作流程的个人' },
-  { id: 3, name: 'Copilot 效能提升大师', description: '表彰通过AI工具显著提升工作效能的个人' },
-  { id: 4, name: 'AI 社区贡献之星', description: '表彰为AI社区做出突出贡献的个人' },
-  { id: 5, name: 'AI 应用创新奖', description: '表彰在AI应用方面展现出创新思维的个人' }
+  {
+    id: 1,
+    name: '技术创新奖',
+    description: '表彰在AI技术方案上有重大突破的个人或团队',
+    criteria: ['提交创新方案不少于2篇', '落地至少1个生产项目', '产出技术分享或专利'],
+    cycle: '年度'
+  },
+  {
+    id: 2,
+    name: '效能提升奖',
+    description: '在工程效能、自动化与质量提升方面贡献突出',
+    criteria: ['引入自动化工具并落地', '显著降低缺陷率或提升交付速度'],
+    cycle: '季度'
+  },
+  {
+    id: 3,
+    name: '最佳实践奖',
+    description: '在业务场景中形成可复制的AI最佳实践并推广',
+    criteria: ['形成完整案例文档', '内部分享不少于2场', '被至少一个团队复用'],
+    cycle: '季度'
+  },
+  {
+    id: 4,
+    name: '社区贡献奖',
+    description: '对社区布道、开源贡献或知识传播有突出表现',
+    criteria: ['发布高质量文章/视频', '组织或参与社区活动', '持续开源贡献'],
+    cycle: '年度'
+  }
 ]
 
 export const getAwardsList = async (_category?: string): Promise<{ list: AwardListItem[] }> => {
@@ -2727,34 +3212,43 @@ export const getAwardsList = async (_category?: string): Promise<{ list: AwardLi
   return { list: mockAwardsList }
 }
 
-// 获取奖项规则说明（返回所有奖项及其描述）
+// 获取奖项规则说明（直接从管理后台的奖项设置中读取）
+// 注意：AwardRuleDetail 类型与 AwardListItem 相同，直接复用
+export type AwardRuleDetail = AwardListItem
+
 export const getAwardRules = async (): Promise<{
-  list: Array<{ id: number; name: string; description: string }>
+  list: AwardListItem[]
   updateTime: string
 }> => {
   await delay()
+  // 直接返回管理后台设置的奖项列表
   return {
-    list: mockAwardsList.map(award => ({
-      id: award.id,
-      name: award.name,
-      description: award.description || ''
-    })),
+    list: mockAwardsList,
     updateTime: new Date().toISOString()
   }
 }
 
-// 保存单个奖项（新增或更新）
-export const saveAward = async (award: { id?: number; name: string; description?: string }): Promise<AwardListItem> => {
+// 保存单个奖项（新增或更新，支持评选标准和周期）
+export const saveAward = async (award: {
+  id?: number
+  name: string
+  description?: string
+  criteria?: string[]
+  cycle?: string
+}): Promise<AwardListItem> => {
   await delay()
   if (award.id !== undefined) {
     // 更新现有奖项
-    const index = mockAwardsList.findIndex(a => a.id === award.id)
-    if (index !== -1) {
+    const existing = mockAwardsList.find(a => a.id === award.id)
+    if (existing) {
       const updated: AwardListItem = {
         id: award.id,
         name: award.name,
-        description: award.description
+        description: award.description,
+        criteria: award.criteria || existing.criteria || [],
+        cycle: award.cycle || existing.cycle || '年度'
       }
+      const index = mockAwardsList.indexOf(existing)
       mockAwardsList[index] = updated
       return updated
     }
@@ -2763,7 +3257,9 @@ export const saveAward = async (award: { id?: number; name: string; description?
   const newAward: AwardListItem = {
     id: Date.now(),
     name: award.name,
-    description: award.description || ''
+    description: award.description || '',
+    criteria: award.criteria || [],
+    cycle: award.cycle || '年度'
   }
   mockAwardsList.push(newAward)
   return newAward
@@ -2961,13 +3457,14 @@ interface AwardRules {
 
 // 登录参数类型
 interface LoginParams {
-  username: string
+  employeeId: string  // 工号（与接口文档一致）
   password: string
 }
 
 // 登录响应类型
 interface LoginResponse {
   token: string
+  expiresIn?: number  // 令牌有效期（秒）
   user: UserProfile
 }
 

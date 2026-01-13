@@ -292,26 +292,14 @@ import {
   Star, ArrowLeft, ArrowRight, InfoFilled, Loading, ArrowDown
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
-import { getTeamAwards, giveFlower, getAwardRules } from '../mock'
+import { getTeamAwards, giveFlower, getAwardRules, getHonorList, type HonorListItem } from '../mock'
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
 type HonorFilterType = 'award' | 'department';
 
-interface HonorItem {
-  id: number;
-  name: string;
-  department: string;
-  avatar: string;
-  awardName: string;
-  awardDate: string;
-  category: 'innovation' | 'efficiency' | 'practice' | 'community';
-  year: string;
-  isMine?: boolean;
-  flowers?: number;
-  hasGivenFlower?: boolean;
-  achievement?: string;
-}
+// 使用 mock API 中定义的 HonorListItem 类型
+type HonorItem = HonorListItem
 
 // --- 配置 ---
 const router = useRouter();
@@ -323,13 +311,33 @@ const viewModes = [
 ];
 const availableViewModes = computed(() => filterScope.value === 'mine' ? [viewModes[0]] : viewModes);
 
-// --- 模拟数据 (HonorList 保持不变) ---
-const honorList = ref<HonorItem[]>([
-  { id: 1, name: '林星辰', department: '架构平台部', avatar: 'https://i.pravatar.cc/150?img=11', awardName: '2026年度 AI 技术突破奖', awardDate: '2026-01-05', category: 'innovation', year: '2026', isMine: true, flowers: 12, hasGivenFlower: false, achievement: '在AI模型优化领域取得重大突破，成功将模型推理速度提升300%。' },
-  { id: 2, name: 'Sarah', department: 'UED 设计中心', avatar: 'https://i.pravatar.cc/150?img=5', awardName: '最佳 AI 辅助设计实践', awardDate: '2025-12-20', category: 'practice', year: '2025', flowers: 15, hasGivenFlower: false, achievement: '创新性地将AI技术应用于设计工作流程。' },
-  { id: 4, name: '张伟', department: '效能工程部', avatar: 'https://i.pravatar.cc/150?img=3', awardName: 'Copilot 效能提升大师', awardDate: '2025-11-15', category: 'efficiency', year: '2025', flowers: 20, hasGivenFlower: true, achievement: '深入研究和应用GitHub Copilot等AI编程工具。' },
-  // ... 你的其他数据
-]);
+// --- 荣誉数据（从 mock API 加载）---
+const honorList = ref<HonorItem[]>([])
+const honorListLoading = ref(false)
+
+// 加载荣誉列表数据
+const loadHonorList = async () => {
+  honorListLoading.value = true
+  try {
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      scope: filterScope.value as 'all' | 'mine',
+      filterType: honorFilterType.value as 'award' | 'department',
+      filterValue: activeSubFilter.value,
+      keyword: searchQuery.value || undefined,
+      view: currentViewMode.value as 'grid' | 'timeline',
+      userName: currentTimelineUserName.value || undefined
+    }
+    const result = await getHonorList(params)
+    honorList.value = result.list
+  } catch (error) {
+    console.error('加载荣誉列表失败:', error)
+    ElMessage.error('加载荣誉列表失败')
+  } finally {
+    honorListLoading.value = false
+  }
+}
 
 // --- 状态 ---
 const awardType = ref<'individual' | 'team'>('individual'); // 默认展示个人风采
@@ -516,6 +524,14 @@ const handleStorageChange = (e: StorageEvent) => {
   }
 };
 
+// 监听筛选条件变化，重新加载荣誉列表
+watch(
+  [filterScope, honorFilterType, activeSubFilter, searchQuery, currentViewMode, currentTimelineUserName, currentPage],
+  () => {
+    loadHonorList()
+  }
+)
+
 onMounted(async () => {
   // 先设置事件监听器（确保能接收到导航栏发送的事件）
   window.addEventListener('awardTypeChange', handleAwardTypeChange);
@@ -527,6 +543,9 @@ onMounted(async () => {
 
   // 初始化加载团队奖项
   teamAwards.value = await loadTeamAwards();
+  
+  // 初始化加载荣誉列表
+  await loadHonorList();
 
   // 通知导航栏当前状态
   notifyNavbarUpdate();
@@ -1494,13 +1513,15 @@ watch(() => route.query.type, (newType) => {
 /* --- 个人奖核心样式（完整版） --- */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr); /* 固定一行三个 */
+  gap: 24px; /* 加大间距 */
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .honor-card-3d {
   position: relative;
-  height: 320px;
+  height: 380px; /* 加大卡片高度 */
   perspective: 1000px;
 
   &.innovation {
@@ -2522,7 +2543,13 @@ watch(() => route.query.type, (newType) => {
   }
 
   .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, 1fr); /* 小屏幕一行两个 */
+  }
+}
+
+@media (max-width: 600px) {
+  .card-grid {
+    grid-template-columns: 1fr; /* 手机端一行一个 */
   }
 }
 
