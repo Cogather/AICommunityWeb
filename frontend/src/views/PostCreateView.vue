@@ -10,7 +10,7 @@
         >
           返回
         </el-button>
-        <h2>发布帖子</h2>
+        <h2>{{ isEditMode ? '编辑帖子' : '发布帖子' }}</h2>
       </div>
 
       <el-form :model="formData" :rules="rules" ref="formRef" label-width="120px">
@@ -211,7 +211,7 @@
             />
             <div class="editor-footer">
               <span class="word-count">字数：{{ wordCount }}</span>
-              <span class="auto-save-status" v-if="lastSaveTime">
+              <span class="auto-save-status" v-if="!isEditMode && lastSaveTime">
                 自动保存于 {{ lastSaveTime }}
               </span>
             </div>
@@ -221,9 +221,9 @@
 
       <!-- 底部操作按钮 -->
       <div class="form-actions">
-        <el-button @click="handleSaveDraft">保存草稿</el-button>
+        <el-button v-if="!isEditMode" @click="handleSaveDraft">保存草稿</el-button>
         <el-button type="primary" @click="handlePublish" :loading="publishing">
-          发布帖子
+          {{ isEditMode ? '更新帖子' : '发布帖子' }}
         </el-button>
       </div>
     </div>
@@ -298,6 +298,28 @@ const formData = ref({
   content: ''
 })
 
+// 清空表单数据
+const resetFormData = () => {
+  formData.value = {
+    zone: '',
+    toolId: null,
+    title: '',
+    summary: '',
+    tags: [],
+    cover: '',
+    content: ''
+  }
+  presetTags.value = []
+  lastSaveTime.value = ''
+  if (editorRef.value) {
+    editorRef.value.setHtml('')
+  }
+  updateWordCount()
+  if (formRef.value) {
+    formRef.value.clearValidate()
+  }
+}
+
 // 工具列表（AI工具专区）- 从API加载
 const loadTools = async () => {
   try {
@@ -315,12 +337,13 @@ const loadTools = async () => {
       { id: 1, name: 'TestMate' },
       { id: 2, name: 'CodeMate' },
       { id: 3, name: '云集' },
-    { id: 4, name: '云见' },
-    { id: 5, name: '扶摇' },
-    { id: 6, name: '纠错Agent' },
-    { id: 7, name: 'DT' },
-    { id: -1, name: '其他' }
-  ]
+      { id: 4, name: '云见' },
+      { id: 5, name: '扶摇' },
+      { id: 6, name: '纠错Agent' },
+      { id: 7, name: 'DT' },
+      { id: -1, name: '其他' }
+    ]
+  }
 }
 
 const tools = ref<Array<{ id: number; name: string }>>([])
@@ -800,8 +823,13 @@ const handleSelectRecommendedCover = (coverUrl: string) => {
   ElMessage.success('已选择推荐封面')
 }
 
-// 自动保存草稿
+// 自动保存草稿（仅在新建模式下）
 const handleAutoSave = () => {
+  // 编辑模式下不保存草稿
+  if (isEditMode.value) {
+    return
+  }
+  
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
   }
@@ -819,8 +847,13 @@ const handleAutoSave = () => {
   }, 2000) // 2秒后自动保存
 }
 
-// 手动保存草稿
+// 手动保存草稿（仅在新建模式下）
 const handleSaveDraft = () => {
+  // 编辑模式下不保存草稿
+  if (isEditMode.value) {
+    return
+  }
+  
   const draft = {
     ...formData.value,
     savedAt: new Date().toISOString()
@@ -890,8 +923,10 @@ const handlePublish = async () => {
         ElMessage.success('帖子发布成功')
       }
 
-      // 清除草稿
-      localStorage.removeItem('post_draft')
+      // 清除草稿（仅在新建模式下）
+      if (!isEditMode.value) {
+        localStorage.removeItem('post_draft')
+      }
     } catch (error: any) {
       console.error('发布失败:', error)
       ElMessage.error(error.message || '发布失败，请稍后重试')
@@ -1053,9 +1088,47 @@ const hasUnsavedContent = computed(() => {
          (formData.value.content && formData.value.content !== '<p><br></p>')
 })
 
-// 路由离开前确认（草稿会自动保存，这里只提示用户）
+// 路由离开前确认
 onBeforeRouteLeave((to, from, next) => {
-  if (hasUnsavedContent.value) {
+  // 如果是编辑模式，跳转到新建页面时询问（无论是否有未保存内容）
+  if (isEditMode.value && to.path === '/post/create' && !to.query.edit) {
+    ElMessageBox.confirm(
+      '确定要离开编辑页面，创建新帖子吗？',
+      '提示',
+      {
+        confirmButtonText: '确定离开',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    ).then(() => {
+      // 确认离开，跳转到新建页面时会自动清空内容（通过 watch 监听）
+      next()
+    }).catch(() => {
+      next(false)
+    })
+    return
+  }
+  
+  // 编辑模式下，离开到其他页面时，如果有未保存内容，提示用户
+  if (isEditMode.value && hasUnsavedContent.value && to.path !== '/post/create') {
+    ElMessageBox.confirm(
+      '您有未保存的修改，确定要离开吗？',
+      '提示',
+      {
+        confirmButtonText: '确定离开',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    ).then(() => {
+      next()
+    }).catch(() => {
+      next(false)
+    })
+    return
+  }
+  
+  // 新建模式下，如果有未保存内容，提示用户（草稿已自动保存）
+  if (!isEditMode.value && hasUnsavedContent.value) {
     ElMessageBox.confirm(
       '您有未保存的内容，草稿已自动保存。确定要离开吗？',
       '提示',
@@ -1111,6 +1184,34 @@ const loadPostForEdit = async () => {
   }
 }
 
+// 监听路由变化，处理编辑模式和新建模式的切换
+watch(() => [route.query.edit, route.query.id], ([newEdit, newId], [oldEdit, oldId]) => {
+  // 跳过首次加载（oldEdit 和 oldId 都是 undefined）
+  if (oldEdit === undefined && oldId === undefined) {
+    return
+  }
+  
+  // 如果从编辑模式切换到新建模式，清空所有内容并检查草稿
+  if (oldEdit === 'true' && (newEdit !== 'true' || !newEdit)) {
+    resetFormData()
+    // 延迟检查草稿，确保编辑器已创建
+    nextTick(() => {
+      setTimeout(() => {
+        checkAndLoadDraft()
+      }, 500)
+    })
+  }
+  // 如果从新建模式切换到编辑模式，清空内容并加载帖子
+  else if ((oldEdit !== 'true' || !oldEdit) && newEdit === 'true' && newId) {
+    resetFormData()
+    nextTick(() => {
+      setTimeout(() => {
+        loadPostForEdit()
+      }, 500)
+    })
+  }
+}, { immediate: false })
+
 onMounted(async () => {
   // 加载工具列表
   tools.value = await loadTools()
@@ -1120,15 +1221,17 @@ onMounted(async () => {
   // 监听配置更新
   window.addEventListener('adminConfigUpdated', handleConfigUpdate)
   
-  // 如果是编辑模式，加载帖子数据
+  // 如果是编辑模式，先清空内容，然后加载帖子数据（不检查草稿）
   if (isEditMode.value) {
+    resetFormData()
     nextTick(() => {
       setTimeout(() => {
         loadPostForEdit()
       }, 500)
     })
   } else {
-    // 延迟检查草稿，确保编辑器已创建
+    // 新建模式：先清空内容，然后检查草稿
+    resetFormData()
     nextTick(() => {
       // 等待编辑器完全初始化后再检查草稿
       setTimeout(() => {
