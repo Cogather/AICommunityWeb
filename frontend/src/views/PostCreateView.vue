@@ -236,8 +236,36 @@ import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { createPost, updatePost, getRecommendedCovers, getTools, getPostDetail, saveDraft } from '../mock'
 
-// 内存中的草稿存储
-let memoryDraft: any = null
+// localStorage 草稿存储 key
+const DRAFT_STORAGE_KEY = 'post_draft'
+
+// 获取存储的草稿
+const getStoredDraft = (): any => {
+  try {
+    const stored = localStorage.getItem(DRAFT_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
+// 保存草稿到 localStorage
+const setStoredDraft = (draft: any) => {
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
+  } catch (e) {
+    console.error('保存草稿到localStorage失败:', e)
+  }
+}
+
+// 清除存储的草稿
+const clearStoredDraft = () => {
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY)
+  } catch (e) {
+    console.error('清除草稿失败:', e)
+  }
+}
 import type { InputInstance } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
@@ -867,7 +895,7 @@ const handleAutoSave = () => {
       ...formData.value,
       savedAt: new Date().toISOString()
     }
-    memoryDraft = draft
+    setStoredDraft(draft)
     // 也调用mock API保存草稿
     try {
       await saveDraft(draft)
@@ -893,7 +921,7 @@ const handleSaveDraft = async () => {
     ...formData.value,
     savedAt: new Date().toISOString()
   }
-  memoryDraft = draft
+  setStoredDraft(draft)
   // 也调用mock API保存草稿
   try {
     await saveDraft(draft)
@@ -912,6 +940,8 @@ const handleSaveDraft = async () => {
 const handlePublish = async () => {
   if (!formRef.value) return
 
+  let result: any = null
+  
   try {
     // 如果选择了AI工具专区，确保工具已选择
     if (formData.value.zone === 'tools' && (formData.value.toolId === null || formData.value.toolId === undefined)) {
@@ -940,7 +970,7 @@ const handlePublish = async () => {
       const postId = route.query.id ? Number(route.query.id) : null
       if (postId && route.query.edit === 'true') {
         // 更新帖子
-        await updatePost(postId, {
+        result = await updatePost(postId, {
           title: formData.value.title,
           summary: formData.value.summary,
           content: formData.value.content,
@@ -952,7 +982,7 @@ const handlePublish = async () => {
         ElMessage.success('帖子更新成功')
       } else {
         // 创建帖子
-        await createPost({
+        result = await createPost({
           title: formData.value.title,
           summary: formData.value.summary,
           content: formData.value.content,
@@ -966,7 +996,7 @@ const handlePublish = async () => {
 
       // 清除草稿（仅在新建模式下）
       if (!isEditMode.value) {
-        memoryDraft = null
+        clearStoredDraft()
       }
     } catch (error: any) {
       console.error('发布失败:', error)
@@ -977,22 +1007,24 @@ const handlePublish = async () => {
     
     publishing.value = false
     
+    // 获取新创建的帖子ID（编辑模式下使用原ID，新建模式下使用返回的ID）
+    const newPostId = isEditMode.value ? route.query.id : (result as any)?.id
+    
     // 发布成功后询问用户
-    ElMessageBox.confirm(
-      '帖子发布成功！',
-      '提示',
-      {
-        confirmButtonText: '返回上一页',
-        cancelButtonText: '留在当前页',
-        type: 'success',
-        distinguishCancelAndClose: true
-      }
-    ).then(() => {
-      // 用户选择返回上一页
-      if (window.history.length > 1) {
-        router.back()
+    ElMessageBox({
+      title: '提示',
+      message: '帖子发布成功！',
+      type: 'success',
+      showCancelButton: true,
+      confirmButtonText: '查看帖子',
+      cancelButtonText: '返回上一页',
+      distinguishCancelAndClose: true
+    }).then(() => {
+      // 用户选择查看帖子
+      if (newPostId) {
+        router.push(`/post/${newPostId}`)
       } else {
-        // 如果没有历史记录，跳转到对应专区
+        // 如果没有帖子ID，跳转到对应专区
         const routeMap: Record<string, string> = {
           practices: '/practices',
           tools: '/tools',
@@ -1002,26 +1034,38 @@ const handlePublish = async () => {
         router.push(routeMap[formData.value.zone] || '/practices')
       }
     }).catch((action) => {
-      // 用户选择留在当前页，清空表单
       if (action === 'cancel') {
-        // 清空表单
-        formData.value = {
-          zone: 'practices',
-          toolId: null,
-          title: '',
-          summary: '',
-          tags: [],
-          cover: '',
-          content: ''
+        // 用户选择返回上一页
+        if (window.history.length > 2) {
+          router.back()
+        } else {
+          // 如果没有足够的历史记录，跳转到对应专区
+          const routeMap: Record<string, string> = {
+            practices: '/practices',
+            tools: '/tools',
+            agent: '/agent',
+            empowerment: '/empowerment'
+          }
+          router.push(routeMap[formData.value.zone] || '/practices')
         }
-        if (editorRef.value) {
-          editorRef.value.setHtml('')
-        }
-        updateWordCount()
-        // 清除表单验证状态
-        if (formRef.value) {
-          formRef.value.clearValidate()
-        }
+      }
+      // 用户关闭对话框，留在当前页，清空表单准备继续发帖
+      formData.value = {
+        zone: 'practices',
+        toolId: null,
+        title: '',
+        summary: '',
+        tags: [],
+        cover: '',
+        content: ''
+      }
+      if (editorRef.value) {
+        editorRef.value.setHtml('')
+      }
+      updateWordCount()
+      // 清除表单验证状态
+      if (formRef.value) {
+        formRef.value.clearValidate()
       }
     })
   } catch (error) {
@@ -1033,14 +1077,14 @@ const handlePublish = async () => {
 
 // 检查并加载草稿
 const checkAndLoadDraft = () => {
-  // 从内存草稿中读取
-  if (memoryDraft) {
+  // 从 localStorage 中读取草稿
+  const storedDraft = getStoredDraft()
+  if (storedDraft) {
     try {
-      const draft = memoryDraft
       // 检查草稿是否有内容
-      const hasDraftContent = draft.title || 
-                              draft.summary || 
-                              (draft.content && draft.content !== '<p><br></p>')
+      const hasDraftContent = storedDraft.title || 
+                              storedDraft.summary || 
+                              (storedDraft.content && storedDraft.content !== '<p><br></p>')
       
       if (hasDraftContent) {
         // 询问用户是否继续编辑草稿
@@ -1055,12 +1099,12 @@ const checkAndLoadDraft = () => {
           }
         ).then(() => {
           // 用户选择继续编辑
-          loadDraft(draft)
+          loadDraft(storedDraft)
         }).catch((action) => {
           // 用户选择重新开始
           if (action === 'cancel') {
             // 清除草稿
-            memoryDraft = null
+            clearStoredDraft()
             // 清空表单
             formData.value = {
               zone: 'practices',
@@ -1087,7 +1131,7 @@ const checkAndLoadDraft = () => {
     } catch (error) {
       console.error('检查草稿失败:', error)
       // 如果解析失败，清除无效的草稿
-      memoryDraft = null
+      clearStoredDraft()
     }
   }
 }
@@ -1096,9 +1140,10 @@ const checkAndLoadDraft = () => {
 const loadDraft = (draft?: any) => {
   let draftData = draft
   if (!draftData) {
-    // 从内存草稿读取
-    if (!memoryDraft) return
-    draftData = memoryDraft
+    // 从 localStorage 读取草稿
+    const storedDraft = getStoredDraft()
+    if (!storedDraft) return
+    draftData = storedDraft
   }
   
   formData.value = { ...draftData }
