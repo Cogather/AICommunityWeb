@@ -33,11 +33,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/EmpowermentView.vue')
   },
   {
-    path: '/award-rules',
-    name: 'AwardRules',
-    component: () => import('../views/AwardRulesView.vue')
-  },
-  {
     path: '/news',
     name: 'News',
     component: () => import('../views/NewsView.vue')

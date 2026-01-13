@@ -3454,22 +3454,6 @@ export const getAwardsList = async (_category?: string): Promise<{ list: AwardLi
   return { list: mockAwardsList }
 }
 
-// 获取奖项规则说明（直接从管理后台的奖项设置中读取）
-// 注意：AwardRuleDetail 类型与 AwardListItem 相同，直接复用
-export type AwardRuleDetail = AwardListItem
-
-export const getAwardRules = async (): Promise<{
-  list: AwardListItem[]
-  updateTime: string
-}> => {
-  await delay()
-  // 直接返回管理后台设置的奖项列表
-  return {
-    list: mockAwardsList,
-    updateTime: new Date().toISOString()
-  }
-}
-
 // 保存单个奖项（新增或更新，支持评选标准和周期）
 export const saveAward = async (award: {
   id?: number
@@ -3712,13 +3696,6 @@ interface Contributor {
   likesCount: number
 }
 
-// 奖项规则类型
-interface AwardRules {
-  awardId: number
-  awardName: string
-  rules: string
-}
-
 // 登录参数类型
 interface LoginParams {
   employeeId: string  // 工号（与接口文档一致）
@@ -3829,11 +3806,6 @@ export const getTopContributors = async (params?: PaginationParams): Promise<{ l
     .sort((a, b) => b.postsCount - a.postsCount)
     .slice(0, pageSize)
   return { list: sortedList }
-}
-
-export const getAwardRulesById = async (id: number): Promise<AwardRules> => {
-  await delay()
-  return { awardId: id, awardName: '奖项名称', rules: '奖项规则' }
 }
 
 export const login = async (_data: LoginParams): Promise<LoginResponse> => {

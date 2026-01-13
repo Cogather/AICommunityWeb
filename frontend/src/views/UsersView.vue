@@ -171,7 +171,7 @@
                   <div class="user-info"><div class="user-name">{{ item.name }}</div><div class="dept-badge">{{ item.department }}</div></div>
                   <div class="year-ribbon"><span>{{ item.year }}</span></div>
                 </div>
-                <div class="award-center"><h3 class="award-name" @click.stop="handleAwardClick(item.awardName)">{{ item.awardName }}</h3><el-tooltip v-if="item.achievement" :content="item.achievement" placement="top" effect="dark" :show-after="300"><div class="achievement-text">{{ item.achievement }}</div></el-tooltip></div>
+                <div class="award-center"><h3 class="award-name">{{ item.awardName }}</h3><el-tooltip v-if="item.achievement" :content="item.achievement" placement="top" effect="dark" :show-after="300"><div class="achievement-text">{{ item.achievement }}</div></el-tooltip></div>
                 <div class="card-bottom">
                   <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
                   <button
@@ -216,7 +216,7 @@
                 <div class="t-node"></div>
                 <div class="t-card glass-panel" :class="item.category">
                   <div class="t-avatar" @click.stop="handleUserClick(item.name)"><el-avatar :size="40" :src="item.avatar" /></div>
-                  <div class="t-info"><div class="t-title" @click.stop="handleAwardClick(item.awardName)">{{ item.awardName }}</div><div class="t-meta">{{ item.name }} · {{ item.awardDate }}</div></div>
+                  <div class="t-info"><div class="t-title">{{ item.awardName }}</div><div class="t-meta">{{ item.name }} · {{ item.awardDate }}</div></div>
                 </div>
               </div>
             </div>
@@ -235,50 +235,8 @@
             <div v-for="(user, index) in leaderboardData" :key="user.name" class="rank-row" :class="getRankClass(index)"><div class="rank-badge"><span v-if="index > 2">{{ index + 1 }}</span><el-icon v-else><Medal /></el-icon></div><el-avatar :size="44" :src="user.avatar" class="rank-avatar" @click.stop="handleUserClick(user.name)" /><div class="rank-details"><div class="r-name">{{ user.name }}</div><div class="r-dept">{{ user.department }}</div></div><div class="rank-stat"><div class="stat-row"><span class="num">{{ user.count }}</span><span class="unit">勋章</span></div><div class="stat-row"><FlowerIcon :filled="true" :size="14" color="#f472b6" /><span class="num flowers">{{ user.totalFlowers }}</span></div></div></div>
           </div>
         </div>
-        
-        <!-- 评奖规则按钮 -->
-        <div class="award-rules-btn-wrapper">
-          <el-button 
-            type="primary" 
-            class="award-rules-btn"
-            @click="showAwardRulesDialog = true"
-          >
-            <el-icon><InfoFilled /></el-icon>
-            评奖规则说明
-          </el-button>
-        </div>
       </div>
     </div>
-    
-    <!-- 评奖规则对话框 -->
-    <el-dialog
-      v-model="showAwardRulesDialog"
-      title="评奖规则说明"
-      width="680px"
-      class="award-rules-dialog"
-    >
-      <div v-if="loadingAwardRules" class="loading-wrapper">
-        <el-icon class="is-loading"><Loading /></el-icon>
-        <span>加载中...</span>
-      </div>
-      <div v-else class="award-rules-content">
-        <div v-if="awardRulesList.length === 0" class="empty-rules">
-          <el-empty description="暂无奖项规则说明" />
-        </div>
-        <div v-else class="rules-list">
-          <div v-for="award in awardRulesList" :key="award.id" class="rule-item">
-            <div class="rule-title">
-              <el-icon><Trophy /></el-icon>
-              <span>{{ award.name }}</span>
-            </div>
-            <div class="rule-description" v-html="award.description || '暂无描述'"></div>
-          </div>
-        </div>
-      </div>
-      <div v-if="awardRulesUpdateTime" class="update-time">
-        最后更新：{{ formatDateTime(awardRulesUpdateTime) }}
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -289,10 +247,10 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
   Grid, Timer, Trophy, OfficeBuilding, TrendCharts, Medal,
-  Star, ArrowLeft, ArrowRight, InfoFilled, Loading, ArrowDown
+  Star, ArrowLeft, ArrowRight, ArrowDown
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
-import { getTeamAwards, giveFlower, getAwardRules, getHonorList, type HonorListItem } from '../mock'
+import { getTeamAwards, giveFlower, getHonorList, type HonorListItem } from '../mock'
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
@@ -587,53 +545,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange);
 });
 
-// --- 评奖规则说明 ---
-interface AwardRule {
-  id: number;
-  name: string;
-  description: string;
-}
-
-const showAwardRulesDialog = ref(false);
-const loadingAwardRules = ref(false);
-const awardRulesList = ref<AwardRule[]>([]);
-const awardRulesUpdateTime = ref('');
-
-// 加载评奖规则
-const loadAwardRulesContent = async () => {
-  loadingAwardRules.value = true;
-  try {
-    const result = await getAwardRules();
-    awardRulesList.value = result.list;
-    awardRulesUpdateTime.value = result.updateTime;
-  } catch (error) {
-    console.error('加载评奖规则失败:', error);
-    awardRulesList.value = [];
-  } finally {
-    loadingAwardRules.value = false;
-  }
-};
-
-// 格式化日期时间
-const formatDateTime = (dateStr: string) => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
-// 监听对话框打开，加载规则内容
-watch(showAwardRulesDialog, (newVal) => {
-  if (newVal && awardRulesList.value.length === 0) {
-    loadAwardRulesContent();
-  }
-});
-
 const teamAwardYears = computed(() => {
   // 保持由近到远 (倒序)
   return Array.from(new Set(teamAwards.value.map(a => String(a.year || new Date().getFullYear())))).sort((a, b) => Number(b) - Number(a));
@@ -703,7 +614,7 @@ const leaderboardData = computed(() => {
       user.totalFlowers += item.flowers || 0;
     }
   });
-  return Array.from(map.values()).sort((a, b) => b.count - a.count || b.totalFlowers - a.totalFlowers);
+  return Array.from(map.values()).sort((a, b) => b.count - a.count || b.totalFlowers - a.totalFlowers).slice(0, 10);
 });
 
 const allDepartments = computed(() => ['全部', ...Array.from(new Set(honorList.value.map(i => i.department)))]);
@@ -753,7 +664,6 @@ onMounted(() => nextTick(() => setTimeout(updateScrollButtons, 200)));
 const getRankClass = (idx: number) => ['rank-1', 'rank-2', 'rank-3'][idx] || 'rank-normal';
 const switchMode = (mode: string) => { currentViewMode.value = mode as ViewMode; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; searchQuery.value = ''; router.replace({ path: '/users' }); };
 const handleUserClick = (name: string) => { if (currentViewMode.value === 'grid') router.push({ path: '/users', query: { view: 'timeline', user: name } }); else { currentTimelineUserName.value = name; router.replace({ path: '/users', query: { view: 'timeline', user: name } }); } };
-const handleAwardClick = (name: string) => router.push({ path: '/award-rules', query: { award: name } });
 const formatAwardDate = (d: string) => { const dt = new Date(d); return `${dt.getFullYear()}年${String(dt.getMonth()+1).padStart(2,'0')}月`; };
 const handleGiveFlower = async (item: HonorItem) => {
   if (item.hasGivenFlower) {
@@ -2551,135 +2461,5 @@ watch(() => route.query.type, (newType) => {
   .card-grid {
     grid-template-columns: 1fr; /* 手机端一行一个 */
   }
-}
-
-/* 评奖规则按钮样式 */
-.award-rules-btn-wrapper {
-  margin-top: 20px;
-  padding: 0 12px;
-}
-
-.award-rules-btn {
-  width: 100%;
-  height: 48px;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border: none;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-  transition: all 0.3s ease;
-}
-
-.award-rules-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
-}
-
-/* 评奖规则对话框样式 */
-:deep(.award-rules-dialog) {
-  .el-dialog__header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #e5e7eb;
-    margin-right: 0;
-  }
-  
-  .el-dialog__title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
-  }
-  
-  .el-dialog__body {
-    padding: 24px;
-    max-height: 60vh;
-    overflow-y: auto;
-  }
-}
-
-.loading-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 40px;
-  color: #6b7280;
-}
-
-.loading-wrapper .el-icon {
-  font-size: 32px;
-  color: #6366f1;
-}
-
-.award-rules-content {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #374151;
-  
-  .empty-rules {
-    padding: 20px 0;
-  }
-  
-  .rules-list {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .rule-item {
-    padding: 16px 20px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    
-    &:hover {
-      border-color: #6366f1;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
-    }
-  }
-  
-  .rule-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 12px;
-    
-    .el-icon {
-      color: #f59e0b;
-      font-size: 20px;
-    }
-  }
-  
-  .rule-description {
-    color: #4b5563;
-    font-size: 14px;
-    line-height: 1.7;
-    
-    p {
-      margin: 8px 0;
-    }
-    
-    ul, ol {
-      margin: 8px 0;
-      padding-left: 20px;
-    }
-    
-    li {
-      margin: 4px 0;
-    }
-  }
-}
-
-.update-time {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-  font-size: 13px;
-  color: #9ca3af;
-  text-align: right;
 }
 </style>
