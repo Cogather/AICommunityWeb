@@ -999,10 +999,11 @@ watch(() => route.query.type, (newType) => {
 .team-award-images-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* 一行3个 */
-  gap: 24px;
-  max-width: 1200px;
+  gap: 28px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 20px 40px;
+  padding: 20px 24px;
+  align-items: start; /* 让每个卡片独立高度，不拉伸 */
 }
 
 .team-award-image-card {
@@ -1013,7 +1014,7 @@ watch(() => route.query.type, (newType) => {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: all 0.3s ease, margin-bottom 0.3s ease;
   margin-bottom: 20px;
   cursor: pointer;
 
@@ -1023,6 +1024,7 @@ watch(() => route.query.type, (newType) => {
   }
   
   &.is-expanded {
+    margin-bottom: 200px; /* 展开时为抽屉留出空间 */
     box-shadow: 0 12px 32px rgba(99, 102, 241, 0.2);
     border-color: rgba(99, 102, 241, 0.3);
   }
