@@ -154,6 +154,7 @@
           <div
             v-for="comment in comments"
             :key="comment.id"
+            :id="`comment-${comment.id}`"
             class="comment-item"
           >
             <div class="comment-main">
@@ -238,6 +239,7 @@
                   <div
                     v-for="reply in comment.replies"
                     :key="reply.id"
+                    :id="`reply-${reply.id}`"
                     class="reply-item-flat"
                   >
                     <div class="avatar-wrapper-small">
@@ -958,6 +960,26 @@ const handleDeleteReply = (comment: any, reply: any) => {
   })
 }
 
+// 滚动到锚点位置（用于消息中心跳转定位到具体评论/回复）
+const scrollToAnchor = () => {
+  const hash = route.hash
+  if (hash) {
+    // 延迟执行，确保DOM已渲染
+    setTimeout(() => {
+      const element = document.querySelector(hash)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // 添加高亮效果
+        element.classList.add('highlight-anchor')
+        // 3秒后移除高亮
+        setTimeout(() => {
+          element.classList.remove('highlight-anchor')
+        }, 3000)
+      }
+    }, 300)
+  }
+}
+
 // 初始化
 onMounted(async () => {
   // 记录来源导航页面（用于返回按钮）
@@ -980,6 +1002,8 @@ onMounted(async () => {
   if (postData.value.id) {
     await loadComments()
     checkIfCollected() // 检查收藏状态
+    // 滚动到锚点位置（如果有）
+    scrollToAnchor()
   }
 })
 </script>
@@ -1596,6 +1620,23 @@ onMounted(async () => {
 
   .post-actions {
     flex-wrap: wrap;
+  }
+}
+
+/* 消息中心跳转高亮样式 */
+.highlight-anchor {
+  animation: highlightFade 3s ease-out;
+  border-radius: 8px;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: rgba(64, 158, 255, 0.3);
+    box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
   }
 }
 </style>

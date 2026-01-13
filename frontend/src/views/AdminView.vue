@@ -1143,6 +1143,7 @@ import {
   getOtherToolsFeaturedPostsConfig,
   type CarouselItem as AdminCarouselItem
 } from '../mock'
+import { sendAwardNotificationMessage } from '../utils/message'
 
 const _router = useRouter()
 
@@ -2308,9 +2309,19 @@ const handleConfirmSetAward = async () => {
       recommendedWinnersList.value[userIndex].honorId = honorId
     }
 
+    // 发送奖项通知消息给获奖者
+    sendAwardNotificationMessage(
+      currentAwardUser.value.id,           // 获奖者用户ID
+      currentAwardUser.value.name,         // 获奖者姓名
+      awardForm.value.awardId!,            // 奖项ID
+      selectedAward.name,                  // 奖项名称
+      awardForm.value.category,            // 奖项分类
+      awardForm.value.awardDate            // 获奖时间
+    )
+
     settingAward.value = false
     showSetAwardDialog.value = false
-    ElMessage.success('评奖设置成功')
+    ElMessage.success('评奖设置成功，已通知获奖者')
   } catch (error) {
     console.error('设置评奖失败:', error)
     settingAward.value = false

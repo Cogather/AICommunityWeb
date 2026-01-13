@@ -365,13 +365,14 @@ const resetFormData = () => {
 // 工具列表（AI工具专区）- 从API加载
 const loadTools = async () => {
   try {
-    const toolsList = await getTools()
-    const tools = toolsList.map((item: any) => ({
+    const response = await getTools()
+    // getTools() 返回 { list: ToolItem[] }，需要使用 response.list
+    const tools = (response.list || []).map((item: any) => ({
       id: item.id,
       name: item.name
     }))
-    // 添加"其他"选项
-    tools.push({ id: -1, name: '其他' })
+    // 添加"其他工具"选项（toolId=0）
+    tools.push({ id: 0, name: '其他工具' })
     return tools
   } catch (e) {
     console.error('加载工具配置失败:', e)
@@ -383,7 +384,7 @@ const loadTools = async () => {
       { id: 5, name: '扶摇' },
       { id: 6, name: '纠错Agent' },
       { id: 7, name: 'DT' },
-      { id: -1, name: '其他' }
+      { id: 0, name: '其他工具' }
     ]
   }
 }

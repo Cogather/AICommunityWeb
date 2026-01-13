@@ -79,13 +79,17 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import {
-  markAllMessagesAsRead,
-  deleteMessage,
-  getUnreadMessageCount,
-  getCurrentUser,
+  getCurrentUser
+} from '../mock'
+import {
+  getUserMessages,
+  markMessageAsRead as markAsRead,
+  markAllMessagesAsRead as markAllRead,
+  deleteMessage as removeMessage,
+  getUnreadMessageCount as getUnreadCount,
   MessageType,
   type Message
-} from '../mock'
+} from '../utils/message'
 
 const router = useRouter()
 const loading = ref(false)
@@ -113,8 +117,7 @@ const computedUnreadCount = computed(() => {
 // 加载未读消息数量
 const loadUnreadCount = async () => {
   try {
-    const result = await getUnreadMessageCount()
-    unreadCount.value = result.count
+    unreadCount.value = getUnreadCount(currentUserId.value)
   } catch (error) {
     console.error('加载未读消息数量失败:', error)
     // 如果API失败，使用本地计算
@@ -232,13 +235,34 @@ const handleMessageClick = async (message: Message) => {
     router.push(message.link)
   } else if (message.type === MessageType.ACTIVITY_REGISTRATION) {
     // 活动报名消息，跳转到活动详情
-    router.push(`/activity/${message.id}`)
-  } else if (message.type === MessageType.POST_COMMENT || message.type === MessageType.COMMENT_REPLY) {
-    // 评论相关消息，跳转到帖子详情
-    router.push(`/post/${message.id}`)
+    router.push(`/activity/${message.relatedId || message.id}`)
+  } else if (message.type === MessageType.POST_COMMENT) {
+    // 帖子评论通知，跳转到帖子详情并定位到具体评论
+    const postId = message.relatedId || message.id
+    const commentId = (message as any).commentId
+    if (commentId) {
+      router.push(`/post/${postId}#comment-${commentId}`)
+    } else {
+      router.push(`/post/${postId}`)
+    }
+  } else if (message.type === MessageType.COMMENT_REPLY) {
+    // 评论回复通知，跳转到帖子详情并定位到具体回复
+    const postId = message.relatedId || message.id
+    const commentId = (message as any).commentId
+    const replyId = (message as any).replyId
+    if (replyId) {
+      router.push(`/post/${postId}#reply-${replyId}`)
+    } else if (commentId) {
+      router.push(`/post/${postId}#comment-${commentId}`)
+    } else {
+      router.push(`/post/${postId}`)
+    }
   } else if (message.type === MessageType.POST_LIKE) {
     // 点赞消息，跳转到帖子详情
-    router.push(`/post/${message.id}`)
+    router.push(`/post/${message.relatedId || message.id}`)
+  } else if (message.type === MessageType.AWARD_NOTIFICATION) {
+    // 奖项通知，跳转到个人荣誉页面
+    router.push('/profile?tab=honors')
   }
 }
 
@@ -248,10 +272,21 @@ const handleTabChange = () => {
   loadMessages()
 }
 
+// 标记单条消息为已读
+const handleMarkAsRead = async (message: Message) => {
+  try {
+    markAsRead(currentUserId.value, message.id)
+    message.read = true
+    unreadCount.value = Math.max(0, unreadCount.value - 1)
+  } catch (error: any) {
+    console.error('标记为已读失败:', error)
+  }
+}
+
 // 标记全部为已读
 const handleMarkAllRead = async () => {
   try {
-    await markAllMessagesAsRead()
+    markAllRead(currentUserId.value)
     messages.value.forEach(msg => {
       msg.read = true
     })
@@ -266,11 +301,11 @@ const handleMarkAllRead = async () => {
 // 删除消息
 const handleDeleteMessage = async (messageId: number) => {
   try {
-    await deleteMessage(messageId)
     const message = messages.value.find(msg => msg.id === messageId)
     if (message && !message.read) {
       unreadCount.value = Math.max(0, unreadCount.value - 1)
     }
+    removeMessage(currentUserId.value, messageId)
     messages.value = messages.value.filter(msg => msg.id !== messageId)
     ElMessage.success('消息已删除')
   } catch (error: any) {

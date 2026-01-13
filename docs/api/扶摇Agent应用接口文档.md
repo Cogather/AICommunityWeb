@@ -588,16 +588,18 @@ PUT /api/agent/featured-post
 
 | 接口 | 路径 | 说明 |
 |-----|------|------|
+| 获取工具列表 | `GET /api/tools` | 获取所有工具信息（发布活动时选择工具） |
 | 检查Owner权限 | `GET /api/tools/{toolId}/check-owner` | 统一权限检查 |
 | 获取帖子列表 | `GET /api/tools/posts` | 统一帖子列表接口 |
 | 获取标签统计 | `GET /api/tools/{toolId}/tags` | 统一标签统计接口 |
 | 获取活动列表 | `GET /api/tools/activities` | 统一活动列表接口 |
 | 发布活动 | `POST /api/tools/activities` | 统一发布活动接口 |
 | 获取活动详情 | `GET /api/tools/activities/{activityId}` | 获取单个活动详情 |
-| 报名活动 | `POST /api/tools/activities/{activityId}/join` | 用户报名活动 |
-| 取消报名 | `DELETE /api/tools/activities/{activityId}/join` | 用户取消报名 |
 | 编辑活动 | `PUT /api/tools/activities/{activityId}` | Owner/管理员编辑活动 |
 | 删除活动 | `DELETE /api/tools/activities/{activityId}` | Owner/管理员删除活动 |
+| 报名活动 | `POST /api/tools/activities/{activityId}/join` | 用户报名活动 |
+| 取消报名 | `DELETE /api/tools/activities/{activityId}/join` | 用户取消报名 |
+| 获取报名列表 | `GET /api/tools/activities/{activityId}/registrations` | 获取活动报名用户列表 |
 
 ### 专有接口差异
 

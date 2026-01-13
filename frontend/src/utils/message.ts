@@ -16,10 +16,13 @@ export interface Message {
   userId: number // 接收消息的用户ID
   relatedId?: number // 相关ID（如帖子ID、活动ID等）
   relatedType?: string // 相关类型（如'post', 'activity', 'comment'等）
+  commentId?: number // 评论ID（用于定位到具体评论，POST_COMMENT和COMMENT_REPLY类型使用）
+  replyId?: number // 回复ID（用于定位到具体回复，COMMENT_REPLY类型使用）
   fromUserId?: number // 发送消息的用户ID
   fromUserName?: string // 发送消息的用户名
   read: boolean
   createdAt: string
+  link?: string // 自定义跳转链接（可选）
 }
 
 // 内存中的消息存储（替代localStorage）
@@ -34,8 +37,9 @@ const initMockMessages = (userId: number): Message[] => {
       title: '帖子评论通知',
       content: '张三 评论了您的帖子《AI技术实践分享》',
       userId: userId,
-      relatedId: 1,
+      relatedId: 1,           // 帖子ID
       relatedType: 'post',
+      commentId: 101,         // 评论ID，用于定位到具体评论
       fromUserId: 2,
       fromUserName: '张三',
       read: false,
@@ -47,7 +51,7 @@ const initMockMessages = (userId: number): Message[] => {
       title: '活动报名通知',
       content: '李四 报名参加了您发布的活动《扶摇Agent新手入门培训》',
       userId: userId,
-      relatedId: 1,
+      relatedId: 1,           // 活动ID
       relatedType: 'activity',
       fromUserId: 3,
       fromUserName: '李四',
@@ -60,7 +64,7 @@ const initMockMessages = (userId: number): Message[] => {
       title: '点赞通知',
       content: '王五 赞了您的帖子《使用扶摇Agent实现智能代码生成》',
       userId: userId,
-      relatedId: 101,
+      relatedId: 101,         // 帖子ID
       relatedType: 'post',
       fromUserId: 4,
       fromUserName: '王五',
@@ -73,8 +77,10 @@ const initMockMessages = (userId: number): Message[] => {
       title: '回复通知',
       content: '赵六 回复了您的评论',
       userId: userId,
-      relatedId: 1,
-      relatedType: 'comment',
+      relatedId: 1,           // 帖子ID
+      relatedType: 'post',    // 修改为 'post'，因为跳转目标是帖子详情页
+      commentId: 101,         // 评论ID
+      replyId: 1001,          // 回复ID，用于定位到具体回复
       fromUserId: 5,
       fromUserName: '赵六',
       read: true,
@@ -163,6 +169,100 @@ export const sendActivityRegistrationMessage = (
     relatedType: 'activity',
     fromUserId: registrantId,
     fromUserName: registrantName
+  })
+}
+
+// 发送奖项通知消息（管理平台录入个人奖项时触发）
+export const sendAwardNotificationMessage = (
+  winnerId: number,        // 获奖者用户ID
+  winnerName: string,      // 获奖者姓名
+  awardId: number,         // 奖项ID
+  awardName: string,       // 奖项名称
+  awardCategory: string,   // 奖项分类
+  awardDate: string        // 获奖时间（YYYY-MM）
+): void => {
+  // 获取奖项分类的中文名称
+  const categoryNames: Record<string, string> = {
+    'innovation': '创新突破',
+    'efficiency': '效率提升',
+    'practice': '最佳实践',
+    'community': '社区贡献'
+  }
+  const categoryName = categoryNames[awardCategory] || awardCategory
+  
+  addMessage({
+    type: MessageType.AWARD_NOTIFICATION,
+    title: '恭喜您获得奖项！',
+    content: `恭喜！您在 ${awardDate} 荣获【${categoryName}】类别的「${awardName}」奖项`,
+    userId: winnerId,
+    relatedId: awardId,
+    relatedType: 'award',
+    fromUserName: '系统通知'
+  })
+}
+
+// 发送帖子评论消息
+export const sendPostCommentMessage = (
+  postId: number,
+  postTitle: string,
+  authorId: number,
+  commenterId: number,
+  commenterName: string,
+  commentId: number          // 新增：评论ID，用于定位到具体评论
+): void => {
+  addMessage({
+    type: MessageType.POST_COMMENT,
+    title: '帖子评论通知',
+    content: `${commenterName} 评论了您的帖子《${postTitle}》`,
+    userId: authorId,
+    relatedId: postId,
+    relatedType: 'post',
+    commentId: commentId,    // 评论ID，点击消息跳转到 /post/{postId}#comment-{commentId}
+    fromUserId: commenterId,
+    fromUserName: commenterName
+  })
+}
+
+// 发送评论回复消息
+export const sendCommentReplyMessage = (
+  postId: number,
+  commentAuthorId: number,
+  replierId: number,
+  replierName: string,
+  commentId: number,         // 新增：评论ID
+  replyId: number            // 新增：回复ID，用于定位到具体回复
+): void => {
+  addMessage({
+    type: MessageType.COMMENT_REPLY,
+    title: '评论回复通知',
+    content: `${replierName} 回复了您的评论`,
+    userId: commentAuthorId,
+    relatedId: postId,
+    relatedType: 'post',
+    commentId: commentId,    // 评论ID
+    replyId: replyId,        // 回复ID，点击消息跳转到 /post/{postId}#reply-{replyId}
+    fromUserId: replierId,
+    fromUserName: replierName
+  })
+}
+
+// 发送点赞通知消息
+export const sendPostLikeMessage = (
+  postId: number,
+  postTitle: string,
+  authorId: number,
+  likerId: number,
+  likerName: string
+): void => {
+  addMessage({
+    type: MessageType.POST_LIKE,
+    title: '点赞通知',
+    content: `${likerName} 赞了您的帖子《${postTitle}》`,
+    userId: authorId,
+    relatedId: postId,
+    relatedType: 'post',
+    fromUserId: likerId,
+    fromUserName: likerName
   })
 }
 

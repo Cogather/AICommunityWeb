@@ -181,54 +181,52 @@
 
         <el-tab-pane :label="isViewingOtherUser ? '发布的活动' : '我发布的活动'" name="myActivities">
           <div class="tab-content">
-            <div class="activities-list">
+            <div class="my-activities-grid">
               <div
                 v-for="activity in paginatedMyActivities"
                 :key="activity.id"
-                class="activity-item glass-card"
+                class="my-activity-card"
               >
-                <div class="activity-image" v-if="activity.cover">
+                <div class="card-cover" v-if="activity.cover">
                   <img :src="activity.cover" :alt="activity.title" />
-                </div>
-                <div class="activity-content">
-                  <div class="activity-title-row">
-                    <h3 class="activity-title">{{ activity.title }}</h3>
-                    <el-button
-                      type="default"
-                      size="small"
-                      @click.stop="handleActivityClick(activity)"
-                      class="view-detail-btn"
-                    >
-                      查看详情
-                    </el-button>
+                  <div class="card-badge">
+                    <el-tag :type="getActivityTypeTag(activity.type)" size="small" effect="dark">
+                      {{ getActivityTypeName(activity.type) }}
+                    </el-tag>
                   </div>
-                  <p class="activity-desc">{{ activity.description || activity.content?.substring(0, 100) }}</p>
-                  <div class="activity-meta">
-                    <span class="activity-date">
-                      <el-icon><Calendar /></el-icon>
-                      {{ activity.date }}
-                    </span>
-                    <span class="activity-type">
-                      <el-tag :type="getActivityTypeTag(activity.type)" size="small">
-                        {{ getActivityTypeName(activity.type) }}
-                      </el-tag>
-                    </span>
-                    <el-tag :type="activity.status === 'ongoing' ? 'success' : activity.status === 'upcoming' ? 'warning' : 'info'" size="small">
+                  <div class="card-status">
+                    <el-tag 
+                      :type="activity.status === 'ongoing' ? 'success' : activity.status === 'upcoming' ? 'warning' : 'info'" 
+                      size="small"
+                      effect="dark"
+                    >
                       {{ getActivityStatusName(activity.status) }}
                     </el-tag>
                   </div>
-                  <div class="activity-actions">
-                    <span class="activity-registered-count">
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title" @click.stop="handleActivityClick(activity)">
+                    {{ activity.title }}
+                  </h3>
+                  <p class="card-desc">{{ activity.description || activity.content?.substring(0, 80) }}</p>
+                  <div class="card-info">
+                    <div class="info-item">
+                      <el-icon><Calendar /></el-icon>
+                      <span>{{ activity.date }}</span>
+                    </div>
+                  </div>
+                  <div class="card-footer">
+                    <div class="registered-badge">
                       <el-icon><User /></el-icon>
-                      已报名：{{ activity.registeredCount || 0 }} 人
-                    </span>
+                      <span>{{ activity.registeredCount || 0 }} 人报名</span>
+                    </div>
                     <el-button
                       type="primary"
                       size="small"
+                      round
                       @click.stop="handleViewRegistrations(activity)"
                     >
-                      <el-icon><View /></el-icon>
-                      查看报名详情
+                      查看报名
                     </el-button>
                   </div>
                 </div>
@@ -255,46 +253,49 @@
     <el-dialog
       v-model="showRegistrationsDialog"
       :title="`${currentActivity?.title || ''} - 报名详情`"
-      width="600px"
+      width="560px"
       :close-on-click-modal="false"
+      class="registrations-modal"
     >
-      <div v-loading="loadingRegistrations" class="registrations-dialog">
-        <div class="registrations-header">
-          <span class="total-count">共 {{ registrations.length }} 人报名</span>
+      <div v-loading="loadingRegistrations" class="registrations-dialog-compact">
+        <div class="registrations-summary">
+          <div class="summary-icon">
+            <el-icon><User /></el-icon>
+          </div>
+          <span class="summary-text">共 <strong>{{ registrations.length }}</strong> 人报名</span>
         </div>
-        <div class="registrations-list" v-if="registrations.length > 0">
-          <div
-            v-for="(registration, index) in registrations"
-            :key="registration.id"
-            class="registration-item"
-          >
-            <div class="registration-number">{{ index + 1 }}</div>
-            <el-avatar :size="48" :src="registration.userAvatar" class="registration-avatar">
-              {{ registration.userName?.charAt(0) || 'U' }}
-            </el-avatar>
-            <div class="registration-info">
-              <div class="registration-name">{{ registration.userName }}</div>
-              <div class="registration-meta">
-                <div class="meta-item" v-if="registration.employeeId">
-                  <span class="meta-label">工号：</span>
-                  <span class="meta-value">{{ registration.employeeId }}</span>
-                </div>
-                <div class="meta-item" v-if="registration.department">
-                  <span class="meta-label">部门：</span>
-                  <span class="meta-value">{{ registration.department }}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">报名时间：</span>
-                  <span class="meta-value">{{ registration.registerTime }}</span>
+        <div class="registrations-table" v-if="registrations.length > 0">
+          <div class="table-header">
+            <span class="col-no">#</span>
+            <span class="col-user">用户</span>
+            <span class="col-dept">部门</span>
+            <span class="col-time">报名时间</span>
+          </div>
+          <div class="table-body">
+            <div
+              v-for="(registration, index) in registrations"
+              :key="registration.id"
+              class="table-row"
+            >
+              <span class="col-no">{{ index + 1 }}</span>
+              <div class="col-user">
+                <el-avatar :size="28" :src="registration.userAvatar">
+                  {{ registration.userName?.charAt(0) || 'U' }}
+                </el-avatar>
+                <div class="user-info">
+                  <span class="user-name">{{ registration.userName }}</span>
+                  <span class="user-id" v-if="registration.employeeId">{{ registration.employeeId }}</span>
                 </div>
               </div>
+              <span class="col-dept">{{ registration.department || '-' }}</span>
+              <span class="col-time">{{ registration.registerTime?.split(' ')[0] || '-' }}</span>
             </div>
           </div>
         </div>
-        <el-empty v-else description="暂无报名用户" />
+        <el-empty v-else description="暂无报名用户" :image-size="80" />
       </div>
       <template #footer>
-        <el-button @click="showRegistrationsDialog = false">关闭</el-button>
+        <el-button type="primary" @click="showRegistrationsDialog = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -316,6 +317,7 @@ import {
   getUserComments,
   getUserActivities,
   getUserCreatedActivities,
+  getRegistrations,
   type Post,
   type Comment
 } from '../mock'
@@ -659,43 +661,9 @@ const handleViewRegistrations = async (activity: any) => {
   loadingRegistrations.value = true
   
   try {
-    // 这里应该调用API获取报名用户列表
-    // const response = await getActivityRegistrations(activity.id)
-    // registrations.value = response.data.list
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 模拟数据
-    registrations.value = [
-      {
-        id: 1,
-        userId: 2,
-        userName: '李四',
-        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-        employeeId: 'E001',
-        department: '技术部',
-        registerTime: '2024-04-05 10:30:00'
-      },
-      {
-        id: 2,
-        userId: 3,
-        userName: '王五',
-        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-        employeeId: 'E002',
-        department: '产品部',
-        registerTime: '2024-04-05 11:20:00'
-      },
-      {
-        id: 3,
-        userId: 4,
-        userName: '赵六',
-        userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-        employeeId: 'E003',
-        department: '设计部',
-        registerTime: '2024-04-06 09:15:00'
-      }
-    ]
+    // 调用API获取报名用户列表
+    const response = await getRegistrations(activity.id, { page: 1, pageSize: 100 })
+    registrations.value = response.list
   } catch (error) {
     console.error('加载报名列表失败:', error)
     ElMessage.error('加载报名列表失败')
@@ -949,10 +917,10 @@ onBeforeUnmount(() => {
   }
 }
 
-// 活动列表样式
+// 活动列表样式（我参与的活动）
 .activities-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   max-width: 100%;
 }
@@ -966,275 +934,362 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   max-width: 100%;
   
-  // 活动卡片使用更小的内边距
   &.glass-card {
-    padding: 5px;
+    padding: 16px;
   }
 
   &:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     border-color: rgba(64, 158, 255, 0.2);
   }
 
   .activity-image {
-    width: 100%;
-    height: 160px;
+    width: calc(100% + 32px);
+    height: 140px;
     overflow: hidden;
     border-radius: 12px 12px 0 0;
-    margin: -5px -5px 8px -5px;
+    margin: -16px -16px 12px -16px;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f5f5f5;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
-      z-index: 1;
-    }
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center center;
-      display: block;
       transition: transform 0.3s ease;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      min-width: 100%;
-      min-height: 100%;
     }
   }
 
-  &:hover {
-    .activity-image img {
-      transform: translate(-50%, -50%) scale(1.05);
-    }
-
-    .activity-title-row .activity-title {
-      color: #409eff;
-    }
+  &:hover .activity-image img {
+    transform: scale(1.05);
   }
 
   .activity-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 0 2px;
+    gap: 8px;
 
-    .activity-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 4px;
-
-      .activity-title {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-        line-height: 1.4;
-        transition: color 0.2s;
-        flex: 1;
-        min-width: 0;
-      }
-
-      .view-detail-btn {
-        flex-shrink: 0;
-      }
+    .activity-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      line-height: 1.4;
     }
 
     .activity-desc {
       margin: 0;
       color: #666;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
-      line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      min-height: 40px;
     }
 
     .activity-meta {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
       font-size: 12px;
-      color: #666;
-      margin-bottom: 6px;
+      color: #888;
+      margin-top: 4px;
 
       span {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
       }
+    }
+  }
+}
 
-      .activity-date {
-        color: #666;
+// 我发布的活动网格
+.my-activities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+// 我发布的活动卡片
+.my-activity-card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+    border-color: transparent;
+  }
+
+  .card-cover {
+    position: relative;
+    height: 160px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    &:hover img {
+      transform: scale(1.08);
+    }
+
+    .card-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 2;
+    }
+
+    .card-status {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+    }
+  }
+
+  .card-body {
+    padding: 16px 18px 18px;
+
+    .card-title {
+      margin: 0 0 8px 0;
+      font-size: 17px;
+      font-weight: 600;
+      color: #1f2937;
+      line-height: 1.4;
+      cursor: pointer;
+      transition: color 0.2s;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+
+      &:hover {
+        color: #6366f1;
       }
     }
 
-    .activity-actions {
+    .card-desc {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 42px;
+    }
+
+    .card-info {
+      margin-bottom: 14px;
+
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #9ca3af;
+
+        .el-icon {
+          font-size: 14px;
+          color: #6366f1;
+        }
+      }
+    }
+
+    .card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-top: 4px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
-      min-width: 0;
-      width: 100%;
+      padding-top: 14px;
+      border-top: 1px solid #f3f4f6;
 
-      .activity-registered-count {
+      .registered-badge {
         display: flex;
         align-items: center;
-        gap: 4px;
-        color: #409eff;
+        gap: 6px;
+        font-size: 13px;
+        color: #6366f1;
         font-weight: 500;
-        background: rgba(64, 158, 255, 0.1);
-        padding: 4px 10px;
-        border-radius: 8px;
-        font-size: 12px;
-        white-space: nowrap;
-        flex-shrink: 0;
+        background: rgba(99, 102, 241, 0.08);
+        padding: 6px 12px;
+        border-radius: 20px;
 
         .el-icon {
+          font-size: 14px;
+        }
+      }
+
+      .el-button {
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// 报名详情对话框样式（紧凑表格版）
+.registrations-dialog-compact {
+  min-height: 150px;
+  max-height: 450px;
+
+  .registrations-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+    border-radius: 10px;
+    margin-bottom: 16px;
+
+    .summary-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 18px;
+    }
+
+    .summary-text {
+      font-size: 15px;
+      color: #4b5563;
+
+      strong {
+        color: #6366f1;
+        font-size: 18px;
+        margin: 0 2px;
+      }
+    }
+  }
+
+  .registrations-table {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 100px;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .table-body {
+      max-height: 320px;
+      overflow-y: auto;
+
+      .table-row {
+        display: grid;
+        grid-template-columns: 40px 1fr 120px 100px;
+        gap: 8px;
+        padding: 10px 14px;
+        align-items: center;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.15s;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:hover {
+          background: #f9fafb;
+        }
+
+        .col-no {
           font-size: 12px;
+          font-weight: 600;
+          color: #9ca3af;
+          text-align: center;
+        }
+
+        .col-user {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+
+          .el-avatar {
+            flex-shrink: 0;
+            border: 1px solid #e5e7eb;
+          }
+
+          .user-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+
+            .user-name {
+              font-size: 13px;
+              font-weight: 500;
+              color: #1f2937;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            .user-id {
+              font-size: 11px;
+              color: #9ca3af;
+            }
+          }
+        }
+
+        .col-dept {
+          font-size: 12px;
+          color: #6b7280;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .col-time {
+          font-size: 12px;
+          color: #9ca3af;
         }
       }
     }
   }
 }
 
-// 报名详情对话框样式
-.registrations-dialog {
-  min-height: 200px;
-  max-height: 600px;
-  overflow-y: auto;
-
-  .registrations-header {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid rgba(64, 158, 255, 0.1);
-
-    .total-count {
-      font-size: 16px;
-      font-weight: 600;
-      color: #333;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      &::before {
-        content: '';
-        width: 4px;
-        height: 16px;
-        background: #409eff;
-        border-radius: 2px;
-      }
-    }
+// 对话框全局样式
+:deep(.registrations-modal) {
+  .el-dialog__header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f4f6;
   }
 
-  .registrations-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  .el-dialog__body {
+    padding: 20px;
   }
 
-  .registration-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 16px;
-    background: #f8f9fa;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    position: relative;
-
-    &:hover {
-      background: #fff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      border-color: rgba(64, 158, 255, 0.2);
-      transform: translateY(-2px);
-    }
-
-    .registration-number {
-      flex-shrink: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #409eff, #66b1ff);
-      color: #fff;
-      font-weight: 600;
-      font-size: 14px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
-    }
-
-    .registration-avatar {
-      flex-shrink: 0;
-      border: 2px solid rgba(64, 158, 255, 0.2);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .registration-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-width: 0;
-
-      .registration-name {
-        font-size: 16px;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 4px;
-      }
-
-      .registration-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
-          line-height: 1.6;
-
-          .meta-label {
-            color: #666;
-            font-weight: 500;
-            min-width: 70px;
-          }
-
-          .meta-value {
-            color: #333;
-            font-weight: 400;
-            flex: 1;
-          }
-        }
-      }
-    }
+  .el-dialog__footer {
+    padding: 12px 20px;
+    border-top: 1px solid #f3f4f6;
   }
 }
 

@@ -153,14 +153,15 @@ const allToolsList = ref<any[]>([])
 // 加载工具列表
 const loadToolsList = async () => {
   try {
-    const toolsList = await getTools()
-    const tools = toolsList.map((item: any) => ({
+    const response = await getTools()
+    // getTools() 返回 { list: ToolItem[] }，需要使用 response.list
+    const tools = (response.list || []).map((item: any) => ({
       id: item.id,
       name: item.name,
-      desc: item.description || '',
-      logo: item.icon || '',
+      desc: item.desc || item.description || '',
+      logo: item.logo || item.icon || '',
       logoType: 'url' as const,
-      color: '#4096ff',
+      color: item.color || '#4096ff',
       link: item.link || `/tools?toolId=${item.id}`
     }))
     

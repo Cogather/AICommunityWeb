@@ -90,6 +90,7 @@ export interface Post {
   zone?: 'practices' | 'tools' | 'agent' | 'empowerment'
   toolId?: number
   toolName?: string
+  category?: 'guide' | 'excellent'  // 帖子分类：操作指导/优秀使用
   isLiked?: boolean
   isCollected?: boolean
   isAuthor?: boolean
@@ -129,7 +130,8 @@ export interface Reply {
   userName: string
   userAvatar: string
   replyToUserId?: number
-  replyTo?: string
+  replyToId?: number  // 被回复的回复ID
+  replyTo?: string    // 被回复者名称
   content: string
   likes: number
   isLiked?: boolean
@@ -137,20 +139,36 @@ export interface Reply {
   createTime: string | Date
 }
 
+// 部门信息接口
+export interface DepartmentInfo {
+  id: number
+  name: string
+  level: number  // 1-6级部门
+}
+
 export interface UserProfile {
   id: number
-  employeeId?: string
-  name: string
-  avatar: string
-  bio?: string
-  department?: string
+  employeeId?: string    // 工号
+  name: string           // 姓名
+  avatar: string         // 头像URL
+  bio?: string           // 个人简介
+  department?: string    // 部门名称（向下兼容）
+  // 多级部门信息
+  departments?: {
+    level1?: DepartmentInfo  // 一级部门
+    level2?: DepartmentInfo  // 二级部门
+    level3?: DepartmentInfo  // 三级部门
+    level4?: DepartmentInfo  // 四级部门
+    level5?: DepartmentInfo  // 五级部门
+    level6?: DepartmentInfo  // 六级部门
+  }
   postsCount: number
   favoritesCount: number
   commentsCount: number
   activitiesCount: number
   flowersCount: number
   points: number
-  roles?: string[]
+  roles?: string[]       // 用户角色：admin-管理员, user-普通用户, tool_owner-工具Owner
   ownedTools?: Array<{
     toolId: number
     toolName: string
@@ -205,11 +223,15 @@ export interface Message {
   title: string
   content: string
   link?: string
+  relatedId?: number // 相关ID（如帖子ID、活动ID等）
+  relatedType?: string // 相关类型（如'post', 'activity', 'comment'等）
+  commentId?: number // 评论ID（用于定位到具体评论，POST_COMMENT和COMMENT_REPLY类型使用）
+  replyId?: number // 回复ID（用于定位到具体回复，COMMENT_REPLY类型使用）
   fromUserId?: number
   fromUserName?: string
   read: boolean
   createTime: string | Date
-  createdAt?: string | Date // 兼容字段
+  createdAt?: string | Date // 兼容字段（与utils/message.ts一致）
 }
 
 export interface TeamAward {
@@ -344,7 +366,12 @@ const mockCurrentUser: UserProfile = {
   name: '当前用户',
   avatar: 'https://picsum.photos/100/100?random=user',
   bio: '这是一个测试用户',
-  department: '技术部',
+  department: '技术部/AI研发中心/智能应用组',  // 完整部门路径
+  departments: {
+    level1: { id: 100, name: '技术部', level: 1 },
+    level2: { id: 110, name: 'AI研发中心', level: 2 },
+    level3: { id: 111, name: '智能应用组', level: 3 }
+  },
   postsCount: 10,
   favoritesCount: 5,
   commentsCount: 20,
@@ -1111,10 +1138,73 @@ const mockMessages: Message[] = [
     id: 1,
     userId: 1,
     type: 'post_comment',
-    title: '新评论',
-    content: '您的帖子收到了新评论',
+    title: '帖子评论通知',
+    content: '张三 评论了您的帖子《AI技术实践分享》',
+    relatedId: 101,           // 帖子ID
+    relatedType: 'post',
+    commentId: 1001,          // 评论ID，用于定位到具体评论
+    fromUserId: 2,
+    fromUserName: '张三',
     read: false,
-    createTime: new Date()
+    createTime: new Date(Date.now() - 3600000),
+    createdAt: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    id: 2,
+    userId: 1,
+    type: 'activity_registration',
+    title: '活动报名通知',
+    content: '李四 报名参加了您发布的活动《扶摇Agent新手入门培训》',
+    relatedId: 1,             // 活动ID
+    relatedType: 'activity',
+    fromUserId: 3,
+    fromUserName: '李四',
+    read: false,
+    createTime: new Date(Date.now() - 7200000),
+    createdAt: new Date(Date.now() - 7200000).toISOString()
+  },
+  {
+    id: 3,
+    userId: 1,
+    type: 'award_notification',
+    title: '恭喜您获得奖项！',
+    content: '恭喜！您在 2026-01 荣获【创新突破】类别的「年度创新贡献奖」奖项',
+    relatedId: 10,            // 奖项ID
+    relatedType: 'award',
+    fromUserName: '系统通知',
+    read: false,
+    createTime: new Date(Date.now() - 86400000),
+    createdAt: new Date(Date.now() - 86400000).toISOString()
+  },
+  {
+    id: 4,
+    userId: 1,
+    type: 'post_like',
+    title: '点赞通知',
+    content: '王五 赞了您的帖子《使用扶摇Agent实现智能代码生成》',
+    relatedId: 102,           // 帖子ID
+    relatedType: 'post',
+    fromUserId: 4,
+    fromUserName: '王五',
+    read: true,
+    createTime: new Date(Date.now() - 172800000),
+    createdAt: new Date(Date.now() - 172800000).toISOString()
+  },
+  {
+    id: 5,
+    userId: 1,
+    type: 'comment_reply',
+    title: '评论回复通知',
+    content: '赵六 回复了您的评论',
+    relatedId: 101,           // 帖子ID
+    relatedType: 'post',
+    commentId: 1001,          // 评论ID
+    replyId: 2001,            // 回复ID，用于定位到具体回复
+    fromUserId: 5,
+    fromUserName: '赵六',
+    read: true,
+    createTime: new Date(Date.now() - 259200000),
+    createdAt: new Date(Date.now() - 259200000).toISOString()
   }
 ]
 
@@ -1179,43 +1269,92 @@ export const getUserProfileByName = async (name: string): Promise<UserProfile> =
   return { ...mockCurrentUser, name }
 }
 
+// 根据工号获取用户信息
+export const getUserByEmployeeId = async (employeeId: string): Promise<UserProfile | null> => {
+  await delay()
+  // 模拟根据工号查找用户
+  if (employeeId === mockCurrentUser.employeeId) {
+    return mockCurrentUser
+  }
+  // 返回模拟数据
+  return {
+    id: Date.now(),
+    employeeId,
+    name: `用户${employeeId}`,
+    avatar: `https://picsum.photos/100/100?random=${employeeId}`,
+    department: '技术部/研发中心',
+    departments: {
+      level1: { id: 100, name: '技术部', level: 1 },
+      level2: { id: 110, name: '研发中心', level: 2 }
+    },
+    postsCount: Math.floor(Math.random() * 20),
+    favoritesCount: Math.floor(Math.random() * 50),
+    commentsCount: Math.floor(Math.random() * 100),
+    activitiesCount: Math.floor(Math.random() * 10),
+    flowersCount: Math.floor(Math.random() * 200),
+    points: Math.floor(Math.random() * 5000),
+    roles: ['user']
+  }
+}
+
 export const updateUserProfile = async (data: Partial<UserProfile>): Promise<void> => {
   await delay()
   Object.assign(mockCurrentUser, data)
 }
 
-export const getUserPoints = async (): Promise<any> => {
+// 通用分页参数接口
+interface PaginationParams {
+  page?: number
+  pageSize?: number
+}
+
+// 帖子查询参数接口
+interface PostQueryParams extends PaginationParams {
+  toolId?: number
+  zone?: string
+  tag?: string
+  keyword?: string
+  sortBy?: string
+}
+
+// 活动查询参数接口
+interface ActivityQueryParams extends PaginationParams {
+  toolId?: number
+  status?: string
+}
+
+export const getUserPoints = async (): Promise<{ total: number; details: Array<{ id: number; amount: number; reason: string; time: string }> }> => {
   await delay()
   return { total: mockCurrentUser.points, details: [] }
 }
 
-export const getUserPosts = async (userId: number, params?: any): Promise<PageResult<Post>> => {
+export const getUserPosts = async (_userId: number, params?: PaginationParams): Promise<PageResult<Post>> => {
   await delay()
   return { list: mockPosts, total: mockPosts.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserFavorites = async (userId: number, params?: any): Promise<PageResult<Post>> => {
+export const getUserFavorites = async (_userId: number, params?: PaginationParams): Promise<PageResult<Post>> => {
   await delay()
   return { list: mockPosts, total: mockPosts.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserComments = async (userId: number, params?: any): Promise<PageResult<Comment>> => {
+export const getUserComments = async (_userId: number, params?: PaginationParams): Promise<PageResult<Comment>> => {
   await delay()
   return { list: mockComments, total: mockComments.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserActivities = async (userId: number, params?: any): Promise<PageResult<Activity>> => {
+export const getUserActivities = async (_userId: number, params?: PaginationParams): Promise<PageResult<Activity>> => {
   await delay()
   return { list: mockActivities, total: mockActivities.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserCreatedActivities = async (userId: number, params?: any): Promise<PageResult<Activity>> => {
+export const getUserCreatedActivities = async (_userId: number, params?: PaginationParams): Promise<PageResult<Activity>> => {
   await delay()
   return { list: mockActivities, total: mockActivities.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
 // 帖子相关
-export const getPosts = async (params?: any): Promise<PostsResponse> => {
+export const getPosts = async (params?: PostQueryParams): Promise<PostsResponse> => {
   await delay()
   // 根据toolId或zone过滤帖子
   let filteredPosts = mockPosts
@@ -1233,7 +1372,8 @@ export const getPosts = async (params?: any): Promise<PostsResponse> => {
 
   // 根据tag过滤
   if (params?.tag) {
-    filteredPosts = filteredPosts.filter(p => p.tag === params.tag || p.tags?.includes(params.tag))
+    const tagToFilter = params.tag
+    filteredPosts = filteredPosts.filter(p => p.tag === tagToFilter || p.tags?.includes(tagToFilter))
   }
   // 根据keyword搜索
   if (params?.keyword) {
@@ -1273,34 +1413,35 @@ export const getPosts = async (params?: any): Promise<PostsResponse> => {
 
 export const getPostDetail = async (id: number): Promise<Post> => {
   await delay()
-  const post = mockPosts.find(p => p.id === id) || mockPosts[0]
+  const post = mockPosts.find(p => p.id === id) ?? mockPosts[0]!
   // 获取当前用户，判断是否是作者
   const currentUser = await getCurrentUser()
   const isAuthor = post.authorId === currentUser.id
   return { ...post, id, isAuthor }
 }
 
-export const createPost = async (data: any): Promise<Post> => {
+export const createPost = async (data: Partial<Post>): Promise<Post> => {
   await delay()
   const newPost: Post = {
     id: Date.now(),
+    title: data.title || '未命名帖子',
+    views: 0,
+    comments: 0,
+    likes: 0,
+    createTime: new Date(),
     ...data,
     author: mockCurrentUser.name,
     authorName: mockCurrentUser.name,
     authorAvatar: mockCurrentUser.avatar,
-    authorId: mockCurrentUser.id,
-    createTime: new Date(),
-    views: 0,
-    comments: 0,
-    likes: 0
+    authorId: mockCurrentUser.id
   }
   mockPosts.unshift(newPost)
   return newPost
 }
 
-export const updatePost = async (id: number, data: any): Promise<Post> => {
+export const updatePost = async (id: number, data: Partial<Post>): Promise<Post> => {
   await delay()
-  const post = mockPosts.find(p => p.id === id) || mockPosts[0]
+  const post = mockPosts.find(p => p.id === id) ?? mockPosts[0]!
   Object.assign(post, data, { updateTime: new Date() })
   return post
 }
@@ -1311,9 +1452,9 @@ export const deletePost = async (id: number): Promise<void> => {
   if (index > -1) mockPosts.splice(index, 1)
 }
 
-export const likePost = async (id: number, action: 'like' | 'unlike'): Promise<any> => {
+export const likePost = async (id: number, action: 'like' | 'unlike'): Promise<{ liked: boolean; likes: number }> => {
   await delay()
-  const post = mockPosts.find(p => p.id === id) || mockPosts[0]
+  const post = mockPosts.find(p => p.id === id) ?? mockPosts[0]!
   if (action === 'like') {
     post.likes++
     post.isLiked = true
@@ -1321,20 +1462,26 @@ export const likePost = async (id: number, action: 'like' | 'unlike'): Promise<a
     post.likes = Math.max(0, post.likes - 1)
     post.isLiked = false
   }
-  return { liked: post.isLiked, likes: post.likes }
+  return { liked: post.isLiked ?? false, likes: post.likes }
 }
 
-export const collectPost = async (id: number, action: 'collect' | 'uncollect'): Promise<any> => {
+export const collectPost = async (id: number, action: 'collect' | 'uncollect'): Promise<{ collected: boolean }> => {
   await delay()
-  const post = mockPosts.find(p => p.id === id) || mockPosts[0]
+  const post = mockPosts.find(p => p.id === id) ?? mockPosts[0]!
   post.isCollected = action === 'collect'
-  return { collected: post.isCollected }
+  return { collected: post.isCollected ?? false }
 }
 
-export const getRecommendedCovers = async (params?: { zone?: string; count?: number }): Promise<any[]> => {
+interface RecommendedCover {
+  id: number
+  url: string
+  name: string
+}
+
+export const getRecommendedCovers = async (params?: { zone?: string; count?: number }): Promise<RecommendedCover[]> => {
   await delay()
   const count = params?.count || 3
-  const covers = [
+  const covers: RecommendedCover[] = [
     { id: 1, url: 'https://picsum.photos/800/400?random=cover1', name: '科技蓝' },
     { id: 2, url: 'https://picsum.photos/800/400?random=cover2', name: '简约白' },
     { id: 3, url: 'https://picsum.photos/800/400?random=cover3', name: '渐变紫' },
@@ -1344,13 +1491,32 @@ export const getRecommendedCovers = async (params?: { zone?: string; count?: num
   return covers.slice(0, count)
 }
 
+// 草稿接口类型
+interface DraftData {
+  draftId?: string
+  zone?: string
+  toolId?: number | null
+  title?: string
+  summary?: string
+  content?: string
+  cover?: string
+  tags?: string[]
+  savedAt?: string
+}
+
+interface DraftResponse {
+  code: number
+  message: string
+  data: DraftData | null
+}
+
 // 草稿存储（模拟后端存储）
 // 草稿双重保存策略：
 // - 前端 localStorage: 短时间存储（2秒防抖自动保存）
 // - 后端服务器: 长时间存储（每3分钟同步一次）
-let mockDraftStorage: any = null
+let mockDraftStorage: DraftData | null = null
 
-export const saveDraft = async (data: any): Promise<any> => {
+export const saveDraft = async (data: DraftData): Promise<DraftResponse> => {
   await delay()
   // 使用传入的 savedAt 时间（用于前后端草稿时间比较）
   const savedAt = data.savedAt || new Date().toISOString()
@@ -1370,7 +1536,7 @@ export const saveDraft = async (data: any): Promise<any> => {
   }
 }
 
-export const getDraft = async (): Promise<any> => {
+export const getDraft = async (): Promise<DraftResponse> => {
   await delay()
   if (mockDraftStorage) {
     console.log('[Mock API] 获取后端草稿:', mockDraftStorage.savedAt)
@@ -1388,7 +1554,7 @@ export const getDraft = async (): Promise<any> => {
   }
 }
 
-export const deleteDraft = async (): Promise<any> => {
+export const deleteDraft = async (): Promise<{ code: number; message: string; data: null }> => {
   await delay()
   mockDraftStorage = null
   console.log('[Mock API] 后端草稿已删除')
@@ -1476,12 +1642,12 @@ export const getZoneTags = async (params: { zone: string; toolId?: number | null
   return { list: [] }
 }
 
-export const getPostComments = async (postId: number, params?: any): Promise<PageResult<Comment>> => {
+export const getPostComments = async (_postId: number, params?: PaginationParams): Promise<PageResult<Comment>> => {
   await delay()
   return { list: mockComments, total: mockComments.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const createComment = async (postId: number, data: any): Promise<Comment> => {
+export const createComment = async (postId: number, data: { content: string }): Promise<Comment> => {
   await delay()
   const newComment: Comment = {
     id: Date.now(),
@@ -1499,9 +1665,9 @@ export const createComment = async (postId: number, data: any): Promise<Comment>
 }
 
 // 评论相关
-export const likeComment = async (id: number, action: 'like' | 'unlike'): Promise<any> => {
+export const likeComment = async (id: number, action: 'like' | 'unlike'): Promise<{ liked: boolean; likes: number }> => {
   await delay()
-  const comment = mockComments.find(c => c.id === id) || mockComments[0]
+  const comment = mockComments.find(c => c.id === id) ?? mockComments[0]!
   if (action === 'like') {
     comment.likes++
     comment.isLiked = true
@@ -1509,12 +1675,12 @@ export const likeComment = async (id: number, action: 'like' | 'unlike'): Promis
     comment.likes = Math.max(0, comment.likes - 1)
     comment.isLiked = false
   }
-  return { liked: comment.isLiked, likes: comment.likes }
+  return { liked: comment.isLiked ?? false, likes: comment.likes }
 }
 
-export const updateComment = async (id: number, data: any): Promise<void> => {
+export const updateComment = async (id: number, data: { content: string }): Promise<void> => {
   await delay()
-  const comment = mockComments.find(c => c.id === id) || mockComments[0]
+  const comment = mockComments.find(c => c.id === id) ?? mockComments[0]!
   comment.content = data.content
   comment.updateTime = new Date()
 }
@@ -1532,7 +1698,7 @@ export const deleteReply = async (_id: number): Promise<void> => {
 }
 
 // 活动相关
-export const getActivities = async (params?: any): Promise<PageResult<Activity>> => {
+export const getActivities = async (params?: ActivityQueryParams): Promise<PageResult<Activity>> => {
   await delay()
   // 根据toolId过滤活动
   let filteredActivities = mockActivities
@@ -1553,7 +1719,7 @@ export const getActivities = async (params?: any): Promise<PageResult<Activity>>
 
 export const getActivityDetail = async (id: number): Promise<Activity> => {
   await delay()
-  const activity = mockActivities.find(a => a.id === id) || mockActivities[0]
+  const activity = mockActivities.find(a => a.id === id) ?? mockActivities[0]!
   // 确保返回完整的活动数据，包括工具信息和权限
   return {
     ...activity,
@@ -1564,25 +1730,29 @@ export const getActivityDetail = async (id: number): Promise<Activity> => {
   }
 }
 
-export const createActivity = async (data: any): Promise<Activity> => {
+export const createActivity = async (data: Partial<Activity>): Promise<Activity> => {
   await delay()
   const newActivity: Activity = {
     id: Date.now(),
-    ...data,
+    title: data.title || '',
+    content: data.content || '',
+    type: data.type || 'activity',
+    date: data.date || new Date(),
     authorId: mockCurrentUser.id,
     authorName: mockCurrentUser.name,
     authorAvatar: mockCurrentUser.avatar,
     registeredCount: 0,
     status: 'upcoming',
-    createTime: new Date()
+    createTime: new Date(),
+    ...data
   }
   mockActivities.unshift(newActivity)
   return newActivity
 }
 
-export const updateActivity = async (id: number, data: any): Promise<Activity> => {
+export const updateActivity = async (id: number, data: Partial<Activity>): Promise<Activity> => {
   await delay()
-  const activity = mockActivities.find(a => a.id === id) || mockActivities[0]
+  const activity = mockActivities.find(a => a.id === id) ?? mockActivities[0]!
   Object.assign(activity, data, { updateTime: new Date() })
   return activity
 }
@@ -1593,29 +1763,93 @@ export const deleteActivity = async (id: number): Promise<void> => {
   if (index > -1) mockActivities.splice(index, 1)
 }
 
-export const registerActivity = async (id: number): Promise<any> => {
+export const registerActivity = async (id: number): Promise<{ registered: boolean; registeredCount: number }> => {
   await delay()
-  const activity = mockActivities.find(a => a.id === id) || mockActivities[0]
+  const activity = mockActivities.find(a => a.id === id) ?? mockActivities[0]!
   activity.isRegistered = true
   activity.registeredCount = (activity.registeredCount || 0) + 1
   return { registered: true, registeredCount: activity.registeredCount }
 }
 
-export const cancelRegistration = async (id: number): Promise<any> => {
+export const cancelRegistration = async (id: number): Promise<{ registered: boolean; registeredCount: number }> => {
   await delay()
-  const activity = mockActivities.find(a => a.id === id) || mockActivities[0]
+  const activity = mockActivities.find(a => a.id === id) ?? mockActivities[0]!
   activity.isRegistered = false
   activity.registeredCount = Math.max(0, (activity.registeredCount || 0) - 1)
   return { registered: false, registeredCount: activity.registeredCount }
 }
 
-export const getRegistrations = async (id: number, params?: any): Promise<PageResult<any>> => {
+export interface Registration {
+  id: number
+  activityId?: number
+  userId: number
+  userName: string
+  userAvatar: string
+  employeeId?: string
+  department?: string
+  registerTime: string | Date
+}
+
+export const getRegistrations = async (_id: number, params?: { page?: number; pageSize?: number }): Promise<PageResult<Registration>> => {
   await delay()
-  return { list: [], total: 0, page: params?.page || 1, pageSize: params?.pageSize || 15 }
+  // 模拟报名用户数据
+  const mockRegistrations: Registration[] = [
+    {
+      id: 1,
+      activityId: _id,
+      userId: 2,
+      userName: '李四',
+      userAvatar: 'https://picsum.photos/100/100?random=2',
+      employeeId: 'E002',
+      department: '技术部/研发中心',
+      registerTime: '2026-01-10 10:30'
+    },
+    {
+      id: 2,
+      activityId: _id,
+      userId: 3,
+      userName: '王五',
+      userAvatar: 'https://picsum.photos/100/100?random=3',
+      employeeId: 'E003',
+      department: '产品部',
+      registerTime: '2026-01-10 11:20'
+    },
+    {
+      id: 3,
+      activityId: _id,
+      userId: 4,
+      userName: '赵六',
+      userAvatar: 'https://picsum.photos/100/100?random=4',
+      employeeId: 'E004',
+      department: '设计部/用户体验组',
+      registerTime: '2026-01-11 09:15'
+    },
+    {
+      id: 4,
+      activityId: _id,
+      userId: 5,
+      userName: '钱七',
+      userAvatar: 'https://picsum.photos/100/100?random=5',
+      employeeId: 'E005',
+      department: '数据部/BI中心',
+      registerTime: '2026-01-11 14:00'
+    },
+    {
+      id: 5,
+      activityId: _id,
+      userId: 6,
+      userName: '孙八',
+      userAvatar: 'https://picsum.photos/100/100?random=6',
+      employeeId: 'E006',
+      department: '运营部',
+      registerTime: '2026-01-12 10:45'
+    }
+  ]
+  return { list: mockRegistrations, total: mockRegistrations.length, page: params?.page || 1, pageSize: params?.pageSize || 100 }
 }
 
 // 消息相关
-export const getMessages = async (params?: any): Promise<PageResult<Message>> => {
+export const getMessages = async (params?: PaginationParams): Promise<PageResult<Message>> => {
   await delay()
   return { list: mockMessages, total: mockMessages.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
@@ -1637,39 +1871,66 @@ export const deleteMessage = async (id: number): Promise<void> => {
   if (index > -1) mockMessages.splice(index, 1)
 }
 
-export const getUnreadMessageCount = async (): Promise<any> => {
+export const getUnreadMessageCount = async (): Promise<{ count: number }> => {
   await delay()
   return { count: mockMessages.filter(m => !m.read).length }
 }
 
+// 荣誉类型
+interface Honor {
+  id: number
+  name: string
+  description: string
+  image: string
+  category: string
+  awardDate: string
+}
+
+interface HonorInfluence {
+  totalHonors: number
+  totalUsers: number
+  totalFlowers: number
+  categories: Array<{ name: string; count: number }>
+}
+
+interface ToolOwnerCheck {
+  isOwner: boolean
+  toolId: number
+  permissions: string[]
+}
+
+interface FeaturedPostResponse {
+  post: Post | null
+}
+
 // 荣誉相关
-export const getHonors = async (params?: any): Promise<PageResult<any>> => {
+export const getHonors = async (params?: PaginationParams): Promise<PageResult<Honor>> => {
   await delay()
   return { list: [], total: 0, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getHonorInfluence = async (): Promise<any> => {
+export const getHonorInfluence = async (): Promise<HonorInfluence> => {
   await delay()
   return { totalHonors: 0, totalUsers: 0, totalFlowers: 0, categories: [] }
 }
 
-export const getTopUsers = async (_params?: any): Promise<PageResult<TopUser>> => {
+export const getTopUsers = async (_params?: PaginationParams): Promise<PageResult<TopUser>> => {
   await delay()
   return { list: mockHonorInfo.topUsers, total: mockHonorInfo.topUsers.length, page: 1, pageSize: 10 }
 }
 
-export const giveFlower = async (_id: number): Promise<any> => {
+export const giveFlower = async (_id: number): Promise<{ flowers: number; hasGivenFlower: boolean }> => {
   await delay()
   return { flowers: 1, hasGivenFlower: true }
 }
 
 // 工具相关
-export const getToolDetail = async (id: number): Promise<any> => {
+export const getToolDetail = async (id: number): Promise<ToolItem | undefined> => {
   await delay()
   return mockTools.find(t => t.id === id) || mockTools[0]
 }
 
-export const checkToolOwner = async (id: number): Promise<any> => {
+export const checkToolOwner = async (id: number): Promise<ToolOwnerCheck> => {
   await delay()
   // 在mock环境中，默认返回isOwner为true，以便测试发布活动功能
   // 返回完整的权限信息，包括permissions数组
@@ -1681,7 +1942,7 @@ export const checkToolOwner = async (id: number): Promise<any> => {
 }
 
 // Agent相关
-export const getFeaturedPost = async (): Promise<any> => {
+export const getFeaturedPost = async (): Promise<FeaturedPostResponse> => {
   await delay()
   // 返回扶摇Agent的置顶帖子
   const featuredPost = mockPosts.find(p => p.zone === 'agent' && (p.featured || p.isFeatured))
@@ -1689,7 +1950,7 @@ export const getFeaturedPost = async (): Promise<any> => {
 }
 
 // 获取工具专区精华帖子（仅适用于"其他工具" toolId=0）
-export const getToolFeaturedPost = async (toolId: number): Promise<any> => {
+export const getToolFeaturedPost = async (toolId: number): Promise<FeaturedPostResponse> => {
   await delay()
   // 只有"其他工具"支持精华帖子
   if (toolId !== 0) {
@@ -1701,8 +1962,26 @@ export const getToolFeaturedPost = async (toolId: number): Promise<any> => {
 
 // ========== 赋能交流页面 ==========
 
+// 赋能交流帖子类型
+interface EmpowermentPost {
+  id: number
+  title: string
+  description: string
+  author: string
+  authorId: number
+  authorAvatar: string
+  createTime: string
+  views: number
+  comments: number
+  likes: number
+  tags: string[]
+  image: string
+  cover?: string
+  featured?: boolean
+}
+
 // 赋能交流精华帖子
-const empowermentFeaturedPosts = [
+const empowermentFeaturedPosts: EmpowermentPost[] = [
   {
     id: 1001,
     title: '如何高效使用Agent提升开发效率',
@@ -1722,7 +2001,7 @@ const empowermentFeaturedPosts = [
 ]
 
 // 赋能交流普通帖子
-const empowermentPosts = [
+const empowermentPosts: EmpowermentPost[] = [
   {
     id: 1002,
     title: 'Prompt工程的最佳实践分享',
@@ -1796,7 +2075,7 @@ const empowermentPosts = [
 ]
 
 // 获取赋能交流精华帖子（不参与分页和筛选）
-export const getEmpowermentFeaturedPosts = async (): Promise<{ list: any[] }> => {
+export const getEmpowermentFeaturedPosts = async (): Promise<{ list: EmpowermentPost[] }> => {
   await delay()
   return { list: empowermentFeaturedPosts }
 }
@@ -1808,7 +2087,7 @@ export const getEmpowermentPosts = async (params?: {
   sortBy?: string
   page?: number
   pageSize?: number
-}): Promise<{ list: any[]; total: number; page: number; pageSize: number }> => {
+}): Promise<{ list: EmpowermentPost[]; total: number; page: number; pageSize: number }> => {
   await delay()
 
   let result = [...empowermentPosts]
@@ -1888,11 +2167,21 @@ export const getEmpowermentTags = async (): Promise<{ list: Array<{ name: string
   return { list: tags }
 }
 
+// 精选合集类型
+interface Collection {
+  id: number
+  title: string
+  description: string
+  cover: string
+  postCount: number
+  viewCount: number
+}
+
 // 获取赋能交流精选合集
-export const getEmpowermentCollections = async (limit: number = 5): Promise<{ list: any[] }> => {
+export const getEmpowermentCollections = async (limit: number = 5): Promise<{ list: Collection[] }> => {
   await delay()
 
-  const collections = [
+  const collections: Collection[] = [
     {
       id: 1,
       title: '顶级AI研究论文',
@@ -1922,17 +2211,21 @@ export const setEmpowermentFeaturedPost = async (params: { postId: number; featu
     // 设为精华：将帖子从普通帖子移到精华帖子
     const postIndex = empowermentPosts.findIndex(p => p.id === params.postId)
     if (postIndex !== -1) {
-      const post = empowermentPosts.splice(postIndex, 1)[0]
-      post.featured = true
-      empowermentFeaturedPosts.push(post)
+      const [post] = empowermentPosts.splice(postIndex, 1)
+      if (post) {
+        post.featured = true
+        empowermentFeaturedPosts.push(post)
+      }
     }
   } else {
     // 取消精华：将帖子从精华帖子移回普通帖子
     const featuredIndex = empowermentFeaturedPosts.findIndex(p => p.id === params.postId)
     if (featuredIndex !== -1) {
-      const post = empowermentFeaturedPosts.splice(featuredIndex, 1)[0]
-      post.featured = false
-      empowermentPosts.unshift(post)
+      const [post] = empowermentFeaturedPosts.splice(featuredIndex, 1)
+      if (post) {
+        post.featured = false
+        empowermentPosts.unshift(post)
+      }
     }
   }
 
@@ -1984,7 +2277,7 @@ export const getTeamAwards = async (_year?: string): Promise<{ list: TeamAward[]
 
 export const getTeamAwardDetail = async (id: number): Promise<TeamAward> => {
   await delay()
-  return mockTeamAwards.find(a => a.id === id) || mockTeamAwards[0]
+  return mockTeamAwards.find(a => a.id === id) ?? mockTeamAwards[0]!
 }
 
 // 管理平台相关
@@ -1999,12 +2292,12 @@ export const saveCarouselConfig = async (list: CarouselItem[]): Promise<void> =>
   mockCarousel.push(...list)
 }
 
-export const getHonorBannerConfig = async (): Promise<any> => {
+export const getHonorBannerConfig = async (): Promise<{ bannerImage: string }> => {
   await delay()
   return { bannerImage: mockHonorInfo.bannerImage }
 }
 
-export const saveHonorBannerConfig = async (config: any): Promise<void> => {
+export const saveHonorBannerConfig = async (config: { bannerImage: string }): Promise<void> => {
   await delay()
   mockHonorInfo.bannerImage = config.bannerImage
 }
@@ -2041,21 +2334,39 @@ export const saveToolBannersConfig = async (list: ToolBannerItem[]): Promise<voi
   mockToolBanners.push(...list)
 }
 
-export const getPersonalAwardsConfig = async (): Promise<{ list: any[] }> => {
+// 个人奖项配置类型
+interface PersonalAwardConfig {
+  id: number
+  name: string
+  description: string
+  year: number
+}
+
+// 获奖者配置类型
+interface WinnerConfig {
+  id: number
+  userId: number
+  userName: string
+  awardId: number
+  awardName: string
+  year: number
+}
+
+export const getPersonalAwardsConfig = async (): Promise<{ list: PersonalAwardConfig[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const savePersonalAwardsConfig = async (_list: any[]): Promise<void> => {
+export const savePersonalAwardsConfig = async (_list: PersonalAwardConfig[]): Promise<void> => {
   await delay()
 }
 
-export const getWinnersConfig = async (): Promise<{ list: any[] }> => {
+export const getWinnersConfig = async (): Promise<{ list: WinnerConfig[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const saveWinnersConfig = async (_list: any[]): Promise<void> => {
+export const saveWinnersConfig = async (_list: WinnerConfig[]): Promise<void> => {
   await delay()
 }
 
@@ -2110,12 +2421,62 @@ export const saveTeamAwardsConfig = async (list: TeamAward[]): Promise<void> => 
   mockTeamAwards.push(...list)
 }
 
-export const getRecommendedWinners = async (month?: string, _limit: number = 3): Promise<{ list: any[]; month?: string }> => {
+// 推荐获奖者类型
+interface RecommendedWinner {
+  id: number
+  userId: number
+  userName: string
+  userAvatar: string
+  department: string
+  reason: string
+}
+
+// 设置奖项参数类型
+interface SetUserAwardParams {
+  userId: number
+  awardId: number
+  year?: number
+  reason?: string
+}
+
+// 搜索用户参数类型
+interface SearchUsersParams {
+  keyword?: string
+  department?: string
+  page?: number
+  pageSize?: number
+}
+
+// 用户列表项类型
+interface UserListItem {
+  id: number
+  name: string
+  avatar: string
+  department: string
+  employeeId: string
+  roles: string[]
+}
+
+// 角色参数类型
+interface RoleParams {
+  role: string
+  toolId?: number
+}
+
+// 奖项列表项类型
+interface AwardListItem {
+  id: number
+  name: string
+  description: string
+  category: string
+}
+
+export const getRecommendedWinners = async (month?: string, _limit: number = 3): Promise<{ list: RecommendedWinner[]; month?: string }> => {
   await delay()
   return { list: [], month }
 }
 
-export const setUserAward = async (_params: any): Promise<{ id: number; message?: string }> => {
+export const setUserAward = async (_params: SetUserAwardParams): Promise<{ id: number; message?: string }> => {
   await delay()
   return { id: Date.now(), message: '设置成功' }
 }
@@ -2124,26 +2485,26 @@ export const cancelUserAward = async (_id: number): Promise<void> => {
   await delay()
 }
 
-export const getAwardsList = async (_category?: string): Promise<{ list: any[] }> => {
+export const getAwardsList = async (_category?: string): Promise<{ list: AwardListItem[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const searchUsers = async (_params: any): Promise<{ list: any[] }> => {
+export const searchUsers = async (_params: SearchUsersParams): Promise<{ list: UserListItem[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const getUsersList = async (_params?: any): Promise<{ list: any[]; total: number }> => {
+export const getUsersList = async (_params?: SearchUsersParams): Promise<{ list: UserListItem[]; total: number }> => {
   await delay()
   return { list: [], total: 0 }
 }
 
-export const addUserRole = async (_userId: number, _params: any): Promise<void> => {
+export const addUserRole = async (_userId: number, _params: RoleParams): Promise<void> => {
   await delay()
 }
 
-export const removeUserRole = async (_userId: number, _params: any): Promise<void> => {
+export const removeUserRole = async (_userId: number, _params: RoleParams): Promise<void> => {
   await delay()
 }
 
@@ -2153,12 +2514,12 @@ export const uploadImage = async (file: File): Promise<{ url: string }> => {
 }
 
 // 其他
-export const getHotPosts = async (_params?: any): Promise<{ list: Post[] }> => {
+export const getHotPosts = async (_params?: PaginationParams): Promise<{ list: Post[] }> => {
   await delay()
   return { list: mockPosts.slice(0, 10) }
 }
 
-export const getTags = async (params: any): Promise<{ list: Array<{ name: string; count: number }> }> => {
+export const getTags = async (params: { toolId?: number; zone?: string }): Promise<{ list: Array<{ name: string; count: number }> }> => {
   await delay()
   // 根据toolId返回不同的标签
   if (params?.toolId === -1) {
@@ -2219,22 +2580,58 @@ export const getTags = async (params: any): Promise<{ list: Array<{ name: string
   }
 }
 
-export const getDepartments = async (_params?: any): Promise<{ list: any[] }> => {
+// 部门类型
+interface Department {
+  id: number
+  name: string
+  code: string
+}
+
+// 贡献者类型
+interface Contributor {
+  id: number
+  name: string
+  avatar: string
+  department: string
+  postsCount: number
+  likesCount: number
+}
+
+// 奖项规则类型
+interface AwardRules {
+  awardId: number
+  awardName: string
+  rules: string
+}
+
+// 登录参数类型
+interface LoginParams {
+  username: string
+  password: string
+}
+
+// 登录响应类型
+interface LoginResponse {
+  token: string
+  user: UserProfile
+}
+
+export const getDepartments = async (_params?: PaginationParams): Promise<{ list: Department[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const getTopContributors = async (_params?: any): Promise<{ list: any[] }> => {
+export const getTopContributors = async (_params?: PaginationParams): Promise<{ list: Contributor[] }> => {
   await delay()
   return { list: [] }
 }
 
-export const getAwardRules = async (id: number): Promise<any> => {
+export const getAwardRules = async (id: number): Promise<AwardRules> => {
   await delay()
   return { awardId: id, awardName: '奖项名称', rules: '奖项规则' }
 }
 
-export const login = async (_data: any): Promise<any> => {
+export const login = async (_data: LoginParams): Promise<LoginResponse> => {
   await delay()
   return { token: 'mock_token', user: mockCurrentUser }
 }

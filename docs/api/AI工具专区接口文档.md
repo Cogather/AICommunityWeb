@@ -26,6 +26,9 @@ AI工具专区页面用于展示公司内部AI工具的使用指导、优秀实�
 | 发布活动 | 发布活动/培训 | 普通工具 |
 | 获取活动详情 | 获取活动详情 | 普通工具 |
 | 报名/取消报名 | 活动报名管理 | 普通工具 |
+| **编辑活动** | 编辑活动信息 | Owner/管理员 |
+| **删除活动** | 删除活动 | Owner/管理员 |
+| **获取报名列表** | 获取活动报名用户列表 | Owner/管理员 |
 
 ---
 
@@ -844,6 +847,291 @@ DELETE /api/tools/activities/{activityId}/join
 
 ---
 
+### 13. 编辑活动
+
+工具Owner或管理员编辑已有活动信息。
+
+**请求**
+
+```
+PUT /api/tools/activities/{activityId}
+```
+
+**路径参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| activityId | number | 是 | 活动ID |
+
+**请求体**
+
+```json
+{
+  "toolId": 1,
+  "type": "training",
+  "title": "TestMate 高级特性培训（更新）",
+  "content": "<p>更新后的培训内容...</p>",
+  "cover": "https://example.com/activities/training1-updated.jpg",
+  "date": "2026-01-25",
+  "startTime": "14:00",
+  "endTime": "17:00",
+  "location": "线上腾讯会议",
+  "meetingLink": "https://meeting.tencent.com/xxx",
+  "speaker": "李四",
+  "speakerTitle": "高级测试工程师",
+  "maxParticipants": 120
+}
+```
+
+**请求字段说明**
+
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| toolId | number | 否 | 工具ID（不可更改关联工具） |
+| type | string | 否 | 活动类型：activity/training/workshop |
+| title | string | 否 | 活动标题 |
+| content | string | 否 | 活动详情（HTML格式） |
+| cover | string | 否 | 封面图URL |
+| date | string | 否 | 活动日期（YYYY-MM-DD） |
+| startTime | string | 否 | 开始时间（HH:mm） |
+| endTime | string | 否 | 结束时间（HH:mm） |
+| location | string | 否 | 活动地点 |
+| meetingLink | string | 否 | 线上会议链接 |
+| speaker | string | 否 | 主讲人姓名 |
+| speakerTitle | string | 否 | 主讲人职称 |
+| maxParticipants | number | 否 | 最大参与人数 |
+
+**响应**
+
+```json
+{
+  "code": 200,
+  "message": "更新成功",
+  "data": {
+    "id": 1,
+    "toolId": 1,
+    "toolName": "TestMate",
+    "type": "training",
+    "title": "TestMate 高级特性培训（更新）",
+    "updateTime": "2026-01-13T16:30:00Z"
+  }
+}
+```
+
+> **权限说明**：仅活动创建者、工具Owner或管理员可编辑活动。
+
+---
+
+### 14. 删除活动
+
+工具Owner或管理员删除活动。
+
+**请求**
+
+```
+DELETE /api/tools/activities/{activityId}
+```
+
+**路径参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| activityId | number | 是 | 活动ID |
+
+**响应**
+
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+**错误响应**
+
+```json
+{
+  "code": 403,
+  "message": "无权限删除此活动",
+  "data": null
+}
+```
+
+> **权限说明**：仅活动创建者、工具Owner或管理员可删除活动。
+> **注意**：删除活动会同时删除所有报名记录。
+
+---
+
+### 15. 获取活动报名列表
+
+获取指定活动的已报名用户列表（分页）。
+
+**请求**
+
+```
+GET /api/tools/activities/{activityId}/registrations
+```
+
+**路径参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| activityId | number | 是 | 活动ID |
+
+**请求参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| page | number | 否 | 页码，默认1 |
+| pageSize | number | 否 | 每页数量，默认15 |
+
+**响应**
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "userId": 101,
+        "userName": "王五",
+        "employeeId": "A12345",
+        "department": "研发部",
+        "avatar": "https://example.com/avatars/user101.jpg",
+        "joinTime": "2026-01-10T09:00:00Z"
+      },
+      {
+        "userId": 102,
+        "userName": "赵六",
+        "employeeId": "A12346",
+        "department": "测试部",
+        "avatar": "https://example.com/avatars/user102.jpg",
+        "joinTime": "2026-01-10T10:30:00Z"
+      }
+    ],
+    "total": 45,
+    "page": 1,
+    "pageSize": 15
+  }
+}
+```
+
+**响应字段说明**
+
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| userId | number | 用户ID |
+| userName | string | 用户名称 |
+| employeeId | string | 工号 |
+| department | string | 所属部门 |
+| avatar | string | 用户头像URL |
+| joinTime | string | 报名时间（ISO 8601格式） |
+
+> **权限说明**：活动创建者、工具Owner或管理员可查看完整报名列表。普通用户只能看到前10个。
+
+---
+
+## 发布活动页面接口
+
+发布活动页面（`ActivityCreateView`）使用以下接口实现活动的创建和编辑功能。
+
+### 页面功能
+
+1. **新建活动**：创建新的活动/培训/工作坊
+2. **编辑活动**：修改已有活动信息
+3. **工具选择**：选择活动关联的工具（包括扶摇Agent应用）
+
+### 工具下拉列表获取
+
+工具选择下拉列表的数据来源于 **获取工具列表接口** + **前端固定添加的扶摇Agent应用**。
+
+**接口调用**
+
+```
+GET /api/tools
+```
+
+**前端处理逻辑**
+
+```typescript
+const loadToolsList = async () => {
+  // 1. 从接口获取工具列表
+  const response = await getTools()
+  // getTools() 返回 { list: ToolItem[] }
+  const tools = (response.list || []).map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    desc: item.desc || item.description || '',
+    logo: item.logo || item.icon || '',
+    color: item.color || '#4096ff',
+    link: item.link || `/tools?toolId=${item.id}`
+  }))
+  
+  // 2. 过滤掉可能存在的扶摇Agent（避免重复）
+  const filteredTools = tools.filter(t => t.id !== -1 && t.name !== '扶摇Agent应用')
+  
+  // 3. 在列表最前面固定添加"扶摇Agent应用"
+  filteredTools.unshift({
+    id: -1,
+    name: '扶摇Agent应用',
+    desc: 'Agent编排引擎',
+    logo: '',
+    color: '#4096ff',
+    link: '/agent'
+  })
+  
+  return filteredTools
+}
+```
+
+**工具列表数据结构**
+
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| id | number | 工具ID（-1=扶摇Agent，>0=具体工具） |
+| name | string | 工具名称 |
+| desc | string | 工具描述 |
+| logo | string | 工具图标URL |
+
+**工具ID说明**
+
+| ID | 名称 | 来源 |
+|-----|------|------|
+| -1 | 扶摇Agent应用 | 前端固定添加 |
+| 1 | TestMate | 接口返回 |
+| 2 | CodeMate | 接口返回 |
+| 3 | 云集 | 接口返回 |
+| ... | 其他工具 | 接口返回 |
+
+### 发布活动页面接口汇总
+
+| 功能 | 接口 | 说明 |
+|-----|------|------|
+| 获取工具列表 | `GET /api/tools` | 用于工具下拉选择（前端添加扶摇Agent） |
+| 创建活动 | `POST /api/tools/activities` | 发布新活动 |
+| 获取活动详情 | `GET /api/tools/activities/{id}` | 编辑模式加载活动数据 |
+| 更新活动 | `PUT /api/tools/activities/{id}` | 保存编辑后的活动 |
+
+### 表单字段与接口字段映射
+
+| 表单字段 | 接口字段 | 说明 |
+|---------|---------|------|
+| 活动标题 | title | 必填 |
+| 活动类型 | type | activity/training/workshop |
+| 关联工具 | toolId | -1=扶摇Agent，>0=具体工具 |
+| 活动时间 | date | YYYY-MM-DD格式 |
+| 封面图片 | cover | 图片URL |
+| 活动详情 | content | HTML格式富文本 |
+| 活动地点 | location | 可选 |
+| 会议链接 | meetingLink | 线上活动可选 |
+| 主讲人 | speaker | 可选 |
+| 主讲人职称 | speakerTitle | 可选 |
+| 人数上限 | maxParticipants | 可选，默认不限 |
+
+---
+
 ## 共用接口说明
 
 以下接口与扶摇Agent应用完全共用，通过 `toolId` 区分数据范围：
@@ -858,14 +1146,18 @@ DELETE /api/tools/activities/{activityId}/join
 
 | 接口 | 路径 | 说明 |
 |-----|------|------|
+| 获取工具列表 | `GET /api/tools` | 获取所有工具信息 |
 | 检查Owner权限 | `GET /api/tools/{toolId}/check-owner` | 统一权限检查 |
 | 获取帖子列表 | `GET /api/tools/posts` | 统一帖子列表接口 |
 | 获取标签统计 | `GET /api/tools/{toolId}/tags` | 统一标签统计接口 |
 | 获取活动列表 | `GET /api/tools/activities` | 统一活动列表接口 |
 | 发布活动 | `POST /api/tools/activities` | 统一发布活动接口 |
 | 获取活动详情 | `GET /api/tools/activities/{activityId}` | 获取单个活动详情 |
+| 编辑活动 | `PUT /api/tools/activities/{activityId}` | Owner/管理员编辑活动 |
+| 删除活动 | `DELETE /api/tools/activities/{activityId}` | Owner/管理员删除活动 |
 | 报名活动 | `POST /api/tools/activities/{activityId}/join` | 用户报名活动 |
 | 取消报名 | `DELETE /api/tools/activities/{activityId}/join` | 用户取消报名 |
+| 获取报名列表 | `GET /api/tools/activities/{activityId}/registrations` | 获取活动报名用户列表 |
 
 ### 专有接口差异
 
