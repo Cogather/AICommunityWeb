@@ -265,6 +265,14 @@ const isEditMode = computed(() => {
   return route.query.edit === 'true' && route.query.id
 })
 
+// 是否从编辑页面跳转过来（用于新建帖子）
+const isFromEditPage = computed(() => {
+  return route.query.fromEdit === 'true'
+})
+
+// 标记是否已经检查过草稿（避免重复检查）
+const hasCheckedDraft = ref(false)
+
 // 推荐封面列表
 const recommendedCovers = ref<string[]>([])
 
@@ -356,7 +364,25 @@ const handleConfigUpdate = async () => {
 // 监听配置更新（在现有的onMounted中添加）
 
 const handleBack = () => {
-  if (window.history.length > 1) {
+  // 如果是从编辑页面跳转过来的，返回到编辑页面的上级页面
+  const fromEdit = route.query.fromEdit === 'true'
+  const fromEditId = route.query.fromEditId
+  const fromPath = route.query.fromPath as string
+  
+  if (fromEdit && fromEditId) {
+    // 从编辑页面跳转过来的，返回到帖子详情页（编辑页面的上级页面）
+    router.push(`/post/${fromEditId}`).catch(() => {
+      // 如果跳转失败，尝试返回到来源路径的上级页面
+      if (fromPath) {
+        // 从 /post/create?edit=true&id=xxx 可以推断出应该返回到 /post/xxx
+        router.push(`/post/${fromEditId}`).catch(() => {
+          router.push('/practices')
+        })
+      } else {
+        router.push('/practices')
+      }
+    })
+  } else if (window.history.length > 1) {
     router.back()
   } else {
     router.push('/practices')
@@ -1090,6 +1116,12 @@ const hasUnsavedContent = computed(() => {
 
 // 路由离开前确认
 onBeforeRouteLeave((to, from, next) => {
+  // 如果跳转目标带有 skipLeaveCheck 标记，说明已经询问过用户，直接放行
+  if (to.query.skipLeaveCheck === 'true') {
+    next()
+    return
+  }
+  
   // 如果是编辑模式，跳转到新建页面时询问（无论是否有未保存内容）
   if (isEditMode.value && to.path === '/post/create' && !to.query.edit) {
     ElMessageBox.confirm(
@@ -1194,10 +1226,15 @@ watch(() => [route.query.edit, route.query.id], ([newEdit, newId], [oldEdit, old
   // 如果从编辑模式切换到新建模式，清空所有内容并检查草稿
   if (oldEdit === 'true' && (newEdit !== 'true' || !newEdit)) {
     resetFormData()
+    // 重置草稿检查标记
+    hasCheckedDraft.value = false
     // 延迟检查草稿，确保编辑器已创建
     nextTick(() => {
       setTimeout(() => {
-        checkAndLoadDraft()
+        if (!hasCheckedDraft.value) {
+          hasCheckedDraft.value = true
+          checkAndLoadDraft()
+        }
       }, 500)
     })
   }
@@ -1232,10 +1269,16 @@ onMounted(async () => {
   } else {
     // 新建模式：先清空内容，然后检查草稿
     resetFormData()
+    
+    // 延迟检查草稿，确保编辑器已创建
+    // 注意：如果是从编辑页面跳转过来的（组件复用），watch 会处理草稿检查
+    // 这里只处理首次进入新建页面的情况
     nextTick(() => {
-      // 等待编辑器完全初始化后再检查草稿
       setTimeout(() => {
-        checkAndLoadDraft()
+        if (!hasCheckedDraft.value) {
+          hasCheckedDraft.value = true
+          checkAndLoadDraft()
+        }
       }, 500)
     })
   }
