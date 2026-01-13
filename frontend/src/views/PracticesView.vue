@@ -509,7 +509,11 @@ const handlePostClick = (post: { id: number; [key: string]: unknown }) => {
     console.error('帖子数据无效:', post)
     return
   }
-  router.push(`/post/${post.id}`).catch((err) => {
+  // 传递当前页面路径，用于帖子详情页返回
+  router.push({
+    path: `/post/${post.id}`,
+    query: { from: '/practices' }
+  }).catch((err) => {
     console.error('路由跳转失败:', err)
   })
 }

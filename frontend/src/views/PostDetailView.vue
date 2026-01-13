@@ -369,6 +369,55 @@ import HeartIcon from '../components/HeartIcon.vue'
 const route = useRoute()
 const router = useRouter()
 
+// 导航页面列表（这些是主要的导航入口页面）
+const NAV_PAGES = ['/', '/practices', '/tools', '/agent', '/empowerment', '/users', '/home']
+const BACK_ROUTE_KEY = 'post_detail_back_route'
+
+// 检查路径是否是导航页面
+const isNavPage = (path: string) => {
+  // 精确匹配或前缀匹配（如 /tools?toolId=1）
+  return NAV_PAGES.some(navPath => {
+    if (navPath === '/') {
+      return path === '/' || path === '/home'
+    }
+    return path === navPath || path.startsWith(navPath + '?') || path.startsWith(navPath + '/')
+  })
+}
+
+// 记录来源导航页面
+const saveBackRoute = () => {
+  // 检查 referrer 或使用 document.referrer
+  const fromPath = document.referrer ? new URL(document.referrer).pathname : null
+  
+  // 如果有 from 查询参数，优先使用
+  if (route.query.from && typeof route.query.from === 'string') {
+    sessionStorage.setItem(BACK_ROUTE_KEY, route.query.from)
+    return
+  }
+  
+  // 检查已存储的返回路由是否有效（避免覆盖）
+  const storedRoute = sessionStorage.getItem(BACK_ROUTE_KEY)
+  if (storedRoute && isNavPage(storedRoute)) {
+    // 已有有效的返回路由，不覆盖
+    return
+  }
+  
+  // 尝试从 referrer 获取
+  if (fromPath && isNavPage(fromPath)) {
+    sessionStorage.setItem(BACK_ROUTE_KEY, fromPath)
+  }
+}
+
+// 获取返回路由
+const getBackRoute = (): string => {
+  const stored = sessionStorage.getItem(BACK_ROUTE_KEY)
+  if (stored && isNavPage(stored)) {
+    return stored
+  }
+  // 默认返回到 AI优秀实践
+  return '/practices'
+}
+
 // 帖子数据
 const postData = ref({
   id: 1,
@@ -473,13 +522,12 @@ const handleAuthorClick = () => {
   })
 }
 
-// 返回上一页
+// 返回上一页（返回到记录的导航页面，避免循环）
 const handleBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/practices')
-  }
+  const backRoute = getBackRoute()
+  // 清除存储的返回路由
+  sessionStorage.removeItem(BACK_ROUTE_KEY)
+  router.push(backRoute)
 }
 
 // 加载帖子详情
@@ -912,6 +960,9 @@ const handleDeleteReply = (comment: any, reply: any) => {
 
 // 初始化
 onMounted(async () => {
+  // 记录来源导航页面（用于返回按钮）
+  saveBackRoute()
+  
   try {
     // 获取当前用户信息
     const user = await getCurrentUser()
