@@ -239,21 +239,18 @@ const handleMessageClick = async (message: Message) => {
   } else if (message.type === MessageType.POST_COMMENT) {
     // 帖子评论通知，跳转到帖子详情并定位到具体评论
     const postId = message.relatedId || message.id
-    const commentId = (message as any).commentId
-    if (commentId) {
-      router.push(`/post/${postId}#comment-${commentId}`)
+    if (message.commentId) {
+      router.push(`/post/${postId}#comment-${message.commentId}`)
     } else {
       router.push(`/post/${postId}`)
     }
   } else if (message.type === MessageType.COMMENT_REPLY) {
     // 评论回复通知，跳转到帖子详情并定位到具体回复
     const postId = message.relatedId || message.id
-    const commentId = (message as any).commentId
-    const replyId = (message as any).replyId
-    if (replyId) {
-      router.push(`/post/${postId}#reply-${replyId}`)
-    } else if (commentId) {
-      router.push(`/post/${postId}#comment-${commentId}`)
+    if (message.replyId) {
+      router.push(`/post/${postId}#reply-${message.replyId}`)
+    } else if (message.commentId) {
+      router.push(`/post/${postId}#comment-${message.commentId}`)
     } else {
       router.push(`/post/${postId}`)
     }

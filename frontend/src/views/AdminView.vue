@@ -305,115 +305,181 @@
           </div>
         </el-tab-pane>
 
-        <!-- AI优秀实践管理 -->
-        <el-tab-pane label="AI优秀实践管理" name="practices">
+        <!-- 精华置顶帖子管理 -->
+        <el-tab-pane label="精华置顶帖子管理" name="featuredPosts">
           <div class="tab-content">
-            <div class="config-section">
-              <div class="section-header">
-                <h2>帖子精华管理</h2>
-                <el-button type="primary" @click="handleAddFeaturedPost">
-                  <el-icon><Plus /></el-icon>
-                  添加精华帖子
-                </el-button>
-              </div>
+            <el-alert
+              title="说明：精华/置顶帖子由管理员在帖子详情页面直接操作设置，此页面仅用于查看和移除。不同区域功能：AI优秀实践(精华)、赋能交流(精华)、扶摇Agent(置顶)、AI工具专区其他工具(精华)"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 24px;"
+            />
 
-              <el-alert
-                title="说明：录入帖子URL后，后端会在返回帖子数据时自动添加加精参数，前端会根据该参数显示精华标识"
-                type="info"
-                :closable="false"
-                style="margin-bottom: 24px;"
-              />
+            <el-tabs v-model="featuredPostsSubTab" type="card" class="sub-tabs">
+              <!-- AI优秀实践精华 -->
+              <el-tab-pane label="AI优秀实践" name="practices">
+                <div class="config-section">
+                  <div class="section-header">
+                    <h2>AI优秀实践 - 精华帖子</h2>
+                    <el-button type="primary" @click="loadAllFeaturedPosts">
+                      <el-icon><Refresh /></el-icon>
+                      刷新
+                    </el-button>
+                  </div>
 
-              <div class="featured-posts-list">
-                <div
-                  v-for="(item, index) in featuredPostsList"
-                  :key="item.id"
-                  class="featured-post-item"
-                >
-                  <el-form :model="item" label-width="120px">
-                    <el-form-item label="帖子URL">
-                      <el-input
-                        v-model="item.url"
-                        placeholder="请输入帖子URL，例如：/post/123 或 https://example.com/post/123"
-                      />
-                    </el-form-item>
-                    <el-form-item label="备注">
-                      <el-input
-                        v-model="item.note"
-                        placeholder="可选：添加备注信息，便于管理"
-                      />
-                    </el-form-item>
-                    <el-form-item>
-                      <el-button type="danger" @click="handleDeleteFeaturedPost(index)">
-                        删除
-                      </el-button>
-                    </el-form-item>
-                  </el-form>
+                  <el-table :data="allFeaturedPosts.practices" style="width: 100%" v-loading="loadingFeaturedPosts">
+                    <el-table-column prop="id" label="帖子ID" width="100" />
+                    <el-table-column prop="title" label="标题" min-width="200" />
+                    <el-table-column prop="authorName" label="作者" width="120">
+                      <template #default="{ row }">
+                        {{ row.author || row.authorName || '-' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="createTime" label="发布时间" width="180">
+                      <template #default="{ row }">
+                        {{ formatTime(row.createTime) }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="120">
+                      <template #default="{ row }">
+                        <el-button type="danger" size="small" @click="handleRemoveFeatured(row, 'practices')">
+                          取消精华
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+
+                  <div v-if="allFeaturedPosts.practices.length === 0 && !loadingFeaturedPosts" class="empty-state">
+                    <el-empty description="暂无精华帖子" />
+                  </div>
                 </div>
-              </div>
+              </el-tab-pane>
 
-              <div v-if="featuredPostsList.length === 0" class="empty-state">
-                <el-empty description="暂无精华帖子，点击上方按钮添加" />
-              </div>
-            </div>
+              <!-- 赋能交流精华 -->
+              <el-tab-pane label="赋能交流" name="empowerment">
+                <div class="config-section">
+                  <div class="section-header">
+                    <h2>赋能交流 - 精华帖子</h2>
+                    <el-button type="primary" @click="loadAllFeaturedPosts">
+                      <el-icon><Refresh /></el-icon>
+                      刷新
+                    </el-button>
+                  </div>
+
+                  <el-table :data="allFeaturedPosts.empowerment" style="width: 100%" v-loading="loadingFeaturedPosts">
+                    <el-table-column prop="id" label="帖子ID" width="100" />
+                    <el-table-column prop="title" label="标题" min-width="200" />
+                    <el-table-column prop="authorName" label="作者" width="120">
+                      <template #default="{ row }">
+                        {{ row.author || row.authorName || '-' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="createTime" label="发布时间" width="180">
+                      <template #default="{ row }">
+                        {{ formatTime(row.createTime) }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="120">
+                      <template #default="{ row }">
+                        <el-button type="danger" size="small" @click="handleRemoveFeatured(row, 'empowerment')">
+                          取消精华
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+
+                  <div v-if="allFeaturedPosts.empowerment.length === 0 && !loadingFeaturedPosts" class="empty-state">
+                    <el-empty description="暂无精华帖子" />
+                  </div>
+                </div>
+              </el-tab-pane>
+
+              <!-- 扶摇Agent置顶 -->
+              <el-tab-pane label="扶摇Agent" name="agent">
+                <div class="config-section">
+                  <div class="section-header">
+                    <h2>扶摇Agent应用 - 置顶帖子</h2>
+                    <el-button type="primary" @click="loadAllFeaturedPosts">
+                      <el-icon><Refresh /></el-icon>
+                      刷新
+                    </el-button>
+                  </div>
+
+                  <el-table :data="allFeaturedPosts.agent" style="width: 100%" v-loading="loadingFeaturedPosts">
+                    <el-table-column prop="id" label="帖子ID" width="100" />
+                    <el-table-column prop="title" label="标题" min-width="200" />
+                    <el-table-column prop="authorName" label="作者" width="120">
+                      <template #default="{ row }">
+                        {{ row.author || row.authorName || '-' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="createTime" label="发布时间" width="180">
+                      <template #default="{ row }">
+                        {{ formatTime(row.createTime) }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="120">
+                      <template #default="{ row }">
+                        <el-button type="danger" size="small" @click="handleRemoveFeatured(row, 'agent')">
+                          取消置顶
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+
+                  <div v-if="allFeaturedPosts.agent.length === 0 && !loadingFeaturedPosts" class="empty-state">
+                    <el-empty description="暂无置顶帖子" />
+                  </div>
+                </div>
+              </el-tab-pane>
+
+              <!-- AI工具专区其他工具精华 -->
+              <el-tab-pane label="AI工具专区-其他工具" name="otherTools">
+                <div class="config-section">
+                  <div class="section-header">
+                    <h2>AI工具专区其他工具 - 精华帖子</h2>
+                    <el-button type="primary" @click="loadAllFeaturedPosts">
+                      <el-icon><Refresh /></el-icon>
+                      刷新
+                    </el-button>
+                  </div>
+
+                  <el-table :data="allFeaturedPosts.otherTools" style="width: 100%" v-loading="loadingFeaturedPosts">
+                    <el-table-column prop="id" label="帖子ID" width="100" />
+                    <el-table-column prop="title" label="标题" min-width="200" />
+                    <el-table-column prop="authorName" label="作者" width="120">
+                      <template #default="{ row }">
+                        {{ row.author || row.authorName || '-' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="createTime" label="发布时间" width="180">
+                      <template #default="{ row }">
+                        {{ formatTime(row.createTime) }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="120">
+                      <template #default="{ row }">
+                        <el-button type="danger" size="small" @click="handleRemoveFeatured(row, 'otherTools')">
+                          取消精华
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+
+                  <div v-if="allFeaturedPosts.otherTools.length === 0 && !loadingFeaturedPosts" class="empty-state">
+                    <el-empty description="暂无精华帖子" />
+                  </div>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </div>
         </el-tab-pane>
 
         <!-- 赋能交流管理 -->
         <el-tab-pane label="赋能交流管理" name="empowerment">
           <div class="tab-content">
-            <!-- 精华帖子管理 -->
-            <div class="config-section">
-              <div class="section-header">
-                <h2>精华帖子管理</h2>
-                <el-button type="primary" @click="handleAddEmpowermentFeaturedPost">
-                  <el-icon><Plus /></el-icon>
-                  添加精华帖子
-                </el-button>
-              </div>
-
-              <el-alert
-                title="说明：赋能交流页面的精华帖子会置顶显示在帖子列表顶部，不参与分页、搜索、标签筛选和排序"
-                type="info"
-                :closable="false"
-                style="margin-bottom: 24px;"
-              />
-
-              <div class="featured-posts-list">
-                <div
-                  v-for="(item, index) in empowermentFeaturedPostsList"
-                  :key="item.id"
-                  class="featured-post-item"
-                >
-                  <el-form :model="item" label-width="120px">
-                    <el-form-item label="帖子URL">
-                      <el-input
-                        v-model="item.url"
-                        placeholder="请输入帖子URL，例如：/post/123 或 https://example.com/post/123"
-                      />
-                    </el-form-item>
-                    <el-form-item label="备注">
-                      <el-input
-                        v-model="item.note"
-                        placeholder="可选：添加备注信息，便于管理"
-                      />
-                    </el-form-item>
-                    <el-form-item>
-                      <el-button type="danger" @click="handleDeleteEmpowermentFeaturedPost(index)">
-                        删除
-                      </el-button>
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </div>
-
-              <div v-if="empowermentFeaturedPostsList.length === 0" class="empty-state">
-                <el-empty description="暂无精华帖子，点击上方按钮添加" />
-              </div>
-            </div>
-
             <!-- 精选合集管理 -->
-            <div class="config-section" style="margin-top: 40px;">
+            <div class="config-section">
               <div class="section-header">
                 <h2>精选合集管理</h2>
                 <el-button type="primary" @click="handleAddFeaturedCollection">
@@ -423,7 +489,7 @@
               </div>
 
               <el-alert
-                title="说明：录入合集URL后，后端会在返回数据时自动添加精选标识，前端会根据该参数显示精选合集"
+                title="说明：录入帖子ID后，后端会在返回数据时自动添加精选标识，前端会根据该参数显示精选合集"
                 type="info"
                 :closable="false"
                 style="margin-bottom: 24px;"
@@ -436,10 +502,12 @@
                   class="featured-post-item"
                 >
                   <el-form :model="item" label-width="120px">
-                    <el-form-item label="合集URL">
-                      <el-input
-                        v-model="item.url"
-                        placeholder="请输入合集URL，例如：/post/123 或 https://example.com/post/123"
+                    <el-form-item label="帖子ID">
+                      <el-input-number
+                        v-model="item.postId"
+                        :min="1"
+                        placeholder="请输入帖子ID"
+                        style="width: 100%;"
                       />
                     </el-form-item>
                     <el-form-item label="备注">
@@ -464,60 +532,6 @@
           </div>
         </el-tab-pane>
 
-        <!-- AI工具专区管理 -->
-        <el-tab-pane label="AI工具专区管理" name="toolsZone">
-          <div class="tab-content">
-            <div class="config-section">
-              <div class="section-header">
-                <h2>其他工具 - 精华帖子管理</h2>
-                <el-button type="primary" @click="handleAddOtherToolsFeaturedPost">
-                  <el-icon><Plus /></el-icon>
-                  添加精华帖子
-                </el-button>
-              </div>
-
-              <el-alert
-                title="说明：此功能仅适用于AI工具专区的'其他工具'分类。普通工具（TestMate、CodeMate等）使用'操作指导'和'优秀使用'分类组织内容，无精华帖子功能。精华帖子在帖子列表内置顶显示。"
-                type="info"
-                :closable="false"
-                style="margin-bottom: 24px;"
-              />
-
-              <div class="featured-posts-list">
-                <div
-                  v-for="(item, index) in otherToolsFeaturedPostsList"
-                  :key="item.id"
-                  class="featured-post-item"
-                >
-                  <el-form :model="item" label-width="120px">
-                    <el-form-item label="帖子URL">
-                      <el-input
-                        v-model="item.url"
-                        placeholder="请输入帖子URL，例如：/post/301 或 https://example.com/post/301"
-                      />
-                    </el-form-item>
-                    <el-form-item label="备注">
-                      <el-input
-                        v-model="item.note"
-                        placeholder="可选：添加备注信息，便于管理"
-                      />
-                    </el-form-item>
-                    <el-form-item>
-                      <el-button type="danger" @click="handleDeleteOtherToolsFeaturedPost(index)">
-                        删除
-                      </el-button>
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </div>
-
-              <div v-if="otherToolsFeaturedPostsList.length === 0" class="empty-state">
-                <el-empty description="暂无精华帖子，点击上方按钮添加" />
-              </div>
-            </div>
-          </div>
-        </el-tab-pane>
-
         <!-- AI使用达人管理 -->
         <el-tab-pane label="AI使用达人管理" name="users">
           <div class="tab-content">
@@ -536,6 +550,13 @@
                         </el-button>
                       </div>
 
+                      <el-alert
+                        title="说明：每添加或修改一个奖项后会自动保存到后端，获奖者管理中可直接选择已保存的奖项名称"
+                        type="info"
+                        :closable="false"
+                        style="margin-bottom: 24px;"
+                      />
+
                       <div class="awards-list">
                         <div
                           v-for="(award, index) in awardsList"
@@ -544,7 +565,11 @@
                         >
                           <el-form :model="award" label-width="120px">
                             <el-form-item label="奖项名称">
-                              <el-input v-model="award.name" placeholder="请输入奖项名称" />
+                              <el-input 
+                                v-model="award.name" 
+                                placeholder="请输入奖项名称"
+                                @blur="handleAwardFieldChange(award)"
+                              />
                             </el-form-item>
                             <el-form-item label="奖项描述">
                               <el-input
@@ -552,12 +577,21 @@
                                 type="textarea"
                                 :rows="4"
                                 placeholder="请输入奖项描述（将展示在奖项详情里）"
+                                @blur="handleAwardFieldChange(award)"
                               />
                             </el-form-item>
                             <el-form-item>
+                              <el-button 
+                                type="primary" 
+                                @click="handleSaveAwardManually(award)"
+                                :loading="award.saving"
+                              >
+                                保存奖项
+                              </el-button>
                               <el-button type="danger" @click="handleDeleteAward(index)">
                                 删除
                               </el-button>
+                              <el-tag v-if="award.saved" type="success" style="margin-left: 12px;">已保存</el-tag>
                             </el-form-item>
                           </el-form>
                         </div>
@@ -565,6 +599,46 @@
 
                       <div v-if="awardsList.length === 0" class="empty-state">
                         <el-empty description="暂无奖项，点击上方按钮添加" />
+                      </div>
+                    </div>
+                  </el-tab-pane>
+
+                  <!-- 奖项规则说明 -->
+                  <el-tab-pane label="奖项规则说明" name="rules">
+                    <div class="config-section">
+                      <div class="section-header">
+                        <h2>奖项规则说明</h2>
+                        <el-button type="primary" @click="handleSaveAwardRules" :loading="savingAwardRules">
+                          <el-icon><Check /></el-icon>
+                          保存规则
+                        </el-button>
+                      </div>
+
+                      <el-alert
+                        title="说明：此处录入的奖项规则说明将展示在AI使用达人页面，帮助用户了解评奖标准和申报流程"
+                        type="info"
+                        :closable="false"
+                        style="margin-bottom: 24px;"
+                      />
+
+                      <div class="editor-container" style="border: 1px solid #dcdfe6; border-radius: 4px;">
+                        <Toolbar
+                          :editor="awardRulesEditorRef"
+                          :defaultConfig="toolbarConfig"
+                          :mode="'default'"
+                          style="border-bottom: 1px solid #dcdfe6;"
+                        />
+                        <Editor
+                          v-model="awardRulesContent"
+                          :defaultConfig="editorConfig"
+                          :mode="'default'"
+                          style="height: 400px; overflow-y: hidden;"
+                          @onCreated="handleAwardRulesEditorCreated"
+                        />
+                      </div>
+
+                      <div v-if="awardRulesUpdateTime" style="margin-top: 12px; color: #909399; font-size: 12px;">
+                        最后更新时间：{{ formatDateTime(awardRulesUpdateTime) }}
                       </div>
                     </div>
                   </el-tab-pane>
@@ -590,37 +664,20 @@
                             <el-form-item label="获奖者">
                               <el-input v-model="winner.name" placeholder="请输入获奖者姓名" />
                             </el-form-item>
-                            <el-form-item label="奖项分类">
-                              <el-select
-                                v-model="winner.category"
-                                placeholder="请先选择奖项分类"
-                                style="width: 100%;"
-                                @change="handleWinnerCategoryChange(winner, index)"
-                              >
-                                <el-option label="创新突破" value="innovation" />
-                                <el-option label="效率提升" value="efficiency" />
-                                <el-option label="最佳实践" value="practice" />
-                                <el-option label="社区贡献" value="community" />
-                              </el-select>
-                            </el-form-item>
                             <el-form-item label="奖项名称">
                               <el-select
                                 v-model="winner.awardName"
-                                placeholder="请先选择奖项分类，然后选择奖项名称"
+                                placeholder="请选择奖项名称"
                                 style="width: 100%;"
-                                :disabled="!winner.category"
-                                :loading="loadingAwards"
+                                :loading="loadingAwardNames"
                               >
                                 <el-option
-                                  v-for="award in getFilteredAwardsForWinner(winner.category)"
+                                  v-for="award in awardNamesList"
                                   :key="award.id"
                                   :label="award.name"
                                   :value="award.name"
                                 />
                               </el-select>
-                              <div v-if="!winner.category" style="margin-top: 8px; font-size: 12px; color: #909399;">
-                                提示：请先选择奖项分类，系统会从后台获取该分类下的奖项列表
-                              </div>
                             </el-form-item>
                             <el-form-item label="获奖时间">
                               <el-date-picker
@@ -828,8 +885,11 @@
                                   <img :src="img.image" alt="图片预览" />
                                 </div>
                               </div>
-                              <el-form-item label="获奖名称" style="margin-top: 12px;">
-                                <el-input v-model="img.winnerName" placeholder="请输入获奖名称（如：AI研发团队）" />
+                              <el-form-item label="获奖团队" style="margin-top: 12px;">
+                                <el-input v-model="img.winnerName" placeholder="请输入获奖团队名称（如：AI研发团队）" />
+                              </el-form-item>
+                              <el-form-item label="所属领域">
+                                <el-input v-model="img.teamField" placeholder="请输入团队所属领域（如：人工智能、大数据）" />
                               </el-form-item>
                               <el-button 
                                 type="danger" 
@@ -879,11 +939,11 @@
           <div class="tab-content">
             <div class="config-section">
               <div class="section-header">
-                <h2>管理员管理</h2>
+                <h2>人员角色管理</h2>
                 <div style="display: flex; gap: 12px; align-items: center;">
                   <el-input
                     v-model="userSearchKeyword"
-                    placeholder="搜索管理员姓名或邮箱"
+                    placeholder="搜索姓名或邮箱"
                     style="width: 300px;"
                     clearable
                   >
@@ -893,7 +953,7 @@
                   </el-input>
                   <el-button type="primary" @click="showAddAdminDialog = true">
                     <el-icon><Plus /></el-icon>
-                    添加管理员
+                    添加人员
                   </el-button>
                 </div>
               </div>
@@ -904,8 +964,10 @@
                 <el-table-column prop="email" label="邮箱" width="200" />
                 <el-table-column prop="department" label="部门" width="150" />
                 <el-table-column prop="currentRole" label="角色" width="120">
-                  <template #default>
-                    <el-tag type="danger">管理员</el-tag>
+                  <template #default="{ row }">
+                    <el-tag :type="row.currentRole === 'admin' ? 'danger' : 'warning'">
+                      {{ row.currentRole === 'admin' ? '管理员' : '工具Owner' }}
+                    </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="150">
@@ -915,72 +977,19 @@
                       size="small"
                       @click="handleRemoveAdmin(row)"
                     >
-                      移除管理员
+                      移除
                     </el-button>
                   </template>
                 </el-table-column>
               </el-table>
 
               <div v-if="filteredAdminList.length === 0" class="empty-state">
-                <el-empty description="暂无管理员" />
+                <el-empty description="暂无管理员或工具Owner" />
               </div>
             </div>
           </div>
         </el-tab-pane>
 
-        <!-- 扶摇Agent应用管理 -->
-        <el-tab-pane label="扶摇Agent应用管理" name="agent">
-          <div class="tab-content">
-            <div class="config-section">
-              <div class="section-header">
-                <h2>置顶帖子管理</h2>
-                <el-button type="primary" @click="handleAddAgentPinnedPost">
-                  <el-icon><Plus /></el-icon>
-                  添加置顶帖子
-                </el-button>
-              </div>
-
-              <el-alert
-                title="说明：录入帖子URL后，后端会在返回帖子数据时自动添加置顶参数，前端会根据该参数显示置顶标识"
-                type="info"
-                :closable="false"
-                style="margin-bottom: 24px;"
-              />
-
-              <div class="featured-posts-list">
-                <div
-                  v-for="(item, index) in agentPinnedPostsList"
-                  :key="item.id"
-                  class="featured-post-item"
-                >
-                  <el-form :model="item" label-width="120px">
-                    <el-form-item label="帖子URL">
-                      <el-input
-                        v-model="item.url"
-                        placeholder="请输入帖子URL，例如：/post/123 或 https://example.com/post/123"
-                      />
-                    </el-form-item>
-                    <el-form-item label="备注">
-                      <el-input
-                        v-model="item.note"
-                        placeholder="可选：添加备注信息，便于管理"
-                      />
-                    </el-form-item>
-                    <el-form-item>
-                      <el-button type="danger" @click="handleDeleteAgentPinnedPost(index)">
-                        删除
-                      </el-button>
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </div>
-
-              <div v-if="agentPinnedPostsList.length === 0" class="empty-state">
-                <el-empty description="暂无置顶帖子，点击上方按钮添加" />
-              </div>
-            </div>
-          </div>
-        </el-tab-pane>
       </el-tabs>
 
       <!-- 保存按钮 -->
@@ -999,7 +1008,7 @@
     <!-- 添加管理员对话框 -->
     <el-dialog
       v-model="showAddAdminDialog"
-      title="添加管理员"
+      title="添加管理员/工具Owner"
       width="500px"
     >
       <el-form :model="addAdminForm" label-width="100px">
@@ -1011,7 +1020,7 @@
             clearable
           />
           <div style="margin-top: 8px; font-size: 12px; color: #909399;">
-            提示：输入用户ID后，系统会自动查找该用户并设置为管理员
+            提示：输入用户ID后，系统会自动查找该用户
           </div>
         </el-form-item>
         <el-form-item v-if="foundUser" label="用户信息">
@@ -1021,13 +1030,19 @@
             <p style="margin: 0;"><strong>部门：</strong>{{ foundUser.department }}</p>
           </div>
         </el-form-item>
+        <el-form-item label="角色" required>
+          <el-select v-model="addAdminForm.role" placeholder="请选择角色" style="width: 100%;">
+            <el-option label="管理员" value="admin" />
+            <el-option label="工具Owner" value="tool_owner" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showAddAdminDialog = false">取消</el-button>
         <el-button
           type="primary"
           @click="handleAddAdmin"
-          :disabled="!addAdminForm.userId || !foundUser"
+          :disabled="!addAdminForm.userId || !foundUser || !addAdminForm.role"
         >
           确认添加
         </el-button>
@@ -1048,38 +1063,21 @@
             <p style="margin: 0;"><strong>部门：</strong>{{ currentAwardUser?.department }}</p>
           </div>
         </el-form-item>
-        <el-form-item label="奖项分类" prop="category">
-          <el-select
-            v-model="awardForm.category"
-            placeholder="请先选择奖项分类"
-            style="width: 100%;"
-            @change="handleCategoryChange"
-          >
-            <el-option label="创新突破" value="innovation" />
-            <el-option label="效率提升" value="efficiency" />
-            <el-option label="最佳实践" value="practice" />
-            <el-option label="社区贡献" value="community" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="奖项名称" prop="awardId">
           <el-select
             v-model="awardForm.awardId"
-            placeholder="请先选择奖项分类，然后选择奖项名称"
+            placeholder="请选择奖项名称"
             style="width: 100%;"
-            :disabled="!awardForm.category"
-            :loading="loadingAwards"
+            :loading="loadingAwardNames"
             @change="handleAwardChange"
           >
             <el-option
-              v-for="award in filteredAwardsList"
+              v-for="award in awardNamesList"
               :key="award.id"
               :label="award.name"
               :value="award.id"
             />
           </el-select>
-          <div v-if="!awardForm.category" style="margin-top: 8px; font-size: 12px; color: #909399;">
-            提示：请先选择奖项分类，系统会从后台获取该分类下的奖项列表
-          </div>
         </el-form-item>
         <el-form-item label="获奖时间" prop="awardDate">
           <el-date-picker
@@ -1112,6 +1110,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Check, Refresh, Search } from '@element-plus/icons-vue'
 import '@wangeditor/editor/dist/css/style.css'
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
 import {
   saveCarouselConfig,
@@ -1122,8 +1121,6 @@ import {
   savePersonalAwardsConfig,
   saveWinnersConfig,
   saveTeamAwardsConfig,
-  saveEmpowermentFeaturedPostsConfig,
-  saveOtherToolsFeaturedPostsConfig,
   getRecommendedWinners,
   setUserAward,
   cancelUserAward,
@@ -1139,9 +1136,14 @@ import {
   createActivity,
   updateActivity,
   getUsersList,
-  getEmpowermentFeaturedPostsConfig,
-  getOtherToolsFeaturedPostsConfig,
-  type CarouselItem as AdminCarouselItem
+  getAllFeaturedPosts,
+  removeFeaturedPost,
+  getAwardRules,
+  saveAwardRules,
+  saveAward,
+  deleteAward,
+  type CarouselItem as AdminCarouselItem,
+  type Post
 } from '../mock'
 import { sendAwardNotificationMessage } from '../utils/message'
 
@@ -1152,6 +1154,7 @@ const activeTab = ref('home')
 const homeSubTab = ref('carousel')
 const usersSubTab = ref('individual')
 const individualSubTab = ref('awards')
+const featuredPostsSubTab = ref('practices')
 
 // 图片上传处理（使用base64作为临时方案，实际应该上传到服务器）
 const _uploadAction = '/api/upload' // 这里需要替换为实际的上传接口
@@ -1211,6 +1214,7 @@ interface TeamAwardImageItem {
   image: string
   imageType: 'url' | 'upload'
   winnerName: string
+  teamField: string  // 团队所属领域
 }
 
 // 团队奖项列表
@@ -1231,7 +1235,8 @@ const teamAwardsList = ref<TeamAwardItem[]>([
         id: 1,
         image: 'https://picsum.photos/400/300?random=21',
         imageType: 'url',
-        winnerName: 'AI研发团队'
+        winnerName: 'AI研发团队',
+        teamField: '人工智能'
       }
     ]
   }
@@ -1295,20 +1300,88 @@ const toolBannersList = ref<ToolBannerItem[]>([
   }
 ])
 
-// 精华帖子URL列表
+// 精华帖子列表
 interface FeaturedPostItem {
   id: number
-  url: string
+  postId: number | null
   note: string
 }
 
 const featuredPostsList = ref<FeaturedPostItem[]>([
   {
     id: 1,
-    url: '/post/1',
+    postId: 1,
     note: 'AI大会2024'
   }
 ])
+
+// 精华置顶帖子管理（统一管理所有区域的精华/置顶帖子）
+const allFeaturedPosts = ref<{
+  practices: Post[]
+  empowerment: Post[]
+  agent: Post[]
+  otherTools: Post[]
+}>({
+  practices: [],
+  empowerment: [],
+  agent: [],
+  otherTools: []
+})
+const loadingFeaturedPosts = ref(false)
+
+// 加载所有精华置顶帖子
+const loadAllFeaturedPosts = async () => {
+  loadingFeaturedPosts.value = true
+  try {
+    const result = await getAllFeaturedPosts()
+    allFeaturedPosts.value = result
+  } catch (error) {
+    console.error('加载精华置顶帖子失败:', error)
+    ElMessage.error('加载精华置顶帖子失败')
+  } finally {
+    loadingFeaturedPosts.value = false
+  }
+}
+
+// 格式化时间显示
+const formatTime = (time: Date | string | undefined) => {
+  if (!time) return '-'
+  const date = time instanceof Date ? time : new Date(time)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 移除精华/置顶
+const handleRemoveFeatured = async (post: Post, zone: string) => {
+  const actionName = zone === 'agent' ? '置顶' : '精华'
+  
+  ElMessageBox.confirm(
+    `确定要取消帖子"${post.title}"的${actionName}状态吗？`,
+    '确认操作',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      await removeFeaturedPost(post.id)
+      ElMessage.success(`已取消${actionName}`)
+      // 重新加载列表
+      await loadAllFeaturedPosts()
+    } catch (error) {
+      console.error(`取消${actionName}失败:`, error)
+      ElMessage.error(`取消${actionName}失败`)
+    }
+  }).catch(() => {
+    // 用户取消
+  })
+}
 
 // 奖项列表
 interface AwardItem {
@@ -1316,16 +1389,120 @@ interface AwardItem {
   name: string
   category: string
   description: string
+  saving?: boolean   // 正在保存中
+  saved?: boolean    // 已保存到后端
 }
 
-const awardsList = ref<AwardItem[]>([
-  {
-    id: 1,
-    name: '年度最佳贡献奖',
-    category: '年度奖项',
-    description: '表彰在AI社区中做出卓越贡献的成员，包括技术分享、问题解答、社区建设等方面的突出表现。'
+const awardsList = ref<AwardItem[]>([])
+
+// 奖项规则说明
+const awardRulesContent = ref('')
+const awardRulesUpdateTime = ref('')
+const savingAwardRules = ref(false)
+const awardRulesEditorRef = shallowRef<IDomEditor | null>(null)
+
+// 编辑器配置
+const toolbarConfig: Partial<IToolbarConfig> = {
+  excludeKeys: ['insertVideo', 'insertTable', 'codeBlock', 'group-video']
+}
+
+const editorConfig: Partial<IEditorConfig> = {
+  placeholder: '请输入奖项规则说明...'
+}
+
+// 加载奖项规则说明
+const loadAwardRules = async () => {
+  try {
+    const result = await getAwardRules()
+    awardRulesContent.value = result.content
+    awardRulesUpdateTime.value = result.updateTime
+  } catch (error) {
+    console.error('加载奖项规则失败:', error)
   }
-])
+}
+
+// 保存奖项规则说明
+const handleSaveAwardRules = async () => {
+  savingAwardRules.value = true
+  try {
+    const result = await saveAwardRules(awardRulesContent.value)
+    awardRulesUpdateTime.value = result.updateTime
+    ElMessage.success('奖项规则保存成功')
+  } catch (error) {
+    console.error('保存奖项规则失败:', error)
+    ElMessage.error('保存奖项规则失败')
+  } finally {
+    savingAwardRules.value = false
+  }
+}
+
+// 奖项规则编辑器创建回调
+const handleAwardRulesEditorCreated = (editor: IDomEditor) => {
+  awardRulesEditorRef.value = editor
+}
+
+// 格式化日期时间
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 加载奖项列表
+const loadAwardsListFromApi = async () => {
+  try {
+    const result = await getAwardsList()
+    awardsList.value = result.list.map(award => ({
+      id: award.id,
+      name: award.name,
+      category: award.category || '',
+      description: award.description || '',
+      saved: true // 从后端加载的都是已保存的
+    }))
+  } catch (error) {
+    console.error('加载奖项列表失败:', error)
+  }
+}
+
+// 保存单个奖项
+const handleSaveAwardManually = async (award: AwardItem) => {
+  if (!award.name.trim()) {
+    ElMessage.warning('请输入奖项名称')
+    return
+  }
+  
+  award.saving = true
+  try {
+    const result = await saveAward({
+      id: award.saved ? award.id : undefined, // 已保存的传id，新增的不传
+      name: award.name,
+      description: award.description
+    })
+    // 更新本地数据
+    award.id = result.id
+    award.saved = true
+    ElMessage.success('奖项保存成功')
+    // 刷新奖项名称列表供获奖者管理使用
+    await loadAwardNamesForWinner()
+  } catch (error) {
+    console.error('保存奖项失败:', error)
+    ElMessage.error('保存奖项失败')
+  } finally {
+    award.saving = false
+  }
+}
+
+// 奖项字段变更时的处理（用于自动保存提示）
+const handleAwardFieldChange = (_award: AwardItem) => {
+  // 这里可以实现防抖自动保存，暂时只做标记未保存
+  // 用户需要点击保存按钮手动保存
+}
 
 // 获奖者列表
 interface WinnerItem {
@@ -1333,7 +1510,6 @@ interface WinnerItem {
   name: string
   awardTime: string
   awardName: string
-  category?: 'innovation' | 'efficiency' | 'practice' | 'community' | ''
 }
 
 const winnersList = ref<WinnerItem[]>([
@@ -1341,27 +1517,32 @@ const winnersList = ref<WinnerItem[]>([
     id: 1,
     name: '张工程师',
     awardTime: '2024-01',
-    awardName: '年度最佳贡献奖',
-    category: 'innovation'
+    awardName: '年度最佳贡献奖'
   }
 ])
 
-// 根据分类筛选奖项（用于获奖者管理）
-const getFilteredAwardsForWinner = (category: string) => {
-  if (!category) {
-    return []
-  }
-  return apiAwardsList.value.filter(award => award.category === category)
+// 奖项名称列表（从接口获取）
+interface AwardNameItem {
+  id: number
+  name: string
 }
 
-// 获奖者管理中的分类变化处理
-const handleWinnerCategoryChange = async (winner: WinnerItem, _index: number) => {
-  // 清空已选择的奖项名称
-  winner.awardName = ''
-  
-  // 根据分类加载奖项列表
-  if (winner.category) {
-    await loadAwardsFromApi(winner.category)
+const awardNamesList = ref<AwardNameItem[]>([])
+const loadingAwardNames = ref(false)
+
+// 加载奖项名称列表
+const loadAwardNames = async () => {
+  loadingAwardNames.value = true
+  try {
+    // 从奖项设置列表中获取所有奖项名称
+    awardNamesList.value = awardsList.value.map(award => ({
+      id: award.id,
+      name: award.name
+    }))
+  } catch (error) {
+    console.error('加载奖项名称失败:', error)
+  } finally {
+    loadingAwardNames.value = false
   }
 }
 
@@ -1415,26 +1596,16 @@ interface ApiAwardItem {
 const apiAwardsList = ref<ApiAwardItem[]>([])
 const loadingAwards = ref(false)
 
-// 根据分类筛选的奖项列表
-const filteredAwardsList = computed(() => {
-  if (!awardForm.value.category) {
-    return []
-  }
-  return apiAwardsList.value.filter(award => award.category === awardForm.value.category)
-})
-
 // 评奖表单
 const awardForm = ref({
   userId: null as number | null,
   awardId: null as number | null,
   awardName: '',
-  awardDate: '',
-  category: '' as 'innovation' | 'efficiency' | 'practice' | 'community' | ''
+  awardDate: ''
 })
 
 // 评奖表单验证规则
 const awardRules = {
-  category: [{ required: true, message: '请选择奖项分类', trigger: 'change' }],
   awardId: [{ required: true, message: '请选择奖项名称', trigger: 'change' }],
   awardDate: [{ required: true, message: '请选择获奖时间', trigger: 'change' }]
 }
@@ -1442,14 +1613,14 @@ const awardRules = {
 // 扶摇Agent应用置顶帖子列表
 interface AgentPinnedPostItem {
   id: number
-  url: string
+  postId: number | null
   note: string
 }
 
 const agentPinnedPostsList = ref<AgentPinnedPostItem[]>([
   {
     id: 1,
-    url: '/post/0',
+    postId: 101,
     note: '扶摇 Agent 应用开发指南'
   }
 ])
@@ -1457,14 +1628,14 @@ const agentPinnedPostsList = ref<AgentPinnedPostItem[]>([
 // 赋能交流精选合集列表
 interface FeaturedCollectionItem {
   id: number
-  url: string
+  postId: number | null
   note: string
 }
 
 const featuredCollectionsList = ref<FeaturedCollectionItem[]>([
   {
     id: 1,
-    url: '/post/1',
+    postId: 1,
     note: '顶级AI研究论文'
   }
 ])
@@ -1472,14 +1643,14 @@ const featuredCollectionsList = ref<FeaturedCollectionItem[]>([
 // 赋能交流精华帖子列表
 interface EmpowermentFeaturedPostItem {
   id: number
-  url: string
+  postId: number | null
   note: string
 }
 
 const empowermentFeaturedPostsList = ref<EmpowermentFeaturedPostItem[]>([
   {
     id: 1,
-    url: '/post/201',
+    postId: 201,
     note: '如何高效使用Agent提升开发效率'
   }
 ])
@@ -1487,14 +1658,14 @@ const empowermentFeaturedPostsList = ref<EmpowermentFeaturedPostItem[]>([
 // AI工具专区 - 其他工具精华帖子列表
 interface OtherToolsFeaturedPostItem {
   id: number
-  url: string
+  postId: number | null
   note: string
 }
 
 const otherToolsFeaturedPostsList = ref<OtherToolsFeaturedPostItem[]>([
   {
     id: 1,
-    url: '/post/301',
+    postId: 301,
     note: 'AI工具使用效率提升指南'
   }
 ])
@@ -1505,7 +1676,7 @@ interface UserItem {
   name: string
   email: string
   department: string
-  currentRole: 'user' | 'admin'
+  currentRole: 'user' | 'admin' | 'tool_owner'
 }
 
 const usersList = ref<UserItem[]>([
@@ -1605,9 +1776,9 @@ const saveUsersList = () => {
   console.log('用户列表已更新（mock模式）')
 }
 
-// 过滤后的管理员列表（只显示管理员）
+// 过滤后的管理员列表（显示管理员和工具Owner）
 const filteredAdminList = computed(() => {
-  let admins = usersList.value.filter(user => user.currentRole === 'admin')
+  let admins = usersList.value.filter(user => user.currentRole === 'admin' || user.currentRole === 'tool_owner')
   
   if (userSearchKeyword.value) {
     const keyword = userSearchKeyword.value.toLowerCase()
@@ -1624,7 +1795,8 @@ const filteredAdminList = computed(() => {
 // 添加管理员对话框
 const showAddAdminDialog = ref(false)
 const addAdminForm = ref({
-  userId: null as number | null
+  userId: null as number | null,
+  role: '' as 'admin' | 'tool_owner' | ''
 })
 
 // 查找用户
@@ -1633,10 +1805,15 @@ const foundUser = computed(() => {
   return allUsersList.value.find(user => user.id === addAdminForm.value.userId)
 })
 
-// 添加管理员
+// 添加管理员/工具Owner
 const handleAddAdmin = () => {
   if (!addAdminForm.value.userId) {
     ElMessage.warning('请输入用户ID')
+    return
+  }
+  
+  if (!addAdminForm.value.role) {
+    ElMessage.warning('请选择角色')
     return
   }
   
@@ -1646,31 +1823,34 @@ const handleAddAdmin = () => {
     return
   }
   
-  // 检查是否已经是管理员
-  const existingAdmin = usersList.value.find(u => u.id === user.id && u.currentRole === 'admin')
+  const roleLabel = addAdminForm.value.role === 'admin' ? '管理员' : '工具Owner'
+  
+  // 检查是否已经是该角色
+  const existingAdmin = usersList.value.find(u => u.id === user.id && u.currentRole === addAdminForm.value.role)
   if (existingAdmin) {
-    ElMessage.warning('该用户已经是管理员')
+    ElMessage.warning(`该用户已经是${roleLabel}`)
     showAddAdminDialog.value = false
     addAdminForm.value.userId = null
+    addAdminForm.value.role = ''
     return
   }
   
   // 检查用户是否在列表中
   const existingUser = usersList.value.find(u => u.id === user.id)
   if (existingUser) {
-    // 更新角色为管理员
-    existingUser.currentRole = 'admin'
-    ElMessage.success(`已将 ${user.name} 设置为管理员`)
+    // 更新角色
+    existingUser.currentRole = addAdminForm.value.role
+    ElMessage.success(`已将 ${user.name} 设置为${roleLabel}`)
   } else {
-    // 添加新用户并设置为管理员
+    // 添加新用户并设置角色
     usersList.value.push({
       id: user.id,
       name: user.name,
       email: user.email,
       department: user.department,
-      currentRole: 'admin'
+      currentRole: addAdminForm.value.role
     })
-    ElMessage.success(`已将 ${user.name} 添加为管理员`)
+    ElMessage.success(`已将 ${user.name} 添加为${roleLabel}`)
   }
   
   // 保存用户列表
@@ -1679,12 +1859,14 @@ const handleAddAdmin = () => {
   // 关闭对话框并重置表单
   showAddAdminDialog.value = false
   addAdminForm.value.userId = null
+  addAdminForm.value.role = ''
 }
 
-// 移除管理员
+// 移除管理员/工具Owner
 const handleRemoveAdmin = (user: UserItem) => {
+  const roleLabel = user.currentRole === 'admin' ? '管理员' : '工具Owner'
   ElMessageBox.confirm(
-    `确定要将 ${user.name} 移除管理员身份吗？`,
+    `确定要将 ${user.name} 移除${roleLabel}身份吗？`,
     '确认移除',
     {
       confirmButtonText: '确定',
@@ -1696,11 +1878,11 @@ const handleRemoveAdmin = (user: UserItem) => {
     const userIndex = usersList.value.findIndex(u => u.id === user.id)
     if (userIndex !== -1) {
       usersList.value[userIndex].currentRole = 'user'
-      // 从管理员列表中移除（因为只显示管理员）
-      usersList.value = usersList.value.filter(u => u.currentRole === 'admin')
+      // 从列表中移除（因为只显示管理员和工具Owner）
+      usersList.value = usersList.value.filter(u => u.currentRole === 'admin' || u.currentRole === 'tool_owner')
     }
     
-    ElMessage.success(`已将 ${user.name} 移除管理员身份`)
+    ElMessage.success(`已将 ${user.name} 移除${roleLabel}身份`)
     
     // 保存用户列表
     saveUsersList()
@@ -1712,14 +1894,17 @@ const handleRemoveAdmin = (user: UserItem) => {
 // 初始化时加载用户列表
 onMounted(async () => {
   await loadAllUsers()
-  // 从mock数据中筛选管理员
-  const admins = allUsersList.value.filter((u: UserItem) => u.currentRole === 'admin')
+  // 从mock数据中筛选管理员和工具Owner
+  const admins = allUsersList.value.filter((u: UserItem) => u.currentRole === 'admin' || u.currentRole === 'tool_owner')
   if (admins.length > 0) {
     usersList.value = admins
   } else {
     // 如果没有管理员，使用默认数据
-    usersList.value = usersList.value.filter(u => u.currentRole === 'admin')
+    usersList.value = usersList.value.filter(u => u.currentRole === 'admin' || u.currentRole === 'tool_owner')
   }
+  
+  // 加载精华置顶帖子列表
+  await loadAllFeaturedPosts()
 })
 
 
@@ -2057,19 +2242,40 @@ const handleAddAward = () => {
     id: Date.now(),
     name: '',
     category: '',
-    description: ''
+    description: '',
+    saving: false,
+    saved: false  // 新增的奖项标记为未保存
   })
 }
 
 // 删除奖项
-const handleDeleteAward = (index: number) => {
+const handleDeleteAward = async (index: number) => {
+  const award = awardsList.value[index]
+  
   ElMessageBox.confirm('确定要删除这个奖项吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
+  }).then(async () => {
+    // 如果奖项已保存到后端，需要调用删除接口
+    if (award.saved) {
+      try {
+        const result = await deleteAward(award.id)
+        if (!result.success) {
+          ElMessage.error(result.message || '删除失败')
+          return
+        }
+      } catch (error) {
+        console.error('删除奖项失败:', error)
+        ElMessage.error('删除奖项失败')
+        return
+      }
+    }
+    
     awardsList.value.splice(index, 1)
     ElMessage.success('删除成功')
+    // 刷新奖项名称列表
+    await loadAwardNamesForWinner()
   }).catch(() => {})
 }
 
@@ -2087,8 +2293,8 @@ const handleAddWinner = async () => {
     category: ''
   })
   
-  // 加载所有奖项列表（不筛选分类）
-  await loadAwardsFromApi()
+  // 加载奖项名称列表
+  loadAwardNames()
 }
 
 // 删除获奖者
@@ -2236,27 +2442,15 @@ const handleSetAward = async (user: RecommendedWinner) => {
     category: ''
   }
   
-  // 加载所有奖项列表（不筛选分类）
-  await loadAwardsFromApi()
+  // 加载奖项名称列表
+  loadAwardNames()
   
   showSetAwardDialog.value = true
 }
 
-// 奖项分类变化
-const handleCategoryChange = async (category: string) => {
-  // 清空已选择的奖项
-  awardForm.value.awardId = null
-  awardForm.value.awardName = ''
-  
-  // 根据分类加载奖项列表
-  if (category) {
-    await loadAwardsFromApi(category)
-  }
-}
-
 // 奖项选择变化
 const handleAwardChange = (awardId: number) => {
-  const award = apiAwardsList.value.find(a => a.id === awardId)
+  const award = awardNamesList.value.find(a => a.id === awardId)
   if (award) {
     awardForm.value.awardName = award.name
   }
@@ -2279,7 +2473,7 @@ const handleConfirmSetAward = async () => {
       return
     }
 
-    const selectedAward = apiAwardsList.value.find(a => a.id === awardForm.value.awardId)
+    const selectedAward = awardNamesList.value.find(a => a.id === awardForm.value.awardId)
     if (!selectedAward) {
       ElMessage.error('奖项信息不存在')
       return
@@ -2757,6 +2951,12 @@ const loadConfig = async () => {
         note: item.note || ''
       }))
     }
+    
+    // 加载奖项规则说明
+    await loadAwardRules()
+    
+    // 加载奖项列表
+    await loadAwardsListFromApi()
   } catch (error) {
     console.error('加载配置失败:', error)
   }
@@ -2847,6 +3047,10 @@ onBeforeUnmount(() => {
   // 清理编辑器
   if (activityEditorRef.value) {
     activityEditorRef.value.destroy()
+  }
+  // 清理奖项规则编辑器
+  if (awardRulesEditorRef.value) {
+    awardRulesEditorRef.value.destroy()
   }
 })
 </script>

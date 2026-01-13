@@ -106,21 +106,36 @@
               {{ isCollected ? '已收藏' : '收藏' }}
             </el-button>
           </div>
-          <div class="actions-right" v-if="canEditPost">
+          <div class="actions-right">
+            <!-- 管理员专属：置顶/加精按钮 -->
             <el-button
-              type="warning"
-              :icon="Edit"
-              @click="handleEdit"
+              v-if="isAdmin && supportsFeatured"
+              :type="isPostFeatured ? 'success' : 'primary'"
+              @click="handleToggleFeatured"
+              :loading="settingFeatured"
             >
-              编辑
+              <template #icon>
+                <el-icon><Star /></el-icon>
+              </template>
+              {{ isPostFeatured ? `取消${featuredActionName}` : featuredActionName }}
             </el-button>
-            <el-button
-              type="danger"
-              :icon="Delete"
-              @click="handleDelete"
-            >
-              删除
-            </el-button>
+            <!-- 编辑删除按钮 -->
+            <template v-if="canEditPost">
+              <el-button
+                type="warning"
+                :icon="Edit"
+                @click="handleEdit"
+              >
+                编辑
+              </el-button>
+              <el-button
+                type="danger"
+                :icon="Delete"
+                @click="handleDelete"
+              >
+                删除
+              </el-button>
+            </template>
           </div>
         </div>
       </div>
@@ -353,7 +368,8 @@ import {
   createComment,
   likeComment,
   deleteComment,
-  getCurrentUser
+  getCurrentUser,
+  setPostFeatured
 } from '../mock'
 import {
   View,
@@ -433,7 +449,11 @@ const postData = ref({
   likes: 56,
   isLiked: false,
   isAuthor: true,
-  tags: ['自然语言处理', '深度学习', '最佳实践']
+  tags: ['自然语言处理', '深度学习', '最佳实践'],
+  zone: '' as string,  // 所属区域：practices、tools、agent、empowerment
+  toolId: null as number | null,  // 工具ID（AI工具专区使用）
+  featured: false,  // 是否精华/置顶
+  isFeatured: false  // 是否精华/置顶（兼容字段）
 })
 
 // 评论相关
@@ -486,12 +506,47 @@ const isMyComment = (comment: any) => {
 const isCollected = ref(false)
 
 // 模拟管理员状态（实际应该从用户信息中获取）
-const isAdmin = ref(false)
+const isAdmin = ref(true) // 临时设为 true 以便测试
 
 // 是否可以编辑帖子（作者或管理员）
 const canEditPost = computed(() => {
   return postData.value.isAuthor || isAdmin.value
 })
+
+// 该区域是否支持置顶/加精功能
+const supportsFeatured = computed(() => {
+  const zone = postData.value.zone
+  const toolId = postData.value.toolId
+  
+  // AI优秀实践 - 支持精华
+  if (zone === 'practices') return true
+  
+  // 赋能交流 - 支持精华
+  if (zone === 'empowerment') return true
+  
+  // 扶摇Agent - 支持置顶
+  if (zone === 'agent') return true
+  
+  // AI工具专区 - 只有"其他工具"(toolId=0)支持精华
+  if (zone === 'tools' && toolId === 0) return true
+  
+  return false
+})
+
+// 获取置顶/加精功能的名称
+const featuredActionName = computed(() => {
+  const zone = postData.value.zone
+  if (zone === 'agent') return '置顶'
+  return '加精'
+})
+
+// 当前帖子是否已经置顶/加精
+const isPostFeatured = computed(() => {
+  return postData.value.featured || postData.value.isFeatured
+})
+
+// 置顶/加精操作加载状态
+const settingFeatured = ref(false)
 
 // 标签类型映射
 const getTagType = (tag: string) => {
@@ -563,7 +618,11 @@ const loadPostDetail = async () => {
       isCollected: post.isCollected || false,
       isAuthor: post.isAuthor || false,
       canEdit: post.canEdit || false,
-      canDelete: post.canDelete || false
+      canDelete: post.canDelete || false,
+      zone: post.zone || '',
+      toolId: post.toolId ?? null,
+      featured: post.featured || false,
+      isFeatured: post.isFeatured || false
     }
     // 检查收藏状态
     isCollected.value = post.isCollected || false
@@ -677,6 +736,48 @@ const handleDelete = () => {
     } catch (error: any) {
       console.error('删除失败:', error)
       ElMessage.error(error.message || '删除失败，请稍后重试')
+    }
+  }).catch(() => {
+    // 用户取消
+  })
+}
+
+// 切换置顶/加精状态
+const handleToggleFeatured = async () => {
+  const actionName = featuredActionName.value
+  const action = isPostFeatured.value ? '取消' + actionName : actionName
+  
+  ElMessageBox.confirm(
+    `确定要${action}这个帖子吗？`,
+    '确认操作',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    settingFeatured.value = true
+    try {
+      const newFeatured = !isPostFeatured.value
+      const result = await setPostFeatured(postData.value.id, newFeatured, postData.value.zone, postData.value.toolId)
+      
+      // 检查是否成功
+      if (!result.success) {
+        // 扶摇Agent已有置顶帖子的情况
+        ElMessage.warning(result.message || `${action}失败`)
+        return
+      }
+      
+      // 更新本地状态
+      postData.value.featured = newFeatured
+      postData.value.isFeatured = newFeatured
+      
+      ElMessage.success(`${action}成功`)
+    } catch (error: any) {
+      console.error(`${action}失败:`, error)
+      ElMessage.error(error.message || `${action}失败，请稍后重试`)
+    } finally {
+      settingFeatured.value = false
     }
   }).catch(() => {
     // 用户取消

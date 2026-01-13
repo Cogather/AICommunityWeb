@@ -35,13 +35,13 @@ const initMockMessages = (userId: number): Message[] => {
       id: 1,
       type: MessageType.POST_COMMENT,
       title: '帖子评论通知',
-      content: '张三 评论了您的帖子《AI技术实践分享》',
+      content: '李四 评论了您的帖子《AI大会2024》',
       userId: userId,
-      relatedId: 1,           // 帖子ID
+      relatedId: 1,           // 帖子ID（对应mockPosts中id=1的帖子）
       relatedType: 'post',
-      commentId: 101,         // 评论ID，用于定位到具体评论
+      commentId: 101,         // 评论ID，对应mockComments中id=101的评论
       fromUserId: 2,
-      fromUserName: '张三',
+      fromUserName: '李四',
       read: false,
       createdAt: new Date(Date.now() - 3600000).toISOString()
     },
@@ -62,9 +62,9 @@ const initMockMessages = (userId: number): Message[] => {
       id: 3,
       type: MessageType.POST_LIKE,
       title: '点赞通知',
-      content: '王五 赞了您的帖子《使用扶摇Agent实现智能代码生成》',
+      content: '王五 赞了您的帖子《AI大会2024》',
       userId: userId,
-      relatedId: 101,         // 帖子ID
+      relatedId: 1,           // 帖子ID（对应mockPosts中id=1的帖子）
       relatedType: 'post',
       fromUserId: 4,
       fromUserName: '王五',
@@ -77,14 +77,29 @@ const initMockMessages = (userId: number): Message[] => {
       title: '回复通知',
       content: '赵六 回复了您的评论',
       userId: userId,
-      relatedId: 1,           // 帖子ID
-      relatedType: 'post',    // 修改为 'post'，因为跳转目标是帖子详情页
-      commentId: 101,         // 评论ID
-      replyId: 1001,          // 回复ID，用于定位到具体回复
+      relatedId: 1,           // 帖子ID（对应mockPosts中id=1的帖子）
+      relatedType: 'post',
+      commentId: 101,         // 评论ID，对应mockComments中id=101的评论
+      replyId: 1002,          // 回复ID，对应mockComments中id=1002的回复（赵六发的）
       fromUserId: 5,
       fromUserName: '赵六',
-      read: true,
+      read: false,
       createdAt: new Date(Date.now() - 172800000).toISOString()
+    },
+    {
+      id: 5,
+      type: MessageType.COMMENT_REPLY,
+      title: '回复通知',
+      content: '张三 回复了您的评论',
+      userId: userId,
+      relatedId: 1,           // 帖子ID
+      relatedType: 'post',
+      commentId: 102,         // 评论ID，对应mockComments中id=102的评论
+      replyId: 1003,          // 回复ID，对应mockComments中id=1003的回复
+      fromUserId: 1,
+      fromUserName: '张三',
+      read: true,
+      createdAt: new Date(Date.now() - 259200000).toISOString()
     }
   ]
 }
@@ -96,7 +111,7 @@ export const getUserMessages = (userId: number): Message[] => {
     messagesStore.set(userId, initMockMessages(userId))
   }
   const messages = messagesStore.get(userId) || []
-  return messages.sort((a: Message, b: Message) => 
+  return messages.sort((a: Message, b: Message) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )
 }
@@ -118,7 +133,7 @@ export const addMessage = (message: Omit<Message, 'id' | 'read' | 'createdAt'>):
   }
   messages.unshift(newMessage)
   messagesStore.set(message.userId, messages)
-  
+
   // 触发消息更新事件
   window.dispatchEvent(new CustomEvent('messageUpdated', { detail: { userId: message.userId } }))
 }
@@ -189,7 +204,7 @@ export const sendAwardNotificationMessage = (
     'community': '社区贡献'
   }
   const categoryName = categoryNames[awardCategory] || awardCategory
-  
+
   addMessage({
     type: MessageType.AWARD_NOTIFICATION,
     title: '恭喜您获得奖项！',

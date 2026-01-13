@@ -154,9 +154,10 @@ GET /api/tools/{toolId}/check-owner
 > - 精华帖子在**帖子列表外**单独展示（大图卡片样式）
 > - 精华帖子不参与分页、搜索、标签筛选和排序
 > - 前端需单独请求精华帖子，与普通帖子列表分开处理
+> - **⚠️ 扶摇Agent应用只能同时存在一个置顶帖子**
 >
 > **与AI工具专区（其他工具）的区别**：
-> - 扶摇Agent：精华帖子在帖子列表外单独展示（大图卡片样式）
+> - 扶摇Agent：精华帖子在帖子列表外单独展示（大图卡片样式），**只能有一个**
 > - AI工具专区（其他工具）：精华帖子在帖子列表内置顶显示
 
 **请求**
@@ -539,6 +540,8 @@ POST /api/tools/activities
 
 Owner或管理员设置/取消置顶帖子。
 
+> **⚠️ 重要限制**：扶摇Agent应用页面**只能同时存在一个置顶帖子**。如果已有置顶帖子，需要先取消现有置顶后才能设置新的置顶帖子。
+
 **请求**
 
 ```
@@ -559,17 +562,61 @@ PUT /api/agent/featured-post
 |-----|------|------|------|
 | postId | number | 是 | 帖子ID，设置为null或0表示取消置顶 |
 
-**响应**
+**成功响应**
 
 ```json
 {
   "code": 200,
   "message": "设置成功",
   "data": {
+    "success": true,
+    "featured": true,
     "postId": 1,
     "setTime": "2026-01-13T16:00:00Z"
   }
 }
+```
+
+**失败响应（已有置顶帖子）**
+
+当尝试置顶新帖子但已有其他置顶帖子时：
+
+```json
+{
+  "code": 400,
+  "message": "已有置顶帖子「扶摇Agent快速入门指南」，请先取消该帖子的置顶后再操作",
+  "data": {
+    "success": false,
+    "featured": false,
+    "existingPinnedPostId": 5,
+    "existingPinnedPostTitle": "扶摇Agent快速入门指南"
+  }
+}
+```
+
+**响应字段说明**
+
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| success | boolean | 操作是否成功 |
+| featured | boolean | 当前帖子是否为置顶状态 |
+| message | string | 操作结果消息（失败时包含已有置顶帖子标题） |
+| existingPinnedPostId | number | 已有置顶帖子ID（仅失败时返回） |
+| existingPinnedPostTitle | string | 已有置顶帖子标题（仅失败时返回） |
+
+**前端处理建议**
+
+```typescript
+const result = await setAgentFeaturedPost(postId)
+
+if (!result.success) {
+  // 显示警告提示，告知用户需要先取消现有置顶
+  ElMessage.warning(result.message)
+  return
+}
+
+// 成功处理
+ElMessage.success('置顶设置成功')
 ```
 
 ---

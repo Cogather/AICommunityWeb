@@ -951,28 +951,67 @@ const mockPosts: Post[] = [
 
 const mockComments: Comment[] = [
   {
-    id: 1,
+    id: 101,  // 与消息中心的 commentId 对应
     postId: 1,
     userId: 2,
     userName: '李四',
     userAvatar: 'https://picsum.photos/100/100?random=2',
-    content: '这是一条评论',
+    content: '这是一条很棒的帖子，学到了很多知识！感谢作者的分享。',
     likes: 5,
     isLiked: false,
     createTime: new Date(),
     replies: [
       {
-        id: 1,
-        commentId: 1,
+        id: 1001,  // 与消息中心的 replyId 对应
+        commentId: 101,
         userId: 1,
         userName: '张三',
         userAvatar: 'https://picsum.photos/100/100?random=1',
-        content: '感谢您的评论！',
-        likes: 0,
+        content: '感谢您的评论！欢迎继续交流讨论。',
+        likes: 2,
         isLiked: false,
         createTime: new Date(),
         replyTo: '李四',
+        replyToId: 2
+      },
+      {
+        id: 1002,
+        commentId: 101,
+        userId: 5,
+        userName: '赵六',
+        userAvatar: 'https://picsum.photos/100/100?random=5',
+        content: '同意楼上的观点，这个帖子很有价值！',
+        likes: 1,
+        isLiked: false,
+        createTime: new Date(),
+        replyTo: '张三',
         replyToId: 1
+      }
+    ]
+  },
+  {
+    id: 102,
+    postId: 1,
+    userId: 3,
+    userName: '王五',
+    userAvatar: 'https://picsum.photos/100/100?random=3',
+    content: '请问有没有相关的实战案例分享？想深入学习一下。',
+    likes: 3,
+    isLiked: false,
+    createTime: new Date(Date.now() - 3600000),
+    replies: [
+      {
+        id: 1003,
+        commentId: 102,
+        userId: 1,
+        userName: '张三',
+        userAvatar: 'https://picsum.photos/100/100?random=1',
+        content: '可以参考我之前发布的另一篇帖子，里面有详细的实战案例。',
+        likes: 1,
+        isLiked: false,
+        createTime: new Date(Date.now() - 3000000),
+        replyTo: '王五',
+        replyToId: 3
       }
     ]
   }
@@ -1450,6 +1489,92 @@ export const deletePost = async (id: number): Promise<void> => {
   await delay()
   const index = mockPosts.findIndex(p => p.id === id)
   if (index > -1) mockPosts.splice(index, 1)
+}
+
+// 检查扶摇Agent是否已有置顶帖子
+export const checkAgentPinnedPost = async (): Promise<{ hasPinned: boolean; pinnedPostId: number | null; pinnedPostTitle: string | null }> => {
+  await delay()
+  const pinnedPost = mockPosts.find(p => p.zone === 'agent' && (p.featured || p.isFeatured))
+  return {
+    hasPinned: !!pinnedPost,
+    pinnedPostId: pinnedPost?.id || null,
+    pinnedPostTitle: pinnedPost?.title || null
+  }
+}
+
+// 设置帖子置顶/加精状态
+export const setPostFeatured = async (
+  postId: number,
+  featured: boolean,
+  zone?: string,
+  toolId?: number | null
+): Promise<{ success: boolean; featured: boolean; message?: string }> => {
+  await delay()
+
+  // 扶摇Agent应用只能有一个置顶帖子
+  if (featured && zone === 'agent') {
+    const existingPinned = mockPosts.find(p => p.zone === 'agent' && (p.featured || p.isFeatured) && p.id !== postId)
+    if (existingPinned) {
+      return {
+        success: false,
+        featured: false,
+        message: `已有置顶帖子「${existingPinned.title}」，请先取消该帖子的置顶后再操作`
+      }
+    }
+  }
+
+  const post = mockPosts.find(p => p.id === postId)
+  if (post) {
+    post.featured = featured
+    post.isFeatured = featured
+    console.log(`[Mock API] 帖子 ${postId} ${featured ? '设置' : '取消'}精华/置顶 (zone: ${zone}, toolId: ${toolId})`)
+  }
+  return { success: true, featured }
+}
+
+// 获取所有精华/置顶帖子列表（按区域分组）
+export const getAllFeaturedPosts = async (): Promise<{
+  practices: Post[]
+  empowerment: Post[]
+  agent: Post[]
+  otherTools: Post[]
+}> => {
+  await delay()
+
+  // AI优秀实践精华
+  const practices = mockPosts.filter(p =>
+    (p.zone === 'practices' || (!p.zone && !p.toolId && p.toolId !== 0)) &&
+    (p.featured || p.isFeatured)
+  )
+
+  // 赋能交流精华
+  const empowerment = mockPosts.filter(p =>
+    p.zone === 'empowerment' && (p.featured || p.isFeatured)
+  )
+
+  // 扶摇Agent置顶
+  const agent = mockPosts.filter(p =>
+    (p.zone === 'agent' || p.toolId === -1) && (p.featured || p.isFeatured)
+  )
+
+  // AI工具专区其他工具精华
+  const otherTools = mockPosts.filter(p =>
+    p.toolId === 0 && (p.featured || p.isFeatured)
+  )
+
+  return { practices, empowerment, agent, otherTools }
+}
+
+// 批量移除精华/置顶
+export const removeFeaturedPost = async (postId: number): Promise<{ success: boolean }> => {
+  await delay()
+  const post = mockPosts.find(p => p.id === postId)
+  if (post) {
+    post.featured = false
+    post.isFeatured = false
+    console.log(`[Mock API] 移除帖子 ${postId} 的精华/置顶状态`)
+  }
+  return { success: true }
 }
 
 export const likePost = async (id: number, action: 'like' | 'unlike'): Promise<{ liked: boolean; likes: number }> => {
@@ -2371,32 +2496,32 @@ export const saveWinnersConfig = async (_list: WinnerConfig[]): Promise<void> =>
 }
 
 // 赋能交流精华帖子配置
-export const getEmpowermentFeaturedPostsConfig = async (): Promise<{ list: Array<{ id: number; url: string; note: string }> }> => {
+export const getEmpowermentFeaturedPostsConfig = async (): Promise<{ list: Array<{ id: number; postId: number; note: string }> }> => {
   await delay()
   return {
     list: empowermentFeaturedPosts.map(p => ({
       id: p.id,
-      url: `/post/${p.id}`,
+      postId: p.id,
       note: p.title
     }))
   }
 }
 
-export const saveEmpowermentFeaturedPostsConfig = async (_list: Array<{ id: number; url: string; note: string }>): Promise<void> => {
+export const saveEmpowermentFeaturedPostsConfig = async (_list: Array<{ id: number; postId: number; note: string }>): Promise<void> => {
   await delay()
   // 在实际场景中，这里会更新精华帖子列表
   console.log('保存赋能交流精华帖子配置:', _list)
 }
 
 // AI工具专区其他工具精华帖子配置
-export const getOtherToolsFeaturedPostsConfig = async (): Promise<{ list: Array<{ id: number; url: string; note: string }> }> => {
+export const getOtherToolsFeaturedPostsConfig = async (): Promise<{ list: Array<{ id: number; postId: number; note: string }> }> => {
   await delay()
   const otherToolsFeaturedPost = mockPosts.find(p => p.toolId === 0 && (p.featured || p.isFeatured))
   if (otherToolsFeaturedPost) {
     return {
       list: [{
         id: otherToolsFeaturedPost.id,
-        url: `/post/${otherToolsFeaturedPost.id}`,
+        postId: otherToolsFeaturedPost.id,
         note: otherToolsFeaturedPost.title || ''
       }]
     }
@@ -2404,7 +2529,7 @@ export const getOtherToolsFeaturedPostsConfig = async (): Promise<{ list: Array<
   return { list: [] }
 }
 
-export const saveOtherToolsFeaturedPostsConfig = async (_list: Array<{ id: number; url: string; note: string }>): Promise<void> => {
+export const saveOtherToolsFeaturedPostsConfig = async (_list: Array<{ id: number; postId: number; note: string }>): Promise<void> => {
   await delay()
   // 在实际场景中，这里会更新精华帖子列表
   console.log('保存AI工具专区其他工具精华帖子配置:', _list)
@@ -2443,6 +2568,7 @@ interface SetUserAwardParams {
 interface SearchUsersParams {
   keyword?: string
   department?: string
+  role?: 'admin' | 'tool_owner' | 'user'
   page?: number
   pageSize?: number
 }
@@ -2451,10 +2577,11 @@ interface SearchUsersParams {
 interface UserListItem {
   id: number
   name: string
+  email: string
   avatar: string
   department: string
   employeeId: string
-  roles: string[]
+  currentRole: 'user' | 'admin' | 'tool_owner'
 }
 
 // 角色参数类型
@@ -2467,8 +2594,8 @@ interface RoleParams {
 interface AwardListItem {
   id: number
   name: string
-  description: string
-  category: string
+  description?: string
+  category?: string
 }
 
 export const getRecommendedWinners = async (month?: string, _limit: number = 3): Promise<{ list: RecommendedWinner[]; month?: string }> => {
@@ -2485,9 +2612,103 @@ export const cancelUserAward = async (_id: number): Promise<void> => {
   await delay()
 }
 
+// Mock 奖项列表数据
+const mockAwardsList: AwardListItem[] = [
+  { id: 1, name: '2026年度 AI 技术突破奖', description: '表彰在AI技术领域取得重大突破和创新的个人' },
+  { id: 2, name: '最佳 AI 辅助设计实践', description: '表彰将AI技术创新性应用于设计工作流程的个人' },
+  { id: 3, name: 'Copilot 效能提升大师', description: '表彰通过AI工具显著提升工作效能的个人' },
+  { id: 4, name: 'AI 社区贡献之星', description: '表彰为AI社区做出突出贡献的个人' },
+  { id: 5, name: 'AI 应用创新奖', description: '表彰在AI应用方面展现出创新思维的个人' }
+]
+
+// Mock 奖项规则说明
+let mockAwardRulesContent = `
+<h2>🏆 评奖周期</h2>
+<p>每季度评选一次，分别在3月、6月、9月、12月进行评选。</p>
+
+<h2>📋 评选标准</h2>
+<ol>
+  <li><strong>技术创新</strong>：在AI技术应用方面展现出创新思维和实践能力</li>
+  <li><strong>效能提升</strong>：通过AI工具显著提升个人或团队工作效能</li>
+  <li><strong>知识分享</strong>：积极在社区分享AI使用经验和最佳实践</li>
+  <li><strong>影响力</strong>：对周围同事产生积极影响，推动AI技术在团队中的应用</li>
+</ol>
+
+<h2>🎁 奖励说明</h2>
+<ul>
+  <li>获奖者将获得荣誉证书和奖杯</li>
+  <li>获奖记录将在AI使用达人页面永久展示</li>
+  <li>优秀获奖者有机会参与更高级别的AI培训和交流活动</li>
+</ul>
+
+<h2>📝 申报方式</h2>
+<p>可通过以下方式参与评选：</p>
+<ol>
+  <li>由部门负责人推荐</li>
+  <li>个人自荐（需提供相关证明材料）</li>
+  <li>系统自动推荐（根据平台数据分析）</li>
+</ol>
+`
+
 export const getAwardsList = async (_category?: string): Promise<{ list: AwardListItem[] }> => {
   await delay()
-  return { list: [] }
+  return { list: mockAwardsList }
+}
+
+// 获取奖项规则说明
+export const getAwardRules = async (): Promise<{ content: string; updateTime: string }> => {
+  await delay()
+  return {
+    content: mockAwardRulesContent,
+    updateTime: new Date().toISOString()
+  }
+}
+
+// 保存奖项规则说明
+export const saveAwardRules = async (content: string): Promise<{ content: string; updateTime: string }> => {
+  await delay()
+  mockAwardRulesContent = content
+  return {
+    content: mockAwardRulesContent,
+    updateTime: new Date().toISOString()
+  }
+}
+
+// 保存单个奖项（新增或更新）
+export const saveAward = async (award: { id?: number; name: string; description?: string }): Promise<AwardListItem> => {
+  await delay()
+  if (award.id !== undefined) {
+    // 更新现有奖项
+    const index = mockAwardsList.findIndex(a => a.id === award.id)
+    if (index !== -1) {
+      const updated: AwardListItem = {
+        id: award.id,
+        name: award.name,
+        description: award.description
+      }
+      mockAwardsList[index] = updated
+      return updated
+    }
+  }
+  // 新增奖项
+  const newAward: AwardListItem = {
+    id: Date.now(),
+    name: award.name,
+    description: award.description || ''
+  }
+  mockAwardsList.push(newAward)
+  return newAward
+}
+
+// 删除奖项
+export const deleteAward = async (id: number): Promise<{ success: boolean; message?: string }> => {
+  await delay()
+  const index = mockAwardsList.findIndex(a => a.id === id)
+  if (index !== -1) {
+    mockAwardsList.splice(index, 1)
+    return { success: true }
+  }
+  return { success: false, message: '奖项不存在' }
 }
 
 export const searchUsers = async (_params: SearchUsersParams): Promise<{ list: UserListItem[] }> => {
@@ -2495,9 +2716,74 @@ export const searchUsers = async (_params: SearchUsersParams): Promise<{ list: U
   return { list: [] }
 }
 
-export const getUsersList = async (_params?: SearchUsersParams): Promise<{ list: UserListItem[]; total: number }> => {
+// Mock 用户列表数据
+const mockUsersList: UserListItem[] = [
+  {
+    id: 1,
+    name: '张三',
+    email: 'zhangsan@example.com',
+    avatar: 'https://picsum.photos/100/100?random=1',
+    department: '研发部',
+    employeeId: 'E001',
+    currentRole: 'admin'
+  },
+  {
+    id: 2,
+    name: '李四',
+    email: 'lisi@example.com',
+    avatar: 'https://picsum.photos/100/100?random=2',
+    department: '产品部',
+    employeeId: 'E002',
+    currentRole: 'tool_owner'
+  },
+  {
+    id: 3,
+    name: '王五',
+    email: 'wangwu@example.com',
+    avatar: 'https://picsum.photos/100/100?random=3',
+    department: '技术部',
+    employeeId: 'E003',
+    currentRole: 'user'
+  },
+  {
+    id: 4,
+    name: '赵六',
+    email: 'zhaoliu@example.com',
+    avatar: 'https://picsum.photos/100/100?random=4',
+    department: '数据部',
+    employeeId: 'E004',
+    currentRole: 'user'
+  },
+  {
+    id: 5,
+    name: '孙七',
+    email: 'sunqi@example.com',
+    avatar: 'https://picsum.photos/100/100?random=5',
+    department: '运营部',
+    employeeId: 'E005',
+    currentRole: 'user'
+  }
+]
+
+export const getUsersList = async (params?: SearchUsersParams): Promise<{ list: UserListItem[]; total: number }> => {
   await delay()
-  return { list: [], total: 0 }
+  let list = mockUsersList
+
+  // 关键词搜索
+  if (params?.keyword) {
+    const keyword = params.keyword.toLowerCase()
+    list = list.filter(u =>
+      u.name.toLowerCase().includes(keyword) ||
+      u.email.toLowerCase().includes(keyword)
+    )
+  }
+
+  // 角色筛选
+  if (params?.role) {
+    list = list.filter(u => u.currentRole === params.role)
+  }
+
+  return { list, total: list.length }
 }
 
 export const addUserRole = async (_userId: number, _params: RoleParams): Promise<void> => {
@@ -2626,7 +2912,7 @@ export const getTopContributors = async (_params?: PaginationParams): Promise<{ 
   return { list: [] }
 }
 
-export const getAwardRules = async (id: number): Promise<AwardRules> => {
+export const getAwardRulesById = async (id: number): Promise<AwardRules> => {
   await delay()
   return { awardId: id, awardName: '奖项名称', rules: '奖项规则' }
 }
@@ -2638,4 +2924,242 @@ export const login = async (_data: LoginParams): Promise<LoginResponse> => {
 
 export const logout = async (): Promise<void> => {
   await delay()
+}
+
+// ========== AI优秀实践页面专用 API ==========
+
+// AI优秀实践帖子列表查询参数
+interface PracticesPostsParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  tag?: string
+  department?: string
+  contributor?: string
+  sortBy?: 'newest' | 'hot' | 'comments' | 'likes'
+}
+
+// 获取AI优秀实践帖子列表（含精华帖子）
+export const getPracticePosts = async (params?: PracticesPostsParams): Promise<{
+  list: Post[]
+  featuredPosts: Post[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}> => {
+  await delay()
+
+  // 获取所有 practices zone 的帖子
+  const allPracticesPosts = mockPosts.filter(p => p.zone === 'practices' || !p.zone || (!p.toolId && p.toolId !== 0))
+
+  // 精华帖子
+  const featuredPosts = allPracticesPosts.filter(p => p.featured || p.isFeatured)
+
+  // 普通帖子
+  let normalPosts = allPracticesPosts.filter(p => !p.featured && !p.isFeatured)
+
+  // 标签筛选
+  if (params?.tag && params.tag !== '全部') {
+    normalPosts = normalPosts.filter(p => p.tags?.includes(params.tag!) || p.tag === params.tag)
+  }
+
+  // 部门筛选
+  if (params?.department) {
+    normalPosts = normalPosts.filter(p => p.department === params.department)
+  }
+
+  // 贡献者筛选
+  if (params?.contributor) {
+    normalPosts = normalPosts.filter(p => p.author === params.contributor || p.authorName === params.contributor)
+  }
+
+  // 搜索
+  if (params?.keyword) {
+    const keyword = params.keyword.toLowerCase()
+    normalPosts = normalPosts.filter(p =>
+      p.title.toLowerCase().includes(keyword) ||
+      (p.author && p.author.toLowerCase().includes(keyword)) ||
+      (p.authorName && p.authorName.toLowerCase().includes(keyword)) ||
+      (p.description && p.description.toLowerCase().includes(keyword))
+    )
+  }
+
+  // 排序
+  if (params?.sortBy === 'hot') {
+    normalPosts.sort((a, b) => (b.views || 0) - (a.views || 0))
+  } else if (params?.sortBy === 'comments') {
+    normalPosts.sort((a, b) => (b.comments || 0) - (a.comments || 0))
+  } else if (params?.sortBy === 'likes') {
+    normalPosts.sort((a, b) => (b.likes || 0) - (a.likes || 0))
+  } else {
+    // 默认按时间排序（最新）
+    normalPosts.sort((a, b) => b.id - a.id)
+  }
+
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || 15
+  const total = normalPosts.length
+  const totalPages = Math.ceil(total / pageSize)
+
+  // 分页
+  const start = (page - 1) * pageSize
+  const paginatedPosts = normalPosts.slice(start, start + pageSize)
+
+  return {
+    list: paginatedPosts,
+    featuredPosts,
+    total,
+    page,
+    pageSize,
+    totalPages
+  }
+}
+
+// 获取最热帖子Top N
+export const getPracticeHotPosts = async (limit: number = 3): Promise<{ list: Array<{ id: number; title: string; views: number; rank: number }> }> => {
+  await delay()
+
+  // 获取所有 practices zone 的帖子
+  const practicesPosts = mockPosts.filter(p => p.zone === 'practices' || !p.zone || (!p.toolId && p.toolId !== 0))
+
+  // 按浏览量排序
+  const sortedPosts = [...practicesPosts].sort((a, b) => (b.views || 0) - (a.views || 0))
+
+  // 取前N个
+  const hotPosts = sortedPosts.slice(0, limit).map((post, index) => ({
+    id: post.id,
+    title: post.title,
+    views: post.views || 0,
+    rank: index + 1
+  }))
+
+  return { list: hotPosts }
+}
+
+// 获取标签统计列表
+export const getPracticeTags = async (department?: string): Promise<{ list: Array<{ name: string; count: number }> }> => {
+  await delay()
+
+  // 获取所有 practices zone 的帖子
+  let allPosts = mockPosts.filter(p => p.zone === 'practices' || !p.zone || (!p.toolId && p.toolId !== 0))
+
+  // 按部门过滤
+  if (department) {
+    allPosts = allPosts.filter(p => p.department === department)
+  }
+
+  // 统计标签
+  const tagCountMap = new Map<string, number>()
+  allPosts.forEach(post => {
+    if (post.tags) {
+      post.tags.forEach(tag => {
+        tagCountMap.set(tag, (tagCountMap.get(tag) || 0) + 1)
+      })
+    }
+    if (post.tag && !post.tags?.includes(post.tag)) {
+      tagCountMap.set(post.tag, (tagCountMap.get(post.tag) || 0) + 1)
+    }
+  })
+
+  const tags: Array<{ name: string; count: number }> = [
+    { name: '全部', count: allPosts.length }
+  ]
+
+  tagCountMap.forEach((count, name) => {
+    tags.push({ name, count })
+  })
+
+  // 按数量排序
+  tags.sort((a, b) => {
+    if (a.name === '全部') return -1
+    if (b.name === '全部') return 1
+    return b.count - a.count
+  })
+
+  return { list: tags }
+}
+
+// 获取部门排名列表
+export const getPracticeDepartments = async (tag?: string): Promise<{ list: Array<{ id: number; name: string; postCount: number; contributorCount: number }> }> => {
+  await delay()
+
+  // 获取所有 practices zone 的帖子
+  let allPosts = mockPosts.filter(p => p.zone === 'practices' || !p.zone || (!p.toolId && p.toolId !== 0))
+
+  // 按标签过滤
+  if (tag && tag !== '全部') {
+    allPosts = allPosts.filter(p => p.tags?.includes(tag) || p.tag === tag)
+  }
+
+  // 统计部门
+  const deptMap = new Map<string, { postCount: number; contributors: Set<string> }>()
+
+  allPosts.forEach(post => {
+    const dept = post.department || '未分类'
+    if (!deptMap.has(dept)) {
+      deptMap.set(dept, { postCount: 0, contributors: new Set() })
+    }
+    const deptStats = deptMap.get(dept)!
+    deptStats.postCount++
+    if (post.author || post.authorName) {
+      deptStats.contributors.add(post.author || post.authorName || '')
+    }
+  })
+
+  const departments: Array<{ id: number; name: string; postCount: number; contributorCount: number }> = []
+  let id = 1
+  deptMap.forEach((stats, name) => {
+    departments.push({
+      id: id++,
+      name,
+      postCount: stats.postCount,
+      contributorCount: stats.contributors.size
+    })
+  })
+
+  // 按发帖数排序
+  departments.sort((a, b) => b.postCount - a.postCount)
+
+  return { list: departments }
+}
+
+// 获取热门贡献者列表
+export const getPracticeContributors = async (limit: number = 5): Promise<{ list: Array<{ id: number; name: string; avatar: string; postCount: number; department: string }> }> => {
+  await delay()
+
+  // 获取所有 practices zone 的帖子
+  const allPosts = mockPosts.filter(p => p.zone === 'practices' || !p.zone || (!p.toolId && p.toolId !== 0))
+
+  // 统计贡献者
+  const contributorMap = new Map<string, { postCount: number; avatar: string; department: string }>()
+
+  allPosts.forEach(post => {
+    const name = post.author || post.authorName || '匿名'
+    if (!contributorMap.has(name)) {
+      contributorMap.set(name, {
+        postCount: 0,
+        avatar: post.authorAvatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+        department: post.department || '未知部门'
+      })
+    }
+    contributorMap.get(name)!.postCount++
+  })
+
+  const contributors: Array<{ id: number; name: string; avatar: string; postCount: number; department: string }> = []
+  let id = 1
+  contributorMap.forEach((stats, name) => {
+    contributors.push({
+      id: id++,
+      name,
+      avatar: stats.avatar,
+      postCount: stats.postCount,
+      department: stats.department
+    })
+  })
+
+  // 按发帖数排序并取前N个
+  contributors.sort((a, b) => b.postCount - a.postCount)
+
+  return { list: contributors.slice(0, limit) }
 }

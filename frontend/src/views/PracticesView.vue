@@ -146,12 +146,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Refresh, Star } from '@element-plus/icons-vue'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
+import {
+  getPracticePosts,
+  getPracticeHotPosts,
+  getPracticeTags,
+  getPracticeDepartments,
+  getPracticeContributors,
+  type Post
+} from '../mock'
 
 const router = useRouter()
 
@@ -209,88 +217,36 @@ const displayedTags = computed(() => {
 })
 
 // 精华帖（置顶）
-const featuredPosts = ref([
-  {
-    id: 1,
-    title: 'AI大会2024',
-    description: '参加活动探索AI的最新趋势和创新。',
-    author: 'David Chen',
-    createTime: '2024年4月10日',
-    views: 1250,
-    comments: 45,
-    likes: 128,
-    tags: ['活动', 'AI大会'],
-    image: 'https://picsum.photos/800/400?random=1',
-    featured: true,
-    department: '产品部'
-  }
-])
+const featuredPosts = ref<Post[]>([])
 
 // 普通帖子
-const posts = ref([
-  {
-    id: 2,
-    title: '构建AI应用指南',
-    description: '学习如何构建实用的AI应用程序，从概念到部署的完整流程。',
-    author: 'Brinit',
-    createTime: '2024年4月',
-    views: 890,
-    comments: 32,
-    likes: 56,
-    tags: ['项目', 'AI应用'],
-    image: 'https://picsum.photos/400/300?random=2',
-    department: '研发部'
-  },
-  {
-    id: 3,
-    title: '通过自动化工作流提高效率',
-    description: '探索如何使用AI工具自动化重复性任务，提升工作效率。',
-    author: 'Iruls',
-    createTime: '60分钟前',
-    views: 650,
-    comments: 18,
-    likes: 42,
-    tags: ['效率', '自动化'],
-    image: 'https://picsum.photos/400/300?random=3',
-    department: '技术部'
-  },
-  {
-    id: 4,
-    title: '在真实项目中实施AI',
-    description: '学习如何将AI技术应用于解决实际问题，包含来自各个行业的示例。',
-    author: 'Emily Zhao',
-    createTime: '2024年4月20日',
-    views: 520,
-    comments: 15,
-    likes: 28,
-    tags: ['实践', 'AI应用'],
-    department: '数据部'
-  },
-  {
-    id: 5,
-    title: '训练机器学习模型的最佳实践',
-    description: '发现有效训练AI模型的关键策略，包括数据准备、模型选择和部署。',
-    author: 'John Smith',
-    createTime: '2024年4月20日',
-    views: 720,
-    comments: 28,
-    likes: 65,
-    tags: ['已解决', '机器学习'],
-    department: '算法部'
-  },
-  {
-    id: 6,
-    title: '[已解决] 部署AI解决方案的挑战',
-    description: '讨论AI部署过程中遇到的常见障碍并分享解决方案。',
-    author: 'Sarah Lee',
-    createTime: '2024年4月19日',
-    views: 450,
-    comments: 12,
-    likes: 19,
-    tags: ['已解决', '部署'],
-    department: '测试部'
+const posts = ref<Post[]>([])
+
+// 加载帖子数据
+const loadPosts = async () => {
+  try {
+    const response = await getPracticePosts({
+      page: 1,
+      pageSize: 100 // 获取足够多的帖子用于前端过滤
+    })
+    featuredPosts.value = response.featuredPosts.map(post => ({
+      ...post,
+      author: post.author || post.authorName || '',
+      description: post.description || post.summary || '',
+      image: post.image || post.cover || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
+    }))
+    posts.value = response.list.map(post => ({
+      ...post,
+      author: post.author || post.authorName || '',
+      description: post.description || post.summary || '',
+      image: post.image || post.cover || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
+    }))
+  } catch (error) {
+    console.error('加载帖子失败:', error)
   }
-])
+}
 
 // 部门排名统计（动态计算）
 const displayedDepartments = computed(() => {
@@ -345,13 +301,17 @@ const displayedDepartments = computed(() => {
 })
 
 // 热门贡献者
-const topContributors = ref([
-  { id: 1, name: '张工程师', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 2, name: '李开发者', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 3, name: '王测试', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 4, name: '赵医生', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 5, name: '陈架构师', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' }
-])
+const topContributors = ref<Array<{ id: number; name: string; avatar: string; postCount?: number; department?: string }>>([])
+
+// 加载热门贡献者
+const loadContributors = async () => {
+  try {
+    const response = await getPracticeContributors(5)
+    topContributors.value = response.list
+  } catch (error) {
+    console.error('加载热门贡献者失败:', error)
+  }
+}
 
 // 过滤后的普通帖子（不包含精华帖，精华帖始终显示）
 const filteredNormalPosts = computed(() => {
@@ -517,6 +477,14 @@ const handlePostClick = (post: { id: number; [key: string]: unknown }) => {
     console.error('路由跳转失败:', err)
   })
 }
+
+// 页面加载时获取数据
+onMounted(async () => {
+  await Promise.all([
+    loadPosts(),
+    loadContributors()
+  ])
+})
 </script>
 
 <style scoped lang="scss">
