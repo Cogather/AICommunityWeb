@@ -154,9 +154,6 @@ import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import {
   getPracticePosts,
-  getPracticeHotPosts,
-  getPracticeTags,
-  getPracticeDepartments,
   getPracticeContributors,
   type Post
 } from '../mock'

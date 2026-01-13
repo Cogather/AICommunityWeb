@@ -304,7 +304,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Document, Calendar, Location, User, View } from '@element-plus/icons-vue'
+import { Document, Calendar, Location, User } from '@element-plus/icons-vue'
 import { ElMessage, ElDialog } from 'element-plus'
 import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'

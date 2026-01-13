@@ -164,11 +164,6 @@ onMounted(async () => {
   ])
 })
 
-// 过滤后的帖子（现在由API完成筛选，这里直接返回posts）
-const filteredPosts = computed(() => {
-  return posts.value
-})
-
 // 分页后的帖子（现在由API完成分页，这里直接返回posts）
 const paginatedPosts = computed(() => {
   return posts.value
