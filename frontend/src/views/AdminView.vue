@@ -603,46 +603,6 @@
                     </div>
                   </el-tab-pane>
 
-                  <!-- 奖项规则说明 -->
-                  <el-tab-pane label="奖项规则说明" name="rules">
-                    <div class="config-section">
-                      <div class="section-header">
-                        <h2>奖项规则说明</h2>
-                        <el-button type="primary" @click="handleSaveAwardRules" :loading="savingAwardRules">
-                          <el-icon><Check /></el-icon>
-                          保存规则
-                        </el-button>
-                      </div>
-
-                      <el-alert
-                        title="说明：此处录入的奖项规则说明将展示在AI使用达人页面，帮助用户了解评奖标准和申报流程"
-                        type="info"
-                        :closable="false"
-                        style="margin-bottom: 24px;"
-                      />
-
-                      <div class="editor-container" style="border: 1px solid #dcdfe6; border-radius: 4px;">
-                        <Toolbar
-                          :editor="awardRulesEditorRef"
-                          :defaultConfig="toolbarConfig"
-                          :mode="'default'"
-                          style="border-bottom: 1px solid #dcdfe6;"
-                        />
-                        <Editor
-                          v-model="awardRulesContent"
-                          :defaultConfig="editorConfig"
-                          :mode="'default'"
-                          style="height: 400px; overflow-y: hidden;"
-                          @onCreated="handleAwardRulesEditorCreated"
-                        />
-                      </div>
-
-                      <div v-if="awardRulesUpdateTime" style="margin-top: 12px; color: #909399; font-size: 12px;">
-                        最后更新时间：{{ formatDateTime(awardRulesUpdateTime) }}
-                      </div>
-                    </div>
-                  </el-tab-pane>
-
                   <!-- 获奖者管理 -->
                   <el-tab-pane label="获奖者管理" name="winners">
                     <div class="config-section">
@@ -891,6 +851,14 @@
                               <el-form-item label="所属领域">
                                 <el-input v-model="img.teamField" placeholder="请输入团队所属领域（如：人工智能、大数据）" />
                               </el-form-item>
+                              <el-form-item label="获奖事迹">
+                                <el-input
+                                  v-model="img.story"
+                                  type="textarea"
+                                  :rows="4"
+                                  placeholder="请输入获奖事迹描述（支持HTML格式，如：<p>团队在AI技术应用方面...</p>）"
+                                />
+                              </el-form-item>
                               <el-button 
                                 type="danger" 
                                 size="small" 
@@ -1138,8 +1106,6 @@ import {
   getUsersList,
   getAllFeaturedPosts,
   removeFeaturedPost,
-  getAwardRules,
-  saveAwardRules,
   saveAward,
   deleteAward,
   type CarouselItem as AdminCarouselItem,
@@ -1215,6 +1181,7 @@ interface TeamAwardImageItem {
   imageType: 'url' | 'upload'
   winnerName: string
   teamField: string  // 团队所属领域
+  story: string  // 获奖事迹
 }
 
 // 团队奖项列表
@@ -1236,7 +1203,8 @@ const teamAwardsList = ref<TeamAwardItem[]>([
         image: 'https://picsum.photos/400/300?random=21',
         imageType: 'url',
         winnerName: 'AI研发团队',
-        teamField: '人工智能'
+        teamField: '人工智能',
+        story: '<p>AI研发团队在过去一年中取得了显著成绩...</p>'
       }
     ]
   }
@@ -1394,52 +1362,6 @@ interface AwardItem {
 }
 
 const awardsList = ref<AwardItem[]>([])
-
-// 奖项规则说明
-const awardRulesContent = ref('')
-const awardRulesUpdateTime = ref('')
-const savingAwardRules = ref(false)
-const awardRulesEditorRef = shallowRef<IDomEditor | null>(null)
-
-// 编辑器配置
-const toolbarConfig: Partial<IToolbarConfig> = {
-  excludeKeys: ['insertVideo', 'insertTable', 'codeBlock', 'group-video']
-}
-
-const editorConfig: Partial<IEditorConfig> = {
-  placeholder: '请输入奖项规则说明...'
-}
-
-// 加载奖项规则说明
-const loadAwardRules = async () => {
-  try {
-    const result = await getAwardRules()
-    awardRulesContent.value = result.content
-    awardRulesUpdateTime.value = result.updateTime
-  } catch (error) {
-    console.error('加载奖项规则失败:', error)
-  }
-}
-
-// 保存奖项规则说明
-const handleSaveAwardRules = async () => {
-  savingAwardRules.value = true
-  try {
-    const result = await saveAwardRules(awardRulesContent.value)
-    awardRulesUpdateTime.value = result.updateTime
-    ElMessage.success('奖项规则保存成功')
-  } catch (error) {
-    console.error('保存奖项规则失败:', error)
-    ElMessage.error('保存奖项规则失败')
-  } finally {
-    savingAwardRules.value = false
-  }
-}
-
-// 奖项规则编辑器创建回调
-const handleAwardRulesEditorCreated = (editor: IDomEditor) => {
-  awardRulesEditorRef.value = editor
-}
 
 // 格式化日期时间
 const formatDateTime = (dateStr: string) => {
@@ -2151,7 +2073,9 @@ const handleAddTeamAwardImage = (awardIndex: number) => {
       id: Date.now(),
       image: '',
       imageType: 'url',
-      winnerName: ''
+      winnerName: '',
+      teamField: '',
+      story: ''
     })
   }
 }
@@ -2605,7 +2529,7 @@ const handleDeleteFeaturedCollection = (index: number) => {
 const handleAddEmpowermentFeaturedPost = () => {
   empowermentFeaturedPostsList.value.push({
     id: Date.now(),
-    url: '',
+    postId: null,
     note: ''
   })
 }
@@ -2626,7 +2550,7 @@ const handleDeleteEmpowermentFeaturedPost = (index: number) => {
 const handleAddOtherToolsFeaturedPost = () => {
   otherToolsFeaturedPostsList.value.push({
     id: Date.now(),
-    url: '',
+    postId: null,
     note: ''
   })
 }
@@ -2938,7 +2862,7 @@ const loadConfig = async () => {
     if (empowermentFeaturedResponse && empowermentFeaturedResponse.list) {
       empowermentFeaturedPostsList.value = empowermentFeaturedResponse.list.map((item: any) => ({
         id: item.id || Date.now(),
-        url: item.url || '',
+        postId: item.postId ?? null,
         note: item.note || ''
       }))
     }
@@ -2947,13 +2871,10 @@ const loadConfig = async () => {
     if (otherToolsFeaturedResponse && otherToolsFeaturedResponse.list) {
       otherToolsFeaturedPostsList.value = otherToolsFeaturedResponse.list.map((item: any) => ({
         id: item.id || Date.now(),
-        url: item.url || '',
+        postId: item.postId ?? null,
         note: item.note || ''
       }))
     }
-    
-    // 加载奖项规则说明
-    await loadAwardRules()
     
     // 加载奖项列表
     await loadAwardsListFromApi()
@@ -3047,10 +2968,6 @@ onBeforeUnmount(() => {
   // 清理编辑器
   if (activityEditorRef.value) {
     activityEditorRef.value.destroy()
-  }
-  // 清理奖项规则编辑器
-  if (awardRulesEditorRef.value) {
-    awardRulesEditorRef.value.destroy()
   }
 })
 </script>

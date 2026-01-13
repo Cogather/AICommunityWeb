@@ -98,16 +98,23 @@
           </div>
         </div>
 
-        <!-- 多图网格展示 -->
+        <!-- 多图网格展示（一行三个） -->
         <transition name="zoom-fade" mode="out-in">
           <div v-if="currentTeamAward && currentTeamAward.images && currentTeamAward.images.length > 0" :key="currentTeamAward.id" class="team-award-images-grid">
             <div
               v-for="img in currentTeamAward.images"
               :key="img.id"
               class="team-award-image-card"
+              :class="{ 'is-expanded': expandedTeamId === img.id }"
             >
-              <div class="image-card-wrapper">
+              <div class="image-card-wrapper" @click="toggleTeamExpand(img.id)">
                 <img :src="img.image" :alt="img.winnerName" class="award-image" />
+                <!-- 展开指示器 -->
+                <div class="expand-indicator">
+                  <el-icon :class="{ 'is-rotated': expandedTeamId === img.id }">
+                    <ArrowDown />
+                  </el-icon>
+                </div>
                 <!-- 右下角拟态七彩玻璃信息框 -->
                 <div class="team-info-glass-box">
                   <div class="glass-rainbow-border"></div>
@@ -132,6 +139,16 @@
                   </div>
                 </div>
               </div>
+              <!-- 下拉抽屉：获奖事迹 -->
+              <transition name="drawer-slide">
+                <div v-if="expandedTeamId === img.id" class="team-story-drawer">
+                  <div class="drawer-header">
+                    <el-icon><Trophy /></el-icon>
+                    <span>获奖事迹</span>
+                  </div>
+                  <div class="drawer-content" v-html="img.story || '暂无获奖事迹描述'"></div>
+                </div>
+              </transition>
             </div>
           </div>
           <div v-else-if="currentTeamAward" class="empty-images">
@@ -244,7 +261,20 @@
         <el-icon class="is-loading"><Loading /></el-icon>
         <span>加载中...</span>
       </div>
-      <div v-else class="award-rules-content" v-html="awardRulesContent"></div>
+      <div v-else class="award-rules-content">
+        <div v-if="awardRulesList.length === 0" class="empty-rules">
+          <el-empty description="暂无奖项规则说明" />
+        </div>
+        <div v-else class="rules-list">
+          <div v-for="award in awardRulesList" :key="award.id" class="rule-item">
+            <div class="rule-title">
+              <el-icon><Trophy /></el-icon>
+              <span>{{ award.name }}</span>
+            </div>
+            <div class="rule-description" v-html="award.description || '暂无描述'"></div>
+          </div>
+        </div>
+      </div>
       <div v-if="awardRulesUpdateTime" class="update-time">
         最后更新：{{ formatDateTime(awardRulesUpdateTime) }}
       </div>
@@ -259,7 +289,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
   Grid, Timer, Trophy, OfficeBuilding, TrendCharts, Medal,
-  Star, ArrowLeft, ArrowRight, InfoFilled, Loading
+  Star, ArrowLeft, ArrowRight, InfoFilled, Loading, ArrowDown
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
 import { getTeamAwards, giveFlower, getAwardRules } from '../mock'
@@ -318,6 +348,16 @@ const canScrollRight = ref(false);
 // 团队奖状态
 const selectedYear = ref<string>('2026'); // 默认选中最新
 const activeTeamAwardIndex = ref<number>(0);
+const expandedTeamId = ref<number | null>(null); // 当前展开的团队ID
+
+// 切换团队获奖事迹展开/收起
+const toggleTeamExpand = (teamId: number) => {
+  if (expandedTeamId.value === teamId) {
+    expandedTeamId.value = null;
+  } else {
+    expandedTeamId.value = teamId;
+  }
+};
 
 const handleYearChange = (year: string) => {
   selectedYear.value = year;
@@ -351,6 +391,7 @@ interface TeamAwardImage {
   imageType: 'url' | 'upload';
   winnerName: string; // 团队名称
   teamField?: string; // 团队领域
+  story?: string; // 获奖事迹（HTML富文本）
   flowers?: number; // 花朵数
   hasGivenFlower?: boolean; // 是否已送花
 }
@@ -528,9 +569,15 @@ onBeforeUnmount(() => {
 });
 
 // --- 评奖规则说明 ---
+interface AwardRule {
+  id: number;
+  name: string;
+  description: string;
+}
+
 const showAwardRulesDialog = ref(false);
 const loadingAwardRules = ref(false);
-const awardRulesContent = ref('');
+const awardRulesList = ref<AwardRule[]>([]);
 const awardRulesUpdateTime = ref('');
 
 // 加载评奖规则
@@ -538,11 +585,11 @@ const loadAwardRulesContent = async () => {
   loadingAwardRules.value = true;
   try {
     const result = await getAwardRules();
-    awardRulesContent.value = result.content;
+    awardRulesList.value = result.list;
     awardRulesUpdateTime.value = result.updateTime;
   } catch (error) {
     console.error('加载评奖规则失败:', error);
-    awardRulesContent.value = '<p>暂无评奖规则说明</p>';
+    awardRulesList.value = [];
   } finally {
     loadingAwardRules.value = false;
   }
@@ -563,7 +610,7 @@ const formatDateTime = (dateStr: string) => {
 
 // 监听对话框打开，加载规则内容
 watch(showAwardRulesDialog, (newVal) => {
-  if (newVal && !awardRulesContent.value) {
+  if (newVal && awardRulesList.value.length === 0) {
     loadAwardRulesContent();
   }
 });
@@ -948,14 +995,14 @@ watch(() => route.query.type, (newType) => {
 }
 
 /* ================== 3. 团队奖：预览卡片 ================== */
-// 团队奖项多图网格
+// 团队奖项多图网格（一行三个）
 .team-award-images-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 一行2个，图片更宽 */
-  gap: 30px;
-  max-width: 1000px;
+  grid-template-columns: repeat(3, 1fr); /* 一行3个 */
+  gap: 24px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 60px; /* 左右留出空间给溢出的玻璃框 */
+  padding: 20px 40px;
 }
 
 .team-award-image-card {
@@ -967,13 +1014,109 @@ watch(() => route.query.type, (newType) => {
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  margin-bottom: 40px; /* 为玻璃框留出空间 */
-  margin-right: 30px; /* 右边留出玻璃框溢出空间 */
+  margin-bottom: 20px;
+  cursor: pointer;
 
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   }
+  
+  &.is-expanded {
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+}
+
+// 展开指示器
+.expand-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6366f1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+  transition: all 0.3s ease;
+  
+  .el-icon {
+    transition: transform 0.3s ease;
+    
+    &.is-rotated {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+// 下拉抽屉样式
+.team-story-drawer {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 0 0 12px 12px;
+  border-top: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 16px 20px;
+  margin-top: -12px;
+  
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6366f1;
+    margin-bottom: 12px;
+    
+    .el-icon {
+      color: #f59e0b;
+      font-size: 18px;
+    }
+  }
+  
+  .drawer-content {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #4b5563;
+    
+    p {
+      margin: 8px 0;
+    }
+    
+    ul, ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    li {
+      margin: 4px 0;
+    }
+  }
+}
+
+// 抽屉展开/收起动画
+.drawer-slide-enter-active,
+.drawer-slide-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.drawer-slide-enter-from,
+.drawer-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.drawer-slide-enter-to,
+.drawer-slide-leave-from {
+  opacity: 1;
+  max-height: 300px;
 }
 
 .image-card-wrapper {
@@ -2445,34 +2588,60 @@ watch(() => route.query.type, (newType) => {
   line-height: 1.8;
   color: #374151;
   
-  h2 {
-    font-size: 18px;
+  .empty-rules {
+    padding: 20px 0;
+  }
+  
+  .rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .rule-item {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    
+    &:hover {
+      border-color: #6366f1;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+    }
+  }
+  
+  .rule-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
     font-weight: 600;
     color: #1f2937;
-    margin: 24px 0 12px;
-    padding-left: 12px;
-    border-left: 4px solid #6366f1;
+    margin-bottom: 12px;
+    
+    .el-icon {
+      color: #f59e0b;
+      font-size: 20px;
+    }
   }
   
-  h2:first-child {
-    margin-top: 0;
-  }
-  
-  p {
-    margin: 12px 0;
-  }
-  
-  ul, ol {
-    margin: 12px 0;
-    padding-left: 24px;
-  }
-  
-  li {
-    margin: 8px 0;
-  }
-  
-  strong {
-    color: #1f2937;
+  .rule-description {
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.7;
+    
+    p {
+      margin: 8px 0;
+    }
+    
+    ul, ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    li {
+      margin: 4px 0;
+    }
   }
 }
 

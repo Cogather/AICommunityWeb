@@ -243,6 +243,7 @@ export interface TeamAward {
     image: string
     winnerName: string
     teamField?: string
+    story?: string  // 获奖事迹（HTML富文本）
     flowers?: number
     hasGivenFlower?: boolean
   }>
@@ -1250,10 +1251,104 @@ const mockMessages: Message[] = [
 const mockTeamAwards: TeamAward[] = [
   {
     id: 1,
-    title: '优秀团队奖',
+    title: '年度最佳AI创新团队',
     year: 2026,
     images: [
-      { id: 1, image: 'https://picsum.photos/300/200?random=team1', winnerName: '技术团队', flowers: 10, hasGivenFlower: false }
+      {
+        id: 1,
+        image: 'https://picsum.photos/400/300?random=team1',
+        winnerName: 'AI研发中心',
+        teamField: 'AI技术研发',
+        story: '<p><strong>获奖事迹：</strong></p><p>AI研发中心团队在过去一年中，成功研发了多项核心AI技术，包括：</p><ul><li>自主研发的大语言模型优化框架，推理效率提升300%</li><li>智能代码审查系统，帮助全公司减少40%的代码缺陷</li><li>跨部门AI能力平台，服务20+业务团队</li></ul><p>团队成员积极参与技术分享，全年完成50+场内部培训。</p>',
+        flowers: 128,
+        hasGivenFlower: false
+      },
+      {
+        id: 2,
+        image: 'https://picsum.photos/400/300?random=team2',
+        winnerName: '智能客服团队',
+        teamField: '智能服务',
+        story: '<p><strong>获奖事迹：</strong></p><p>智能客服团队成功打造了新一代AI客服系统：</p><ul><li>客户问题自动解决率从45%提升至85%</li><li>平均响应时间从30秒缩短至3秒</li><li>用户满意度评分达到4.8/5.0</li></ul><p>该系统已服务超过1000万用户，节省人力成本约60%。</p>',
+        flowers: 96,
+        hasGivenFlower: false
+      },
+      {
+        id: 3,
+        image: 'https://picsum.photos/400/300?random=team3',
+        winnerName: '数据智能团队',
+        teamField: '大数据分析',
+        story: '<p><strong>获奖事迹：</strong></p><p>数据智能团队在数据驱动决策方面取得突破：</p><ul><li>构建企业级数据中台，统一200+数据源</li><li>开发智能预测模型，业务预测准确率达92%</li><li>实现实时数据分析能力，支持秒级决策</li></ul><p>帮助业务团队实现数据化运营，年度创造价值超5000万。</p>',
+        flowers: 87,
+        hasGivenFlower: false
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: '技术突破贡献奖',
+    year: 2026,
+    images: [
+      {
+        id: 4,
+        image: 'https://picsum.photos/400/300?random=team4',
+        winnerName: '云原生架构组',
+        teamField: '基础架构',
+        story: '<p><strong>获奖事迹：</strong></p><p>云原生架构组推动公司技术架构全面升级：</p><ul><li>完成核心系统容器化改造，资源利用率提升200%</li><li>搭建统一的服务网格平台，微服务治理效率提升50%</li><li>实现99.99%的系统可用性保障</li></ul>',
+        flowers: 75,
+        hasGivenFlower: false
+      },
+      {
+        id: 5,
+        image: 'https://picsum.photos/400/300?random=team5',
+        winnerName: '安全攻防实验室',
+        teamField: '信息安全',
+        story: '<p><strong>获奖事迹：</strong></p><p>安全攻防实验室保障公司信息安全：</p><ul><li>发现并修复50+高危安全漏洞</li><li>建立AI驱动的威胁检测系统</li><li>全年0重大安全事故</li></ul>',
+        flowers: 68,
+        hasGivenFlower: false
+      },
+      {
+        id: 6,
+        image: 'https://picsum.photos/400/300?random=team6',
+        winnerName: '效能工具平台组',
+        teamField: '研发效能',
+        story: '<p><strong>获奖事迹：</strong></p><p>效能工具平台组提升全公司研发效能：</p><ul><li>打造一站式开发者平台，日活开发者1000+</li><li>研发工具链自动化率达到95%</li><li>平均构建部署时间缩短70%</li></ul>',
+        flowers: 62,
+        hasGivenFlower: false
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: '年度优秀协作团队',
+    year: 2025,
+    images: [
+      {
+        id: 7,
+        image: 'https://picsum.photos/400/300?random=team7',
+        winnerName: '产品技术融合小组',
+        teamField: '产品研发',
+        story: '<p><strong>获奖事迹：</strong></p><p>产品技术融合小组实现高效跨部门协作：</p><ul><li>建立产品-技术协作新模式</li><li>项目交付周期缩短40%</li><li>客户满意度提升35%</li></ul>',
+        flowers: 55,
+        hasGivenFlower: false
+      },
+      {
+        id: 8,
+        image: 'https://picsum.photos/400/300?random=team8',
+        winnerName: '用户体验设计团队',
+        teamField: 'UX设计',
+        story: '<p><strong>获奖事迹：</strong></p><p>用户体验设计团队打造极致体验：</p><ul><li>完成30+产品的体验升级</li><li>建立统一设计语言系统</li><li>用户体验评分提升25%</li></ul>',
+        flowers: 48,
+        hasGivenFlower: false
+      },
+      {
+        id: 9,
+        image: 'https://picsum.photos/400/300?random=team9',
+        winnerName: '敏捷转型教练组',
+        teamField: '组织发展',
+        story: '<p><strong>获奖事迹：</strong></p><p>敏捷转型教练组推动组织变革：</p><ul><li>辅导50+团队完成敏捷转型</li><li>建立敏捷教练培养体系</li><li>团队交付效率平均提升60%</li></ul>',
+        flowers: 42,
+        hasGivenFlower: false
+      }
     ]
   }
 ]
@@ -1896,12 +1991,18 @@ export const registerActivity = async (id: number): Promise<{ registered: boolea
   return { registered: true, registeredCount: activity.registeredCount }
 }
 
-export const cancelRegistration = async (id: number): Promise<{ registered: boolean; registeredCount: number }> => {
+export const cancelRegistration = async (id: number): Promise<{ success: boolean; message: string }> => {
   await delay()
-  const activity = mockActivities.find(a => a.id === id) ?? mockActivities[0]!
+  const activity = mockActivities.find(a => a.id === id)
+  if (!activity) {
+    throw new Error('活动不存在')
+  }
+  if (!activity.isRegistered) {
+    throw new Error('您尚未报名此活动')
+  }
   activity.isRegistered = false
   activity.registeredCount = Math.max(0, (activity.registeredCount || 0) - 1)
-  return { registered: false, registeredCount: activity.registeredCount }
+  return { success: true, message: '取消成功' }
 }
 
 export interface Registration {
@@ -2621,55 +2722,23 @@ const mockAwardsList: AwardListItem[] = [
   { id: 5, name: 'AI 应用创新奖', description: '表彰在AI应用方面展现出创新思维的个人' }
 ]
 
-// Mock 奖项规则说明
-let mockAwardRulesContent = `
-<h2>🏆 评奖周期</h2>
-<p>每季度评选一次，分别在3月、6月、9月、12月进行评选。</p>
-
-<h2>📋 评选标准</h2>
-<ol>
-  <li><strong>技术创新</strong>：在AI技术应用方面展现出创新思维和实践能力</li>
-  <li><strong>效能提升</strong>：通过AI工具显著提升个人或团队工作效能</li>
-  <li><strong>知识分享</strong>：积极在社区分享AI使用经验和最佳实践</li>
-  <li><strong>影响力</strong>：对周围同事产生积极影响，推动AI技术在团队中的应用</li>
-</ol>
-
-<h2>🎁 奖励说明</h2>
-<ul>
-  <li>获奖者将获得荣誉证书和奖杯</li>
-  <li>获奖记录将在AI使用达人页面永久展示</li>
-  <li>优秀获奖者有机会参与更高级别的AI培训和交流活动</li>
-</ul>
-
-<h2>📝 申报方式</h2>
-<p>可通过以下方式参与评选：</p>
-<ol>
-  <li>由部门负责人推荐</li>
-  <li>个人自荐（需提供相关证明材料）</li>
-  <li>系统自动推荐（根据平台数据分析）</li>
-</ol>
-`
-
 export const getAwardsList = async (_category?: string): Promise<{ list: AwardListItem[] }> => {
   await delay()
   return { list: mockAwardsList }
 }
 
-// 获取奖项规则说明
-export const getAwardRules = async (): Promise<{ content: string; updateTime: string }> => {
+// 获取奖项规则说明（返回所有奖项及其描述）
+export const getAwardRules = async (): Promise<{
+  list: Array<{ id: number; name: string; description: string }>
+  updateTime: string
+}> => {
   await delay()
   return {
-    content: mockAwardRulesContent,
-    updateTime: new Date().toISOString()
-  }
-}
-
-// 保存奖项规则说明
-export const saveAwardRules = async (content: string): Promise<{ content: string; updateTime: string }> => {
-  await delay()
-  mockAwardRulesContent = content
-  return {
-    content: mockAwardRulesContent,
+    list: mockAwardsList.map(award => ({
+      id: award.id,
+      name: award.name,
+      description: award.description || ''
+    })),
     updateTime: new Date().toISOString()
   }
 }

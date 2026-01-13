@@ -136,6 +136,7 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
             "imageType": "url",
             "winnerName": "架构平台部AI团队",
             "teamField": "AI技术研发",
+            "story": "<p><strong>获奖事迹：</strong></p><p>团队成功研发了多项核心AI技术...</p>",
             "flowers": 15,
             "hasGivenFlower": false
           },
@@ -145,6 +146,7 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
             "imageType": "url",
             "winnerName": "效能工程部",
             "teamField": "工程效能",
+            "story": "<p><strong>获奖事迹：</strong></p><p>效能工程部在提升研发效率方面...</p>",
             "flowers": 12,
             "hasGivenFlower": false
           }
@@ -192,8 +194,13 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
 | imageType | string | 是 | 图片类型：url/upload |
 | winnerName | string | 是 | 获奖团队名称 |
 | teamField | string | 否 | 团队领域 |
+| story | string | 否 | 获奖事迹（HTML富文本格式，点击图片展开查看） |
 | flowers | number | 是 | 收到的花朵数 |
 | hasGivenFlower | boolean | 是 | 当前用户是否已送花 |
+
+### 前端展示说明
+
+团队奖项图片展示采用**一行三个**的网格布局，点击图片可展开下拉抽屉查看该团队的获奖事迹。
 
 ---
 
@@ -479,8 +486,12 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
 | 项目 | 说明 |
 |------|------|
 | 接口路径 | `GET /api/honor/award-rules` |
-| 接口描述 | 获取奖项规则说明（包括评奖标准、周期、奖励等） |
+| 接口描述 | 获取所有奖项及其描述（奖项描述即为该奖项的规则说明） |
 | 权限要求 | 无需登录 |
+
+### 说明
+
+奖项规则说明来源于管理后台"个人奖项设置"中的奖项描述字段。每个奖项的描述即为该奖项的评奖规则和标准说明，无需单独录入规则说明。
 
 ### 请求参数
 
@@ -493,7 +504,18 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
   "code": 200,
   "message": "success",
   "data": {
-    "content": "<p>奖项规则说明的富文本内容...</p>",
+    "list": [
+      {
+        "id": 1,
+        "name": "AI先锋奖",
+        "description": "<p>评选标准：在AI技术应用方面展现出创新思维和实践能力...</p>"
+      },
+      {
+        "id": 2,
+        "name": "最佳实践奖",
+        "description": "<p>评选标准：通过AI工具显著提升个人或团队工作效能...</p>"
+      }
+    ],
     "updateTime": "2026-01-10T10:00:00Z"
   }
 }
@@ -503,7 +525,10 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| content | string | 是 | 奖项规则说明内容（HTML富文本格式） |
+| list | array | 是 | 奖项列表 |
+| list[].id | number | 是 | 奖项ID |
+| list[].name | string | 是 | 奖项名称 |
+| list[].description | string | 是 | 奖项描述/规则说明（HTML富文本格式） |
 | updateTime | string | 否 | 最后更新时间（ISO 8601格式） |
 
 ---
@@ -597,45 +622,6 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
 
 ---
 
-## 11. 保存奖项规则说明
-
-### 接口信息
-
-| 项目 | 说明 |
-|------|------|
-| 接口路径 | `PUT /api/honor/award-rules` |
-| 接口描述 | 保存奖项规则说明（管理员操作） |
-| 权限要求 | 需要管理员权限 |
-
-### 请求参数
-
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| content | string | 是 | 奖项规则说明内容（HTML富文本格式） |
-
-### 请求示例
-
-```json
-{
-  "content": "<h2>评奖周期</h2><p>每季度评选一次...</p><h2>评选标准</h2><p>1. 技术创新...</p>"
-}
-```
-
-### 响应数据
-
-```json
-{
-  "code": 200,
-  "message": "保存成功",
-  "data": {
-    "content": "<h2>评奖周期</h2><p>每季度评选一次...</p>",
-    "updateTime": "2026-01-13T15:30:00Z"
-  }
-}
-```
-
----
-
 ## 接口汇总
 
 | 序号 | 接口路径 | 方法 | 描述 |
@@ -647,10 +633,9 @@ AI使用达人页面（荣誉殿堂）需要加载以下数据模块：
 | 5 | `/api/honor/awards` | GET | 获取奖项名称列表 |
 | 6 | `/api/honor/departments` | GET | 获取部门列表 |
 | 7 | `/api/honor/timeline` | GET | 获取用户荣誉时光轴 |
-| 8 | `/api/honor/award-rules` | GET | 获取奖项规则说明 |
+| 8 | `/api/honor/award-rules` | GET | 获取奖项规则说明（返回所有奖项及其描述） |
 | 9 | `/api/honor/awards` | POST | 保存单个奖项 |
 | 10 | `/api/honor/awards/{id}` | DELETE | 删除奖项 |
-| 11 | `/api/honor/award-rules` | PUT | 保存奖项规则说明 |
 
 ---
 
