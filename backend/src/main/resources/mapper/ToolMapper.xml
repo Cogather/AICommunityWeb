@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.ToolMapper">
+
+    <resultMap id="BaseResultMap" type="com.aicommunity.entity.Tool">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="tool_id" property="toolId" jdbcType="BIGINT"/>
+        <result column="image" property="image" jdbcType="VARCHAR"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="link" property="link" jdbcType="VARCHAR"/>
+        <result column="desc" property="desc" jdbcType="VARCHAR"/>
+        <result column="color" property="color" jdbcType="VARCHAR"/>
+        <result column="owner" property="owner" jdbcType="VARCHAR"/>
+        <result column="order" property="order" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectTools" resultMap="BaseResultMap">
+        SELECT 
+            id,
+            tool_id,
+            image,
+            title,
+            link,
+            `desc`,
+            color,
+            owner,
+            `order`,
+            create_time
+        FROM t_new_tool
+        <where>
+            <if test="featured != null and featured == true">
+                AND featured = 1
+            </if>
+        </where>
+        ORDER BY `order` ASC, id ASC
+    </select>
+
+</mapper>

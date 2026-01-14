@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.PostCollectMapper">
+
+    <select id="selectCollectCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM t_new_post_collected
+        WHERE post_id = #{postId}
+          AND collected_user_id = #{userId}
+    </select>
+
+    <insert id="insertCollect">
+        INSERT INTO t_new_post_collected (
+            post_id,
+            collected_user_id,
+            create_time
+        ) VALUES (
+            #{postId},
+            #{userId},
+            NOW()
+        )
+    </insert>
+
+    <delete id="deleteCollect">
+        DELETE FROM t_new_post_collected
+        WHERE post_id = #{postId}
+          AND collected_user_id = #{userId}
+    </delete>
+
+    <!-- 查询用户收藏的帖子列表（分页） -->
+    <select id="selectUserFavorites" resultType="com.aicommunity.vo.PostCollectVO">
+        SELECT 
+            post_id AS postId,
+            create_time AS createTime
+        FROM t_new_post_collected
+        WHERE collected_user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计用户收藏的帖子总数 -->
+    <select id="countUserFavorites" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_new_post_collected
+        WHERE collected_user_id = #{userId}
+    </select>
+
+</mapper>

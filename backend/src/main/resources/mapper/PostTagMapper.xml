@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.PostTagMapper">
+
+    <resultMap id="BaseResultMap" type="com.aicommunity.entity.PostTag">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="label_id" property="labelId" jdbcType="INTEGER"/>
+        <result column="tag" property="tag" jdbcType="VARCHAR"/>
+        <result column="color" property="color" jdbcType="VARCHAR"/>
+        <result column="bg" property="bg" jdbcType="VARCHAR"/>
+        <result column="border_color" property="borderColor" jdbcType="VARCHAR"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="selectByLabelId" resultMap="BaseResultMap">
+        SELECT 
+            id,
+            label_id,
+            tag,
+            color,
+            bg,
+            border_color,
+            deleted,
+            user_id
+        FROM t_new_posts_tag
+        WHERE label_id = #{labelId}
+          AND (deleted IS NULL OR deleted = 0)
+        LIMIT 1
+    </select>
+
+</mapper>

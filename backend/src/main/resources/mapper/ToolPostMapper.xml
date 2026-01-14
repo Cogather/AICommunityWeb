@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.ToolPostMapper">
+
+    <!-- 工具帖子项结果映射 -->
+    <resultMap id="ToolPostItemResultMap" type="com.aicommunity.vo.ToolPostItemVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="cover" property="cover" jdbcType="VARCHAR"/>
+        <result column="author" property="author" jdbcType="VARCHAR"/>
+        <result column="author_id" property="authorId" jdbcType="INTEGER"/>
+        <result column="author_avatar" property="authorAvatar" jdbcType="VARCHAR"/>
+        <result column="department" property="department" jdbcType="VARCHAR"/>
+        <result column="tool_id" property="toolId" jdbcType="INTEGER"/>
+        <result column="tool_name" property="toolName" jdbcType="VARCHAR"/>
+        <result column="category" property="category" jdbcType="VARCHAR"/>
+        <result column="views" property="views" jdbcType="INTEGER"/>
+        <result column="likes" property="likes" jdbcType="INTEGER"/>
+        <result column="comments" property="comments" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="VARCHAR"/>
+        <result column="update_time" property="updateTime" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 标签结果映射 -->
+    <resultMap id="TagResultMap" type="com.aicommunity.vo.TagVO">
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="count" property="count" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!-- 部门结果映射 -->
+    <resultMap id="DepartmentResultMap" type="com.aicommunity.vo.DepartmentVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="post_count" property="postCount" jdbcType="INTEGER"/>
+        <result column="contributor_count" property="contributorCount" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!-- 标签实体结果映射 -->
+    <resultMap id="PostTagResultMap" type="com.aicommunity.entity.PostTag">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="label_id" property="labelId" jdbcType="INTEGER"/>
+        <result column="tag" property="tag" jdbcType="VARCHAR"/>
+        <result column="color" property="color" jdbcType="VARCHAR"/>
+        <result column="bg" property="bg" jdbcType="VARCHAR"/>
+        <result column="border_color" property="borderColor" jdbcType="VARCHAR"/>
+        <result column="deleted" property="deleted" jdbcType="BOOLEAN"/>
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 查询工具帖子列表 -->
+    <select id="selectToolPosts" resultMap="ToolPostItemResultMap">
+        SELECT 
+            CAST(p.post_id AS UNSIGNED) AS id,
+            p.title,
+            SUBSTRING(p.content, 1, 200) AS description,
+            p.front_cover AS cover,
+            COALESCE(ui.chn_name, p.author_id) AS author,
+            CAST(p.author_id AS UNSIGNED) AS author_id,
+            COALESCE(ui.author_avatar, '') AS author_avatar,
+            COALESCE(ui.department_l1, '') AS department,
+            COALESCE(p.tool_id, 0) AS tool_id,
+            CASE 
+                WHEN p.tool_id = -1 THEN '扶摇Agent'
+                WHEN p.tool_id IS NULL OR p.tool_id = 0 THEN '其他工具'
+                ELSE COALESCE(t.title, '其他工具')
+            END AS tool_name,
+            CASE 
+                WHEN p.label_id IS NULL THEN 'guide'
+                ELSE 'excellent'
+            END AS category,
+            COALESCE(p.views_nums, 0) AS views,
+            COALESCE((SELECT COUNT(*) FROM t_new_post_likes WHERE post_id = p.post_id), 0) AS likes,
+            COALESCE((SELECT COUNT(*) FROM t_new_post_comments WHERE post_id = p.post_id AND status = '0'), 0) AS comments,
+            DATE_FORMAT(p.created_at, '%Y-%m-%dT%H:%i:%sZ') AS create_time,
+            DATE_FORMAT(p.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS update_time
+        FROM t_new_posts p
+        LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
+        LEFT JOIN t_new_tool t ON p.tool_id = t.tool_id
+        WHERE p.status = '0'
+        <if test="toolId != null">
+            <choose>
+                <when test="toolId == -1">
+                    <!-- 扶摇Agent应用：zone_id=5, tool_id=-1 -->
+                    AND p.zone_id = 5
+                    AND p.tool_id = -1
+                </when>
+                <when test="toolId == 0">
+                    <!-- 其他工具：zone_id=3, tool_id为NULL或0 -->
+                    AND p.zone_id = 3
+                    AND (p.tool_id IS NULL OR p.tool_id = 0)
+                </when>
+                <otherwise>
+                    <!-- 具体工具：zone_id=3, tool_id=具体值 -->
+                    AND p.zone_id = 3
+                    AND p.tool_id = #{toolId}
+                </otherwise>
+            </choose>
+        </if>
+        <if test="category != null and category != ''">
+            <choose>
+                <when test="category == 'guide'">
+                    AND (p.label_id IS NULL OR p.label_id = 0)
+                </when>
+                <when test="category == 'excellent'">
+                    AND p.label_id IS NOT NULL AND p.label_id != 0
+                </when>
+            </choose>
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR p.content LIKE CONCAT('%', #{keyword}, '%')
+                 OR ui.chn_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="tag != null and tag != ''">
+            AND EXISTS (
+                SELECT 1 FROM t_new_posts_tag pt
+                WHERE pt.label_id = p.label_id
+                  AND pt.tag = #{tag}
+                  AND (pt.deleted IS NULL OR pt.deleted = 0)
+            )
+        </if>
+        <if test="department != null and department != ''">
+            AND ui.department_l1 = #{department}
+        </if>
+        <choose>
+            <when test="sortBy == 'hot'">
+                ORDER BY p.views_nums DESC, p.created_at DESC
+            </when>
+            <when test="sortBy == 'comments'">
+                ORDER BY p.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY p.created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计工具帖子总数 -->
+    <select id="countToolPosts" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT p.post_id)
+        FROM t_new_posts p
+        LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
+        WHERE p.status = '0'
+        <if test="toolId != null">
+            <choose>
+                <when test="toolId == -1">
+                    <!-- 扶摇Agent应用：zone_id=5, tool_id=-1 -->
+                    AND p.zone_id = 5
+                    AND p.tool_id = -1
+                </when>
+                <when test="toolId == 0">
+                    <!-- 其他工具：zone_id=3, tool_id为NULL或0 -->
+                    AND p.zone_id = 3
+                    AND (p.tool_id IS NULL OR p.tool_id = 0)
+                </when>
+                <otherwise>
+                    <!-- 具体工具：zone_id=3, tool_id=具体值 -->
+                    AND p.zone_id = 3
+                    AND p.tool_id = #{toolId}
+                </otherwise>
+            </choose>
+        </if>
+        <if test="category != null and category != ''">
+            <choose>
+                <when test="category == 'guide'">
+                    AND (p.label_id IS NULL OR p.label_id = 0)
+                </when>
+                <when test="category == 'excellent'">
+                    AND p.label_id IS NOT NULL AND p.label_id != 0
+                </when>
+            </choose>
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR p.content LIKE CONCAT('%', #{keyword}, '%')
+                 OR ui.chn_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="tag != null and tag != ''">
+            AND EXISTS (
+                SELECT 1 FROM t_new_posts_tag pt
+                WHERE pt.label_id = p.label_id
+                  AND pt.tag = #{tag}
+                  AND (pt.deleted IS NULL OR pt.deleted = 0)
+            )
+        </if>
+        <if test="department != null and department != ''">
+            AND ui.department_l1 = #{department}
+        </if>
+    </select>
+
+    <!-- 查询标签列表及统计数量 -->
+    <select id="selectTagsWithCount" resultMap="TagResultMap">
+        SELECT 
+            pt.tag AS name,
+            COUNT(DISTINCT p.post_id) AS count
+        FROM t_new_posts p
+        INNER JOIN t_new_posts_tag pt ON pt.label_id = p.label_id AND (pt.deleted IS NULL OR pt.deleted = 0)
+        LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
+        WHERE p.status = '0'
+        <if test="toolId != null">
+            <choose>
+                <when test="toolId == -1">
+                    <!-- 扶摇Agent应用：zone_id=5, tool_id=-1 -->
+                    AND p.zone_id = 5
+                    AND p.tool_id = -1
+                </when>
+                <when test="toolId == 0">
+                    <!-- 其他工具：zone_id=3, tool_id为NULL或0 -->
+                    AND p.zone_id = 3
+                    AND (p.tool_id IS NULL OR p.tool_id = 0)
+                </when>
+                <otherwise>
+                    <!-- 具体工具：zone_id=3, tool_id=具体值 -->
+                    AND p.zone_id = 3
+                    AND p.tool_id = #{toolId}
+                </otherwise>
+            </choose>
+        </if>
+        <if test="department != null and department != ''">
+            AND ui.department_l1 = #{department}
+        </if>
+        GROUP BY pt.tag
+        ORDER BY count DESC, name ASC
+    </select>
+
+    <!-- 查询部门排名列表 -->
+    <select id="selectDepartmentRankings" resultMap="DepartmentResultMap">
+        SELECT 
+            (@row_number := @row_number + 1) AS id,
+            COALESCE(ui.department_l1, '未知部门') AS name,
+            COUNT(DISTINCT p.post_id) AS post_count,
+            COUNT(DISTINCT p.author_id) AS contributor_count
+        FROM t_new_posts p
+        LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
+        CROSS JOIN (SELECT @row_number := 0) r
+        WHERE p.zone_id = 3
+          AND p.status = '0'
+        <if test="toolId != null">
+            <choose>
+                <when test="toolId == 0">
+                    AND (p.tool_id IS NULL OR p.tool_id = 0)
+                </when>
+                <otherwise>
+                    AND p.tool_id = #{toolId}
+                </otherwise>
+            </choose>
+        </if>
+        <if test="tag != null and tag != ''">
+            AND EXISTS (
+                SELECT 1 FROM t_new_posts_tag pt
+                WHERE pt.label_id = p.label_id
+                  AND pt.tag = #{tag}
+                  AND (pt.deleted IS NULL OR pt.deleted = 0)
+            )
+        </if>
+        GROUP BY ui.department_l1
+        HAVING name IS NOT NULL AND name != ''
+        ORDER BY post_count DESC
+    </select>
+
+    <!-- 根据帖子ID查询标签列表 -->
+    <select id="selectTagsByPostId" resultMap="PostTagResultMap">
+        SELECT 
+            pt.id,
+            pt.label_id,
+            pt.tag,
+            pt.color,
+            pt.bg,
+            pt.border_color,
+            pt.deleted,
+            pt.user_id
+        FROM t_new_posts_tag pt
+        INNER JOIN t_new_posts p ON pt.label_id = p.label_id
+        WHERE p.post_id = #{postId}
+          AND (pt.deleted IS NULL OR pt.deleted = 0)
+    </select>
+
+</mapper>
