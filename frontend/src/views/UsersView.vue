@@ -95,6 +95,8 @@
               <span class="ribbon-text">{{ award.title }}</span>
               <div class="gold-shine"></div>
             </div>
+            <div class="ribbon-tail-left"></div>
+            <div class="ribbon-tail-right"></div>
           </div>
         </div>
 
@@ -853,54 +855,106 @@ watch(() => route.query.type, (newType) => {
   transform: scale(1.1);
 }
 
-/* ================== 2. 团队奖：黄金透明绶带按钮 ================== */
+/* ================== 2. 团队奖：黄金绶带按钮（与首页同步） ================== */
 .gold-ribbon-row {
   display: flex;
-  flex-wrap: wrap; /* 如果屏幕太小允许换行，但设计意图是一行 */
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   margin-bottom: 40px;
+  padding: 0 20px;
 }
 
 .gold-ribbon-btn {
   cursor: pointer;
   position: relative;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  opacity: 0.85;
-}
+  display: flex;
+  justify-content: center;
+  padding-bottom: 12px;
+  margin: 0 10px; /* 左右增加间隙 */
 
-.gold-ribbon-btn:hover, .gold-ribbon-btn.active {
-  transform: translateY(-4px) scale(1.05);
-  opacity: 1;
+  &:hover, &.active {
+    transform: translateY(-4px) scale(1.03);
+    
+    .ribbon-shape {
+      background: linear-gradient(
+        180deg,
+        rgba(255, 215, 0, 0.9) 0%,
+        rgba(255, 179, 71, 0.9) 50%,
+        rgba(255, 140, 0, 0.9) 100%
+      );
+      box-shadow: 
+        0 6px 20px rgba(255, 165, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .ribbon-tail-left,
+    .ribbon-tail-right {
+      background: linear-gradient(180deg, #ff8c00 0%, #cc7000 100%);
+    }
+  }
 }
 
 .ribbon-shape {
   position: relative;
-  /* 黄金透明渐变 */
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.25));
-  border: 1px solid rgba(255, 215, 0, 0.5);
-  backdrop-filter: blur(6px);
-  padding: 12px 30px;
-  min-width: 180px;
+  /* 金色渐变 - 带透明度 */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 224, 102, 0.85) 0%,
+    rgba(255, 201, 64, 0.85) 30%,
+    rgba(255, 176, 32, 0.85) 70%,
+    rgba(255, 149, 0, 0.85) 100%
+  );
+  border: none;
+  padding: 12px 24px;
+  min-width: 140px;
   text-align: center;
-  color: #78350f; /* 深褐金文字 */
+  color: #78350f;
   font-weight: 800;
-  font-size: 15px;
-
-  /* 或者更简单的圆角矩形 + 装饰 */
-  clip-path: none;
-  border-radius: 4px;
-  border-bottom: 3px solid rgba(217, 119, 6, 0.4); /* 底部厚度感 */
-  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.15);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 8px 16px rgba(251, 191, 36, 0.15);
   overflow: hidden;
+  border-radius: 2px;
+  z-index: 2;
 }
 
-.gold-ribbon-btn.active .ribbon-shape {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.5), rgba(255, 165, 0, 0.5));
-  border-color: rgba(255, 215, 0, 0.9);
-  color: #451a03;
-  box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
+/* 绶带左尾巴 - 折叠效果 */
+.ribbon-tail-left {
+  position: absolute;
+  top: 10px;
+  left: -12px;
+  width: 24px;
+  height: 36px;
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+  clip-path: polygon(100% 0, 100% 100%, 0 50%, 0 0);
+  z-index: -1;
+}
+
+/* 绶带右尾巴 - 折叠效果 */
+.ribbon-tail-right {
+  position: absolute;
+  top: 10px;
+  right: -12px;
+  width: 24px;
+  height: 36px;
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+  clip-path: polygon(0 0, 0 100%, 100% 50%, 100% 0);
+  z-index: -1;
+}
+
+.ribbon-text {
+  position: relative;
+  z-index: 1;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .gold-shine {
@@ -912,17 +966,16 @@ watch(() => route.query.type, (newType) => {
   background: linear-gradient(
     to right,
     transparent,
-    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.7),
     transparent
   );
   transform: skewX(-20deg);
-  animation: shine 4s infinite;
+  animation: shine 3s infinite;
 }
 
 @keyframes shine {
   0% { left: -100%; }
-  20% { left: 200%; }
-  100% { left: 200%; }
+  50%, 100% { left: 150%; }
 }
 
 /* ================== 3. 团队奖：预览卡片 ================== */

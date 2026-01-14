@@ -1996,15 +1996,16 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
   .winner-award {
     font-size: 10px;
-    color: #6b7280;
+    color: #92400e;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.1));
-    padding: 2px 6px;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.5), rgba(245, 158, 11, 0.4));
+    padding: 3px 8px;
     border-radius: 4px;
+    font-weight: 500;
     border: 1px solid rgba(251, 191, 36, 0.3);
   }
 }

@@ -407,7 +407,7 @@ const handleCommand = (command: string) => {
     }
 
     .logo-subtitle {
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 400;
       color: #6b7280; /* 灰色 */
       letter-spacing: 0.5px;
@@ -899,7 +899,7 @@ const handleCommand = (command: string) => {
       }
 
       .logo-subtitle {
-        font-size: 9px;
+        font-size: 10px;
       }
     }
   }
