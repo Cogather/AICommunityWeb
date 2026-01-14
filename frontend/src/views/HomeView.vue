@@ -131,13 +131,13 @@
             </div>
             <div class="text-list">
               <p
-                v-for="n in 5"
-                :key="n"
+                v-for="post in empowermentPosts"
+                :key="post.id"
                 class="list-row"
                 @click="router.push(ROUTES.EMPOWERMENT)"
               >
-                <span class="tag blue">讨论</span>
-                如何使用 Agent 提升代码开发效率？
+                <span class="tag" :class="post.tagType || 'blue'">{{ post.tag }}</span>
+                {{ post.title }}
               </p>
             </div>
           </div>
@@ -353,7 +353,11 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
-import { getHonor, getTools, getPractices, getNews, getToolBanners, getLatestWinners, type LatestWinner } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getHonor, getToolPlatform, getPractices, getToolBanners, getLatestWinners, getEmpowerment } from '../api/home'
+import type { LatestWinner } from '../api/types'
+// getNews 暂时从 mock 导入（API 层待实现）
+import { getNews } from '../mock'
 import { ROUTES } from '../router/paths'
 
 const router = useRouter()
@@ -363,10 +367,10 @@ const loadHonorConfig = async () => {
   try {
     // 优先从API获取
     const response = await getHonor()
-    if (response && response.honor) {
+    if (response && response.data && response.data.honor) {
       return {
-        bannerImage: response.honor.bannerImage || '',
-        awards: response.honor.awards || []
+        bannerImage: response.data.honor.bannerImage || '',
+        awards: response.data.honor.awards || []
       }
     }
   } catch (e) {
@@ -394,7 +398,7 @@ const latestWinners = ref<LatestWinner[]>([])
 const loadLatestWinners = async () => {
   try {
     const response = await getLatestWinners(9)
-    latestWinners.value = response.list
+    latestWinners.value = response.data?.list || []
   } catch (e) {
     console.error('加载最新获奖者失败:', e)
     latestWinners.value = []
@@ -427,6 +431,40 @@ const handleAwardClick = (award: { id: number; name: string; desc?: string; year
   })
 }
 
+// 赋能交流数据
+interface EmpowermentItem {
+  id: number
+  title: string
+  tag: string
+  tagType?: string
+}
+const empowermentPosts = ref<EmpowermentItem[]>([])
+
+// 加载赋能交流数据 (home/empowerment)
+const loadEmpowermentPosts = async () => {
+  try {
+    const response = await getEmpowerment(5)
+    if (response && response.data && response.data.list) {
+      empowermentPosts.value = response.data.list.map((item: { id: number; title: string; tag?: string; tagType?: string }) => ({
+        id: item.id,
+        title: item.title,
+        tag: item.tag || '讨论',
+        tagType: item.tagType || 'blue'
+      }))
+    }
+  } catch (e) {
+    console.error('加载赋能交流数据失败:', e)
+    // 使用默认数据
+    empowermentPosts.value = [
+      { id: 1, title: '如何使用 Agent 提升代码开发效率？', tag: '讨论', tagType: 'blue' },
+      { id: 2, title: '分享一个提升工作效率的AI工具使用技巧', tag: '分享', tagType: 'green' },
+      { id: 3, title: '关于AI辅助编程的一些疑问', tag: '提问', tagType: 'orange' },
+      { id: 4, title: 'Prompt工程最佳实践经验总结', tag: '经验', tagType: 'purple' },
+      { id: 5, title: '推荐几个好用的AI工具', tag: '工具', tagType: 'blue' },
+    ]
+  }
+}
+
 // 初始化加载所有配置
 onMounted(async () => {
   honorConfig.value = await loadHonorConfig()
@@ -434,6 +472,7 @@ onMounted(async () => {
   tools.value = await loadTools()
   toolZoneBanners.value = await loadToolBanners()
   practices.value = await loadPractices()
+  await loadEmpowermentPosts()
   await loadNewsList()
 })
 
@@ -444,6 +483,7 @@ const handleConfigUpdate = async () => {
   toolZoneBanners.value = await loadToolBanners()
   honorConfig.value = await loadHonorConfig()
   practices.value = await loadPractices()
+  await loadEmpowermentPosts()
 }
 
 onMounted(() => {
@@ -459,11 +499,11 @@ const loadPractices = async () => {
   try {
     // 优先从API获取
     const response = await getPractices()
-    if (response) {
+    if (response && response.data) {
       return {
-        training: response.training || [],
-        trainingBattle: response.trainingBattle || [],
-        userExchange: response.userExchange || []
+        training: response.data.training || [],
+        trainingBattle: response.data.trainingBattle || [],
+        userExchange: response.data.userExchange || []
       }
     }
   } catch (e) {
@@ -583,22 +623,22 @@ const loadNewsList = async () => {
 }
 
 
-// AI工具列表配置 - 从mock API加载
+// AI工具平台列表配置 - 从API加载 (home/tool-platform)
 const loadTools = async () => {
   try {
-    const response = await getTools()
-    if (response && response.list && response.list.length > 0) {
-      return response.list.map((item: any) => ({
+    const response = await getToolPlatform()
+    if (response && response.data && response.data.list && response.data.list.length > 0) {
+      return response.data.list.map((item: { id: number; name: string; desc?: string; logo?: string; platformUrl?: string; color?: string }) => ({
         id: item.id,
         name: item.name,
         desc: item.desc || '',
         logo: item.logo || '',
-        link: item.link || `/tools?toolId=${item.id}`,
+        link: item.platformUrl || `/tools?toolId=${item.id}`,
         color: item.color || '#409eff'
       }))
     }
   } catch (e) {
-    console.error('加载工具列表失败:', e)
+    console.error('加载工具平台列表失败:', e)
   }
 
   // 默认数据
@@ -664,12 +704,12 @@ const loadTools = async () => {
 
 const tools = ref([] as any[])
 
-// AI工具专区Banner配置 - 从mock API加载
+// AI工具专区Banner配置 - 从API加载
 const loadToolBanners = async () => {
   try {
     const response = await getToolBanners()
-    if (response && response.list && response.list.length > 0) {
-      return response.list.map((item: any) => ({
+    if (response && response.data && response.data.list && response.data.list.length > 0) {
+      return response.data.list.map((item: { title?: string; desc?: string; image?: string }) => ({
         title: item.title || '',
         desc: item.desc || '',
         image: item.image || ''

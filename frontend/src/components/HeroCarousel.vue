@@ -42,7 +42,8 @@
   import { ref, onMounted, onUnmounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { ArrowRight } from '@element-plus/icons-vue';
-  import { getCarousel } from '@/mock';
+  // API 层 - 支持 Mock/Real API 自动切换
+import { getCarousel } from '@/api/home';
   
   interface Slide {
     id: number;
@@ -93,12 +94,12 @@
   
   const slides = ref<Slide[]>(defaultSlides);
   
-  // 从mock API加载轮播图配置
+  // 从API加载轮播图配置
   const loadCarouselSlides = async () => {
     try {
       const response = await getCarousel();
-      if (response.list && response.list.length > 0) {
-        slides.value = response.list.map((item: any) => ({
+      if (response.data && response.data.list && response.data.list.length > 0) {
+        slides.value = response.data.list.map((item: { id: number; title?: string; desc?: string; image?: string; link?: string; showContent?: boolean }) => ({
           id: item.id,
           title: item.title || '',
           desc: item.desc || '',
