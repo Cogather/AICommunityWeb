@@ -14,8 +14,8 @@
 
             <!-- 帖子列表 -->
             <PostList
-              :posts="paginatedPosts"
-              :featured-posts="featuredPosts"
+              :posts="(paginatedPosts as Post[])"
+              :featured-posts="(featuredPosts as Post[])"
               :show-featured-tag="true"
               @post-click="handlePostClick"
             />
@@ -71,7 +71,9 @@ import { ROUTES } from '../router/paths'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
-import { getEmpowermentFeaturedPosts, getEmpowermentPosts, getEmpowermentTags } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getFeaturedPosts, getPosts as getEmpowermentPosts, getTags } from '../api/empowerment'
+import type { Post } from '../api/types'
 
 const router = useRouter()
 
@@ -88,10 +90,11 @@ const pageSize = ref(15)
 const totalPosts = ref(0)
 
 // 精华帖（置顶，不参与分页和筛选）
-const featuredPosts = ref<any[]>([])
+const featuredPosts = ref<Array<Partial<Post> & { id: number; title: string; image?: string; createTime: string }>>([])
 
 // 普通帖子
-const posts = ref<any[]>([])
+const posts = ref<Array<Partial<Post> & { id: number; title: string; image?: string; createTime: string }>>([])
+
 
 // 标签列表
 const displayedTags = ref<Array<{ name: string; count: number }>>([])
@@ -99,8 +102,8 @@ const displayedTags = ref<Array<{ name: string; count: number }>>([])
 // 加载精华帖子（只加载一次，不随筛选条件变化）
 const loadFeaturedPosts = async () => {
   try {
-    const response = await getEmpowermentFeaturedPosts()
-    featuredPosts.value = response.list.map(post => ({
+    const response = await getFeaturedPosts()
+    featuredPosts.value = response.data.list.map((post: { id: number; title: string; image?: string; cover?: string; createTime: string }) => ({
       ...post,
       image: post.image || post.cover || '',
       createTime: formatDate(post.createTime)
@@ -120,12 +123,12 @@ const loadPosts = async () => {
       page: currentPage.value,
       pageSize: pageSize.value
     })
-    posts.value = response.list.map(post => ({
+    posts.value = response.data.list.map((post: { id: number; title: string; image?: string; cover?: string; createTime: string }) => ({
       ...post,
       image: post.image || post.cover || '',
       createTime: formatDate(post.createTime)
     }))
-    totalPosts.value = response.total
+    totalPosts.value = response.data.total
   } catch (error) {
     console.error('加载帖子列表失败:', error)
   }
@@ -134,8 +137,8 @@ const loadPosts = async () => {
 // 加载标签统计
 const loadTags = async () => {
   try {
-    const response = await getEmpowermentTags()
-    displayedTags.value = response.list
+    const response = await getTags()
+    displayedTags.value = response.data.list
   } catch (error) {
     console.error('加载标签失败:', error)
   }
@@ -244,7 +247,7 @@ const handleCurrentChange = async (val: number) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: any) => {
+const handlePostClick = (post: { id: number }) => {
   console.log('EmpowermentView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)

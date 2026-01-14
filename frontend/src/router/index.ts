@@ -46,11 +46,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/NewsView.vue')
   },
   {
-    path: ROUTES.HONOR,
-    name: 'Honor',
-    component: () => import('../views/HonorView.vue')
-  },
-  {
     path: ROUTES.POST_CREATE,
     name: 'PostCreate',
     component: () => import('../views/PostCreateView.vue')

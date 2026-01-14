@@ -235,13 +235,26 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef 
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ROUTES } from '../router/paths'
-import { createPost, updatePost, getRecommendedCovers, getTools, getPostDetail, saveDraft, getDraft, deleteDraft, getZoneTags } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { createPost, updatePost, getPostDetail, getZoneTags, getRecommendedCovers, saveDraft, getDraft, deleteDraft } from '../api/posts'
+import { getTools } from '../api/home'
 
 // localStorage 草稿存储 key
 const DRAFT_STORAGE_KEY = 'post_draft'
 
+interface StoredDraft {
+  zone?: string
+  toolId?: number | null
+  title?: string
+  summary?: string
+  tags?: string[]
+  cover?: string
+  content?: string
+  savedAt?: string
+}
+
 // 获取存储的草稿
-const getStoredDraft = (): any => {
+const getStoredDraft = (): StoredDraft | null => {
   try {
     const stored = localStorage.getItem(DRAFT_STORAGE_KEY)
     return stored ? JSON.parse(stored) : null
@@ -251,7 +264,7 @@ const getStoredDraft = (): any => {
 }
 
 // 保存草稿到 localStorage
-const setStoredDraft = (draft: any) => {
+const setStoredDraft = (draft: StoredDraft) => {
   try {
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
   } catch (e) {
@@ -314,8 +327,8 @@ const recommendedCovers = ref<string[]>([])
 // 加载推荐封面
 const loadRecommendedCovers = async () => {
   try {
-    const covers = await getRecommendedCovers()
-    recommendedCovers.value = covers.map(cover => cover.url)
+    const response = await getRecommendedCovers()
+    recommendedCovers.value = response.data.list.map((cover: { url: string }) => cover.url)
   } catch (error) {
     console.error('加载推荐封面失败:', error)
     // 使用默认封面
@@ -367,8 +380,8 @@ const resetFormData = () => {
 const loadTools = async () => {
   try {
     const response = await getTools()
-    // getTools() 返回 { list: ToolItem[] }，需要使用 response.list
-    const tools = (response.list || []).map((item: any) => ({
+    // getTools() 返回 ApiResponse<{ list: ToolItem[] }>，需要使用 response.data.list
+    const tools = (response.data?.list || []).map((item: { id: number; name: string }) => ({
       id: item.id,
       name: item.name
     }))
@@ -439,11 +452,8 @@ const loadZoneTags = async () => {
   }
   
   try {
-    const result = await getZoneTags({
-      zone: formData.value.zone,
-      toolId: formData.value.toolId
-    })
-    fetchedZoneTags.value = result.list.map(t => t.name)
+    const response = await getZoneTags(formData.value.zone, formData.value.toolId ?? undefined)
+    fetchedZoneTags.value = response.data.list.map((t: { name: string }) => t.name)
   } catch (error) {
     console.error('加载专区标签失败:', error)
     // 使用默认标签作为降级方案
@@ -498,7 +508,7 @@ const rules = {
   zone: [{ required: true, message: '请选择专区', trigger: 'change' }],
   toolId: [
     {
-      validator: (rule: any, value: any, callback: any) => {
+      validator: (_rule: unknown, value: number | null, callback: (error?: Error) => void) => {
         if (formData.value.zone === 'tools') {
           if (!value && value !== 0) {
             callback(new Error('请选择工具'))
@@ -873,7 +883,7 @@ const handleTagClose = (tag: string) => {
 
 
 // 封面上传成功
-const handleCoverSuccess = (response: any, file: File) => {
+const handleCoverSuccess = (_response: unknown, file: File) => {
   // 这里应该从响应中获取图片URL，暂时使用本地预览
   if (file) {
     formData.value.cover = URL.createObjectURL(file)
@@ -1022,7 +1032,7 @@ const handleSaveDraft = async () => {
 const handlePublish = async () => {
   if (!formRef.value) return
 
-  let result: any = null
+  let result: { data?: { id?: number } } | null = null
   
   try {
     // 如果选择了AI工具专区，确保工具已选择
@@ -1089,9 +1099,9 @@ const handlePublish = async () => {
           console.error('删除后端草稿失败:', e)
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('发布失败:', error)
-      ElMessage.error(error.message || '发布失败，请稍后重试')
+      ElMessage.error((error as Error).message || '发布失败，请稍后重试')
       publishing.value = false
       return
     }
@@ -1099,7 +1109,7 @@ const handlePublish = async () => {
     publishing.value = false
     
     // 获取新创建的帖子ID（编辑模式下使用原ID，新建模式下使用返回的ID）
-    const newPostId = isEditMode.value ? route.query.id : (result as any)?.id
+    const newPostId = isEditMode.value ? route.query.id : result?.data?.id
     
     // 发布成功后询问用户
     ElMessageBox({
@@ -1168,14 +1178,14 @@ const handlePublish = async () => {
 
 // 检查并加载草稿（比较后端和本地草稿的时间，使用最新的）
 const checkAndLoadDraft = async () => {
-  let backendDraft: any = null
-  let localDraft: any = null
+  let backendDraft: StoredDraft | null = null
+  let localDraft: StoredDraft | null = null
   
   // 1. 尝试从后端获取草稿
   try {
     const backendResult = await getDraft()
-    if (backendResult && backendResult.data) {
-      backendDraft = backendResult.data
+    if (backendResult && backendResult.data && backendResult.data.data) {
+      backendDraft = backendResult.data.data
     }
   } catch (error) {
     console.error('从后端获取草稿失败:', error)
@@ -1190,8 +1200,8 @@ const checkAndLoadDraft = async () => {
   
   if (backendDraft && localDraft) {
     // 两者都有，比较时间
-    const backendTime = new Date(backendDraft.savedAt).getTime()
-    const localTime = new Date(localDraft.savedAt).getTime()
+    const backendTime = backendDraft.savedAt ? new Date(backendDraft.savedAt).getTime() : 0
+    const localTime = localDraft.savedAt ? new Date(localDraft.savedAt).getTime() : 0
     if (backendTime >= localTime) {
       draftData = backendDraft
       draftSource = 'backend'
@@ -1279,7 +1289,7 @@ const checkAndLoadDraft = async () => {
 }
 
 // 加载草稿内容
-const loadDraft = (draft?: any) => {
+const loadDraft = (draft?: StoredDraft) => {
   let draftData = draft
   if (!draftData) {
     // 从 localStorage 读取草稿
@@ -1288,7 +1298,15 @@ const loadDraft = (draft?: any) => {
     draftData = storedDraft
   }
   
-  formData.value = { ...draftData }
+  formData.value = {
+    zone: (draftData.zone || '') as '' | 'practices' | 'tools' | 'agent' | 'empowerment',
+    toolId: draftData.toolId ?? null,
+    title: draftData.title || '',
+    summary: draftData.summary || '',
+    tags: draftData.tags || [],
+    cover: draftData.cover || '',
+    content: draftData.content || ''
+  }
   // 如果编辑器已创建，设置内容
   if (editorRef.value && draftData.content) {
     editorRef.value.setHtml(draftData.content)
@@ -1382,16 +1400,17 @@ const loadPostForEdit = async () => {
 
   try {
     postLoading.value = true
-    const post = await getPostDetail(Number(postId))
+    const response = await getPostDetail(Number(postId))
+    const post = response.data
     
     // 填充表单数据
     formData.value = {
       zone: post.zone || 'practices',
       toolId: post.toolId || null,
       title: post.title,
-      summary: post.summary || post.description || '',
+      summary: post.summary || '',
       tags: post.tags || [],
-      cover: post.cover || post.image || '',
+      cover: post.cover || '',
       content: post.content || ''
     }
     

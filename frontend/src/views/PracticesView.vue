@@ -66,6 +66,35 @@
               </div>
             </div>
 
+            <!-- 分类筛选（培训赋能、AI训战、用户交流） -->
+            <div class="sidebar-section">
+              <div class="section-header-with-reset">
+                <h3>分类筛选</h3>
+                <el-button
+                  v-if="selectedCategory"
+                  text
+                  size="small"
+                  class="reset-btn"
+                  @click="handleResetCategory"
+                >
+                  <el-icon><Refresh /></el-icon>
+                  重置
+                </el-button>
+              </div>
+              <div class="category-filter">
+                <div
+                  v-for="(config, key) in categoryConfig"
+                  :key="key"
+                  class="category-item"
+                  :class="{ active: selectedCategory === key }"
+                  @click="handleCategoryClick(key as string)"
+                >
+                  <span class="category-icon">{{ config.icon }}</span>
+                  <span class="category-name">{{ config.name }}</span>
+                </div>
+              </div>
+            </div>
+
             <!-- 标签筛选 -->
             <div class="sidebar-section">
               <div class="section-header-with-reset">
@@ -146,26 +175,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Refresh, Star } from '@element-plus/icons-vue'
 import { ROUTES } from '../router/paths'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
-import {
-  getPracticePosts,
-  getPracticeContributors,
-  type Post
-} from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getPosts, getContributors } from '../api/practices'
+import type { Post } from '../api/types'
 
 const router = useRouter()
+const route = useRoute()
 
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>('newest')
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 const selectedContributor = ref<string | null>(null)
+
+// 分类筛选（培训赋能、AI训战、用户交流）
+const selectedCategory = ref<string | null>(null)
+
+// 分类配置
+const categoryConfig = {
+  training: { name: '培训赋能', icon: '📚' },
+  'training-battle': { name: 'AI训战', icon: '⚔️' },
+  'user-exchange': { name: '用户交流', icon: '💬' }
+} as const
 
 // 分页相关
 const currentPage = ref(1)
@@ -223,22 +261,24 @@ const posts = ref<Post[]>([])
 // 加载帖子数据
 const loadPosts = async () => {
   try {
-    const response = await getPracticePosts({
+    const response = await getPosts({
       page: 1,
       pageSize: 100 // 获取足够多的帖子用于前端过滤
     })
-    featuredPosts.value = response.featuredPosts.map(post => ({
+    // API 返回 PaginatedData<Post>，需要手动分离精华帖子
+    const allPosts = response.data.list
+    featuredPosts.value = allPosts.filter((p: Post) => p.featured).map((post: Post) => ({
       ...post,
-      author: post.author || post.authorName || '',
-      description: post.description || post.summary || '',
-      image: post.image || post.cover || '',
+      author: post.authorName || '',
+      description: post.summary || '',
+      image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
-    posts.value = response.list.map(post => ({
+    posts.value = allPosts.filter((p: Post) => !p.featured).map((post: Post) => ({
       ...post,
-      author: post.author || post.authorName || '',
-      description: post.description || post.summary || '',
-      image: post.image || post.cover || '',
+      author: post.authorName || '',
+      description: post.summary || '',
+      image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
   } catch (error) {
@@ -299,13 +339,13 @@ const displayedDepartments = computed(() => {
 })
 
 // 热门贡献者
-const topContributors = ref<Array<{ id: number; name: string; avatar: string; postCount?: number; department?: string }>>([])
+const topContributors = ref<Array<{ id: number; name: string; avatar?: string; postCount?: number; department?: string }>>([])
 
 // 加载热门贡献者
 const loadContributors = async () => {
   try {
-    const response = await getPracticeContributors(5)
-    topContributors.value = response.list
+    const response = await getContributors(5)
+    topContributors.value = response.data.list
   } catch (error) {
     console.error('加载热门贡献者失败:', error)
   }
@@ -315,6 +355,11 @@ const loadContributors = async () => {
 const filteredNormalPosts = computed(() => {
   // 只过滤普通帖子
   let result = [...posts.value]
+
+  // 按分类过滤（培训赋能、AI训战、用户交流）
+  if (selectedCategory.value) {
+    result = result.filter(post => post.category === selectedCategory.value)
+  }
 
   // 按标签过滤（排除"全部"）
   if (selectedTag.value && selectedTag.value !== '全部') {
@@ -476,8 +521,49 @@ const handlePostClick = (post: { id: number }) => {
   })
 }
 
+// 从 URL 读取分类参数
+const initCategoryFromRoute = () => {
+  const category = route.query.category as string
+  if (category && Object.keys(categoryConfig).includes(category)) {
+    selectedCategory.value = category
+  }
+}
+
+// 监听路由变化，更新分类筛选
+watch(() => route.query.category, (newCategory) => {
+  if (newCategory && Object.keys(categoryConfig).includes(newCategory as string)) {
+    selectedCategory.value = newCategory as string
+  } else if (!newCategory) {
+    selectedCategory.value = null
+  }
+})
+
+// 处理分类点击
+const handleCategoryClick = (category: string) => {
+  if (selectedCategory.value === category) {
+    selectedCategory.value = null
+    // 清除 URL 中的 category 参数
+    router.replace({ query: { ...route.query, category: undefined } })
+  } else {
+    selectedCategory.value = category
+    // 更新 URL 中的 category 参数
+    router.replace({ query: { ...route.query, category } })
+  }
+  currentPage.value = 1
+}
+
+// 重置分类筛选
+const handleResetCategory = () => {
+  selectedCategory.value = null
+  router.replace({ query: { ...route.query, category: undefined } })
+  currentPage.value = 1
+}
+
 // 页面加载时获取数据
 onMounted(async () => {
+  // 从 URL 读取初始分类
+  initCategoryFromRoute()
+
   await Promise.all([
     loadPosts(),
     loadContributors()
@@ -551,6 +637,47 @@ onMounted(async () => {
       }
     }
 
+    .category-filter {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .category-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(64, 158, 255, 0.08);
+          border-color: rgba(64, 158, 255, 0.2);
+        }
+
+        &.active {
+          background: rgba(64, 158, 255, 0.15);
+          border-color: #409eff;
+
+          .category-name {
+            color: #409eff;
+            font-weight: 600;
+          }
+        }
+
+        .category-icon {
+          font-size: 18px;
+        }
+
+        .category-name {
+          font-size: 14px;
+          color: #333;
+        }
+      }
+    }
 
     .department-rankings {
       display: flex;

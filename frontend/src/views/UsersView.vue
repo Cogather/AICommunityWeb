@@ -250,14 +250,16 @@ import {
   Star, ArrowLeft, ArrowRight, ArrowDown
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
-import { getTeamAwards, giveFlower, getHonorList, type HonorListItem } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getTeamAwards, giveFlower, getHonorList } from '../api/honor'
+import type { HonorRecord } from '../api/types'
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
 type HonorFilterType = 'award' | 'department';
 
-// 使用 mock API 中定义的 HonorListItem 类型
-type HonorItem = HonorListItem
+// 使用 API 层定义的 HonorRecord 类型
+type HonorItem = HonorRecord
 
 // --- 配置 ---
 const router = useRouter();
@@ -287,8 +289,8 @@ const loadHonorList = async () => {
       view: currentViewMode.value as 'grid' | 'timeline',
       userName: currentTimelineUserName.value || undefined
     }
-    const result = await getHonorList(params)
-    honorList.value = result.list
+    const response = await getHonorList(params)
+    honorList.value = response.data.list
   } catch (error) {
     console.error('加载荣誉列表失败:', error)
     ElMessage.error('加载荣誉列表失败')
@@ -341,12 +343,12 @@ const handleGiveFlowerToTeam = async (img: TeamAwardImage) => {
     // 注意：团队荣誉送花可能需要不同的接口，这里先使用荣誉送花接口
     // 如果后端有专门的团队荣誉送花接口，需要更新
     const response = await giveFlower(img.id)
-    img.flowers = response.flowers
-    img.hasGivenFlower = response.hasGivenFlower
+    img.flowers = response.data.flowers
+    img.hasGivenFlower = response.data.hasGivenFlower
     ElMessage.success('送花成功！')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('送花失败:', error)
-    ElMessage.error(error.message || '送花失败')
+    ElMessage.error((error as Error).message || '送花失败')
   }
 };
 
@@ -373,9 +375,9 @@ interface TeamAward {
 const loadTeamAwards = async (): Promise<TeamAward[]> => {
   try {
     // 优先从API获取
-    const response = await getTeamAwards() as { list: TeamAward[] };
-    if (response && response.list && response.list.length > 0) {
-      return response.list.map((item: TeamAward) => ({
+    const response = await getTeamAwards()
+    if (response && response.data && response.data.list && response.data.list.length > 0) {
+      return response.data.list.map((item: TeamAward) => ({
         id: item.id,
         title: item.title,
         year: String(item.year || new Date().getFullYear()),
@@ -591,7 +593,7 @@ const paginatedList = computed(() => {
 interface LeaderboardUser {
   name: string;
   department: string;
-  avatar: string;
+  avatar?: string;
   count: number;
   totalFlowers: number;
 }
@@ -672,12 +674,12 @@ const handleGiveFlower = async (item: HonorItem) => {
   }
   try {
     const response = await giveFlower(item.id)
-    item.flowers = response.flowers
-    item.hasGivenFlower = response.hasGivenFlower
+    item.flowers = response.data.flowers
+    item.hasGivenFlower = response.data.hasGivenFlower
     ElMessage.success('送花成功！')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('送花失败:', error)
-    ElMessage.error(error.message || '送花失败')
+    ElMessage.error((error as Error).message || '送花失败')
   }
 }
 const handleSizeChange = (val: number) => { pageSize.value = val; currentPage.value = 1; };

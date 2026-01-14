@@ -31,9 +31,6 @@ export const ROUTES = {
   // AI资讯
   NEWS: '/news',
   
-  // 荣誉榜
-  HONOR: '/honor',
-  
   // 帖子相关
   POST_CREATE: '/post/create',
   POST_DETAIL: (id: number | string) => `/post/${id}`,

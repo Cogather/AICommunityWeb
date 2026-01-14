@@ -128,7 +128,9 @@ import { ROUTES } from '../router/paths'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
-import { createActivity, updateActivity, getTools, getActivityDetail } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { createActivity, updateActivity, getActivityDetail } from '../api/activities'
+import { getTools } from '../api/home'
 import {
   Plus,
   Delete,
@@ -149,14 +151,15 @@ const isEditMode = computed(() => {
 })
 
 // 所有工具列表（包括扶摇Agent应用）
-const allToolsList = ref<any[]>([])
+const allToolsList = ref<Array<{ id: number; name: string; desc?: string; logo?: string; logoType?: string; color?: string; link?: string }>>([])
+
 
 // 加载工具列表
 const loadToolsList = async () => {
   try {
     const response = await getTools()
-    // getTools() 返回 { list: ToolItem[] }，需要使用 response.list
-    const tools = (response.list || []).map((item: any) => ({
+    // getTools() 返回 ApiResponse<{ list: ToolItem[] }>，需要使用 response.data.list
+    const tools = (response.data?.list || []).map((item: { id: number; name: string; desc?: string; description?: string; logo?: string; icon?: string; color?: string; link?: string }) => ({
       id: item.id,
       name: item.name,
       desc: item.desc || item.description || '',
@@ -167,7 +170,7 @@ const loadToolsList = async () => {
     }))
     
     // 确保扶摇Agent应用不在列表中（避免重复）
-    const filteredTools = tools.filter(t => t.id !== -1 && t.name !== '扶摇Agent应用')
+    const filteredTools = tools.filter((t: { id: number; name: string }) => t.id !== -1 && t.name !== '扶摇Agent应用')
     
     // 添加扶摇Agent应用（始终显示在列表最前面）
     filteredTools.unshift({
@@ -272,7 +275,7 @@ const beforeImageUpload = (file: File) => {
 }
 
 // 封面图片选择
-const handleCoverChange = async (file: any) => {
+const handleCoverChange = async (file: { raw?: File }) => {
   if (!file.raw) return
   try {
     const base64 = await fileToBase64(file.raw)
@@ -355,7 +358,8 @@ const loadActivityForEdit = async () => {
     const activityIdNum = Number(activityId)
     console.log('从mock API获取活动数据，ID:', activityIdNum)
     
-    const activity = await getActivityDetail(activityIdNum)
+    const response = await getActivityDetail(activityIdNum)
+    const activity = response.data
     
     if (activity) {
       console.log('从mock API找到活动:', activity)
@@ -364,14 +368,14 @@ const loadActivityForEdit = async () => {
       console.error('未找到活动')
       ElMessage.error(`活动不存在，ID: ${activityId}`)
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('加载活动失败:', error)
-    ElMessage.error(error.message || '加载活动失败')
+    ElMessage.error((error as Error).message || '加载活动失败')
   }
 }
 
 // 填充表单数据的辅助函数
-const fillFormData = (activity: any) => {
+const fillFormData = (activity: { title: string; toolId?: number; type?: string; date?: string; cover?: string; content?: string }) => {
   console.log('填充表单数据，活动:', activity)
   console.log('活动标题:', activity.title)
   console.log('活动工具ID:', activity.toolId, '类型:', typeof activity.toolId)
@@ -476,7 +480,7 @@ const fillFormData = (activity: any) => {
   
   // 填充表单数据 - 使用响应式更新
   formData.value.title = activity.title || ''
-  formData.value.type = activity.type || 'activity'
+  formData.value.type = (activity.type || 'activity') as 'activity' | 'training' | 'empowerment' | 'workshop'
   formData.value.toolId = toolId
   formData.value.cover = activity.cover || ''
   formData.value.content = activity.content || ''
@@ -598,9 +602,9 @@ const handlePublish = async () => {
     } else {
       router.push(ROUTES.ADMIN)
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('发布活动失败:', error)
-    ElMessage.error(error.message || '发布活动失败')
+    ElMessage.error((error as Error).message || '发布活动失败')
     publishing.value = false
   }
 }

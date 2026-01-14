@@ -360,18 +360,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ROUTES } from '../router/paths'
-import { 
-  getPostDetail, 
-  likePost, 
-  collectPost, 
-  deletePost,
-  getPostComments,
-  createComment,
-  likeComment,
-  deleteComment,
-  getCurrentUser,
-  setPostFeatured
-} from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getPostDetail, likePost, collectPost, deletePost, setFeaturedPost } from '../api/posts'
+import { getComments, createComment, likeComment, deleteComment } from '../api/comments'
+import { getCurrentUser } from '../api/user'
 import {
   View,
   ChatDotRound,
@@ -460,8 +452,26 @@ const postData = ref({
   isFeatured: false  // 是否精华/置顶（兼容字段）
 })
 
+// 评论类型定义
+interface CommentItem {
+  id: number
+  userId?: number
+  userName: string
+  userAvatar?: string
+  content: string
+  createTime: string
+  likes?: number
+  liked?: boolean
+  isLiked?: boolean
+  replies?: CommentItem[]
+  showReplyInput?: boolean
+  replyText?: string
+  replyTo?: string
+  replyToId?: number
+}
+
 // 评论相关
-const comments = ref<any[]>([])
+const comments = ref<CommentItem[]>([])
 const newComment = ref('')
 const submitting = ref(false)
 const replying = ref(false)
@@ -496,7 +506,7 @@ const _isCurrentUser = (userName: string) => {
 }
 
 // 判断是否是自己的评论
-const isMyComment = (comment: any) => {
+const isMyComment = (comment: CommentItem) => {
   // 通过 userId 或 userName 判断是否是当前用户发布的评论
   if (comment.userId && currentUserId.value) {
     return comment.userId === currentUserId.value
@@ -613,13 +623,14 @@ const loadPostDetail = async () => {
 
   loading.value = true
   try {
-    const post = await getPostDetail(postIdNum)
+    const response = await getPostDetail(postIdNum)
+    const post = response.data
     postData.value = {
       id: post.id,
       title: post.title,
       content: post.content || '',
-      cover: post.cover || post.image || '',
-      authorName: post.author || post.authorName || '',
+      cover: post.cover || '',
+      authorName: post.authorName || '',
       authorAvatar: post.authorAvatar || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleString('zh-CN'),
       views: post.views,
@@ -637,9 +648,9 @@ const loadPostDetail = async () => {
     }
     // 检查收藏状态
     isCollected.value = post.isCollected || false
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('加载帖子详情失败:', error)
-    ElMessage.error(error.message || '加载帖子详情失败')
+    ElMessage.error((error as Error).message || '加载帖子详情失败')
     router.push(ROUTES.PRACTICES)
   } finally {
     loading.value = false
@@ -649,20 +660,21 @@ const loadPostDetail = async () => {
 // 加载评论列表
 const loadComments = async () => {
   try {
-    const result = await getPostComments(postData.value.id, {
-      page: 1,
-      pageSize: 100 // 获取所有评论
-    })
+    const response = await getComments(
+      postData.value.id,
+      1,
+      100 // 获取所有评论
+    )
     // 为每个评论添加前端需要的属性
-    comments.value = result.list.map(comment => ({
+    comments.value = response.data.list.map(comment => ({
       ...comment,
       showReplyInput: false,
       replyText: '',
       replies: comment.replies || []
     }))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('加载评论失败:', error)
-    ElMessage.error(error.message || '加载评论失败')
+    ElMessage.error((error as Error).message || '加载评论失败')
     comments.value = []
   }
 }
@@ -675,12 +687,12 @@ const handleLike = async () => {
   try {
     const action = postData.value.isLiked ? 'unlike' : 'like'
     const response = await likePost(postData.value.id, action)
-    postData.value.isLiked = response.liked
-    postData.value.likes = response.likes
-    ElMessage.success(response.liked ? '点赞成功' : '取消点赞')
-  } catch (error: any) {
+    postData.value.isLiked = response.data.liked
+    postData.value.likes = response.data.count
+    ElMessage.success(response.data.liked ? '点赞成功' : '取消点赞')
+  } catch (error: unknown) {
     console.error('点赞失败:', error)
-    ElMessage.error(error.message || '操作失败')
+    ElMessage.error((error as Error).message || '操作失败')
   } finally {
     liking.value = false
   }
@@ -702,16 +714,16 @@ const handleCollect = async () => {
   try {
     const action = isCollected.value ? 'uncollect' : 'collect'
     const response = await collectPost(postData.value.id, action)
-    isCollected.value = response.collected
-    ElMessage.success(response.collected ? '收藏成功' : '已取消收藏')
+    isCollected.value = response.data.collected
+    ElMessage.success(response.data.collected ? '收藏成功' : '已取消收藏')
     
     // 触发收藏更新事件（用于更新个人中心的收藏数量）
     window.dispatchEvent(new CustomEvent('favoritesUpdated', {
-      detail: { postId: postData.value.id, collected: response.collected }
+      detail: { postId: postData.value.id, collected: response.data.collected }
     }))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('收藏操作失败:', error)
-    ElMessage.error(error.message || '操作失败，请稍后重试')
+    ElMessage.error((error as Error).message || '操作失败，请稍后重试')
   }
 }
 
@@ -744,9 +756,9 @@ const handleDelete = () => {
       await deletePost(postData.value.id)
       ElMessage.success('帖子已删除')
       router.push(ROUTES.PRACTICES)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('删除失败:', error)
-      ElMessage.error(error.message || '删除失败，请稍后重试')
+      ElMessage.error((error as Error).message || '删除失败，请稍后重试')
     }
   }).catch(() => {
     // 用户取消
@@ -770,12 +782,12 @@ const handleToggleFeatured = async () => {
     settingFeatured.value = true
     try {
       const newFeatured = !isPostFeatured.value
-      const result = await setPostFeatured(postData.value.id, newFeatured, postData.value.zone, postData.value.toolId)
+      const result = await setFeaturedPost(postData.value.id, newFeatured, postData.value.zone, postData.value.toolId ?? undefined)
       
       // 检查是否成功
-      if (!result.success) {
+      if (!result.data.success) {
         // 扶摇Agent已有置顶帖子的情况
-        ElMessage.warning(result.message || `${action}失败`)
+        ElMessage.warning(result.data.message || `${action}失败`)
         return
       }
       
@@ -784,9 +796,9 @@ const handleToggleFeatured = async () => {
       postData.value.isFeatured = newFeatured
       
       ElMessage.success(`${action}成功`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`${action}失败:`, error)
-      ElMessage.error(error.message || `${action}失败，请稍后重试`)
+      ElMessage.error((error as Error).message || `${action}失败，请稍后重试`)
     } finally {
       settingFeatured.value = false
     }
@@ -804,9 +816,10 @@ const handleSubmitComment = async () => {
 
   submitting.value = true
   try {
-    const comment = await createComment(postData.value.id, {
+    const response = await createComment(postData.value.id, {
       content: newComment.value
     })
+    const comment = response.data
     // 添加前端需要的属性
     comments.value.unshift({
       ...comment,
@@ -818,29 +831,29 @@ const handleSubmitComment = async () => {
     ElMessage.success('评论发表成功')
     // 重新加载评论以获取最新数量
     await loadComments()
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('发表评论失败:', error)
-    ElMessage.error(error.message || '发表评论失败')
+    ElMessage.error((error as Error).message || '发表评论失败')
   } finally {
     submitting.value = false
   }
 }
 
 // 点赞评论
-const handleCommentLike = async (comment: any) => {
+const handleCommentLike = async (comment: CommentItem) => {
   try {
     const action = comment.isLiked ? 'unlike' : 'like'
     const response = await likeComment(comment.id, action)
-    comment.isLiked = response.liked
-    comment.likes = response.likes
-  } catch (error: any) {
+    comment.isLiked = response.data.liked
+    comment.likes = response.data.count
+  } catch (error: unknown) {
     console.error('点赞失败:', error)
-    ElMessage.error(error.message || '操作失败')
+    ElMessage.error((error as Error).message || '操作失败')
   }
 }
 
 // 点击回复按钮（回复评论）
-const handleReplyClick = (comment: any) => {
+const handleReplyClick = (comment: CommentItem & { showReplyInput?: boolean; replyText?: string }) => {
   comment.showReplyInput = !comment.showReplyInput
   if (comment.showReplyInput) {
     comment.replyText = ''
@@ -848,7 +861,7 @@ const handleReplyClick = (comment: any) => {
 }
 
 // 点击回复按钮（回复回复）
-const handleReplyToReplyClick = (comment: any, reply: any) => {
+const handleReplyToReplyClick = (comment: CommentItem & { showReplyInput?: boolean; replyText?: string }, reply: CommentItem) => {
   // 确保 reply 对象有 showReplyInput 属性
   if (!reply.hasOwnProperty('showReplyInput')) {
     reply.showReplyInput = false
@@ -859,8 +872,11 @@ const handleReplyToReplyClick = (comment: any, reply: any) => {
   }
 }
 
+// 扩展的评论项类型
+type ExtendedCommentItem = CommentItem & { showReplyInput?: boolean; replyText?: string; replyTo?: string; replyToId?: number }
+
 // 提交回复（回复回复）
-const handleSubmitReplyToReply = async (comment: any, targetReply: any) => {
+const handleSubmitReplyToReply = async (comment: ExtendedCommentItem, targetReply: ExtendedCommentItem) => {
   if (!targetReply.replyText?.trim()) {
     ElMessage.warning('请输入回复内容')
     return
@@ -885,7 +901,7 @@ const handleSubmitReplyToReply = async (comment: any, targetReply: any) => {
       comment.replies = []
     }
     // 找到目标回复的位置，在其后插入
-    const targetIndex = comment.replies.findIndex((r: any) => r.id === targetReply.id)
+    const targetIndex = comment.replies.findIndex((r) => r.id === targetReply.id)
     if (targetIndex !== -1) {
       comment.replies.splice(targetIndex + 1, 0, newReply)
     } else {
@@ -904,13 +920,13 @@ const handleSubmitReplyToReply = async (comment: any, targetReply: any) => {
 }
 
 // 取消回复（回复回复）
-const handleCancelReplyToReply = (reply: any) => {
+const handleCancelReplyToReply = (reply: ExtendedCommentItem) => {
   reply.showReplyInput = false
   reply.replyText = ''
 }
 
 // 提交回复（回复评论）
-const handleSubmitReply = async (comment: any) => {
+const handleSubmitReply = async (comment: ExtendedCommentItem) => {
   if (!comment.replyText?.trim()) {
     ElMessage.warning('请输入回复内容')
     return
@@ -952,14 +968,14 @@ const handleSubmitReply = async (comment: any) => {
 }
 
 // 取消回复
-const handleCancelReply = (comment: any) => {
+const handleCancelReply = (comment: ExtendedCommentItem) => {
   comment.showReplyInput = false
   comment.replyText = ''
 }
 
 
 // 点赞回复
-const handleReplyLike = async (reply: any) => {
+const handleReplyLike = async (reply: { isLiked?: boolean; likes?: number }) => {
   try {
     // 这里应该调用API点赞回复
     // await likeReply(reply.id)
@@ -973,7 +989,7 @@ const handleReplyLike = async (reply: any) => {
 }
 
 // 判断是否是自己的回复
-const isMyReply = (reply: any) => {
+const isMyReply = (reply: { userId?: number; userName?: string }) => {
   // 通过 userId 或 userName 判断是否是当前用户发布的回复
   if (reply.userId && currentUserId.value) {
     return reply.userId === currentUserId.value
@@ -985,7 +1001,7 @@ const isMyReply = (reply: any) => {
 }
 
 // 删除评论（会删除该评论及其下所有回复）
-const handleDeleteComment = (comment: any) => {
+const handleDeleteComment = (comment: ExtendedCommentItem) => {
   const totalReplies = comment.replies?.length || 0
   const confirmMessage = totalReplies > 0
     ? `确定要删除这条评论吗？删除后该评论下的 ${totalReplies} 条回复也会一并删除，且无法恢复。`
@@ -1017,9 +1033,9 @@ const handleDeleteComment = (comment: any) => {
       }
       // 重新加载评论以更新数量
       await loadComments()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('删除评论失败:', error)
-      ElMessage.error(error.message || '删除失败，请稍后重试')
+      ElMessage.error((error as Error).message || '删除失败，请稍后重试')
     } finally {
       deletingComment.value = false
     }
@@ -1029,7 +1045,7 @@ const handleDeleteComment = (comment: any) => {
 }
 
 // 删除回复（只删除该条回复，不影响其他回复）
-const handleDeleteReply = (comment: any, reply: any) => {
+const handleDeleteReply = (comment: ExtendedCommentItem, reply: ExtendedCommentItem) => {
   ElMessageBox.confirm(
     '确定要删除这条回复吗？删除后无法恢复。',
     '确认删除',
@@ -1051,7 +1067,7 @@ const handleDeleteReply = (comment: any, reply: any) => {
       
       // 从评论的 replies 数组中删除该条回复（扁平化结构，只删除单条回复）
       if (comment.replies && Array.isArray(comment.replies)) {
-        const index = comment.replies.findIndex((r: any) => r.id === reply.id)
+        const index = comment.replies.findIndex((r) => r.id === reply.id)
         if (index !== -1) {
           comment.replies.splice(index, 1)
           ElMessage.success('回复已删除')
@@ -1099,7 +1115,8 @@ onMounted(async () => {
   
   try {
     // 获取当前用户信息
-    const user = await getCurrentUser()
+    const response = await getCurrentUser()
+    const user = response.data
     currentUser.value = {
       id: user.id,
       name: user.name,

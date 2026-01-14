@@ -84,7 +84,7 @@ import { ElMessage } from 'element-plus'
 const activeTab = ref('latest')
 
 // 处理阅读全文
-const handleReadMore = (_news: any) => {
+const handleReadMore = (_news: { title: string; content: string; date: string; category: string; type: string; id?: number }) => {
   ElMessage.info('文章详情功能开发中')
   // 这里可以跳转到文章详情页
   // router.push(`/news/${news.id}`)

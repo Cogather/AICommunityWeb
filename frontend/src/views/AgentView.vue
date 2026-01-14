@@ -133,7 +133,9 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { getFeaturedPost, checkToolOwner, getCurrentUser, getActivities, getPosts } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getPinnedPost, checkOwnerPermission, getPosts, getActivities } from '../api/agent'
+import { getCurrentUser } from '../api/user'
 
 const router = useRouter()
 
@@ -150,13 +152,13 @@ const checkToolOwnerPermission = async () => {
   checkingOwner.value = true
   try {
     // 获取当前用户信息
-    const user = await getCurrentUser()
-    isAdmin.value = user.roles?.includes('admin') || false
+    const userResponse = await getCurrentUser()
+    isAdmin.value = userResponse.data.roles?.includes('admin') || false
     
     // 检查是否为工具Owner（toolId为-1表示扶摇Agent应用）
-    const ownerResponse = await checkToolOwner(-1)
-    isToolOwner.value = ownerResponse.isOwner || false
-  } catch (error: any) {
+    const ownerResponse = await checkOwnerPermission()
+    isToolOwner.value = ownerResponse.data.isOwner || false
+  } catch (error: unknown) {
     console.error('检查工具Owner权限失败:', error)
     isToolOwner.value = false
     isAdmin.value = false
@@ -186,15 +188,13 @@ const allTags = ref<Array<{ name: string; count: number }>>([
 // 加载标签列表
 const loadTags = async () => {
   try {
-    const { getTags } = await import('../mock')
-    const result = await getTags({
-      toolId: -1
-    })
+    const { getTags } = await import('../api/agent')
+    const response = await getTags()
     // 构建标签列表，包含"全部"
     const tags: Array<{ name: string; count: number }> = [
       { name: '全部', count: totalPosts.value }
     ]
-    result.list.forEach((tag: { name: string; count?: number }) => {
+    response.data.list.forEach((tag: { name: string; count?: number }) => {
       tags.push({ name: tag.name, count: tag.count || 0 })
     })
     allTags.value = tags
@@ -215,19 +215,19 @@ const loadTags = async () => {
 }
 
 // 近期活动和培训
-const activities = ref<any[]>([])
+const activities = ref<Array<{ id: number; type: 'activity' | 'training' | 'workshop'; title: string; desc: string; date: string; location: string; image: string }>>([])
+
 
 // 加载活动列表
 const loadActivities = async () => {
   try {
-    const result = await getActivities({
-      toolId: -1, // toolId为-1表示扶摇Agent应用
+    const response = await getActivities({
       page: 1,
       pageSize: 10
     })
-    activities.value = result.list.map((a: any) => ({
+    activities.value = response.data.list.map((a) => ({
       id: a.id,
-      type: a.type || 'activity',
+      type: (a.type || 'activity') as 'activity' | 'training' | 'workshop',
       title: a.title,
       desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
       date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
@@ -241,19 +241,20 @@ const loadActivities = async () => {
 }
 
 // 置顶帖子
-const featuredPost = ref<any>(null)
+const featuredPost = ref<{ id: number; title: string; image?: string; createTime: string; description?: string; tags?: string[]; author?: string; views?: number; comments?: number } | null>(null)
+
 
 // 加载置顶帖子
 const loadFeaturedPost = async () => {
   try {
-    const response = await getFeaturedPost()
-    if (response.post) {
+    const response = await getPinnedPost()
+    if (response.data.post) {
       featuredPost.value = {
-        ...response.post,
-        image: response.post.image || response.post.cover || '',
-        createTime: typeof response.post.createTime === 'string' 
-          ? response.post.createTime 
-          : new Date(response.post.createTime).toLocaleDateString('zh-CN')
+        ...response.data.post,
+        image: response.data.post.cover || '',
+        createTime: typeof response.data.post.createTime === 'string' 
+          ? response.data.post.createTime 
+          : new Date(response.data.post.createTime).toLocaleDateString('zh-CN')
       }
     } else {
       featuredPost.value = null
@@ -265,36 +266,38 @@ const loadFeaturedPost = async () => {
 }
 
 // 所有帖子
-const allPosts = ref<any[]>([])
+const allPosts = ref<Array<{ id: number; title: string; description: string; author: string; createTime: string; views: number; comments: number; likes: number; tag: string; tags?: string[]; image: string }>>([])
+
 const totalPosts = ref(0)
 
 // 加载帖子列表
 const loadPosts = async () => {
   try {
-    const result = await getPosts({
-      toolId: -1, // toolId为-1表示扶摇Agent应用
+    // sortBy 只支持 'newest' | 'hot' | 'comments'，将 'likes' 映射为 'hot'
+    const apiSortBy = sortBy.value === 'likes' ? 'hot' : sortBy.value as 'newest' | 'hot' | 'comments'
+    const response = await getPosts({
       tag: selectedTag.value || undefined,
       keyword: searchKeyword.value || undefined,
-      sortBy: sortBy.value,
+      sortBy: apiSortBy,
       page: currentPage.value,
       pageSize: pageSize.value
     })
-    allPosts.value = result.list.map((p: any) => ({
+    allPosts.value = response.data.list.map((p) => ({
       id: p.id,
       title: p.title,
-      description: p.description || p.summary || '',
-      author: p.author || p.authorName,
+      description: p.summary || '',
+      author: p.authorName || '',
       createTime: typeof p.createTime === 'string' 
         ? p.createTime 
         : new Date(p.createTime).toLocaleDateString('zh-CN'),
       views: p.views,
       comments: p.comments,
       likes: p.likes,
-      tag: p.tag,
+      tag: p.tags?.[0] || '',
       tags: p.tags,
-      image: p.image || p.cover || ''
+      image: p.cover || ''
     }))
-    totalPosts.value = result.total
+    totalPosts.value = response.data.total
   } catch (error) {
     console.error('加载帖子列表失败:', error)
     allPosts.value = []
@@ -370,7 +373,7 @@ const handleCurrentChange = (val: number) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: any) => {
+const handlePostClick = (post: { id: number }) => {
   console.log('AgentView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
@@ -386,7 +389,7 @@ const handlePostClick = (post: any) => {
 }
 
 // 处理活动点击
-const handleActivityClick = (activity: any) => {
+const handleActivityClick = (activity: { id: number }) => {
   // 跳转到活动详情页
   router.push(`/activity/${activity.id}`)
 }

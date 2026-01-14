@@ -28,7 +28,7 @@ export interface ActivityRegistration {
 
 /** 创建活动参数 */
 export interface ActivityCreateParams {
-  toolId: number
+  toolId?: number
   type: ActivityType
   title: string
   content: string
@@ -46,7 +46,7 @@ export type ActivityUpdateParams = Partial<ActivityCreateParams>
 
 /** 报名响应 */
 export interface JoinResponse {
-  isJoined: boolean
+  joined: boolean
   currentParticipants: number
 }
 
@@ -130,7 +130,7 @@ const mockDeleteActivity = async (): Promise<ApiResponse<null>> => {
 const mockJoinActivity = async (): Promise<ApiResponse<JoinResponse>> => {
   await delay()
   return success({
-    isJoined: true,
+    joined: true,
     currentParticipants: 46,
   })
 }

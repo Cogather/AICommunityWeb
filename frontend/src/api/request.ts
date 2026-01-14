@@ -53,7 +53,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 // ⬇️ 在这里快速切换调试配置 ⬇️
 const DEBUG_MODE_ENABLED = true  // 设为 true 启用调试模式配置
 const DEBUG_USE_REAL_API = true
-const DEBUG_API_URL = 'http://10.189.4.114:8888/aicommunity/api'
+const DEBUG_API_URL = 'http://10.189.4.114:8888/aicommunitybe/api'
 // ⬆️ 调试配置结束 ⬆️
 
 // 最终使用的配置（调试模式优先）

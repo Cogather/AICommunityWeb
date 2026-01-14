@@ -111,7 +111,10 @@ import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, Calendar, UserFilled, Edit, Delete, Check, Close } from '@element-plus/icons-vue'
 import { ROUTES } from '../router/paths'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getActivityDetail, registerActivity, cancelRegistration, deleteActivity, getCurrentUser, checkToolOwner } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getActivityDetail, joinActivity, cancelJoin, deleteActivity } from '../api/activities'
+import { getCurrentUser } from '../api/user'
+import { checkOwnerPermission } from '../api/tools'
 
 const router = useRouter()
 const route = useRoute()
@@ -154,7 +157,8 @@ const loadActivity = async () => {
       return
     }
     
-    const activity = await getActivityDetail(activityIdNum)
+    const response = await getActivityDetail(activityIdNum)
+    const activity = response.data
     
     // 格式化日期
     const formatDate = (date: string | Date) => {
@@ -177,28 +181,28 @@ const loadActivity = async () => {
       date: formatDate(activity.date),
       cover: activity.cover || '',
       content: activity.content || '',
-      authorId: activity.authorId
+      authorId: activity.creatorId || 1
     }
     
     // 检查报名状态
-    isRegistered.value = activity.isRegistered || false
+    isRegistered.value = activity.isJoined || false
     
     // 检查管理员权限和工具Owner权限
     if (activity.toolId) {
       try {
-        const ownerResponse = await checkToolOwner(activity.toolId)
-        isToolOwner.value = ownerResponse.isOwner || false
+        const ownerResponse = await checkOwnerPermission(activity.toolId)
+        isToolOwner.value = ownerResponse.data.isOwner || false
       } catch (error) {
         console.error('检查工具Owner权限失败:', error)
         isToolOwner.value = false
       }
     }
     
-    // 检查管理员权限
-    isAdmin.value = activity.canDelete || activity.canEdit || false
-  } catch (error: any) {
+    // 检查管理员权限（根据当前用户角色判断）
+    isAdmin.value = false // 需要从用户信息中获取
+  } catch (error: unknown) {
     console.error('加载活动失败:', error)
-    ElMessage.error(error.message || '加载活动失败')
+    ElMessage.error((error as Error).message || '加载活动失败')
     router.push(ROUTES.AGENT)
   } finally {
     loading.value = false
@@ -231,20 +235,20 @@ const handleRegister = async () => {
   
   registering.value = true
   try {
-    const response = await registerActivity(activityData.value.id)
-    isRegistered.value = response.registered
+    const response = await joinActivity(activityData.value.id)
+    isRegistered.value = response.data.joined
     ElMessage.success('报名成功！')
     
     // 触发活动报名更新事件（用于更新个人中心的活动数量）
     window.dispatchEvent(new CustomEvent('activityRegistered', {
       detail: {
         activityId: activityData.value.id,
-        registered: response.registered
+        registered: response.data.joined
       }
     }))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('报名失败:', error)
-    ElMessage.error(error.message || '报名失败，请稍后重试')
+    ElMessage.error((error as Error).message || '报名失败，请稍后重试')
   } finally {
     registering.value = false
   }
@@ -259,7 +263,7 @@ const handleCancelRegister = async () => {
   }).then(async () => {
     canceling.value = true
     try {
-      await cancelRegistration(activityData.value.id)
+      await cancelJoin(activityData.value.id)
       isRegistered.value = false
       ElMessage.success('已取消报名')
       
@@ -270,9 +274,9 @@ const handleCancelRegister = async () => {
           registered: false
         }
       }))
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('取消报名失败:', error)
-      ElMessage.error(error.message || '取消报名失败，请稍后重试')
+      ElMessage.error((error as Error).message || '取消报名失败，请稍后重试')
     } finally {
       canceling.value = false
     }
@@ -316,9 +320,9 @@ const handleDelete = () => {
       await deleteActivity(activityData.value.id)
       ElMessage.success('活动已删除')
       router.push(ROUTES.AGENT)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('删除失败:', error)
-      ElMessage.error(error.message || '删除失败，请稍后重试')
+      ElMessage.error((error as Error).message || '删除失败，请稍后重试')
     }
   }).catch(() => {
     // 用户取消
@@ -328,7 +332,8 @@ const handleDelete = () => {
 onMounted(async () => {
   try {
     // 获取当前用户信息（用于判断管理员权限）
-    const user = await getCurrentUser()
+    const response = await getCurrentUser()
+    const user = response.data
     isAdmin.value = user.roles?.includes('admin') || false
   } catch (error) {
     console.warn('获取当前用户信息失败:', error)

@@ -181,7 +181,10 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { checkToolOwner as checkToolOwnerAPI, getCurrentUser, getActivities, getPosts, getToolFeaturedPost, type Post } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { checkOwnerPermission, getToolPosts, getToolActivities, getFeaturedPost } from '../api/tools'
+import { getCurrentUser } from '../api/user'
+import type { Post } from '../api/types'
 
 const router = useRouter()
 const route = useRoute()
@@ -199,7 +202,7 @@ const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 
 // 精华帖子（仅"其他工具"使用）
-const featuredPost = ref<any>(null)
+const featuredPost = ref<Post | null>(null)
 
 // 将单个精华帖子转换为数组（供PostList组件使用）
 const featuredPostsArray = computed(() => {
@@ -293,7 +296,16 @@ const displayedDepartments = computed(() => {
   return departments.sort((a, b) => b.postCount - a.postCount)
 })
 
-const tools = ref<any[]>([])
+interface ToolInfo {
+  id: number
+  name: string
+  logo?: string
+  logoType?: string
+  desc?: string
+  color?: string
+}
+
+const tools = ref<ToolInfo[]>([])
 
 // 监听配置更新
 const handleConfigUpdate = async () => {
@@ -314,7 +326,7 @@ onMounted(async () => {
   const toolId = route.query.toolId
   if (toolId) {
     const id = Number(toolId)
-    if (!isNaN(id) && tools.value.some((t: any) => t.id === id)) {
+    if (!isNaN(id) && tools.value.some((t) => t.id === id)) {
       selectedToolId.value = id
       // 检查是否为工具Owner
       await checkToolOwner(id)
@@ -328,7 +340,7 @@ onMounted(async () => {
       if (pathMatch) {
         const toolName = pathMatch[1]
         if (toolName) {
-          const matchedTool = tools.value.find((t: any) => {
+          const matchedTool = tools.value.find((t) => {
             // 尝试匹配工具名称（不区分大小写）
             const toolNameFromLink = t.name.toLowerCase().replace(/\s+/g, '-')
             return toolNameFromLink === toolName.toLowerCase() ||
@@ -379,9 +391,9 @@ onUnmounted(() => {
 // 工具列表 - 从API加载（与首页共用 /api/tools 接口）
 const loadTools = async () => {
   try {
-    const { getTools } = await import('../mock')
+    const { getTools } = await import('../api/home')
     const toolsResponse = await getTools()
-    return toolsResponse.list.map((item: any) => ({
+    return (toolsResponse.data?.list || []).map((item: { id: number; name: string; desc?: string; logo?: string; link?: string; color?: string }) => ({
       id: item.id,
       name: item.name,
       desc: item.desc || '',
@@ -452,31 +464,33 @@ const loadTools = async () => {
   }
 }
 
+// 扩展 Post 类型，添加本地使用的字段
+type LocalPost = Post & { author?: string; description?: string; image?: string; tag?: string; category?: string }
+
 // 所有帖子数据
-const allPosts = ref<Post[]>([])
+const allPosts = ref<LocalPost[]>([])
 
 // 加载帖子列表
 const loadPosts = async (toolId?: number) => {
   try {
-    const result = await getPosts({
-      zone: 'tools',
-      toolId: toolId !== undefined ? toolId : undefined,  // 正确处理 toolId=0 的情况
+    const response = await getToolPosts({
+      toolId: toolId,
       page: 1,
       pageSize: 100 // 获取所有帖子
     })
     // 字段映射
-    allPosts.value = result.list.map(post => ({
+    allPosts.value = response.data.list.map((post: Post): LocalPost => ({
       ...post,
-      author: post.author || (post as any).authorName || '',
-      description: post.description || (post as any).summary || '',
-      image: post.image || post.cover || '',
+      author: post.authorName || '',
+      description: post.summary || '',
+      image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN'),
       tag: post.tags && post.tags.length > 0 ? post.tags[0] : '',
-      category: (post as any).category || 'guide' // 保留category字段用于分类
+      category: 'guide' // 保留category字段用于分类
     }))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('加载帖子列表失败:', error)
-    ElMessage.error(error.message || '加载帖子列表失败')
+    ElMessage.error((error as Error).message || '加载帖子列表失败')
     allPosts.value = []
   }
 }
@@ -484,14 +498,14 @@ const loadPosts = async (toolId?: number) => {
 // 加载精华帖子（仅"其他工具"使用）
 const loadFeaturedPost = async () => {
   try {
-    const response = await getToolFeaturedPost(0)
-    if (response.post) {
+    const response = await getFeaturedPost(0)
+    if (response.data.post) {
       featuredPost.value = {
-        ...response.post,
-        image: response.post.image || response.post.cover || '',
-        createTime: typeof response.post.createTime === 'string' 
-          ? response.post.createTime 
-          : new Date(response.post.createTime).toLocaleDateString('zh-CN')
+        ...response.data.post,
+        image: response.data.post.cover || '',
+        createTime: typeof response.data.post.createTime === 'string' 
+          ? response.data.post.createTime 
+          : new Date(response.data.post.createTime).toLocaleDateString('zh-CN')
       }
     } else {
       featuredPost.value = null
@@ -503,20 +517,20 @@ const loadFeaturedPost = async () => {
 }
 
 // 活动数据
-const allActivities = ref<any[]>([])
+const allActivities = ref<Array<{ id: number; toolId: number; type: 'activity' | 'training' | 'workshop'; title: string; desc: string; date: string; location: string; image: string }>>([])
 
 // 加载活动列表
 const loadActivities = async (toolId?: number) => {
   try {
-    const result = await getActivities({
-      toolId: toolId || undefined,
+    const response = await getToolActivities({
+      toolId: toolId,
       page: 1,
       pageSize: 100 // 获取所有活动
     })
-    allActivities.value = result.list.map((a: any) => ({
+    allActivities.value = response.data.list.map((a) => ({
       id: a.id,
-      toolId: a.toolId,
-      type: a.type || 'activity',
+      toolId: a.toolId ?? 0,
+      type: (a.type || 'activity') as 'activity' | 'training' | 'workshop',
       title: a.title,
       desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
       date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
@@ -560,13 +574,14 @@ const checkToolOwner = async (toolId: number) => {
   checkingOwner.value = true
   try {
     // 获取当前用户信息
-    const user = await getCurrentUser()
+    const userResponse = await getCurrentUser()
+    const user = userResponse.data
     isAdmin.value = user.roles?.includes('admin') || false
 
     // 检查是否为工具Owner
-    const ownerResponse = await checkToolOwnerAPI(toolId)
-    isToolOwner.value = ownerResponse.isOwner || false
-  } catch (error: any) {
+    const ownerResponse = await checkOwnerPermission(toolId)
+    isToolOwner.value = ownerResponse.data.isOwner || false
+  } catch (error: unknown) {
     console.error('检查工具Owner权限失败:', error)
     isToolOwner.value = false
     isAdmin.value = false
@@ -616,7 +631,7 @@ const filteredPosts = computed(() => {
 
   // 如果不是"其他"工具，按分类过滤
   if (selectedToolId.value !== 'other') {
-    posts = posts.filter(post => (post as any).category === activePostTab.value)
+    posts = posts.filter(post => post.category === activePostTab.value)
   }
 
   // 按标签过滤（排除"全部"）
@@ -721,7 +736,7 @@ const _getTagType = (tag: string) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: any) => {
+const handlePostClick = (post: { id: number }) => {
   console.log('ToolsView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
@@ -759,7 +774,7 @@ const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
 }
 
 // 处理活动点击
-const handleActivityClick = (activity: any) => {
+const handleActivityClick = (activity: { id: number }) => {
   // 跳转到活动详情页
   router.push(`/activity/${activity.id}`)
 }

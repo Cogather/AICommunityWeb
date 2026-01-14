@@ -2,7 +2,7 @@
   <div class="page-container">
     <section class="hero-section">
       <HeroCarousel />
-      <!-- 右侧悬浮工具按钮列表 -->
+      <!-- 右侧悬浮工具按钮列表 - 使用 home/tool-platform 接口 -->
       <div class="floating-tools-panel">
         <div class="tools-panel-header">
           <el-icon><Trophy /></el-icon>
@@ -10,14 +10,15 @@
         </div>
         <div class="tools-list">
           <div
-            v-for="tool in tools"
+            v-for="tool in toolPlatform"
             :key="tool.id"
             class="tool-btn"
             :style="{ '--tool-color': tool.color }"
             @click="handleToolPlatformClick(tool)"
           >
             <div class="tool-icon">
-              <img v-if="tool.logo" :src="tool.logo" :alt="tool.name" />
+              <span v-if="tool.logo && !tool.logo.startsWith('http')" class="emoji-logo">{{ tool.logo }}</span>
+              <img v-else-if="tool.logo" :src="tool.logo" :alt="tool.name" />
               <el-icon v-else><Star /></el-icon>
             </div>
             <div class="tool-info">
@@ -84,6 +85,8 @@
                       <span class="ribbon-text">{{ award.name }}</span>
                       <div class="gold-shine"></div>
                     </div>
+                    <div class="ribbon-tail-left"></div>
+                    <div class="ribbon-tail-right"></div>
                   </div>
                 </div>
               </div>
@@ -117,8 +120,8 @@
         </el-col>
 
         <el-col :xs="24" :md="8">
-          <div class="glass-card equal-height-card">
-            <div class="card-header">
+          <div class="glass-card empowerment-section">
+            <div class="card-header empowerment-header">
               <h3>🗣️ 赋能交流</h3>
               <el-button
                 text
@@ -129,16 +132,22 @@
                 更多
               </el-button>
             </div>
-            <div class="text-list">
-              <p
+            <div class="empowerment-list">
+              <div
                 v-for="post in empowermentPosts"
                 :key="post.id"
-                class="list-row"
+                class="empowerment-item"
                 @click="router.push(ROUTES.EMPOWERMENT)"
               >
-                <span class="tag" :class="post.tagType || 'blue'">{{ post.tag }}</span>
-                {{ post.title }}
-              </p>
+                <div class="empowerment-title">{{ post.title }}</div>
+                <div class="empowerment-meta">
+                  <span class="meta-time">{{ post.time }}</span>
+                  <span class="meta-views">
+                    <el-icon><View /></el-icon>
+                    {{ post.views }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </el-col>
@@ -151,103 +160,89 @@
           <h2>AI 优秀实践</h2>
         </div>
 
-      <div class="glass-card practice-unified">
-        <div class="practice-container">
-          <!-- 培训赋能 -->
-          <div class="practice-module">
-            <div class="card-header">
-              <h3>📚 培训赋能</h3>
-              <el-button
-                text
-                size="small"
-                class="more-btn-pill"
-                @click="router.push(ROUTES.PRACTICES)"
-              >
-                更多
-              </el-button>
-            </div>
-            <div class="text-list">
-              <div
-                v-for="practice in practices.training.slice(0, 5)"
-                :key="practice.id"
-                class="list-row"
-                @click="handlePracticeClick(practice)"
-              >
-                <div class="practice-content">
-                  <h4 class="practice-title">{{ practice.title }}</h4>
-                  <div class="practice-meta">
-                    <span class="practice-author">{{ practice.author }}</span>
-                    <span class="practice-time">{{ practice.time }}</span>
-                  </div>
-                </div>
+      <div class="practice-unified-container">
+        <!-- 培训赋能 -->
+        <div class="practice-module-card glass-card">
+          <div class="practice-header-bar training-header">
+            <h3 class="header-title">📚 培训赋能</h3>
+            <el-button
+              text
+              size="small"
+              class="more-btn-pill header-more-btn"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { category: 'training' } })"
+            >
+              更多
+            </el-button>
+          </div>
+          <div class="practice-list">
+            <div
+              v-for="practice in practices.training.slice(0, 6)"
+              :key="practice.id"
+              class="practice-item"
+              @click="handlePracticeClick(practice)"
+            >
+              <h4 class="practice-title">{{ practice.title }}</h4>
+              <div class="practice-meta">
+                <span class="practice-author">{{ practice.author }}</span>
+                <span class="practice-time">{{ practice.time }}</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- 分割线 -->
-          <div class="practice-divider"></div>
-
-          <!-- AI训战 -->
-          <div class="practice-module">
-            <div class="card-header">
-              <h3>⚔️ AI训战</h3>
-              <el-button
-                text
-                size="small"
-                class="more-btn-pill"
-                @click="router.push(ROUTES.PRACTICES)"
-              >
-                更多
-              </el-button>
-            </div>
-            <div class="text-list">
-              <div
-                v-for="practice in practices.trainingBattle.slice(0, 5)"
-                :key="'train-' + practice.id"
-                class="list-row"
-                @click="handlePracticeClick(practice)"
-              >
-                <div class="practice-content">
-                  <h4 class="practice-title">{{ practice.title }}</h4>
-                  <div class="practice-meta">
-                    <span class="practice-author">{{ practice.author }}</span>
-                    <span class="practice-time">{{ practice.time }}</span>
-                  </div>
-                </div>
+        <!-- AI训战 -->
+        <div class="practice-module-card glass-card">
+          <div class="practice-header-bar battle-header">
+            <h3 class="header-title">⚔️ AI训战</h3>
+            <el-button
+              text
+              size="small"
+              class="more-btn-pill header-more-btn"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { category: 'training-battle' } })"
+            >
+              更多
+            </el-button>
+          </div>
+          <div class="practice-list">
+            <div
+              v-for="practice in practices.trainingBattle.slice(0, 6)"
+              :key="'train-' + practice.id"
+              class="practice-item"
+              @click="handlePracticeClick(practice)"
+            >
+              <h4 class="practice-title">{{ practice.title }}</h4>
+              <div class="practice-meta">
+                <span class="practice-author">{{ practice.author }}</span>
+                <span class="practice-time">{{ practice.time }}</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- 分割线 -->
-          <div class="practice-divider"></div>
-
-          <!-- 用户交流 -->
-          <div class="practice-module">
-            <div class="card-header">
-              <h3>💬 用户交流</h3>
-              <el-button
-                text
-                size="small"
-                class="more-btn-pill"
-                @click="router.push(ROUTES.EMPOWERMENT)"
-              >
-                更多
-              </el-button>
-            </div>
-            <div class="text-list">
-              <div
-                v-for="practice in practices.userExchange.slice(0, 5)"
-                :key="'exchange-' + practice.id"
-                class="list-row"
-                @click="handlePracticeClick(practice)"
-              >
-                <div class="practice-content">
-                  <h4 class="practice-title">{{ practice.title }}</h4>
-                  <div class="practice-meta">
-                    <span class="practice-author">{{ practice.author }}</span>
-                    <span class="practice-time">{{ practice.time }}</span>
-                  </div>
-                </div>
+        <!-- 用户交流 -->
+        <div class="practice-module-card glass-card">
+          <div class="practice-header-bar exchange-header">
+            <h3 class="header-title">💬 用户交流</h3>
+            <el-button
+              text
+              size="small"
+              class="more-btn-pill header-more-btn"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { category: 'user-exchange' } })"
+            >
+              更多
+            </el-button>
+          </div>
+          <div class="practice-list">
+            <div
+              v-for="practice in practices.userExchange.slice(0, 6)"
+              :key="'exchange-' + practice.id"
+              class="practice-item"
+              @click="handlePracticeClick(practice)"
+            >
+              <h4 class="practice-title">{{ practice.title }}</h4>
+              <div class="practice-meta">
+                <span class="practice-author">{{ practice.author }}</span>
+                <span class="practice-time">{{ practice.time }}</span>
               </div>
             </div>
           </div>
@@ -351,13 +346,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Trophy, Star } from '@element-plus/icons-vue'
+import { Trophy, Star, View } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { getHonor, getToolPlatform, getPractices, getToolBanners, getLatestWinners, getEmpowerment } from '../api/home'
+import { getHonor, getToolPlatform, getTools, getPractices, getToolBanners, getLatestWinners, getEmpowerment, getNews } from '../api/home'
 import type { LatestWinner } from '../api/types'
-// getNews 暂时从 mock 导入（API 层待实现）
-import { getNews } from '../mock'
 import { ROUTES } from '../router/paths'
 
 const router = useRouter()
@@ -435,32 +428,33 @@ const handleAwardClick = (award: { id: number; name: string; desc?: string; year
 interface EmpowermentItem {
   id: number
   title: string
-  tag: string
-  tagType?: string
+  time: string
+  views: number
 }
 const empowermentPosts = ref<EmpowermentItem[]>([])
 
 // 加载赋能交流数据 (home/empowerment)
 const loadEmpowermentPosts = async () => {
   try {
-    const response = await getEmpowerment(5)
+    const response = await getEmpowerment(6)
     if (response && response.data && response.data.list) {
-      empowermentPosts.value = response.data.list.map((item: { id: number; title: string; tag?: string; tagType?: string }) => ({
+      empowermentPosts.value = response.data.list.map((item: { id: number; title: string; time?: string; views?: number }) => ({
         id: item.id,
         title: item.title,
-        tag: item.tag || '讨论',
-        tagType: item.tagType || 'blue'
+        time: item.time || '刚刚',
+        views: item.views || Math.floor(Math.random() * 500) + 50
       }))
     }
   } catch (e) {
     console.error('加载赋能交流数据失败:', e)
     // 使用默认数据
     empowermentPosts.value = [
-      { id: 1, title: '如何使用 Agent 提升代码开发效率？', tag: '讨论', tagType: 'blue' },
-      { id: 2, title: '分享一个提升工作效率的AI工具使用技巧', tag: '分享', tagType: 'green' },
-      { id: 3, title: '关于AI辅助编程的一些疑问', tag: '提问', tagType: 'orange' },
-      { id: 4, title: 'Prompt工程最佳实践经验总结', tag: '经验', tagType: 'purple' },
-      { id: 5, title: '推荐几个好用的AI工具', tag: '工具', tagType: 'blue' },
+      { id: 1, title: '如何使用 Agent 提升代码开发效率？', time: '2小时前', views: 328 },
+      { id: 2, title: '分享一个提升工作效率的AI工具使用技巧', time: '3小时前', views: 256 },
+      { id: 3, title: '关于AI辅助编程的一些疑问', time: '5小时前', views: 189 },
+      { id: 4, title: 'Prompt工程最佳实践经验总结', time: '6小时前', views: 412 },
+      { id: 5, title: '推荐几个好用的AI工具', time: '8小时前', views: 167 },
+      { id: 6, title: 'AI助力团队协作效率提升分享', time: '10小时前', views: 203 },
     ]
   }
 }
@@ -469,7 +463,8 @@ const loadEmpowermentPosts = async () => {
 onMounted(async () => {
   honorConfig.value = await loadHonorConfig()
   await loadLatestWinners()
-  tools.value = await loadTools()
+  await loadToolPlatform() // 加载悬浮工具平台 (/api/home/tool-platform)
+  tools.value = await loadTools() // 加载AI工具专区列表 (/api/tools)
   toolZoneBanners.value = await loadToolBanners()
   practices.value = await loadPractices()
   await loadEmpowermentPosts()
@@ -479,7 +474,8 @@ onMounted(async () => {
 // 监听配置更新
 const handleConfigUpdate = async () => {
   await loadNewsList()
-  tools.value = await loadTools()
+  await loadToolPlatform() // 加载悬浮工具平台
+  tools.value = await loadTools() // 加载AI工具专区列表
   toolZoneBanners.value = await loadToolBanners()
   honorConfig.value = await loadHonorConfig()
   practices.value = await loadPractices()
@@ -569,22 +565,31 @@ const loadPractices = async () => {
   }
 }
 
+interface PracticePost {
+  id: number
+  title: string
+  description?: string
+  image?: string
+  createTime?: string
+  author?: string
+  time?: string
+}
 const practices = ref({
-  training: [],
-  trainingBattle: [],
-  userExchange: []
-} as { training: any[], trainingBattle: any[], userExchange: any[] })
+  training: [] as PracticePost[],
+  trainingBattle: [] as PracticePost[],
+  userExchange: [] as PracticePost[]
+})
 
-// 新闻数据 - 从mock API加载
-const newsList = ref<any[]>([])
+// 新闻数据 - 从 API 加载 (home/news)
+const newsList = ref<{ title: string; date: string; image?: string; link: string }[]>([])
 
 const loadNewsList = async () => {
   try {
     const response = await getNews()
-    if (response && response.list && response.list.length > 0) {
-      newsList.value = response.list.map((item: any) => ({
+    if (response && response.data && response.data.list && response.data.list.length > 0) {
+      newsList.value = response.data.list.map((item: { title: string; time: string; image?: string; link?: string }) => ({
         title: item.title,
-        date: item.date,
+        date: item.time,
         image: item.image,
         link: item.link || '/news'
       }))
@@ -623,22 +628,22 @@ const loadNewsList = async () => {
 }
 
 
-// AI工具平台列表配置 - 从API加载 (home/tool-platform)
+// AI工具列表配置 - 从API加载 (/api/tools)
 const loadTools = async () => {
   try {
-    const response = await getToolPlatform()
+    const response = await getTools()
     if (response && response.data && response.data.list && response.data.list.length > 0) {
-      return response.data.list.map((item: { id: number; name: string; desc?: string; logo?: string; platformUrl?: string; color?: string }) => ({
+      return response.data.list.map((item: { id: number; name: string; desc?: string; logo?: string; link?: string; color?: string }) => ({
         id: item.id,
         name: item.name,
         desc: item.desc || '',
         logo: item.logo || '',
-        link: item.platformUrl || `/tools?toolId=${item.id}`,
+        link: item.link || `/tools?toolId=${item.id}`,
         color: item.color || '#409eff'
       }))
     }
   } catch (e) {
-    console.error('加载工具平台列表失败:', e)
+    console.error('加载工具列表失败:', e)
   }
 
   // 默认数据
@@ -702,7 +707,51 @@ const loadTools = async () => {
   ]
 }
 
-const tools = ref([] as any[])
+interface ToolItem {
+  id: number
+  name: string
+  logo?: string
+  logoType?: string
+  desc?: string
+  color?: string
+  link?: string
+}
+
+// 悬浮工具平台数据 - 从 home/tool-platform 加载
+interface ToolPlatformItem {
+  id: number
+  name: string
+  desc?: string
+  logo?: string
+  color?: string
+  platformUrl?: string
+}
+const toolPlatform = ref<ToolPlatformItem[]>([])
+
+// 加载悬浮工具平台列表 (/api/home/tool-platform)
+const loadToolPlatform = async () => {
+  try {
+    const response = await getToolPlatform()
+    if (response && response.data && response.data.list && response.data.list.length > 0) {
+      toolPlatform.value = response.data.list
+      return
+    }
+  } catch (e) {
+    console.error('加载工具平台列表失败:', e)
+  }
+
+  // 默认数据
+  toolPlatform.value = [
+    { id: 1, name: 'TestMate', desc: '自动化测试助手', logo: '🧪', color: '#36cfc9', platformUrl: 'https://testmate.example.com' },
+    { id: 2, name: 'CodeMate', desc: '智能代码补全', logo: '💻', color: '#9254de', platformUrl: 'https://codemate.example.com' },
+    { id: 3, name: '云集', desc: '云端计算集群', logo: '☁️', color: '#597ef7', platformUrl: 'https://yunji.example.com' },
+    { id: 4, name: '云见', desc: '智能监控平台', logo: '👁️', color: '#ff9c6e', platformUrl: 'https://yunjian.example.com' },
+    { id: 5, name: '扶摇', desc: 'Agent编排引擎', logo: '🚀', color: '#4096ff', platformUrl: 'https://fuyao.example.com' },
+  ]
+}
+
+// AI工具专区列表 - 从 /api/tools 加载
+const tools = ref<ToolItem[]>([])
 
 // AI工具专区Banner配置 - 从API加载
 const loadToolBanners = async () => {
@@ -745,7 +794,7 @@ const getColSpan = (count: number) => {
 }
 
 // 处理工具点击跳转
-const handleToolClick = (tool: any) => {
+const handleToolClick = (tool: { id: number; link?: string }) => {
   // 如果配置了link，使用link跳转（link应该包含toolId参数用于过滤）
   if (tool.link) {
     if (tool.link.startsWith('http')) {
@@ -778,31 +827,13 @@ const handleToolClick = (tool: any) => {
   }
 }
 
-// 处理工具平台点击跳转（悬浮面板）
-const handleToolPlatformClick = (tool: any) => {
-  // 如果配置了link，使用link跳转（link应该包含toolId参数用于过滤）
-  if (tool.link) {
-    if (tool.link.startsWith('http')) {
-      window.open(tool.link, '_blank')
-    } else {
-      // 解析link，确保包含toolId参数
-      try {
-        const linkUrl = new URL(tool.link, window.location.origin)
-        // 如果link中没有toolId参数，自动添加
-        if (!linkUrl.searchParams.has('toolId')) {
-          linkUrl.searchParams.set('toolId', String(tool.id))
-          router.push(linkUrl.pathname + linkUrl.search)
-        } else {
-          router.push(tool.link)
-        }
-      } catch {
-        // 如果link不是完整URL，直接使用并添加toolId参数
-        const separator = tool.link.includes('?') ? '&' : '?'
-        router.push(`${tool.link}${separator}toolId=${tool.id}`)
-      }
-    }
+// 处理工具平台点击跳转（悬浮面板 - 使用 platformUrl 跳转到外部平台）
+const handleToolPlatformClick = (tool: { id: number; platformUrl?: string }) => {
+  // 悬浮工具栏的工具点击后跳转到外部平台
+  if (tool.platformUrl) {
+    window.open(tool.platformUrl, '_blank')
   } else {
-    // 如果没有link，跳转到工具专区，并传递toolId参数
+    // 如果没有配置 platformUrl，跳转到工具专区
     router.push({
       path: ROUTES.TOOLS,
       query: {
@@ -813,13 +844,13 @@ const handleToolPlatformClick = (tool: any) => {
 }
 
 // 处理实践点击
-const handlePracticeClick = (_practice: any) => {
+const handlePracticeClick = (_practice: { id: number }) => {
   // 跳转到实践详情或列表页
   router.push(ROUTES.PRACTICES)
 }
 
 // 处理头条点击
-const _handleNewsClick = (news: any) => {
+const _handleNewsClick = (news: { link?: string }) => {
   if (news.link) {
     if (news.link.startsWith('http')) {
       window.open(news.link, '_blank')
@@ -1176,55 +1207,59 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   z-index: 10; /* 确保在轮播图上层 */
 }
 
-/* AI动态模块特殊样式 */
-.ai-dynamic-section {
-  margin-top: 60px;
-}
-
 /* 第一个 section-row 减少顶部间距 */
 .section-row:first-of-type {
   margin-top: 0;
   padding-top: 0;
 }
 
-/* 通用毛玻璃卡片 - 更透亮更立体，带流动光感 */
+/* 通用毛玻璃卡片 - 带渐变质感的毛玻璃效果 */
 .glass-card {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(25px) saturate(200%);
-  -webkit-backdrop-filter: blur(25px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(230, 240, 255, 0.75) 30%,
+    rgba(240, 230, 255, 0.7) 60%,
+    rgba(255, 255, 255, 0.8) 100%
+  ) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 16px;
   padding: 24px;
   box-shadow:
-    0 8px 32px 0 rgba(31, 38, 135, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.3);
-  color: #000000; /* 改为黑色 */
+    0 8px 32px 0 rgba(31, 38, 135, 0.12),
+    inset 0 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 4px rgba(200, 210, 230, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.5);
+  color: #000000;
   transition: all 0.3s ease;
   position: relative;
-  width: 100%; /* 占满父元素宽度 */
-  box-sizing: border-box; /* 确保 padding 不会超出宽度 */
-  overflow: hidden; /* 确保流动光效不溢出 */
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 
-  /* 流动光感效果 */
+  /* 渐变光晕叠加层 - 更明显的效果 */
   &::before {
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      rgba(255, 255, 255, 0.5),
-      rgba(255, 255, 255, 0.3),
-      transparent
-    );
-    animation: glassShimmer 4s ease-in-out infinite;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(
+        ellipse at 0% 0%,
+        rgba(100, 150, 255, 0.15) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse at 100% 100%,
+        rgba(180, 120, 255, 0.12) 0%,
+        transparent 50%
+      );
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
   }
 
   /* 顶部高光效果，增强立体感 */
@@ -1238,7 +1273,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.8),
+      rgba(255, 255, 255, 1),
       transparent
     );
     border-radius: 16px 16px 0 0;
@@ -1268,67 +1303,234 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   min-height: 300px;
 }
 
+/* AI动态区域 - 两个模块等高固定 */
+.ai-dynamic-section {
+  .section-row {
+    display: flex;
+    align-items: stretch;
+
+    > .el-col {
+      display: flex;
+    }
+  }
+}
+
 .honor-section {
-  min-height: auto;
+  min-height: 560px !important;
+  height: 560px !important; /* 固定高度，预留8个奖项位置 */
   padding: 0; /* 移除内边距，让标题条占满 */
   overflow: hidden; /* 确保圆角正确显示 */
 }
 
+/* 赋能交流区块 */
+.empowerment-section {
+  min-height: 560px !important;
+  height: 560px !important; /* 与荣誉殿堂等高 */
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+
+  .empowerment-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 14px 20px;
+    margin: 0;
+    border-bottom: none;
+    border-radius: 16px 16px 0 0;
+    position: relative;
+    overflow: hidden;
+
+    /* 对话气泡暗纹 - 符合交流主题 - 更明显 */
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image:
+        /* 对话气泡图案 - 更明显 */
+        url("data:image/svg+xml,%3Csvg width='80' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 10 Q5 4 12 4 L32 4 Q39 4 39 10 L39 24 Q39 30 32 30 L18 30 L10 38 L10 30 Q5 30 5 24 Z' fill='rgba(255,255,255,0.12)' stroke='rgba(255,255,255,0.2)' stroke-width='1'/%3E%3Cpath d='M45 18 Q45 12 52 12 L68 12 Q75 12 75 18 L75 32 Q75 38 68 38 L58 38 L65 46 L60 38 L52 38 Q45 38 45 32 Z' fill='rgba(255,255,255,0.08)' stroke='rgba(255,255,255,0.15)' stroke-width='1'/%3E%3C/svg%3E"),
+        /* 点阵连接纹理 - 更明显 */
+        url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='8' cy='8' r='3' fill='rgba(255,255,255,0.12)'/%3E%3Ccircle cx='42' cy='42' r='3' fill='rgba(255,255,255,0.12)'/%3E%3Cline x1='8' y1='8' x2='42' y2='42' stroke='rgba(255,255,255,0.08)' stroke-width='1' stroke-dasharray='3,3'/%3E%3C/svg%3E");
+      background-size: 80px 50px, 50px 50px;
+      background-position: 0 0, 25px 0;
+      background-repeat: repeat, repeat;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 右侧斜切装饰 - 更明显 */
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100px;
+      height: 100%;
+      background: linear-gradient(
+        -65deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    h3 {
+      position: relative;
+      z-index: 2;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+
+    .more-btn-pill {
+      position: relative;
+      z-index: 2;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+    }
+  }
+
+  .empowerment-list {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+
+    .empowerment-item {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        .empowerment-title {
+          color: #667eea;
+        }
+      }
+
+      .empowerment-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1a1a2e;
+        line-height: 1.4;
+        margin-bottom: 6px;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        transition: color 0.2s ease;
+        letter-spacing: 0.3px;
+      }
+
+      .empowerment-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 12px;
+        color: #909399;
+
+        .meta-time {
+          display: flex;
+          align-items: center;
+        }
+
+        .meta-views {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .el-icon {
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+}
+
 /* 顶部标题条 - AI使用达人·荣誉殿堂 */
 .honor-header-bar {
-  background: #4C85FA; /* 中高饱和度蓝色 */
+  background: transparent;
   position: relative;
   padding: 14px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 16px 16px 0 0; /* 顶部圆角 */
+  border-radius: 16px 16px 0 0;
   overflow: hidden;
 
-  /* 城市/楼宇线稿纹理 - 使用 SVG 图案 */
+  /* 左侧蓝色背景 + 斜切分割（从左上到右下） */
   &::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 85%;
+    height: 100%;
+    background: linear-gradient(135deg, #4C85FA 0%, #3a6fd8 100%);
+    /* 斜切效果 - 左上到右下 \ 形状 */
+    clip-path: polygon(0 0, 88% 0, 100% 100%, 0 100%);
+    /* 楼宇暗纹 */
     background-image:
-      /* 城市轮廓线稿纹理 - 模拟楼宇剪影 */
-      url("data:image/svg+xml,%3Csvg width='200' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 60 L10 45 L15 50 L25 35 L35 40 L45 30 L55 35 L65 25 L75 30 L85 20 L95 25 L105 15 L115 20 L125 10 L135 15 L145 5 L155 10 L165 0 L175 5 L185 0 L200 0 L200 60 Z' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='1'/%3E%3C/svg%3E"),
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 20px,
-        rgba(255, 255, 255, 0.02) 20px,
-        rgba(255, 255, 255, 0.02) 22px
-      );
-    background-size: 200px 60px, 40px 40px;
+      url("data:image/svg+xml,%3Csvg width='300' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 L0 35 L8 35 L8 22 L14 22 L14 35 L22 35 L22 18 L30 18 L30 35 L38 35 L38 12 L42 12 L42 6 L48 6 L48 12 L52 12 L52 35 L62 35 L62 25 L70 25 L70 35 L80 35 L80 15 L86 15 L86 8 L92 8 L92 15 L98 15 L98 35 L108 35 L108 20 L118 20 L118 35 L128 35 L128 14 L134 14 L134 4 L140 4 L140 14 L146 14 L146 35 L156 35 L156 28 L166 28 L166 35 L176 35 L176 18 L184 18 L184 35 L196 35 L196 22 L202 22 L202 10 L208 10 L208 22 L214 22 L214 35 L226 35 L226 26 L236 26 L236 35 L248 35 L248 16 L256 16 L256 35 L268 35 L268 24 L278 24 L278 35 L290 35 L290 20 L300 20 L300 50 Z' fill='rgba(255,255,255,0.18)'/%3E%3C/svg%3E"),
+      linear-gradient(135deg, #4C85FA 0%, #3a6fd8 100%);
+    background-size: 300px 50px, 100% 100%;
     background-position: 0 100%, 0 0;
-    background-repeat: repeat-x, repeat;
-    opacity: 0.6;
+    background-repeat: repeat-x, no-repeat;
     pointer-events: none;
+    z-index: 1;
+  }
+
+  /* 右侧透明区域背景 */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30%;
+    height: 100%;
+    background: transparent;
+    pointer-events: none;
+    z-index: 0;
   }
 
   /* 标题文字 */
   .header-title {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     margin: 0;
     font-size: 15px;
-    font-weight: 600; /* Semibold */
-    color: #ffffff; /* 标题条内保持白色，因为背景是蓝色 */
-    letter-spacing: 0.3px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   }
 
-  /* 标题条内的更多按钮 - 特殊定位 */
+  /* 标题条内的更多按钮 - 灰色样式（在透明区域） */
   .more-btn-pill {
     position: relative;
-    z-index: 1;
-    border-radius: 999px; /* 完全圆角 pill */
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #000000; /* 改为黑色 */
+    z-index: 2;
+    border-radius: 999px;
+    background: rgba(100, 100, 100, 0.1);
+    border: 1px solid rgba(100, 100, 100, 0.4);
+    color: #555555;
     font-size: 13px;
     padding: 6px 16px;
     height: auto;
@@ -1337,10 +1539,10 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     backdrop-filter: blur(4px);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.25);
-      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(100, 100, 100, 0.2);
+      border-color: rgba(100, 100, 100, 0.6);
       transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     &:active {
@@ -1519,41 +1721,117 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 .awards-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 20px 16px;
+  padding-bottom: 10px;
 }
 
 .honor-ribbon-btn {
   cursor: pointer;
   position: relative;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  opacity: 0.85;
   display: flex;
   justify-content: center;
+  padding-bottom: 12px;
+  margin: 0 8px; /* 左右增加间隙 */
+  width: auto; /* 让它自适应变窄 */
 
   &:hover {
-    transform: translateY(-4px) scale(1.05);
-    opacity: 1;
+    transform: translateY(-4px) scale(1.03);
+    
+    .ribbon-shape {
+      background: linear-gradient(
+        180deg,
+        rgba(255, 215, 0, 0.9) 0%,
+        rgba(255, 179, 71, 0.9) 50%,
+        rgba(255, 140, 0, 0.9) 100%
+      );
+      box-shadow: 
+        0 6px 20px rgba(255, 165, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .ribbon-tail-left,
+    .ribbon-tail-right {
+      background: linear-gradient(180deg, #ff8c00 0%, #cc7000 100%);
+    }
   }
 }
 
 .ribbon-shape {
   position: relative;
-  /* 黄金透明渐变 */
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.25));
-  border: 1px solid rgba(255, 215, 0, 0.5);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  padding: 10px 24px;
-  min-width: 140px;
+  /* 金色渐变 - 带透明度 */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 224, 102, 0.85) 0%,
+    rgba(255, 201, 64, 0.85) 30%,
+    rgba(255, 176, 32, 0.85) 70%,
+    rgba(255, 149, 0, 0.85) 100%
+  );
+  border: none;
+  padding: 10px 16px; /* 减小内边距，使整体变窄 */
+  min-width: 100px; /* 减小最小宽度 */
   text-align: center;
-  color: #78350f; /* 深褐金文字 */
+  color: #78350f;
   font-weight: 800;
-  font-size: 14px;
-  border-radius: 4px;
-  border-bottom: 3px solid rgba(217, 119, 6, 0.4); /* 底部厚度感 */
-  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.15);
-  overflow: hidden;
+  font-size: 13px; /* 字体稍微调小 */
+  letter-spacing: 0.5px;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 8px 16px rgba(251, 191, 36, 0.15);
+  overflow: hidden; /* 隐藏溢出的流光 */
   width: 100%;
+  z-index: 2;
+  border-radius: 2px;
+}
+
+/* 绶带左尾巴 - 折叠效果 */
+.ribbon-tail-left {
+  position: absolute;
+  top: 10px; /* 向下偏移 */
+  left: -12px; /* 向左伸出 */
+  width: 24px;
+  height: 36px; /* 高度增加 */
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%); /* 深色阴影部分 */
+  clip-path: polygon(100% 0, 100% 100%, 0 50%, 0 0); /* 只有折叠三角形部分 */
+  z-index: -1; /* 在主体下方 */
+  
+  /* 添加燕尾飘带伪元素 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 10px; /* 从折叠下方延伸 */
+    left: -16px; /* 向外延伸 */
+    width: 30px;
+    height: 36px;
+    background: linear-gradient(180deg, #ff9500 0%, #cc7000 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 70%); /* 燕尾形状 */
+    z-index: -2;
+  }
+}
+
+/* 绶带右尾巴 - 折叠效果 */
+.ribbon-tail-right {
+  position: absolute;
+  top: 10px;
+  right: -12px;
+  width: 24px;
+  height: 36px;
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+  clip-path: polygon(0 0, 0 100%, 100% 50%, 100% 0);
+  z-index: -1;
+
+  /* 添加燕尾飘带伪元素 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: -16px;
+    width: 30px;
+    height: 36px;
+    background: linear-gradient(180deg, #ff9500 0%, #cc7000 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 70%, 0 100%);
+    z-index: -2;
+  }
 }
 
 .ribbon-text {
@@ -1563,6 +1841,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .gold-shine {
@@ -1574,11 +1853,11 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   background: linear-gradient(
     to right,
     transparent,
-    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.7),
     transparent
   );
   transform: skewX(-20deg);
-  animation: shine 4s infinite;
+  animation: shine 3s infinite;
 }
 
 @keyframes shine {
@@ -1588,13 +1867,6 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   50%, 100% {
     left: 150%;
   }
-}
-
-.honor-ribbon-btn:hover .ribbon-shape {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.5), rgba(255, 165, 0, 0.5));
-  border-color: rgba(255, 215, 0, 0.9);
-  color: #451a03;
-  box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
 }
 
 /* 中间分割线 */
@@ -2211,79 +2483,200 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 }
 
-/* AI优秀实践 - 统一毛玻璃结构 */
-.practice-unified {
-  padding: 24px;
+/* AI优秀实践 - 三栏布局 */
+.practice-unified-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
 
-  .practice-container {
-    display: flex;
-    gap: 0;
-    width: 100%;
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-    .practice-module {
-      flex: 1;
-      padding: 0 20px;
-      display: flex;
-      flex-direction: column;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
 
-      &:first-child {
-        padding-left: 0;
-      }
+/* AI优秀实践 - 单个模块卡片 */
+.practice-module-card {
+  padding: 0 !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+}
 
-      &:last-child {
-        padding-right: 0;
-      }
+/* 通用标题栏样式 */
+.practice-header-bar {
+  position: relative;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
 
-      .card-header {
-        margin-bottom: 20px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        padding-bottom: 10px;
-      }
+  /* 波浪纹理效果 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+      /* 波浪纹理 */
+      url("data:image/svg+xml,%3Csvg width='100' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q25 0 50 10 T100 10' fill='none' stroke='rgba(255,255,255,0.15)' stroke-width='1.5'/%3E%3C/svg%3E"),
+      /* 点阵纹理 */
+      radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 100px 20px, 8px 8px;
+    background-position: 0 50%, 0 0;
+    background-repeat: repeat-x, repeat;
+    pointer-events: none;
+    z-index: 1;
+  }
 
-      .text-list {
-        flex: 1;
-      }
+  /* 标题 */
+  .header-title {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* 更多按钮 */
+  .header-more-btn {
+    position: relative;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    color: #ffffff !important;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.4) !important;
+      transform: translateY(-1px);
     }
+  }
+}
 
-    .practice-divider {
-      width: 1px;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.2) 0,
-        rgba(0, 0, 0, 0.2) 4px,
-        transparent 4px,
-        transparent 8px
-      );
-      flex-shrink: 0;
-      margin: 0 20px;
+/* 培训赋能 - 蓝紫渐变 */
+.training-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+}
+
+/* AI训战 - 粉红渐变 */
+.battle-header {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    left: 10%;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+}
+
+/* 用户交流 - 青蓝渐变 */
+.exchange-header {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -40%;
+    right: 5%;
+    width: 110px;
+    height: 110px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+}
+
+/* 列表区域 */
+.practice-list {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* 单条帖子 */
+.practice-item {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    .practice-title {
+      color: #667eea;
     }
   }
 
-  /* 响应式 */
-  @media (max-width: 768px) {
-    .practice-container {
-      flex-direction: column;
+  .practice-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a2e;
+    line-height: 1.5;
+    margin: 0 0 6px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.2s ease;
+  }
 
-      .practice-module {
-        padding: 0;
-        margin-bottom: 20px;
+  .practice-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #909399;
 
-        &:last-child {
-          margin-bottom: 0;
-        }
+    .practice-author {
+      &::before {
+        content: '👤';
+        margin-right: 4px;
       }
+    }
 
-      .practice-divider {
-        width: 100%;
-        height: 1px;
-        background: repeating-linear-gradient(
-          to right,
-          rgba(0, 0, 0, 0.2) 0,
-          rgba(0, 0, 0, 0.2) 4px,
-          transparent 4px,
-          transparent 8px
-        );
-        margin: 20px 0;
+    .practice-time {
+      &::before {
+        content: '🕐';
+        margin-right: 4px;
       }
     }
   }

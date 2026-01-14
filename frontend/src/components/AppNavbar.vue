@@ -3,7 +3,11 @@
     <div class="navbar-container">
       <div class="brand">
         <RouterLink :to="ROUTES.HOME" class="logo-link">
-          <span class="logo-text">云核AI使能社区</span>
+          <img src="@/assets/image/logo.svg" alt="Logo" class="logo-icon" />
+          <div class="logo-content">
+            <span class="logo-text">云核AI使能社区</span>
+            <span class="logo-subtitle">云核心网产品线AI转型使能</span>
+          </div>
         </RouterLink>
       </div>
       <nav class="nav-menu">
@@ -153,7 +157,8 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getUnreadMessageCount } from '../utils/message'
-import { getTeamAwards } from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getTeamAwards } from '../api/honor'
 import { ROUTES } from '../router/paths'
 
 const router = useRouter()
@@ -166,15 +171,16 @@ const isUsersPage = computed(() => route.path === ROUTES.USERS)
 const currentAwardType = ref<'individual' | 'team'>('individual')
 const teamAwardYears = ref<string[]>([])
 const selectedYear = ref<string>('')
-const currentTeamAwards = ref<any[]>([])
+const currentTeamAwards = ref<Array<{ id: number; title: string; year: number | string; images: unknown[] }>>([])
+
 const activeTeamAwardIndex = ref<number>(0)
 
 // 加载团队荣誉数据（用于下拉菜单）
 const loadTeamAwardsForMenu = async () => {
   try {
-    const response = await getTeamAwards() as { list: any[] }
-    if (response && response.list && response.list.length > 0) {
-      const years = Array.from(new Set(response.list.map(a => String(a.year || new Date().getFullYear()))))
+    const response = await getTeamAwards()
+    if (response && response.data && response.data.list && response.data.list.length > 0) {
+      const years = Array.from(new Set(response.data.list.map((a: { year?: number | string }) => String(a.year || new Date().getFullYear()))))
         .sort((a, b) => Number(b) - Number(a))
       teamAwardYears.value = years
       if (years.length > 0 && !selectedYear.value && years[0]) {
@@ -378,11 +384,33 @@ const handleCommand = (command: string) => {
 .brand {
   .logo-link {
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+    }
+
+    .logo-content {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
     
     .logo-text {
-      font-size: 20px; /* 减小字体大小 */
-      font-weight: 800;
-      color: #000000; /* 改为黑色 */
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e3a8a; /* 深蓝色 */
+    }
+
+    .logo-subtitle {
+      font-size: 11px;
+      font-weight: 400;
+      color: #6b7280; /* 灰色 */
+      letter-spacing: 0.5px;
     }
   }
 }
@@ -857,8 +885,23 @@ const handleCommand = (command: string) => {
 }
 
 @media (max-width: 480px) {
-  .brand .logo-text {
-    font-size: 18px; /* 减小字体大小 */
+  .brand {
+    .logo-link {
+      gap: 6px;
+
+      .logo-icon {
+        width: 28px;
+        height: 28px;
+      }
+
+      .logo-text {
+        font-size: 14px;
+      }
+
+      .logo-subtitle {
+        font-size: 9px;
+      }
+    }
   }
 
   .nav-item {

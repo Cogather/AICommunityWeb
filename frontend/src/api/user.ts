@@ -292,6 +292,38 @@ export async function getUserCreatedActivities(
   return get<PaginatedData<Activity>>(`/user/${userId}/created-activities`, { page, pageSize })
 }
 
+/**
+ * 根据用户名获取用户资料
+ * GET /api/user/by-name/:name
+ */
+export async function getUserByName(name: string): Promise<ApiResponse<UserProfile>> {
+  if (!useRealApi) {
+    return mockGetCurrentUser()
+  }
+  return get<UserProfile>(`/user/by-name/${encodeURIComponent(name)}`)
+}
+
+/**
+ * 获取活动报名列表
+ * GET /api/activities/:activityId/registrations
+ */
+export async function getRegistrations(
+  activityId: number,
+  page = 1,
+  pageSize = 20
+): Promise<ApiResponse<PaginatedData<{ id: number; userId: number; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>> {
+  if (!useRealApi) {
+    await delay(300)
+    return success({
+      list: [],
+      total: 0,
+      page,
+      pageSize,
+    })
+  }
+  return get<PaginatedData<{ id: number; userId: number; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>(`/activities/${activityId}/registrations`, { page, pageSize })
+}
+
 // ==================== 导出 ====================
 
 export const userApi = {
@@ -305,6 +337,8 @@ export const userApi = {
   getUserComments,
   getUserActivities,
   getUserCreatedActivities,
+  getUserByName,
+  getRegistrations,
 }
 
 export default userApi

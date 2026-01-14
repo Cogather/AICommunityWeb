@@ -1121,42 +1121,49 @@ import '@wangeditor/editor/dist/css/style.css'
 import { Editor as _Editor, Toolbar as _Toolbar } from '@wangeditor/editor-for-vue'
 // 编辑器类型定义
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
+// API 层 - 支持 Mock/Real API 自动切换
 import {
+  getCarouselConfig,
   saveCarouselConfig,
+  getHonorBannerConfig,
   saveHonorBannerConfig,
-  saveHonorAwardsConfig,
+  getToolsConfig,
   saveToolsConfig,
+  getToolBannersConfig,
   saveToolBannersConfig,
+  getHonorAwardsConfig,
   savePersonalAwardsConfig,
+  savePersonalAwardsConfig as saveHonorAwardsConfig,
+  getAwardsList,
+  saveAward,
+  deleteAward,
   saveWinnersConfig,
-  saveTeamAwardsConfig,
   getRecommendedWinners,
   setUserAward,
   cancelUserAward,
-  getAwardsList,
-  getCarouselConfig,
-  getHonorBannerConfig,
-  getHonorAwardsConfig,
-  getToolsConfig,
-  getToolBannersConfig,
   getTeamAwardsConfig,
-  getActivities as _getActivities,
-  getActivityDetail,
-  createActivity,
-  updateActivity,
-  getUsersList,
+  saveTeamAwardsConfig,
   getAllFeaturedPosts,
   removeFeaturedPost,
-  saveAward,
-  deleteAward,
   getEmpowermentFeaturedPostsConfig,
   saveEmpowermentFeaturedPostsConfig,
   getOtherToolsFeaturedPostsConfig,
   saveOtherToolsFeaturedPostsConfig,
-  type CarouselItem as AdminCarouselItem,
+  getUsersList,
+  getActivities as _getActivities,
+  getActivityDetail,
+  createActivity,
+  updateActivity,
+  type AdminCarouselItem,
   type Post,
-  type RecommendedWinner
-} from '../mock'
+  type RecommendedWinner,
+  type CarouselItem as ApiCarouselItem,
+  type ToolConfigItem,
+  type ToolBannerItem as ApiToolBannerItem,
+  type TeamAward,
+  type TeamAwardImage,
+  type CollectionItem
+} from '../api/admin'
 import { sendAwardNotificationMessage } from '../utils/message'
 
 const _router = useRouter()
@@ -1347,8 +1354,10 @@ const loadingFeaturedPosts = ref(false)
 const loadAllFeaturedPosts = async () => {
   loadingFeaturedPosts.value = true
   try {
-    const result = await getAllFeaturedPosts()
-    allFeaturedPosts.value = result
+    const response = await getAllFeaturedPosts()
+    if (response && response.data) {
+      allFeaturedPosts.value = response.data
+    }
   } catch (error) {
     console.error('加载精华置顶帖子失败:', error)
     ElMessage.error('加载精华置顶帖子失败')
@@ -1434,16 +1443,18 @@ const _formatDateTime = (dateStr: string) => {
 // 加载奖项列表（从后端获取已有配置）
 const loadAwardsListFromApi = async () => {
   try {
-    const result = await getAwardsList()
-    awardsList.value = result.list.map(award => ({
-      id: award.id,
-      name: award.name,
-      category: award.category || '',
-      description: award.description || '',
-      criteria: award.criteria || [],          // 评选标准
-      cycle: award.cycle || '年度',            // 评选周期
-      saved: true // 从后端加载的都是已保存的
-    }))
+    const response = await getAwardsList()
+    if (response && response.data && response.data.list) {
+      awardsList.value = response.data.list.map((award: { id: number; name: string; category?: string; description?: string; criteria?: string[]; cycle?: string }) => ({
+        id: award.id,
+        name: award.name,
+        category: award.category || '',
+        description: award.description || '',
+        criteria: award.criteria || [],          // 评选标准
+        cycle: award.cycle || '年度',            // 评选周期
+        saved: true // 从后端加载的都是已保存的
+      }))
+    }
   } catch (error) {
     console.error('加载奖项列表失败:', error)
   }
@@ -1458,15 +1469,17 @@ const handleSaveAwardManually = async (award: AwardItem) => {
   
   award.saving = true
   try {
-    const result = await saveAward({
-      id: award.saved ? award.id : undefined, // 已保存的传id，新增的不传
+    const response = await saveAward({
+      id: award.saved ? award.id : 0, // 已保存的传id，新增的传0
       name: award.name,
       description: award.description,
       criteria: award.criteria,    // 保存评选标准
       cycle: award.cycle           // 保存评选周期
     })
     // 更新本地数据
-    award.id = result.id
+    if (response && response.data && response.data.id) {
+      award.id = response.data.id
+    }
     award.saved = true
     ElMessage.success('奖项保存成功')
     // 刷新奖项名称列表供获奖者管理使用
@@ -1725,12 +1738,18 @@ const allUsersList = ref<UserItem[]>([
   }
 ])
 
-// 从mock API加载所有用户列表
+// 从API加载所有用户列表
 const loadAllUsers = async () => {
   try {
     const response = await getUsersList()
-    if (response && response.list && response.list.length > 0) {
-      allUsersList.value = response.list
+    if (response && response.data && response.data.list && response.data.list.length > 0) {
+      allUsersList.value = response.data.list.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email || '',
+        department: user.department || '',
+        currentRole: (user.role as 'user' | 'admin' | 'tool_owner') || 'user'
+      }))
     }
   } catch (e) {
     console.warn('加载用户列表失败:', e)
@@ -2004,17 +2023,19 @@ const _handlePublishActivity = async () => {
 
     publishingActivity.value = true
 
-    // 使用mock API保存活动
+    // 使用API保存活动
     const selectedTool = allToolsList.value.find(t => t.id === activityForm.value.toolId)
     
     const activityData = {
-      toolId: activityForm.value.toolId,
-      toolName: selectedTool?.name || '未知工具',
+      toolId: activityForm.value.toolId ?? undefined,
       title: activityForm.value.title,
       date: activityForm.value.date,
       cover: activityForm.value.cover,
       content: activityForm.value.content
     }
+    
+    // 记录工具名称（仅用于显示）
+    console.log('活动关联工具:', selectedTool?.name || '未知工具')
     
     if (editingActivityId.value) {
       // 编辑模式：更新现有活动
@@ -2242,11 +2263,7 @@ const handleDeleteAward = async (index: number) => {
     // 如果奖项已保存到后端，需要调用删除接口
     if (award.saved) {
       try {
-        const result = await deleteAward(award.id)
-        if (!result.success) {
-          ElMessage.error(result.message || '删除失败')
-          return
-        }
+        await deleteAward(award.id)
       } catch (error) {
         console.error('删除奖项失败:', error)
         ElMessage.error('删除奖项失败')
@@ -2300,10 +2317,10 @@ const loadRecommendedWinners = async () => {
 
   loadingRecommended.value = true
   try {
-    // 调用mock API获取推荐用户
-    const response = await getRecommendedWinners(recommendedMonth.value, 3)
-    if (response && response.list) {
-      recommendedWinnersList.value = response.list
+    // 调用API获取推荐用户
+    const response = await getRecommendedWinners(recommendedMonth.value)
+    if (response && response.data && response.data.list) {
+      recommendedWinnersList.value = response.data.list
     } else {
       // 使用默认mock数据
       recommendedWinnersList.value = [
@@ -2363,11 +2380,11 @@ const loadRecommendedWinners = async () => {
 const _loadAwardsFromApi = async (category?: string) => {
   loadingAwards.value = true
   try {
-    // 调用mock API获取奖项列表
-    const response = await getAwardsList(category)
-    if (response && response.list) {
+    // 调用API获取奖项列表
+    const response = await getAwardsList()
+    if (response && response.data && response.data.list) {
       // 将 AwardListItem 转换为 ApiAwardItem 格式
-      apiAwardsList.value = response.list.map(item => ({
+      apiAwardsList.value = response.data.list.map((item: { id: number; name: string; description?: string; category?: string }) => ({
         id: item.id,
         name: item.name,
         desc: item.description || '',
@@ -2385,11 +2402,11 @@ const _loadAwardsFromApi = async (category?: string) => {
         category: mapCategoryToApiCategory(award.category),
         rules: award.description || ''
       }))
-      
-      // 如果有指定分类，只返回该分类的奖项
-      if (category) {
-        apiAwardsList.value = apiAwardsList.value.filter(a => a.category === category)
-      }
+    }
+    
+    // 如果有指定分类，只返回该分类的奖项
+    if (category) {
+      apiAwardsList.value = apiAwardsList.value.filter(a => a.category === category)
     }
   } catch (error) {
     console.error('获取奖项列表失败:', error)
@@ -2471,21 +2488,14 @@ const handleConfirmSetAward = async () => {
 
     settingAward.value = true
 
-    // 从获奖时间（YYYY-MM）中提取年份
-    const yearStr = awardForm.value.awardDate.split('-')[0]
-    const year = yearStr ? parseInt(yearStr, 10) : new Date().getFullYear()
-
     // 调用API设置用户获奖
     const response = await setUserAward({
       userId: currentAwardUser.value.id,
       awardId: awardForm.value.awardId!,
-      awardName: selectedAward.name,
-      awardDate: awardForm.value.awardDate,
-      category: awardForm.value.category,
-      year: year
+      awardDate: awardForm.value.awardDate
     })
 
-    const honorId = response?.id || Date.now()
+    const honorId = response?.data?.honorId || Date.now()
 
     // 更新推荐用户列表中的状态
     const userIndex = recommendedWinnersList.value.findIndex(u => u.id === currentAwardUser.value!.id)
@@ -2531,7 +2541,7 @@ const handleCancelAward = (user: RecommendedWinner) => {
   ).then(async () => {
     try {
       // 调用API取消用户获奖
-      await cancelUserAward(user.honorId!)
+      await cancelUserAward({ userId: user.id, honorId: user.honorId! })
 
       // 更新推荐用户列表中的状态
       const userIndex = recommendedWinnersList.value.findIndex(u => u.id === user.id)
@@ -2803,21 +2813,43 @@ const handleSave = async () => {
   }
 }
 
-// 更新组件数据（保存到mock API）
+// 更新组件数据（保存到API）
 const updateComponentsData = async () => {
   try {
-    // 保存到mock API
+    // 转换数据格式以匹配 API 类型
+    const teamAwardsData = teamAwardsList.value.map(item => ({
+      id: item.id,
+      title: item.title,
+      year: item.year || new Date().getFullYear(),
+      images: item.images.map(img => ({
+        id: img.id,
+        image: img.image,
+        winnerName: img.winnerName,
+        teamField: img.teamField,
+        story: img.story
+      }))
+    }))
+
+    const empowermentData = empowermentFeaturedPostsList.value
+      .filter(item => item.postId !== null)
+      .map(item => ({ id: item.id, postId: item.postId as number, note: item.note }))
+
+    const otherToolsData = otherToolsFeaturedPostsList.value
+      .filter(item => item.postId !== null)
+      .map(item => ({ id: item.id, postId: item.postId as number, note: item.note }))
+
+    // 保存到API
     await Promise.all([
-      saveCarouselConfig(carouselList.value),
-      saveHonorBannerConfig({ bannerImage: honorConfig.value.bannerImage }),
+      saveCarouselConfig(carouselList.value as CarouselItem[]),
+      saveHonorBannerConfig(honorConfig.value.bannerImage),
       saveHonorAwardsConfig(honorConfig.value.awards),
-      saveTeamAwardsConfig(teamAwardsList.value),
-      saveToolsConfig(toolsList.value),
-      saveToolBannersConfig(toolBannersList.value),
+      saveTeamAwardsConfig(teamAwardsData),
+      saveToolsConfig(toolsList.value as ToolConfigItem[]),
+      saveToolBannersConfig(toolBannersList.value as ToolBannerItem[]),
       savePersonalAwardsConfig(awardsList.value),
       saveWinnersConfig(winnersList.value),
-      saveEmpowermentFeaturedPostsConfig(empowermentFeaturedPostsList.value),
-      saveOtherToolsFeaturedPostsConfig(otherToolsFeaturedPostsList.value)
+      saveEmpowermentFeaturedPostsConfig(empowermentData),
+      saveOtherToolsFeaturedPostsConfig(otherToolsData)
     ])
     
     // 触发事件，通知其他页面更新
@@ -2855,43 +2887,48 @@ const loadConfig = async () => {
       getOtherToolsFeaturedPostsConfig()
     ])
     
-    if (carouselResponse && carouselResponse.list) {
-      carouselList.value = carouselResponse.list.map((item) => ({
+    if (carouselResponse?.data?.list) {
+      carouselList.value = carouselResponse.data.list.map((item: ApiCarouselItem & { imageType?: string }) => ({
         ...item,
         imageType: (item.imageType as 'url' | 'upload') || 'url'
       }))
     }
     
-    if (honorBannerResponse) {
+    if (honorBannerResponse?.data) {
       honorConfig.value = {
         ...honorConfig.value,
-        bannerImage: honorBannerResponse.bannerImage || '',
-        bannerImageType: honorBannerResponse.bannerImageType || 'url'
+        bannerImage: honorBannerResponse.data.bannerImage || '',
+        bannerImageType: 'url'
       }
     }
     
-    if (honorAwardsResponse && honorAwardsResponse.list) {
-      honorConfig.value.awards = honorAwardsResponse.list
+    if (honorAwardsResponse?.data?.list) {
+      honorConfig.value.awards = honorAwardsResponse.data.list.map(award => ({
+        id: award.id,
+        name: award.name,
+        desc: award.description || '',
+        image: ''
+      }))
     }
     
-    if (teamAwardsResponse && teamAwardsResponse.list) {
-      teamAwardsList.value = teamAwardsResponse.list.map((item) => ({
+    if (teamAwardsResponse?.data?.list) {
+      teamAwardsList.value = teamAwardsResponse.data.list.map((item: TeamAward & { images?: Array<TeamAwardImage & { imageType?: string }> }) => ({
         id: item.id,
         title: item.title,
-        year: item.year,
-        images: item.images ? item.images.map((img) => ({
+        year: item.year || new Date().getFullYear(),
+        images: item.images ? item.images.map((img: TeamAwardImage & { imageType?: string }) => ({
           id: img.id,
           image: img.image,
           imageType: (img.imageType as 'url' | 'upload') || 'url',
-          winnerName: img.winnerName,
+          winnerName: img.winnerName || '',
           teamField: img.teamField || '',
           story: img.story || ''
         })) : []
       }))
     }
     
-    if (toolsResponse && toolsResponse.list) {
-      toolsList.value = toolsResponse.list.map((item) => ({
+    if (toolsResponse?.data?.list) {
+      toolsList.value = toolsResponse.data.list.map((item: ToolConfigItem) => ({
         id: item.id,
         name: item.name,
         desc: item.desc || '',
@@ -2902,12 +2939,12 @@ const loadConfig = async () => {
       }))
     }
     
-    if (toolBannersResponse && toolBannersResponse.list) {
-      toolBannersList.value = toolBannersResponse.list.map((item) => ({
+    if (toolBannersResponse?.data?.list) {
+      toolBannersList.value = toolBannersResponse.data.list.map((item: ApiToolBannerItem & { imageType?: string }) => ({
         id: item.id,
         image: item.image,
-        title: item.title,
-        desc: item.desc,
+        title: item.title || '',
+        desc: item.desc || '',
         imageType: (item.imageType as 'url' | 'upload') || 'url'
       }))
     }
@@ -2942,8 +2979,8 @@ const loadConfig = async () => {
     }
     
     // 加载赋能交流精华帖子配置
-    if (empowermentFeaturedResponse && empowermentFeaturedResponse.list) {
-      empowermentFeaturedPostsList.value = empowermentFeaturedResponse.list.map((item) => ({
+    if (empowermentFeaturedResponse?.data?.list) {
+      empowermentFeaturedPostsList.value = empowermentFeaturedResponse.data.list.map((item: CollectionItem) => ({
         id: item.id || Date.now(),
         postId: item.postId ?? null,
         note: item.note || ''
@@ -2951,8 +2988,8 @@ const loadConfig = async () => {
     }
     
     // 加载AI工具专区其他工具精华帖子配置
-    if (otherToolsFeaturedResponse && otherToolsFeaturedResponse.list) {
-      otherToolsFeaturedPostsList.value = otherToolsFeaturedResponse.list.map((item) => ({
+    if (otherToolsFeaturedResponse?.data?.list) {
+      otherToolsFeaturedPostsList.value = otherToolsFeaturedResponse.data.list.map((item: CollectionItem) => ({
         id: item.id || Date.now(),
         postId: item.postId ?? null,
         note: item.note || ''
@@ -2995,14 +3032,15 @@ const pendingActivityContent = ref<string>('')
 // 加载活动数据用于编辑
 const loadActivityForEdit = async (activityId: number) => {
   try {
-    const activity = await getActivityDetail(activityId)
+    const response = await getActivityDetail(activityId)
+    const activity = response?.data
     
     if (activity) {
       editingActivityId.value = activityId
       activityForm.value = {
         title: activity.title || '',
         toolId: activity.toolId || null,
-        date: typeof activity.date === 'string' ? activity.date : (activity.date as Date)?.toISOString?.()?.split('T')[0] || '',
+        date: typeof activity.date === 'string' ? activity.date : (activity.date as unknown as Date)?.toISOString?.()?.split('T')[0] || '',
         cover: activity.cover || '',
         content: activity.content || ''
       }

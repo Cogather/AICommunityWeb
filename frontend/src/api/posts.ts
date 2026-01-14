@@ -28,17 +28,23 @@ export interface PostUpdateParams {
   tags?: string[]
 }
 
-/** 点赞/收藏操作响应 */
+/** 点赞操作响应 */
 export interface ActionResponse {
-  isLiked?: boolean
-  isCollected?: boolean
-  likes?: number
+  liked: boolean
+  count: number
+}
+
+/** 收藏操作响应 */
+export interface CollectResponse {
+  collected: boolean
 }
 
 /** 设置精华响应 */
 export interface FeaturedResponse {
   featured: boolean
   postId: number
+  success: boolean
+  message?: string
 }
 
 // ==================== Mock 数据 ====================
@@ -120,15 +126,15 @@ const mockDeletePost = async (): Promise<ApiResponse<null>> => {
 const mockLikePost = async (isLike: boolean): Promise<ApiResponse<ActionResponse>> => {
   await delay()
   return success({
-    isLiked: isLike,
-    likes: isLike ? 21 : 20,
+    liked: isLike,
+    count: isLike ? 21 : 20,
   })
 }
 
-const mockCollectPost = async (isCollect: boolean): Promise<ApiResponse<ActionResponse>> => {
+const mockCollectPost = async (isCollect: boolean): Promise<ApiResponse<CollectResponse>> => {
   await delay()
   return success({
-    isCollected: isCollect,
+    collected: isCollect,
   })
 }
 
@@ -137,6 +143,8 @@ const mockSetFeatured = async (id: number, featured: boolean): Promise<ApiRespon
   return success({
     postId: id,
     featured,
+    success: true,
+    message: featured ? '已设为精华' : '已取消精华'
   })
 }
 
@@ -215,11 +223,11 @@ export async function likePost(id: number, action: 'like' | 'unlike'): Promise<A
  * POST /api/posts/:id/collect
  * @param action 'collect' | 'uncollect'
  */
-export async function collectPost(id: number, action: 'collect' | 'uncollect'): Promise<ApiResponse<ActionResponse>> {
+export async function collectPost(id: number, action: 'collect' | 'uncollect'): Promise<ApiResponse<CollectResponse>> {
   if (!useRealApi) {
     return mockCollectPost(action === 'collect')
   }
-  return post<ActionResponse>(`/posts/${id}/collect`, { action })
+  return post<CollectResponse>(`/posts/${id}/collect`, { action })
 }
 
 /**
@@ -252,6 +260,88 @@ export async function getZoneTags(
   return get<{ list: TagStat[] }>(`/zones/${zone}/tags`, toolId ? { toolId } : undefined)
 }
 
+// ==================== Mock 推荐封面和草稿 ====================
+
+const mockRecommendedCovers = [
+  { id: 1, url: 'https://picsum.photos/800/400?random=c1', category: 'tech' },
+  { id: 2, url: 'https://picsum.photos/800/400?random=c2', category: 'ai' },
+  { id: 3, url: 'https://picsum.photos/800/400?random=c3', category: 'general' },
+  { id: 4, url: 'https://picsum.photos/800/400?random=c4', category: 'tech' },
+  { id: 5, url: 'https://picsum.photos/800/400?random=c5', category: 'ai' },
+  { id: 6, url: 'https://picsum.photos/800/400?random=c6', category: 'general' },
+]
+
+let mockDraft: { data: PostCreateParams | null; updateTime: string } = {
+  data: null,
+  updateTime: ''
+}
+
+/**
+ * 获取推荐封面
+ * GET /api/posts/recommended-covers
+ */
+export async function getRecommendedCovers(params?: {
+  zone?: string
+  count?: number
+}): Promise<ApiResponse<{ list: typeof mockRecommendedCovers }>> {
+  if (!useRealApi) {
+    await delay(200)
+    const count = params?.count || 6
+    return success({ list: mockRecommendedCovers.slice(0, count) })
+  }
+  return get<{ list: typeof mockRecommendedCovers }>('/posts/recommended-covers', params)
+}
+
+/** 草稿数据（比 PostCreateParams 更宽松） */
+export interface DraftData {
+  zone?: string
+  toolId?: number | null
+  title?: string
+  summary?: string
+  tags?: string[]
+  cover?: string
+  content?: string
+  savedAt?: string
+}
+
+/**
+ * 保存草稿
+ * POST /api/posts/draft
+ */
+export async function saveDraft(data: DraftData): Promise<ApiResponse<{ id: number; updateTime: string }>> {
+  if (!useRealApi) {
+    await delay(200)
+    mockDraft = { data: data as PostCreateParams, updateTime: new Date().toISOString() }
+    return success({ id: 1, updateTime: mockDraft.updateTime })
+  }
+  return post<{ id: number; updateTime: string }>('/posts/draft', data)
+}
+
+/**
+ * 获取草稿
+ * GET /api/posts/draft
+ */
+export async function getDraft(): Promise<ApiResponse<{ data: PostCreateParams | null; updateTime: string }>> {
+  if (!useRealApi) {
+    await delay(200)
+    return success(mockDraft)
+  }
+  return get<{ data: PostCreateParams | null; updateTime: string }>('/posts/draft')
+}
+
+/**
+ * 删除草稿
+ * DELETE /api/posts/draft
+ */
+export async function deleteDraft(): Promise<ApiResponse<null>> {
+  if (!useRealApi) {
+    await delay(200)
+    mockDraft = { data: null, updateTime: '' }
+    return success(null)
+  }
+  return del<null>('/posts/draft')
+}
+
 // ==================== 导出 ====================
 
 export const postsApi = {
@@ -263,6 +353,10 @@ export const postsApi = {
   collectPost,
   setFeaturedPost,
   getZoneTags,
+  getRecommendedCovers,
+  saveDraft,
+  getDraft,
+  deleteDraft,
 }
 
 export default postsApi

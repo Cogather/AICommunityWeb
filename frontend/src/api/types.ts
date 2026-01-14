@@ -65,6 +65,7 @@ export interface EmpowermentPost {
   tagType?: 'blue' | 'green' | 'orange' | 'red' | 'purple'
   author?: string
   time: string
+  views?: number
 }
 
 /** AI 优秀实践帖子（首页简略版） */
@@ -81,6 +82,17 @@ export interface PracticesData {
   training: PracticePost[]
   trainingBattle: PracticePost[]
   userExchange: PracticePost[]
+}
+
+/** 新闻资讯项 */
+export interface NewsItem {
+  id: number
+  title: string
+  summary?: string
+  image?: string
+  link?: string
+  time: string
+  source?: string
 }
 
 /** 悬浮工具平台项 */
@@ -353,4 +365,44 @@ export interface LeaderboardUser {
   avatar?: string
   count: number
   totalFlowers: number
+}
+
+// ==================== 帖子草稿类型 ====================
+
+/** 推荐封面 */
+export interface RecommendedCover {
+  id: number
+  url: string
+  category?: string
+}
+
+/** 草稿数据 */
+export interface DraftData {
+  title?: string
+  content?: string
+  zone?: string
+  toolId?: number
+  tags?: string[]
+  cover?: string
+}
+
+/** 草稿响应 */
+export interface DraftResponse {
+  id?: number
+  data: DraftData | null
+  updateTime?: string
+}
+
+// ==================== 报名类型 ====================
+
+/** 活动报名记录 */
+export interface Registration {
+  id: number
+  activityId: number
+  userId: number
+  userName: string
+  userAvatar?: string
+  department?: string
+  registerTime: string
+  status: 'registered' | 'cancelled' | 'attended'
 }

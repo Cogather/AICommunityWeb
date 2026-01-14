@@ -25,8 +25,8 @@ export interface ReplyCreateParams {
 
 /** 点赞响应 */
 export interface LikeResponse {
-  isLiked: boolean
-  likes: number
+  liked: boolean
+  count: number
 }
 
 // ==================== Mock 数据 ====================
@@ -150,8 +150,8 @@ const mockDeleteComment = async (): Promise<ApiResponse<null>> => {
 const mockLikeComment = async (isLike: boolean): Promise<ApiResponse<LikeResponse>> => {
   await delay()
   return success({
-    isLiked: isLike,
-    likes: isLike ? 6 : 5,
+    liked: isLike,
+    count: isLike ? 6 : 5,
   })
 }
 

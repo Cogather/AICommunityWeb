@@ -190,8 +190,8 @@
                 <div class="card-cover" v-if="activity.cover">
                   <img :src="activity.cover" :alt="activity.title" />
                   <div class="card-badge">
-                    <el-tag :type="getActivityTypeTag(activity.type)" size="small" effect="dark">
-                      {{ getActivityTypeName(activity.type) }}
+                    <el-tag :type="getActivityTypeTag(activity.type || '')" size="small" effect="dark">
+                      {{ getActivityTypeName(activity.type || '') }}
                     </el-tag>
                   </div>
                   <div class="card-status">
@@ -200,7 +200,7 @@
                       size="small"
                       effect="dark"
                     >
-                      {{ getActivityStatusName(activity.status) }}
+                      {{ getActivityStatusName(activity.status || '') }}
                     </el-tag>
                   </div>
                 </div>
@@ -309,18 +309,9 @@ import { ElMessage, ElDialog } from 'element-plus'
 import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'
 import FlowerIcon from '../components/FlowerIcon.vue'
-import {
-  getUserProfileByName,
-  getCurrentUser,
-  getUserPosts,
-  getUserFavorites,
-  getUserComments,
-  getUserActivities,
-  getUserCreatedActivities,
-  getRegistrations,
-  type Post,
-  type Comment
-} from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getCurrentUser, getUserByName, getUserPosts, getUserFavorites, getUserComments, getUserActivities, getUserCreatedActivities, getRegistrations } from '../api/user'
+import type { Post, Comment, Activity } from '../api/types'
 
 const router = useRouter()
 const route = useRoute()
@@ -356,28 +347,25 @@ const userInfo = ref({
 const myPosts = ref<Post[]>([])
 
 // 我收藏的帖子
-const favoritePosts = ref<any[]>([])
+const favoritePosts = ref<Post[]>([])
 
 // 加载收藏的帖子
 const loadFavoritePosts = async (userId: number) => {
   try {
-    const result = await getUserFavorites(userId, {
-      page: 1,
-      pageSize: 100 // 获取所有收藏
-    })
+    const response = await getUserFavorites(userId, 1, 100)
     // 字段映射
-    favoritePosts.value = result.list.map(post => ({
+    favoritePosts.value = response.data.list.map((post: Post) => ({
       ...post,
-      author: post.author || (post as any).authorName || '',
-      description: post.description || (post as any).summary || '',
-      image: post.image || post.cover || '',
+      author: post.authorName || '',
+      description: post.summary || '',
+      image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
     // 更新收藏数量
-    userInfo.value.favoritesCount = result.total || favoritePosts.value.length
-  } catch (error: any) {
+    userInfo.value.favoritesCount = response.data.total || favoritePosts.value.length
+  } catch (error: unknown) {
     console.error('加载收藏列表失败:', error)
-    ElMessage.error(error.message || '加载收藏列表失败')
+    ElMessage.error((error as Error).message || '加载收藏列表失败')
     favoritePosts.value = []
   }
 }
@@ -396,45 +384,49 @@ const myComments = ref<Comment[]>([])
 // 加载用户评论列表
 const loadUserComments = async (userId: number) => {
   try {
-    const result = await getUserComments(userId, {
-      page: 1,
-      pageSize: 100 // 获取所有评论
-    })
-    myComments.value = result.list.map(comment => ({
+    const response = await getUserComments(userId, 1, 100)
+    myComments.value = response.data.list.map((comment: Comment) => ({
       ...comment,
       createTime: typeof comment.createTime === 'string' ? comment.createTime : new Date(comment.createTime).toLocaleString('zh-CN')
     }))
     // 更新评论数量
-    userInfo.value.commentsCount = result.total || myComments.value.length
-  } catch (error: any) {
+    userInfo.value.commentsCount = response.data.total || myComments.value.length
+  } catch (error: unknown) {
     console.error('加载用户评论失败:', error)
-    ElMessage.error(error.message || '加载用户评论失败')
+    ElMessage.error((error as Error).message || '加载用户评论失败')
     myComments.value = []
   }
 }
 
+// 扩展活动类型
+interface ExtendedActivity extends Partial<Activity> {
+  id: number
+  title: string
+  date: string
+  image?: string
+  description?: string
+  registeredCount?: number
+}
+
 // 我参与的活动
-const myActivities = ref<any[]>([])
+const myActivities = ref<ExtendedActivity[]>([])
 
 // 我发布的活动
-const myCreatedActivities = ref<any[]>([])
+const myCreatedActivities = ref<ExtendedActivity[]>([])
 
 // 加载报名的活动
 const loadRegisteredActivities = async (userId: number) => {
   try {
-    const result = await getUserActivities(userId, {
-      page: 1,
-      pageSize: 100 // 获取所有活动
-    })
-    myActivities.value = result.list.map(activity => ({
+    const response = await getUserActivities(userId, 1, 100)
+    myActivities.value = response.data.list.map((activity: { id: number; title: string; date: string | Date }) => ({
       ...activity,
       date: typeof activity.date === 'string' ? activity.date : new Date(activity.date).toLocaleString('zh-CN')
     }))
     // 更新活动数量
-    userInfo.value.activitiesCount = result.total || myActivities.value.length
-  } catch (error: any) {
+    userInfo.value.activitiesCount = response.data.total || myActivities.value.length
+  } catch (error: unknown) {
     console.error('加载报名活动列表失败:', error)
-    ElMessage.error(error.message || '加载报名活动列表失败')
+    ElMessage.error((error as Error).message || '加载报名活动列表失败')
     myActivities.value = []
   }
 }
@@ -442,17 +434,14 @@ const loadRegisteredActivities = async (userId: number) => {
 // 加载我发布的活动
 const loadMyCreatedActivities = async (userId: number) => {
   try {
-    const result = await getUserCreatedActivities(userId, {
-      page: 1,
-      pageSize: 100 // 获取所有活动
-    })
-    myCreatedActivities.value = result.list.map(activity => ({
+    const response = await getUserCreatedActivities(userId, 1, 100)
+    myCreatedActivities.value = response.data.list.map((activity: { id: number; title: string; date: string | Date }) => ({
       ...activity,
       date: typeof activity.date === 'string' ? activity.date : new Date(activity.date).toLocaleString('zh-CN')
     }))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('加载发布活动列表失败:', error)
-    ElMessage.error(error.message || '加载发布活动列表失败')
+    ElMessage.error((error as Error).message || '加载发布活动列表失败')
     myCreatedActivities.value = []
   }
 }
@@ -499,7 +488,8 @@ const paginatedMyActivities = computed(() => {
 // 根据用户名加载用户数据
 const loadUserProfile = async (userName: string) => {
   try {
-    const profile = await getUserProfileByName(userName)
+    const response = await getUserByName(userName)
+    const profile = response.data
     userInfo.value = {
       id: profile.id,
       name: profile.name,
@@ -525,32 +515,29 @@ const loadUserProfile = async (userName: string) => {
     await loadRegisteredActivities(profile.id)
     // 加载该用户发布的活动
     await loadMyCreatedActivities(profile.id)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('加载用户资料失败:', error)
-    ElMessage.error(error.message || '加载用户资料失败')
+    ElMessage.error((error as Error).message || '加载用户资料失败')
   }
 }
 
 // 根据用户ID加载帖子列表
 const loadUserPosts = async (userId: number) => {
   try {
-    const result = await getUserPosts(userId, {
-      page: 1,
-      pageSize: 100 // 获取所有帖子
-    })
+    const response = await getUserPosts(userId, 1, 100)
     // 字段映射
-    myPosts.value = result.list.map(post => ({
+    myPosts.value = response.data.list.map((post: Post) => ({
       ...post,
-      author: post.author || (post as any).authorName || '',
-      description: post.description || (post as any).summary || '',
-      image: post.image || post.cover || '',
+      author: post.authorName || '',
+      description: post.summary || '',
+      image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
     // 更新用户统计信息
-    userInfo.value.postsCount = result.total || myPosts.value.length
-  } catch (error: any) {
+    userInfo.value.postsCount = response.data.total || myPosts.value.length
+  } catch (error: unknown) {
     console.error('加载用户帖子失败:', error)
-    ElMessage.error(error.message || '加载用户帖子失败')
+    ElMessage.error((error as Error).message || '加载用户帖子失败')
     myPosts.value = []
   }
 }
@@ -566,7 +553,7 @@ watch(() => route.query.user, (userName) => {
 }, { immediate: true })
 
 // 处理帖子点击
-const handlePostClick = (post: any) => {
+const handlePostClick = (post: { id: number }) => {
   console.log('ProfileView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
@@ -582,7 +569,7 @@ const handlePostClick = (post: any) => {
 }
 
 // 处理活动点击
-const handleActivityClick = (activity: any) => {
+const handleActivityClick = (activity: { id: number }) => {
   console.log('ProfileView: 处理活动点击', activity)
   if (!activity || !activity.id) {
     console.error('活动数据无效:', activity)
@@ -651,19 +638,19 @@ const getActivityStatusName = (status: string) => {
 
 // 查看报名详情
 const showRegistrationsDialog = ref(false)
-const currentActivity = ref<any>(null)
-const registrations = ref<any[]>([])
+const currentActivity = ref<ExtendedActivity | null>(null)
+const registrations = ref<Array<{ id: number; userId: number; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string; employeeId?: string }>>([])
 const loadingRegistrations = ref(false)
 
-const handleViewRegistrations = async (activity: any) => {
+const handleViewRegistrations = async (activity: ExtendedActivity) => {
   currentActivity.value = activity
   showRegistrationsDialog.value = true
   loadingRegistrations.value = true
   
   try {
     // 调用API获取报名用户列表
-    const response = await getRegistrations(activity.id, { page: 1, pageSize: 100 })
-    registrations.value = response.list
+    const response = await getRegistrations(activity.id, 1, 100)
+    registrations.value = response.data.list
   } catch (error) {
     console.error('加载报名列表失败:', error)
     ElMessage.error('加载报名列表失败')
@@ -677,7 +664,8 @@ const handleViewRegistrations = async (activity: any) => {
 const loadUserData = async () => {
   try {
     // 获取当前用户信息
-    const profile = await getCurrentUser()
+    const response = await getCurrentUser()
+    const profile = response.data
     userInfo.value = {
       id: profile.id,
       name: profile.name,
@@ -698,9 +686,9 @@ const loadUserData = async () => {
       loadRegisteredActivities(profile.id),
       loadMyCreatedActivities(profile.id)
     ])
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('加载用户数据失败:', error)
-    ElMessage.error(error.message || '加载用户数据失败')
+    ElMessage.error((error as Error).message || '加载用户数据失败')
   }
 }
 

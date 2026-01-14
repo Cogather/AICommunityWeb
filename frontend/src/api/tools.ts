@@ -182,7 +182,7 @@ export async function getTools(featured?: boolean): Promise<ApiResponse<{ list: 
  * GET /api/tools/posts
  */
 export async function getToolPosts(params: {
-  toolId: number
+  toolId?: number
   category?: 'guide' | 'excellent'
   tag?: string
   department?: string
@@ -202,7 +202,7 @@ export async function getToolPosts(params: {
  * GET /api/tools/activities
  */
 export async function getToolActivities(params: {
-  toolId: number
+  toolId?: number
   status?: 'upcoming' | 'ongoing' | 'ended'
   page?: number
   pageSize?: number

@@ -79,9 +79,8 @@ import {
   Trophy,
   Delete
 } from '@element-plus/icons-vue'
-import {
-  getCurrentUser
-} from '../mock'
+// API 层 - 支持 Mock/Real API 自动切换
+import { getCurrentUser } from '../api/user'
 import {
   getUserMessages,
   markMessageAsRead as markAsRead,
@@ -276,7 +275,7 @@ const handleMarkAsRead = async (message: Message) => {
     markAsRead(currentUserId.value, message.id)
     message.read = true
     unreadCount.value = Math.max(0, unreadCount.value - 1)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('标记为已读失败:', error)
   }
 }
@@ -290,9 +289,9 @@ const handleMarkAllRead = async () => {
     })
     unreadCount.value = 0
     ElMessage.success('已标记全部为已读')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('标记全部为已读失败:', error)
-    ElMessage.error(error.message || '操作失败')
+    ElMessage.error((error as Error).message || '操作失败')
   }
 }
 
@@ -306,9 +305,9 @@ const handleDeleteMessage = async (messageId: number) => {
     removeMessage(currentUserId.value, messageId)
     messages.value = messages.value.filter(msg => msg.id !== messageId)
     ElMessage.success('消息已删除')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('删除消息失败:', error)
-    ElMessage.error(error.message || '删除失败')
+    ElMessage.error((error as Error).message || '删除失败')
   }
 }
 
@@ -321,8 +320,8 @@ const handleMessageUpdate = () => {
 onMounted(async () => {
   try {
     // 获取当前用户ID
-    const user = await getCurrentUser()
-    currentUserId.value = user.id
+    const response = await getCurrentUser()
+    currentUserId.value = response.data.id
   } catch (error) {
     console.warn('获取当前用户信息失败:', error)
   }
