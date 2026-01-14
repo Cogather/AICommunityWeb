@@ -128,6 +128,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Clock, View, ChatDotRound, Plus } from '@element-plus/icons-vue'
+import { ROUTES } from '../router/paths'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
@@ -166,7 +167,7 @@ const checkToolOwnerPermission = async () => {
 
 // 发布活动
 const handlePublishActivity = () => {
-  router.push('/activity/create?toolId=-1')
+  router.push(`${ROUTES.ACTIVITY_CREATE}?toolId=-1`)
 }
 
 // 分页
@@ -394,7 +395,7 @@ const handleActivityClick = (activity: any) => {
 // 处理发帖
 const handlePostCreate = () => {
   console.log('点击发布帖子，准备跳转到 /post/create')
-  router.push('/post/create').catch((err) => {
+  router.push(ROUTES.POST_CREATE).catch((err) => {
     console.error('路由跳转失败:', err)
   })
 }

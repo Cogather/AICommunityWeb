@@ -46,7 +46,7 @@
                 text
                 size="small"
                 class="more-btn-pill"
-                @click="router.push('/users')"
+                @click="router.push(ROUTES.USERS)"
               >
                 更多
               </el-button>
@@ -55,7 +55,7 @@
             <div class="honor-split-container" style="padding: 20px;">
               <!-- 左边：荣誉殿堂 -->
               <div class="honor-hall">
-                <div class="honor-banner" @click="router.push('/users')" style="cursor: pointer;">
+                <div class="honor-banner" @click="router.push(ROUTES.USERS)" style="cursor: pointer;">
                   <img
                     v-if="honorBannerImage"
                     :src="honorBannerImage"
@@ -124,7 +124,7 @@
                 text
                 size="small"
                 class="more-btn-pill"
-                @click="router.push('/empowerment')"
+                @click="router.push(ROUTES.EMPOWERMENT)"
               >
                 更多
               </el-button>
@@ -134,7 +134,7 @@
                 v-for="n in 5"
                 :key="n"
                 class="list-row"
-                @click="router.push('/empowerment')"
+                @click="router.push(ROUTES.EMPOWERMENT)"
               >
                 <span class="tag blue">讨论</span>
                 如何使用 Agent 提升代码开发效率？
@@ -161,7 +161,7 @@
                 text
                 size="small"
                 class="more-btn-pill"
-                @click="router.push('/practices')"
+                @click="router.push(ROUTES.PRACTICES)"
               >
                 更多
               </el-button>
@@ -195,7 +195,7 @@
                 text
                 size="small"
                 class="more-btn-pill"
-                @click="router.push('/practices')"
+                @click="router.push(ROUTES.PRACTICES)"
               >
                 更多
               </el-button>
@@ -229,7 +229,7 @@
                 text
                 size="small"
                 class="more-btn-pill"
-                @click="router.push('/empowerment')"
+                @click="router.push(ROUTES.EMPOWERMENT)"
               >
                 更多
               </el-button>
@@ -338,7 +338,7 @@
           text
           size="small"
           class="more-btn-pill"
-          @click="router.push('/news')"
+          @click="router.push(ROUTES.NEWS)"
         >
           阅读更多
         </el-button>
@@ -354,6 +354,7 @@ import { useRouter } from 'vue-router'
 import { Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 import { getHonor, getTools, getPractices, getNews, getToolBanners, getLatestWinners, type LatestWinner } from '../mock'
+import { ROUTES } from '../router/paths'
 
 const router = useRouter()
 
@@ -729,9 +730,9 @@ const handleToolClick = (tool: any) => {
   } else {
     // 如果没有link，跳转到工具专区，并传递toolId参数
     router.push({
-      path: '/tools',
+      path: ROUTES.TOOLS,
       query: {
-        toolId: tool.id
+        toolId: String(tool.id)
       }
     })
   }
@@ -763,9 +764,9 @@ const handleToolPlatformClick = (tool: any) => {
   } else {
     // 如果没有link，跳转到工具专区，并传递toolId参数
     router.push({
-      path: '/tools',
+      path: ROUTES.TOOLS,
       query: {
-        toolId: tool.id
+        toolId: String(tool.id)
       }
     })
   }
@@ -774,7 +775,7 @@ const handleToolPlatformClick = (tool: any) => {
 // 处理实践点击
 const handlePracticeClick = (_practice: any) => {
   // 跳转到实践详情或列表页
-  router.push('/practices')
+  router.push(ROUTES.PRACTICES)
 }
 
 // 处理头条点击
@@ -786,7 +787,7 @@ const _handleNewsClick = (news: any) => {
       router.push(news.link)
     }
   } else {
-    router.push('/news')
+    router.push(ROUTES.NEWS)
   }
 }
 

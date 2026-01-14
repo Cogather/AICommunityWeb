@@ -20,18 +20,19 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { ROUTES } from '../router/paths'
 
 const router = useRouter()
 
 const handleGoHome = () => {
-  router.push('/')
+  router.push(ROUTES.HOME)
 }
 
 const handleGoBack = () => {
   if (window.history.length > 1) {
     router.back()
   } else {
-    router.push('/')
+    router.push(ROUTES.HOME)
   }
 }
 </script>

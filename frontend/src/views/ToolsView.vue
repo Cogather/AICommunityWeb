@@ -175,6 +175,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Refresh, Plus } from '@element-plus/icons-vue'
+import { ROUTES } from '../router/paths'
 import { ElMessage } from 'element-plus'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
@@ -795,7 +796,7 @@ const handleResetDepartment = () => {
 
 // 处理发帖
 const handlePostCreate = () => {
-  router.push('/post/create')
+  router.push(ROUTES.POST_CREATE)
 }
 
 // 处理分页大小变化

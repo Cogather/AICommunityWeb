@@ -70,6 +70,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ROUTES } from '../router/paths'
 import {
   Bell,
   UserFilled,
@@ -259,7 +260,7 @@ const handleMessageClick = async (message: Message) => {
     router.push(`/post/${message.relatedId || message.id}`)
   } else if (message.type === MessageType.AWARD_NOTIFICATION) {
     // 奖项通知，跳转到个人荣誉页面
-    router.push('/profile?tab=honors')
+    router.push(`${ROUTES.PROFILE}?tab=honors`)
   }
 }
 

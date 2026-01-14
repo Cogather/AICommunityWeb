@@ -149,6 +149,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Refresh, Star } from '@element-plus/icons-vue'
+import { ROUTES } from '../router/paths'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
@@ -409,7 +410,7 @@ const handleCurrentChange = (val: number) => {
 // 处理发帖
 const handlePostCreate = () => {
   console.log('点击发布帖子，准备跳转到 /post/create')
-  router.push('/post/create').catch((err) => {
+  router.push(ROUTES.POST_CREATE).catch((err) => {
     console.error('路由跳转失败:', err)
   })
 }

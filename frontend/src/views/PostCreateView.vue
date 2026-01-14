@@ -234,6 +234,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ROUTES } from '../router/paths'
 import { createPost, updatePost, getRecommendedCovers, getTools, getPostDetail, saveDraft, getDraft, deleteDraft, getZoneTags } from '../mock'
 
 // localStorage 草稿存储 key
@@ -411,16 +412,16 @@ const handleBack = () => {
       if (fromPath) {
         // 从 /post/create?edit=true&id=xxx 可以推断出应该返回到 /post/xxx
         router.push(`/post/${fromEditId}`).catch(() => {
-          router.push('/practices')
+          router.push(ROUTES.PRACTICES)
         })
       } else {
-        router.push('/practices')
+        router.push(ROUTES.PRACTICES)
       }
     })
   } else if (window.history.length > 1) {
     router.back()
   } else {
-    router.push('/practices')
+    router.push(ROUTES.PRACTICES)
   }
 }
 

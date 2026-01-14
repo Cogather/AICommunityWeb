@@ -67,6 +67,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ROUTES } from '../router/paths'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
@@ -207,7 +208,7 @@ const handleSort = async (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
 // 处理发帖
 const _handlePostCreate = () => {
   console.log('点击发布帖子，准备跳转到 /post/create')
-  router.push('/post/create').catch((err) => {
+  router.push(ROUTES.POST_CREATE).catch((err) => {
     console.error('路由跳转失败:', err)
   })
 }

@@ -124,6 +124,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, shallowRef, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ROUTES } from '../router/paths'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
@@ -595,7 +596,7 @@ const handlePublish = async () => {
     if (isEditMode.value) {
       router.push(`/activity/${route.query.id}`)
     } else {
-      router.push('/admin')
+      router.push(ROUTES.ADMIN)
     }
   } catch (error: any) {
     console.error('发布活动失败:', error)

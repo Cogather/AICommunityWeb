@@ -2,13 +2,13 @@
   <header class="navbar">
     <div class="navbar-container">
       <div class="brand">
-        <RouterLink to="/" class="logo-link">
+        <RouterLink :to="ROUTES.HOME" class="logo-link">
           <span class="logo-text">云核AI使能社区</span>
         </RouterLink>
       </div>
       <nav class="nav-menu">
-        <RouterLink to="/" class="nav-item">首页</RouterLink>
-        <RouterLink to="/practices" class="nav-item">AI优秀实践</RouterLink>
+        <RouterLink :to="ROUTES.HOME" class="nav-item">首页</RouterLink>
+        <RouterLink :to="ROUTES.PRACTICES" class="nav-item">AI优秀实践</RouterLink>
         <el-dropdown 
           trigger="hover" 
           placement="bottom" 
@@ -41,11 +41,11 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <RouterLink to="/tools" class="nav-item">AI工具专区</RouterLink>
-        <RouterLink to="/agent" class="nav-item">扶摇Agent应用</RouterLink>
-        <RouterLink to="/empowerment" class="nav-item">赋能交流</RouterLink>
-        <RouterLink to="/news" class="nav-item">AI资讯</RouterLink>
-        <RouterLink v-if="isAdmin" to="/admin" class="nav-item admin-link">管理</RouterLink>
+        <RouterLink :to="ROUTES.TOOLS" class="nav-item">AI工具专区</RouterLink>
+        <RouterLink :to="ROUTES.AGENT" class="nav-item">扶摇Agent应用</RouterLink>
+        <RouterLink :to="ROUTES.EMPOWERMENT" class="nav-item">赋能交流</RouterLink>
+        <RouterLink :to="ROUTES.NEWS" class="nav-item">AI资讯</RouterLink>
+        <RouterLink v-if="isAdmin" :to="ROUTES.ADMIN" class="nav-item admin-link">管理</RouterLink>
       </nav>
       <div class="nav-actions">
         <!-- 未登录状态 -->
@@ -154,12 +154,13 @@ import {
 import { ElMessage } from 'element-plus'
 import { getUnreadMessageCount } from '../utils/message'
 import { getTeamAwards } from '../mock'
+import { ROUTES } from '../router/paths'
 
 const router = useRouter()
 const route = useRoute()
 
 // 判断是否在AI使用达人页面
-const isUsersPage = computed(() => route.path === '/users')
+const isUsersPage = computed(() => route.path === ROUTES.USERS)
 
 // 团队荣誉相关状态（用于下拉菜单）
 const currentAwardType = ref<'individual' | 'team'>('individual')
@@ -204,9 +205,9 @@ const handleUsersMenuCommand = (command: string) => {
   const [type, value] = command.split(':')
   if (type === 'awardType') {
     currentAwardType.value = value as 'individual' | 'team'
-    // 点击下拉菜单项时，跳转到/users页面并发送事件
-    if (route.path !== '/users') {
-      router.push('/users').then(() => {
+    // 点击下拉菜单项时，跳转到用户页面并发送事件
+    if (route.path !== ROUTES.USERS) {
+      router.push(ROUTES.USERS).then(() => {
         // 等待页面加载完成后再发送事件
         setTimeout(() => {
           console.log('AppNavbar: 发送awardTypeChange事件', value)
@@ -216,8 +217,8 @@ const handleUsersMenuCommand = (command: string) => {
         console.error('AppNavbar: 路由跳转失败', err)
       })
     } else {
-      // 如果已经在/users页面，直接发送事件
-      console.log('AppNavbar: 已在/users页面，直接发送awardTypeChange事件', value)
+      // 如果已经在用户页面，直接发送事件
+      console.log('AppNavbar: 已在用户页面，直接发送awardTypeChange事件', value)
       // 使用nextTick确保组件已更新
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
@@ -303,7 +304,7 @@ const loadUnreadCount = () => {
 
 // 处理消息点击
 const handleMessageClick = () => {
-  router.push('/messages')
+  router.push(ROUTES.MESSAGES)
 }
 
 // 监听消息更新事件
@@ -334,7 +335,7 @@ const handleCommand = (command: string) => {
   switch (command) {
     case 'profile':
       console.log('AppNavbar: 跳转到个人中心')
-      router.push('/profile').catch((err) => {
+      router.push(ROUTES.PROFILE).catch((err) => {
         console.error('路由跳转失败:', err)
       })
       break

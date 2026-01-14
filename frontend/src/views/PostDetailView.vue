@@ -359,6 +359,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ROUTES } from '../router/paths'
 import { 
   getPostDetail, 
   likePost, 
@@ -596,7 +597,7 @@ const loadPostDetail = async () => {
   const postId = route.params.id
   if (!postId || (Array.isArray(postId) && postId.length === 0)) {
     ElMessage.error('帖子ID不存在')
-    router.push('/practices')
+    router.push(ROUTES.PRACTICES)
     return
   }
 
@@ -606,7 +607,7 @@ const loadPostDetail = async () => {
   
   if (isNaN(postIdNum)) {
     ElMessage.error('帖子ID格式错误')
-    router.push('/practices')
+    router.push(ROUTES.PRACTICES)
     return
   }
 
@@ -639,7 +640,7 @@ const loadPostDetail = async () => {
   } catch (error: any) {
     console.error('加载帖子详情失败:', error)
     ElMessage.error(error.message || '加载帖子详情失败')
-    router.push('/practices')
+    router.push(ROUTES.PRACTICES)
   } finally {
     loading.value = false
   }
@@ -742,7 +743,7 @@ const handleDelete = () => {
     try {
       await deletePost(postData.value.id)
       ElMessage.success('帖子已删除')
-      router.push('/practices')
+      router.push(ROUTES.PRACTICES)
     } catch (error: any) {
       console.error('删除失败:', error)
       ElMessage.error(error.message || '删除失败，请稍后重试')

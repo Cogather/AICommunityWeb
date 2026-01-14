@@ -28,7 +28,7 @@ export default defineConfig({
     // ==================== 网络配置 ====================
     // true 或 '0.0.0.0': 允许局域网访问（可通过 IP 访问）
     // 'localhost': 仅本机访问
-    host: true,
+    host: 'localhost',
     port: 5173,
     strictPort: false, // 如果端口被占用，尝试下一个可用端口
     

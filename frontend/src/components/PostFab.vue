@@ -16,6 +16,7 @@
 import { useRouter, useRoute } from 'vue-router'
 import { Edit } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
+import { ROUTES } from '../router/paths'
 
 const router = useRouter()
 const route = useRoute()
@@ -24,7 +25,7 @@ const goCreate = () => {
   console.log('PostFab: 点击发帖按钮')
   
   // 检查当前是否在编辑帖子页面
-  const isEditMode = route.path === '/post/create' && route.query.edit === 'true' && route.query.id
+  const isEditMode = route.path === ROUTES.POST_CREATE && route.query.edit === 'true' && route.query.id
   
   if (isEditMode) {
     // 如果在编辑模式，先询问是否离开
@@ -44,7 +45,7 @@ const goCreate = () => {
       // 跳转到新建页面，并传递来源信息
       // 使用 skipLeaveCheck 标记，表示已经询问过用户，跳过 onBeforeRouteLeave 的询问
       router.push({
-        path: '/post/create',
+        path: ROUTES.POST_CREATE,
         query: {
           fromEdit: 'true',
           fromEditId: fromEditId as string,
@@ -59,7 +60,7 @@ const goCreate = () => {
     })
   } else {
     // 不在编辑模式，直接跳转
-    router.push('/post/create').catch((err) => {
+    router.push(ROUTES.POST_CREATE).catch((err) => {
       console.error('路由跳转失败:', err)
     })
   }

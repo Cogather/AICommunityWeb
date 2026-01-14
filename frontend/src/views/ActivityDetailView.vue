@@ -109,6 +109,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, Calendar, UserFilled, Edit, Delete, Check, Close } from '@element-plus/icons-vue'
+import { ROUTES } from '../router/paths'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getActivityDetail, registerActivity, cancelRegistration, deleteActivity, getCurrentUser, checkToolOwner } from '../mock'
 
@@ -142,14 +143,14 @@ const loadActivity = async () => {
     const activityId = route.params.id
     if (!activityId || (Array.isArray(activityId) && activityId.length === 0)) {
       ElMessage.error('活动ID不存在')
-      router.push('/agent')
+      router.push(ROUTES.AGENT)
       return
     }
 
     const activityIdNum = Number(Array.isArray(activityId) ? activityId[0] : activityId)
     if (isNaN(activityIdNum)) {
       ElMessage.error('活动ID格式错误')
-      router.push('/agent')
+      router.push(ROUTES.AGENT)
       return
     }
     
@@ -198,7 +199,7 @@ const loadActivity = async () => {
   } catch (error: any) {
     console.error('加载活动失败:', error)
     ElMessage.error(error.message || '加载活动失败')
-    router.push('/agent')
+    router.push(ROUTES.AGENT)
   } finally {
     loading.value = false
   }
@@ -209,7 +210,7 @@ const handleBack = () => {
   if (window.history.length > 1) {
     router.back()
   } else {
-    router.push('/agent')
+    router.push(ROUTES.AGENT)
   }
 }
 
@@ -314,7 +315,7 @@ const handleDelete = () => {
     try {
       await deleteActivity(activityData.value.id)
       ElMessage.success('活动已删除')
-      router.push('/agent')
+      router.push(ROUTES.AGENT)
     } catch (error: any) {
       console.error('删除失败:', error)
       ElMessage.error(error.message || '删除失败，请稍后重试')
