@@ -1,6 +1,8 @@
 declare module '@wangeditor/editor-for-vue' {
-  import { DefineComponent } from 'vue'
+  import type { DefineComponent } from 'vue'
   
-  export const Editor: DefineComponent<any, any, any>
-  export const Toolbar: DefineComponent<any, any, any>
+   
+  export const Editor: DefineComponent<object, object, unknown>
+   
+  export const Toolbar: DefineComponent<object, object, unknown>
 }

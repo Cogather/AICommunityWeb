@@ -7,6 +7,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 // ==================== 后端配置 ====================
 // 🔧 在这里修改后端地址
 const BACKEND_URL = 'http://10.189.4.114:8888'
+const API_PATH = '/aicommunity'  // 后端 API 路径前缀
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -37,12 +38,14 @@ export default defineConfig({
     
     // ==================== 代理配置 ====================
     // 当使用代理模式时（request.ts 中 API_BASE_URL = '/api'），
-    // 所有 /api 开头的请求会被代理到 BACKEND_URL
+    // 所有 /api 开头的请求会被代理到 BACKEND_URL/aicommunity/api
     proxy: {
       '/api': {
         target: BACKEND_URL,
         changeOrigin: true,
         secure: false,
+        // 重写路径：/api/xxx -> /aicommunity/api/xxx
+        rewrite: (path) => `${API_PATH}${path}`,
         // 可选：打印代理日志，方便调试
         configure: (proxy, _options) => {
           proxy.on('proxyReq', (proxyReq, req, _res) => {

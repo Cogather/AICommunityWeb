@@ -51,9 +51,9 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
  */
 
 // ⬇️ 在这里快速切换调试配置 ⬇️
-const DEBUG_MODE_ENABLED = false  // 设为 true 启用调试模式配置
+const DEBUG_MODE_ENABLED = true  // 设为 true 启用调试模式配置
 const DEBUG_USE_REAL_API = true
-const DEBUG_API_URL = 'http://10.189.4.114:8888/api'
+const DEBUG_API_URL = 'http://10.189.4.114:8888/aicommunity/api'
 // ⬆️ 调试配置结束 ⬆️
 
 // 最终使用的配置（调试模式优先）
@@ -120,7 +120,7 @@ async function request<T>(
 /**
  * GET 请求
  */
-export async function get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
+export async function get<T>(endpoint: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> {
   let url = endpoint
   if (params) {
     const searchParams = new URLSearchParams()
@@ -140,7 +140,7 @@ export async function get<T>(endpoint: string, params?: Record<string, any>): Pr
 /**
  * POST 请求
  */
-export async function post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+export async function post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
   return request<T>(endpoint, {
     method: 'POST',
     body: data ? JSON.stringify(data) : undefined,
@@ -150,7 +150,7 @@ export async function post<T>(endpoint: string, data?: any): Promise<ApiResponse
 /**
  * PUT 请求
  */
-export async function put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+export async function put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
   return request<T>(endpoint, {
     method: 'PUT',
     body: data ? JSON.stringify(data) : undefined,
@@ -160,7 +160,7 @@ export async function put<T>(endpoint: string, data?: any): Promise<ApiResponse<
 /**
  * DELETE 请求
  */
-export async function del<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+export async function del<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
   return request<T>(endpoint, {
     method: 'DELETE',
     body: data ? JSON.stringify(data) : undefined,
