@@ -331,7 +331,7 @@ const presetTags = ref<string[]>([])
 
 // 表单数据
 const formData = ref({
-  zone: '',
+  zone: '' as '' | 'practices' | 'tools' | 'agent' | 'empowerment',
   toolId: null as number | null,
   title: '',
   summary: '',
@@ -526,9 +526,6 @@ const editorConfig: Partial<IEditorConfig> = {
   placeholder: '请输入帖子内容...',
   // 启用粘贴功能，支持带格式、表格、图片
   readOnly: false,
-  // 粘贴配置
-  pasteIgnoreImg: false, // 不忽略图片，允许粘贴图片
-  pasteFilterStyle: false, // 不过滤样式，保留粘贴内容的样式
   MENU_CONF: {
     // 图片上传配置
     uploadImage: {
@@ -636,13 +633,13 @@ const handleEditorCreated = (editor: IDomEditor) => {
   // 添加粘贴事件监听，支持带格式、表格、图片的粘贴
   const editorDom = editor.getEditableContainer()
   if (editorDom) {
-    editorDom.addEventListener('paste', (event: ClipboardEvent) => {
+    editorDom.addEventListener('paste', ((event: ClipboardEvent) => {
       handleEditorPaste(editor, event)
       // 粘贴后更新字数
       setTimeout(() => {
         updateWordCount()
       }, 100)
-    })
+    }) as EventListener)
     
     // 监听输入事件，实时更新字数
     editorDom.addEventListener('input', () => {
@@ -655,13 +652,13 @@ const handleEditorCreated = (editor: IDomEditor) => {
     })
     
     // 监听删除事件
-    editorDom.addEventListener('keydown', (e: KeyboardEvent) => {
+    editorDom.addEventListener('keydown', ((e: KeyboardEvent) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
         setTimeout(() => {
           updateWordCount()
         }, 10)
       }
-    })
+    }) as EventListener)
   }
   
   // 如果有草稿内容，设置到编辑器
@@ -1052,6 +1049,7 @@ const handlePublish = async () => {
     try {
       // 判断是创建还是更新
       const postId = route.query.id ? Number(route.query.id) : null
+      const zone = formData.value.zone || undefined
       if (postId && route.query.edit === 'true') {
         // 更新帖子
         result = await updatePost(postId, {
@@ -1060,19 +1058,22 @@ const handlePublish = async () => {
           content: formData.value.content,
           tags: formData.value.tags,
           cover: formData.value.cover,
-          zone: formData.value.zone,
-          toolId: formData.value.toolId || undefined
         })
         ElMessage.success('帖子更新成功')
       } else {
         // 创建帖子
+        if (!zone) {
+          ElMessage.error('请选择专区')
+          publishing.value = false
+          return
+        }
         result = await createPost({
           title: formData.value.title,
           summary: formData.value.summary,
           content: formData.value.content,
           tags: formData.value.tags,
           cover: formData.value.cover,
-          zone: formData.value.zone,
+          zone: zone as 'practices' | 'tools' | 'agent' | 'empowerment',
           toolId: formData.value.toolId || undefined
         })
         ElMessage.success('帖子发布成功')

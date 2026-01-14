@@ -3,7 +3,10 @@
  */
 
 import { get, post, put, del, useRealApi, delay, success } from './request'
-import type { ApiResponse, Activity, PaginatedData, ActivityType, ActivityStatus } from './types'
+import type { ApiResponse, Activity, PaginatedData } from './types'
+
+/** 活动类型 - 用于创建/更新活动 */
+type ActivityType = 'activity' | 'training' | 'workshop' | 'empowerment'
 
 // ==================== 扩展类型 ====================
 
@@ -39,7 +42,7 @@ export interface ActivityCreateParams {
 }
 
 /** 更新活动参数 */
-export interface ActivityUpdateParams extends Partial<ActivityCreateParams> {}
+export type ActivityUpdateParams = Partial<ActivityCreateParams>
 
 /** 报名响应 */
 export interface JoinResponse {

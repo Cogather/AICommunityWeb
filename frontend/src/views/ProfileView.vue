@@ -383,7 +383,7 @@ const loadFavoritePosts = async (userId: number) => {
 }
 
 // 监听收藏更新事件
-const handleFavoritesUpdate = async (_event: CustomEvent) => {
+const handleFavoritesUpdate = async (_event: Event) => {
   // 重新加载收藏列表
   if (userInfo.value.id) {
     await loadFavoritePosts(userInfo.value.id)
@@ -458,7 +458,7 @@ const loadMyCreatedActivities = async (userId: number) => {
 }
 
 // 监听活动报名更新事件
-const handleActivityRegistered = async (_event: CustomEvent) => {
+const handleActivityRegistered = async (_event: Event) => {
   // 重新加载报名的活动
   if (userInfo.value.id) {
     await loadRegisteredActivities(userInfo.value.id)

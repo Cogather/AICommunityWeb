@@ -791,7 +791,7 @@ const _handleNewsClick = (news: any) => {
 }
 
 // AI工具专区轮播图数据
-const toolZoneBanners = ref(loadToolBanners())
+const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([])
 </script>
 
 <style scoped lang="scss">

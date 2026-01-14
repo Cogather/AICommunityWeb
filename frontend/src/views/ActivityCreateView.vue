@@ -189,7 +189,7 @@ const loadToolsList = async () => {
 // 表单数据
 const formData = ref({
   title: '',
-  type: 'activity' as 'activity' | 'empowerment',
+  type: 'activity' as 'activity' | 'training' | 'workshop' | 'empowerment',
   toolId: null as number | null,
   date: '',
   cover: '',

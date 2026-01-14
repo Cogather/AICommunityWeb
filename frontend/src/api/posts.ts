@@ -3,7 +3,7 @@
  */
 
 import { get, post, put, del, useRealApi, delay, success } from './request'
-import type { ApiResponse, Post, PostDetail, PaginatedData, TagStat } from './types'
+import type { ApiResponse, Post, PostDetail, TagStat } from './types'
 
 // ==================== 扩展类型 ====================
 

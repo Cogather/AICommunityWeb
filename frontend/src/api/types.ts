@@ -224,20 +224,26 @@ export interface Reply {
 export interface Comment {
   id: number
   postId: number
+  postTitle?: string
   userId: number
   userName: string
   userAvatar?: string
   content: string
   likes: number
   isLiked?: boolean
+  isAuthor?: boolean
+  isMyComment?: boolean
+  replyTo?: string
+  replyToId?: number
   createTime: string
-  replies: Reply[]
+  updateTime?: string
+  replies?: Reply[]
 }
 
 // ==================== 活动类型 ====================
 
 /** 活动类型 */
-export type ActivityType = 'activity' | 'training' | 'workshop'
+export type ActivityType = 'activity' | 'training' | 'workshop' | 'empowerment'
 
 /** 活动状态 */
 export type ActivityStatus = 'upcoming' | 'ongoing' | 'ended'

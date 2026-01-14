@@ -10,6 +10,10 @@ const BACKEND_URL = 'http://10.189.4.114:8888'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // ==================== 基础路径配置 ====================
+  // 所有页面路由都将以 /ai_community 为前缀
+  base: '/ai_community',
+  
   plugins: [
     vue(),
     // 只在开发环境启用 vue-dev-tools

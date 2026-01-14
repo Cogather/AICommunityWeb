@@ -175,7 +175,7 @@ const pageSize = ref(15)
 
 // 搜索关键词和排序
 const searchKeyword = ref('')
-const sortBy = ref('newest')
+const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>('newest')
 
 // 所有标签（从API获取，这里先使用固定标签，实际应该从getTags API获取）
 const allTags = ref<Array<{ name: string; count: number }>>([

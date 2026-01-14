@@ -448,7 +448,10 @@ const postData = ref({
   views: 1234,
   likes: 56,
   isLiked: false,
+  isCollected: false,  // 是否已收藏
   isAuthor: true,
+  canEdit: false,      // 是否可编辑
+  canDelete: false,    // 是否可删除
   tags: ['自然语言处理', '深度学习', '最佳实践'],
   zone: '' as string,  // 所属区域：practices、tools、agent、empowerment
   toolId: null as number | null,  // 工具ID（AI工具专区使用）
@@ -478,7 +481,8 @@ const commentCount = computed(() => {
 // 当前用户信息（实际应该从登录状态获取）
 const currentUser = ref({
   id: 1, // 当前用户ID
-  name: '当前用户' // 当前用户名
+  name: '当前用户', // 当前用户名
+  avatar: '' // 用户头像
 })
 
 // 当前用户ID和用户名（用于评论和回复）
@@ -610,19 +614,25 @@ const loadPostDetail = async () => {
   try {
     const post = await getPostDetail(postIdNum)
     postData.value = {
-      ...post,
+      id: post.id,
+      title: post.title,
+      content: post.content || '',
+      cover: post.cover || post.image || '',
       authorName: post.author || post.authorName || '',
       authorAvatar: post.authorAvatar || '',
-      cover: post.cover || post.image || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleString('zh-CN'),
+      views: post.views,
+      likes: post.likes,
       isLiked: post.isLiked || false,
       isCollected: post.isCollected || false,
       isAuthor: post.isAuthor || false,
       canEdit: post.canEdit || false,
       canDelete: post.canDelete || false,
+      tags: post.tags || [],
       zone: post.zone || '',
       toolId: post.toolId ?? null,
       featured: post.featured || false,
-      isFeatured: post.isFeatured || false
+      isFeatured: post.featured || false
     }
     // 检查收藏状态
     isCollected.value = post.isCollected || false

@@ -337,7 +337,7 @@ const filteredNormalPosts = computed(() => {
     const keyword = searchKeyword.value.toLowerCase()
     result = result.filter(post =>
       post.title.toLowerCase().includes(keyword) ||
-      post.author.toLowerCase().includes(keyword) ||
+      (post.author && post.author.toLowerCase().includes(keyword)) ||
       (post.description && post.description.toLowerCase().includes(keyword))
     )
   }
@@ -460,7 +460,7 @@ const handleContributorClick = (contributorName: string) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: { id: number; [key: string]: unknown }) => {
+const handlePostClick = (post: { id: number }) => {
   console.log('PracticesView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)

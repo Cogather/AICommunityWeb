@@ -13,7 +13,6 @@ import type {
   LatestWinner,
   EmpowermentPost,
   PracticesData,
-  PracticePost,
   ToolPlatformItem,
   ToolItem,
   ToolBannerItem,

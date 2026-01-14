@@ -14,7 +14,7 @@ import type {
 // ==================== 扩展类型 ====================
 
 /** 荣誉列表响应 */
-export interface HonorListData extends PaginatedData<HonorRecord> {}
+export type HonorListData = PaginatedData<HonorRecord>
 
 /** 团队奖项列表响应 */
 export interface TeamAwardListData {
@@ -132,7 +132,7 @@ const mockGetLeaderboard = async (): Promise<ApiResponse<LeaderboardData>> => {
   return success({ list: mockLeaderboard })
 }
 
-const mockGiveFlower = async (honorId: number): Promise<ApiResponse<FlowerResponse>> => {
+const mockGiveFlower = async (_honorId: number): Promise<ApiResponse<FlowerResponse>> => {
   await delay()
   return success({
     success: true,

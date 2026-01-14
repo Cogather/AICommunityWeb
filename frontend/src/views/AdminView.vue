@@ -1118,7 +1118,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type UploadFile } from 'element-plus'
 import { Plus, Check, Refresh, Search, Delete } from '@element-plus/icons-vue'
 import '@wangeditor/editor/dist/css/style.css'
-// @ts-expect-error - 编辑器组件暂时保留导入供后续使用
 import { Editor as _Editor, Toolbar as _Toolbar } from '@wangeditor/editor-for-vue'
 // 编辑器类型定义
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'

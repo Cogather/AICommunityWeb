@@ -176,7 +176,7 @@ const loadTeamAwardsForMenu = async () => {
       const years = Array.from(new Set(response.list.map(a => String(a.year || new Date().getFullYear()))))
         .sort((a, b) => Number(b) - Number(a))
       teamAwardYears.value = years
-      if (years.length > 0 && !selectedYear.value) {
+      if (years.length > 0 && !selectedYear.value && years[0]) {
         selectedYear.value = years[0]
       }
       updateCurrentTeamAwards()

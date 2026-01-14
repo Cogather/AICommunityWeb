@@ -46,10 +46,10 @@ const mockLogin = async (params: LoginParams): Promise<ApiResponse<LoginResponse
   }
   
   if (params.password !== '123456') {
-    return error('密码错误', 40002)
+    return error('密码错误', 40002) as ApiResponse<LoginResponse>
   }
   
-  return error('工号不存在', 40001)
+  return error('工号不存在', 40001) as ApiResponse<LoginResponse>
 }
 
 const mockLogout = async (): Promise<ApiResponse<null>> => {

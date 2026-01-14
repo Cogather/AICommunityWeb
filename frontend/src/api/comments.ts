@@ -124,14 +124,21 @@ const mockCreateReply = async (
 }
 
 const mockUpdateComment = async (
-  id: number,
+  _id: number,
   params: CommentUpdateParams
 ): Promise<ApiResponse<Comment>> => {
   await delay()
   return success({
-    ...mockComments[0],
-    id,
+    id: 1,
+    postId: 1,
+    userId: 1,
+    userName: '当前用户',
+    userAvatar: 'https://picsum.photos/100/100?random=user',
     content: params.content,
+    likes: 5,
+    isLiked: false,
+    createTime: new Date().toISOString(),
+    replies: [],
   })
 }
 

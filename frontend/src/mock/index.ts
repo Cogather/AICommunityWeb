@@ -111,6 +111,7 @@ export interface PostsResponse {
 export interface Comment {
   id: number
   postId: number
+  postTitle?: string
   userId: number
   userName: string
   userAvatar: string
@@ -185,7 +186,7 @@ export interface Activity {
   cover?: string
   toolId?: number | null
   toolName?: string
-  type: 'activity' | 'training' | 'workshop'
+  type: 'activity' | 'training' | 'workshop' | 'empowerment'
   date: string | Date
   location?: string
   meetingLink?: string

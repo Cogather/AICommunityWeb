@@ -145,6 +145,7 @@ interface Post {
   image?: string
   tag?: string
   tags?: string[]
+  featured?: boolean
 }
 
 interface Props {
