@@ -362,7 +362,7 @@ import { ElMessage } from 'element-plus'
 import { ROUTES } from '../router/paths'
 // API 层 - 支持 Mock/Real API 自动切换
 import { getPostDetail, likePost, collectPost, deletePost, setFeaturedPost } from '../api/posts'
-import { getComments, createComment, likeComment, deleteComment } from '../api/comments'
+import { getComments, createComment, likeComment, deleteComment, replyComment } from '../api/comments'
 import { getCurrentUser } from '../api/user'
 import {
   View,
@@ -449,13 +449,14 @@ const postData = ref({
   zone: '' as string,  // 所属区域：practices、tools、agent、empowerment
   toolId: null as number | null,  // 工具ID（AI工具专区使用）
   featured: false,  // 是否精华/置顶
-  isFeatured: false  // 是否精华/置顶（兼容字段）
+  isFeatured: false,  // 是否精华/置顶（兼容字段）
+  authorId: 0 as number | string
 })
 
 // 评论类型定义
 interface CommentItem {
   id: number
-  userId?: number
+  userId?: number | string
   userName: string
   userAvatar?: string
   content: string
@@ -467,7 +468,7 @@ interface CommentItem {
   showReplyInput?: boolean
   replyText?: string
   replyTo?: string
-  replyToId?: number
+  replyToId?: number | string
 }
 
 // 评论相关
@@ -490,7 +491,7 @@ const commentCount = computed(() => {
 })
 
 // 当前用户信息（实际应该从登录状态获取）
-const currentUser = ref({
+const currentUser = ref<{ id: number | string; name: string; avatar: string }>({
   id: 1, // 当前用户ID
   name: '当前用户', // 当前用户名
   avatar: '' // 用户头像
@@ -589,7 +590,7 @@ const handleAuthorClick = () => {
   router.push({
     path: '/profile',
     query: {
-      user: postData.value.authorName
+      userId: postData.value.authorId
     }
   })
 }
@@ -644,7 +645,8 @@ const loadPostDetail = async () => {
       zone: post.zone || '',
       toolId: post.toolId ?? null,
       featured: post.featured || false,
-      isFeatured: post.featured || false
+      isFeatured: post.featured || false,
+      authorId: post.authorId || 0
     }
     // 检查收藏状态
     isCollected.value = post.isCollected || false
@@ -688,7 +690,7 @@ const handleLike = async () => {
     const action = postData.value.isLiked ? 'unlike' : 'like'
     const response = await likePost(postData.value.id, action)
     postData.value.isLiked = response.data.liked
-    postData.value.likes = response.data.count
+    postData.value.likes = response.data.likes
     ElMessage.success(response.data.liked ? '点赞成功' : '取消点赞')
   } catch (error: unknown) {
     console.error('点赞失败:', error)
@@ -786,14 +788,13 @@ const handleToggleFeatured = async () => {
       
       // 检查是否成功
       if (!result.data.success) {
-        // 扶摇Agent已有置顶帖子的情况
-        ElMessage.warning(result.data.message || `${action}失败`)
+        ElMessage.warning(`${action}失败`)
         return
       }
       
       // 更新本地状态
-      postData.value.featured = newFeatured
-      postData.value.isFeatured = newFeatured
+      postData.value.featured = result.data.featured
+      postData.value.isFeatured = result.data.featured
       
       ElMessage.success(`${action}成功`)
     } catch (error: unknown) {
@@ -873,7 +874,7 @@ const handleReplyToReplyClick = (comment: CommentItem & { showReplyInput?: boole
 }
 
 // 扩展的评论项类型
-type ExtendedCommentItem = CommentItem & { showReplyInput?: boolean; replyText?: string; replyTo?: string; replyToId?: number }
+type ExtendedCommentItem = CommentItem & { showReplyInput?: boolean; replyText?: string; replyTo?: string; replyToId?: number | string }
 
 // 提交回复（回复回复）
 const handleSubmitReplyToReply = async (comment: ExtendedCommentItem, targetReply: ExtendedCommentItem) => {
@@ -884,28 +885,37 @@ const handleSubmitReplyToReply = async (comment: ExtendedCommentItem, targetRepl
 
   replying.value = true
   try {
-    const newReply = {
-      id: Date.now(),
-      userId: currentUserId.value,
-      userName: currentUserName.value,
-      userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-      content: targetReply.replyText.replace(/^@\w+\s*/, ''),
-      createTime: new Date().toLocaleString('zh-CN'),
-      likes: 0,
-      isLiked: false,
-      replyTo: targetReply.userName,
+    const content = targetReply.replyText.replace(/^@\w+\s*/, '')
+    // 调用API提交回复
+    const response = await replyComment(comment.id, {
+      content,
       replyToId: targetReply.id,
+      replyToUserId: targetReply.userId
+    })
+    
+    // 使用后端返回的数据
+    const newReply = response.data
+    // 补充前端字段
+    const formattedReply: CommentItem = {
+      ...newReply,
+      userId: newReply.userId || currentUserId.value,
+      userName: newReply.userName || currentUserName.value,
+      replyTo: targetReply.userName, // 确保显示 "回复 xxx"
+      replyToId: targetReply.id,
+      showReplyInput: false,
+      replyText: ''
     }
     
     if (!comment.replies) {
       comment.replies = []
     }
+    
     // 找到目标回复的位置，在其后插入
     const targetIndex = comment.replies.findIndex((r) => r.id === targetReply.id)
     if (targetIndex !== -1) {
-      comment.replies.splice(targetIndex + 1, 0, newReply)
+      comment.replies.splice(targetIndex + 1, 0, formattedReply)
     } else {
-      comment.replies.push(newReply)
+      comment.replies.push(formattedReply)
     }
     
     targetReply.replyText = ''
@@ -913,7 +923,7 @@ const handleSubmitReplyToReply = async (comment: ExtendedCommentItem, targetRepl
     ElMessage.success('回复发表成功')
   } catch (error) {
     console.error('发表回复失败:', error)
-    ElMessage.error('发表回复失败')
+    ElMessage.error((error as Error).message || '发表回复失败')
   } finally {
     replying.value = false
   }
@@ -934,21 +944,24 @@ const handleSubmitReply = async (comment: ExtendedCommentItem) => {
 
   replying.value = true
   try {
-    // 这里应该调用API提交回复
-    // await submitReply(comment.id, comment.replyText)
+    const content = comment.replyText.replace(/^@\w+\s*/, '') // 移除 @用户名 前缀
+    // 调用API提交回复
+    const response = await replyComment(comment.id, {
+      content,
+      replyToUserId: comment.userId
+    })
     
-    const reply = {
-      id: Date.now(),
-      userId: currentUserId.value,
-      userName: currentUserName.value,
-      userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-      content: comment.replyText.replace(/^@\w+\s*/, ''), // 移除 @用户名 前缀
-      createTime: new Date().toLocaleString('zh-CN'),
-      likes: 0,
-      isLiked: false,
-      replyTo: comment.userName, // 回复的目标用户名
-      replyToId: comment.id, // 回复的目标评论ID
-      // 不再有 replies 数组，所有回复都是同级
+    // 使用后端返回的数据
+    const replyData = response.data
+    // 补充前端字段
+    const reply: CommentItem = {
+      ...replyData,
+      userId: replyData.userId || currentUserId.value,
+      userName: replyData.userName || currentUserName.value,
+      replyTo: comment.userName,
+      replyToId: comment.id,
+      showReplyInput: false,
+      replyText: ''
     }
     
     if (!comment.replies) {
@@ -961,7 +974,7 @@ const handleSubmitReply = async (comment: ExtendedCommentItem) => {
     ElMessage.success('回复发表成功')
   } catch (error) {
     console.error('发表回复失败:', error)
-    ElMessage.error('发表回复失败')
+    ElMessage.error((error as Error).message || '发表回复失败')
   } finally {
     replying.value = false
   }
@@ -989,7 +1002,7 @@ const handleReplyLike = async (reply: { isLiked?: boolean; likes?: number }) => 
 }
 
 // 判断是否是自己的回复
-const isMyReply = (reply: { userId?: number; userName?: string }) => {
+const isMyReply = (reply: { userId?: number | string; userName?: string }) => {
   // 通过 userId 或 userName 判断是否是当前用户发布的回复
   if (reply.userId && currentUserId.value) {
     return reply.userId === currentUserId.value

@@ -82,28 +82,28 @@ import {
 // API 层 - 支持 Mock/Real API 自动切换
 import { getCurrentUser } from '../api/user'
 import {
-  getUserMessages,
-  markMessageAsRead as markAsRead,
-  markAllMessagesAsRead as markAllRead,
-  deleteMessage as removeMessage,
-  getUnreadMessageCount as getUnreadCount,
-  MessageType,
-  type Message
-} from '../utils/message'
+  getMessages as fetchMessages,
+  markAsRead as markMessageRead,
+  markAllAsRead as markAllMessagesRead,
+  deleteMessage as removeMessageApi,
+  getUnreadCount as fetchUnreadCount,
+} from '../api/messages'
+import type { Message, MessageType } from '../api/types'
 
 const router = useRouter()
 const loading = ref(false)
 const activeTab = ref('all')
-const currentUserId = ref<number>(0)
+const currentUserId = ref<number | string>(0)
 
 const messages = ref<Message[]>([])
 
 // 过滤后的消息列表
+// 后端接口已支持类型筛选，这里主要用于前端切换tab时的逻辑
+// 如果是all，直接展示列表（后端默认all）
+// 如果是特定类型，前端需重新请求（或本地过滤，取决于策略）
+// 鉴于已对接真实API，建议切换tab时重新请求后端
 const filteredMessages = computed(() => {
-  if (activeTab.value === 'all') {
-    return messages.value
-  }
-  return messages.value.filter(msg => msg.type === activeTab.value)
+  return messages.value
 })
 
 // 未读消息数量
@@ -117,7 +117,8 @@ const computedUnreadCount = computed(() => {
 // 加载未读消息数量
 const loadUnreadCount = async () => {
   try {
-    unreadCount.value = getUnreadCount(currentUserId.value)
+    const res = await fetchUnreadCount()
+    unreadCount.value = res.data.count
   } catch (error) {
     console.error('加载未读消息数量失败:', error)
     // 如果API失败，使用本地计算
@@ -125,17 +126,32 @@ const loadUnreadCount = async () => {
   }
 }
 
+// 加载消息
+const loadMessages = async () => {
+  loading.value = true
+  try {
+    const type = activeTab.value === 'all' ? undefined : (activeTab.value as MessageType)
+    const res = await fetchMessages(type)
+    messages.value = res.data.list
+  } catch (error) {
+    console.error('加载消息失败:', error)
+    ElMessage.error('加载消息失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 // 获取消息图标
 const getMessageIcon = (type: MessageType) => {
   switch (type) {
-    case MessageType.ACTIVITY_REGISTRATION:
+    case 'activity_registration':
       return UserFilled
-    case MessageType.POST_COMMENT:
-    case MessageType.COMMENT_REPLY:
+    case 'post_comment':
+    case 'comment_reply':
       return ChatDotRound
-    case MessageType.POST_LIKE:
+    case 'post_like':
       return Star
-    case MessageType.AWARD_NOTIFICATION:
+    case 'award_notification':
       return Trophy
     default:
       return Bell
@@ -145,14 +161,14 @@ const getMessageIcon = (type: MessageType) => {
 // 获取消息图标颜色
 const getMessageIconColor = (type: MessageType) => {
   switch (type) {
-    case MessageType.ACTIVITY_REGISTRATION:
+    case 'activity_registration':
       return '#4096ff'
-    case MessageType.POST_COMMENT:
-    case MessageType.COMMENT_REPLY:
+    case 'post_comment':
+    case 'comment_reply':
       return '#67c23a'
-    case MessageType.POST_LIKE:
+    case 'post_like':
       return '#f56c6c'
-    case MessageType.AWARD_NOTIFICATION:
+    case 'award_notification':
       return '#e6a23c'
     default:
       return '#909399'
@@ -162,14 +178,14 @@ const getMessageIconColor = (type: MessageType) => {
 // 获取消息标签类型
 const getMessageTagType = (type: MessageType) => {
   switch (type) {
-    case MessageType.ACTIVITY_REGISTRATION:
+    case 'activity_registration':
       return 'primary'
-    case MessageType.POST_COMMENT:
-    case MessageType.COMMENT_REPLY:
+    case 'post_comment':
+    case 'comment_reply':
       return 'success'
-    case MessageType.POST_LIKE:
+    case 'post_like':
       return 'danger'
-    case MessageType.AWARD_NOTIFICATION:
+    case 'award_notification':
       return 'warning'
     default:
       return 'info'
@@ -179,15 +195,15 @@ const getMessageTagType = (type: MessageType) => {
 // 获取消息类型标签
 const getMessageTypeLabel = (type: MessageType) => {
   switch (type) {
-    case MessageType.ACTIVITY_REGISTRATION:
+    case 'activity_registration':
       return '活动报名'
-    case MessageType.POST_COMMENT:
+    case 'post_comment':
       return '帖子评论'
-    case MessageType.COMMENT_REPLY:
+    case 'comment_reply':
       return '评论回复'
-    case MessageType.POST_LIKE:
+    case 'post_like':
       return '点赞通知'
-    case MessageType.AWARD_NOTIFICATION:
+    case 'award_notification':
       return '奖项通知'
     default:
       return '其他'
@@ -210,19 +226,6 @@ const formatTime = (timeStr: string) => {
   return time.toLocaleDateString()
 }
 
-// 加载消息
-const loadMessages = () => {
-  loading.value = true
-  try {
-    messages.value = getUserMessages(currentUserId.value)
-  } catch (error) {
-    console.error('加载消息失败:', error)
-    ElMessage.error('加载消息失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 // 处理消息点击
 const handleMessageClick = async (message: Message) => {
   // 标记为已读
@@ -233,10 +236,10 @@ const handleMessageClick = async (message: Message) => {
   // 根据消息类型跳转
   if (message.link) {
     router.push(message.link)
-  } else if (message.type === MessageType.ACTIVITY_REGISTRATION) {
+  } else if (message.type === 'activity_registration') {
     // 活动报名消息，跳转到活动详情
     router.push(`/activity/${message.relatedId || message.id}`)
-  } else if (message.type === MessageType.POST_COMMENT) {
+  } else if (message.type === 'post_comment') {
     // 帖子评论通知，跳转到帖子详情并定位到具体评论
     const postId = message.relatedId || message.id
     if (message.commentId) {
@@ -244,7 +247,7 @@ const handleMessageClick = async (message: Message) => {
     } else {
       router.push(`/post/${postId}`)
     }
-  } else if (message.type === MessageType.COMMENT_REPLY) {
+  } else if (message.type === 'comment_reply') {
     // 评论回复通知，跳转到帖子详情并定位到具体回复
     const postId = message.relatedId || message.id
     if (message.replyId) {
@@ -254,10 +257,10 @@ const handleMessageClick = async (message: Message) => {
     } else {
       router.push(`/post/${postId}`)
     }
-  } else if (message.type === MessageType.POST_LIKE) {
+  } else if (message.type === 'post_like') {
     // 点赞消息，跳转到帖子详情
     router.push(`/post/${message.relatedId || message.id}`)
-  } else if (message.type === MessageType.AWARD_NOTIFICATION) {
+  } else if (message.type === 'award_notification') {
     // 奖项通知，跳转到个人荣誉页面
     router.push(`${ROUTES.PROFILE}?tab=honors`)
   }
@@ -272,9 +275,10 @@ const handleTabChange = () => {
 // 标记单条消息为已读
 const handleMarkAsRead = async (message: Message) => {
   try {
-    markAsRead(currentUserId.value, message.id)
+    await markMessageRead(message.id)
     message.read = true
-    unreadCount.value = Math.max(0, unreadCount.value - 1)
+    // 更新未读数
+    loadUnreadCount()
   } catch (error: unknown) {
     console.error('标记为已读失败:', error)
   }
@@ -283,7 +287,7 @@ const handleMarkAsRead = async (message: Message) => {
 // 标记全部为已读
 const handleMarkAllRead = async () => {
   try {
-    markAllRead(currentUserId.value)
+    await markAllMessagesRead()
     messages.value.forEach(msg => {
       msg.read = true
     })
@@ -298,12 +302,10 @@ const handleMarkAllRead = async () => {
 // 删除消息
 const handleDeleteMessage = async (messageId: number) => {
   try {
-    const message = messages.value.find(msg => msg.id === messageId)
-    if (message && !message.read) {
-      unreadCount.value = Math.max(0, unreadCount.value - 1)
-    }
-    removeMessage(currentUserId.value, messageId)
+    await removeMessageApi(messageId)
     messages.value = messages.value.filter(msg => msg.id !== messageId)
+    // 更新未读数
+    loadUnreadCount()
     ElMessage.success('消息已删除')
   } catch (error: unknown) {
     console.error('删除消息失败:', error)
@@ -362,7 +364,8 @@ onBeforeUnmount(() => {
   h2 {
     margin: 0;
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
+    color: #1a1a1a;
   }
 }
 
@@ -411,8 +414,8 @@ onBeforeUnmount(() => {
 .message-title {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  color: #000000;
 }
 
 .message-text {
@@ -439,5 +442,3 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 </style>
-
-

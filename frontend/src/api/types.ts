@@ -135,7 +135,7 @@ export interface DepartmentInfo {
 
 /** 用户信息 */
 export interface UserProfile {
-  id: number
+  id: number | string
   employeeId?: string
   name: string
   avatar: string
@@ -318,6 +318,7 @@ export interface Message {
   fromUserName?: string
   read: boolean
   createdAt: string
+  link?: string
 }
 
 // ==================== 荣誉类型 ====================

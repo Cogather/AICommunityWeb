@@ -49,12 +49,16 @@
             </div>
 
             <!-- 精选合集 -->
-            <div class="sidebar-section">
+            <div class="sidebar-section" v-if="collections.length > 0">
               <h3>精选合集</h3>
-              <div class="featured-collection">
-                <img src="https://picsum.photos/300/200?random=100" alt="精选合集" />
-                <h4>顶级AI研究论文</h4>
-                <el-button type="primary" size="small">最佳答案</el-button>
+              <div v-for="collection in collections" :key="collection.id" class="featured-collection">
+                <img :src="collection.cover || 'https://picsum.photos/300/200?random=' + collection.id" :alt="collection.title" />
+                <h4>{{ collection.title }}</h4>
+                <p v-if="collection.description" class="collection-desc">{{ collection.description }}</p>
+                <div class="collection-meta">
+                  <span class="post-count">{{ collection.postCount }} 篇帖子</span>
+                  <el-button type="primary" link size="small">查看详情</el-button>
+                </div>
               </div>
             </div>
           </div>
@@ -72,8 +76,9 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { getFeaturedPosts, getPosts as getEmpowermentPosts, getTags } from '../api/empowerment'
+import { getFeaturedPosts, getPosts as getEmpowermentPosts, getTags, getCollections } from '../api/empowerment'
 import type { Post } from '../api/types'
+import type { Collection } from '../api/empowerment'
 
 const router = useRouter()
 
@@ -159,12 +164,26 @@ const formatDate = (dateStr: string) => {
   }
 }
 
+// 精选合集
+const collections = ref<Collection[]>([])
+
+// 加载精选合集
+const loadCollections = async () => {
+  try {
+    const response = await getCollections()
+    collections.value = response.data.list
+  } catch (error) {
+    console.error('加载精选合集失败:', error)
+  }
+}
+
 // 页面加载时获取数据
 onMounted(async () => {
   await Promise.all([
     loadFeaturedPosts(),
     loadPosts(),
-    loadTags()
+    loadTags(),
+    loadCollections()
   ])
 })
 
@@ -317,19 +336,49 @@ const handlePostClick = (post: { id: number }) => {
     }
 
     .featured-collection {
+      margin-bottom: 20px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+
       img {
         width: 100%;
-        height: 150px;
+        height: 120px;
         object-fit: cover;
         border-radius: 8px;
         margin-bottom: 12px;
       }
 
       h4 {
-        margin: 0 0 12px 0;
+        margin: 0 0 8px 0;
         font-size: 16px;
         font-weight: 600;
         color: #333;
+        line-height: 1.4;
+      }
+
+      .collection-desc {
+        font-size: 13px;
+        color: #666;
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .collection-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        
+        .post-count {
+          font-size: 12px;
+          color: #999;
+        }
       }
     }
   }

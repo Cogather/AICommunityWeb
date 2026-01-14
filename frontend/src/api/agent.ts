@@ -15,17 +15,24 @@ export const AGENT_TOOL_ID = -1
 
 // ==================== 扩展类型 ====================
 
-/** 置顶帖子响应 */
-export interface PinnedPostResponse {
+/** 精华/置顶帖子响应（Agent专有） */
+export interface FeaturedPostResponse {
   post: Post | null
-  hasPinned: boolean
 }
 
-/** 设置置顶响应 */
-export interface SetPinnedResponse {
+/**
+ * 设置精华/置顶响应（Agent专有）
+ * - 成功时：success=true
+ * - 失败（例如已有置顶）：success=false，并可能返回 existingPinnedPostId/existingPinnedPostTitle
+ */
+export interface SetFeaturedResponse {
   success: boolean
-  postId: number
-  pinned: boolean
+  featured?: boolean
+  postId?: number | null
+  setTime?: string
+  message?: string
+  existingPinnedPostId?: number
+  existingPinnedPostTitle?: string
 }
 
 // ==================== Mock 数据 ====================
@@ -110,12 +117,9 @@ const mockAgentActivities: Activity[] = [
 
 // ==================== Mock API 实现 ====================
 
-const mockGetPinnedPost = async (): Promise<ApiResponse<PinnedPostResponse>> => {
+const mockGetPinnedPost = async (): Promise<ApiResponse<FeaturedPostResponse>> => {
   await delay()
-  return success({
-    post: mockPinnedPost,
-    hasPinned: true,
-  })
+  return success({ post: mockPinnedPost })
 }
 
 const mockGetPosts = async (
@@ -154,29 +158,28 @@ const mockGetTags = async (): Promise<ApiResponse<{ list: TagStat[] }>> => {
   })
 }
 
-const mockSetPinnedPost = async (
-  postId: number,
-  pinned: boolean
-): Promise<ApiResponse<SetPinnedResponse>> => {
+const mockSetFeaturedPost = async (
+  postId: number | null
+): Promise<ApiResponse<SetFeaturedResponse>> => {
   await delay()
   return success({
     success: true,
+    featured: postId != null,
     postId,
-    pinned,
   })
 }
 
 // ==================== API 函数 ====================
 
 /**
- * 获取置顶帖子
- * GET /api/agent/pinned-post
+ * 获取精华/置顶帖子（Agent专有）
+ * GET /api/agent/featured-post
  */
-export async function getPinnedPost(): Promise<ApiResponse<PinnedPostResponse>> {
+export async function getFeaturedPost(): Promise<ApiResponse<FeaturedPostResponse>> {
   if (!useRealApi) {
     return mockGetPinnedPost()
   }
-  return get<PinnedPostResponse>('/agent/pinned-post')
+  return get<FeaturedPostResponse>('/agent/featured-post')
 }
 
 /**
@@ -237,29 +240,39 @@ export async function checkOwnerPermission() {
 }
 
 /**
- * 设置/取消置顶帖子
- * PUT /api/agent/pinned-post
+ * 设置/取消精华/置顶帖子（Agent专有）
+ * PUT /api/agent/featured-post
+ *
+ * 说明：
+ * - 设置置顶：传 postId
+ * - 取消置顶：传 null
  */
-export async function setPinnedPost(
-  postId: number,
-  pinned: boolean
-): Promise<ApiResponse<SetPinnedResponse>> {
+export async function setFeaturedPost(
+  postId: number | null
+): Promise<ApiResponse<SetFeaturedResponse>> {
   if (!useRealApi) {
-    return mockSetPinnedPost(postId, pinned)
+    return mockSetFeaturedPost(postId)
   }
-  return put<SetPinnedResponse>('/agent/pinned-post', { postId, pinned })
+  return put<SetFeaturedResponse>('/agent/featured-post', { postId })
 }
 
 // ==================== 导出 ====================
 
 export const agentApi = {
   AGENT_TOOL_ID,
-  getPinnedPost,
+  getFeaturedPost,
   getPosts,
   getActivities,
   getTags,
   checkOwnerPermission,
-  setPinnedPost,
+  setFeaturedPost,
 }
 
 export default agentApi
+
+/**
+ * 兼容旧命名：历史上页面使用 getPinnedPost/setPinnedPost
+ * 这里保留导出，避免调用方断裂。
+ */
+export const getPinnedPost = getFeaturedPost
+export const setPinnedPost = setFeaturedPost

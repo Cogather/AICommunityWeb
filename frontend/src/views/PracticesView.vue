@@ -66,35 +66,6 @@
               </div>
             </div>
 
-            <!-- 分类筛选（培训赋能、AI训战、用户交流） -->
-            <div class="sidebar-section">
-              <div class="section-header-with-reset">
-                <h3>分类筛选</h3>
-                <el-button
-                  v-if="selectedCategory"
-                  text
-                  size="small"
-                  class="reset-btn"
-                  @click="handleResetCategory"
-                >
-                  <el-icon><Refresh /></el-icon>
-                  重置
-                </el-button>
-              </div>
-              <div class="category-filter">
-                <div
-                  v-for="(config, key) in categoryConfig"
-                  :key="key"
-                  class="category-item"
-                  :class="{ active: selectedCategory === key }"
-                  @click="handleCategoryClick(key as string)"
-                >
-                  <span class="category-icon">{{ config.icon }}</span>
-                  <span class="category-name">{{ config.name }}</span>
-                </div>
-              </div>
-            </div>
-
             <!-- 标签筛选 -->
             <div class="sidebar-section">
               <div class="section-header-with-reset">
@@ -183,7 +154,7 @@ import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { getPosts, getContributors } from '../api/practices'
+import { getPosts, getContributors, getHotPosts, getTags, getDepartments } from '../api/practices'
 import type { Post } from '../api/types'
 
 const router = useRouter()
@@ -195,15 +166,12 @@ const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 const selectedContributor = ref<string | null>(null)
 
-// 分类筛选（培训赋能、AI训战、用户交流）
-const selectedCategory = ref<string | null>(null)
-
-// 分类配置
-const categoryConfig = {
-  training: { name: '培训赋能', icon: '📚' },
-  'training-battle': { name: 'AI训战', icon: '⚔️' },
-  'user-exchange': { name: '用户交流', icon: '💬' }
-} as const
+// 首页“AI优秀实践”三个入口实际按标签筛选（但底层数据可能来自 category 字段）
+const specialTagToCategory: Record<string, string> = {
+  培训赋能: 'training',
+  AI训战: 'training-battle',
+  用户交流: 'user-exchange',
+}
 
 // 分页相关
 const currentPage = ref(1)
@@ -235,10 +203,35 @@ const allTags = computed(() => {
     { name: '全部', count: filteredPosts.length }
   ]
 
-  // 添加其他标签
-  const tagNames = ['自然语言处理', '计算机视觉', '深度学习', 'AI伦理', '机器学习', '机器人', '数据科学', '生成式AI', 'PyTorch', 'TensorFlow', '项目', 'AI应用', '效率', '自动化', '实践', '已解决', '部署', '活动', 'AI大会']
+  // 添加其他标签（包含首页“培训赋能 / AI训战 / 用户交流”）
+  const tagNames = [
+    '培训赋能',
+    'AI训战',
+    '用户交流',
+    '自然语言处理',
+    '计算机视觉',
+    '深度学习',
+    'AI伦理',
+    '机器学习',
+    '机器人',
+    '数据科学',
+    '生成式AI',
+    'PyTorch',
+    'TensorFlow',
+    '项目',
+    'AI应用',
+    '效率',
+    '自动化',
+    '实践',
+    '已解决',
+    '部署',
+    '活动',
+    'AI大会',
+  ]
+
   tagNames.forEach(tagName => {
-    const count = tagCountMap.get(tagName) || 0
+    const category = specialTagToCategory[tagName]
+    const count = category ? filteredPosts.filter(p => p.category === category).length : (tagCountMap.get(tagName) || 0)
     if (count > 0 || !selectedDepartment.value) {
       tags.push({ name: tagName, count })
     }
@@ -249,6 +242,30 @@ const allTags = computed(() => {
 
 // 显示的标签（根据部门过滤后）
 const displayedTags = computed(() => {
+  // 优先使用后端 tags 统计（并补齐首页三个入口“标签”）
+  if (tagsFromApi.value.length > 0) {
+    const all = [...featuredPosts.value, ...posts.value]
+    const basePosts = selectedDepartment.value ? all.filter(p => p.department === selectedDepartment.value) : all
+
+    const specials = ['培训赋能', 'AI训战', '用户交流'].map((name) => {
+      const category = specialTagToCategory[name]
+      const count = category ? basePosts.filter(p => p.category === category).length : 0
+      return { name, count }
+    })
+
+    const apiTags = tagsFromApi.value.filter(t => t.name !== '全部')
+
+    // 合并并去重（优先 specials，再 api tags）
+    const merged = [
+      { name: '全部', count: basePosts.length },
+      ...specials,
+      ...apiTags,
+    ]
+
+    const seen = new Set<string>()
+    return merged.filter(t => (seen.has(t.name) ? false : (seen.add(t.name), true)))
+  }
+
   return allTags.value
 })
 
@@ -288,15 +305,19 @@ const loadPosts = async () => {
 
 // 部门排名统计（动态计算）
 const displayedDepartments = computed(() => {
+  // 优先使用后端接口返回的 departments
+  if (departmentsFromApi.value.length > 0) return departmentsFromApi.value
+
   // 获取所有帖子（包括精华帖和普通帖子）
   const allPosts = [...featuredPosts.value, ...posts.value]
 
   // 根据当前选择的标签过滤帖子
   let filteredPosts = allPosts
   if (selectedTag.value && selectedTag.value !== '全部') {
-    filteredPosts = filteredPosts.filter(post =>
-      post.tags && post.tags.includes(selectedTag.value!)
-    )
+    const category = specialTagToCategory[selectedTag.value]
+    filteredPosts = category
+      ? filteredPosts.filter(p => p.category === category)
+      : filteredPosts.filter(p => p.tags && p.tags.includes(selectedTag.value!))
   }
 
   // 统计每个部门的发帖数和贡献者
@@ -315,24 +336,13 @@ const displayedDepartments = computed(() => {
     }
   })
 
-  // 获取所有部门名称（从所有帖子中提取）
-  const allDepts = new Set<string>()
-  allPosts.forEach(post => {
-    if (post.department) {
-      allDepts.add(post.department)
-    }
-  })
-
-  // 构建部门列表
-  const departments = Array.from(allDepts).map((name, index) => {
-    const stats = deptMap.get(name) || { postCount: 0, contributors: new Set() }
-    return {
-      id: index + 1,
-      name,
-      postCount: stats.postCount,
-      contributorCount: stats.contributors.size
-    }
-  })
+  // 构建部门列表（只保留出现过的部门）
+  const departments = Array.from(deptMap.entries()).map(([name, stats], index) => ({
+    id: index + 1,
+    name,
+    postCount: stats.postCount,
+    contributorCount: stats.contributors.size,
+  }))
 
   // 按发帖数排序
   return departments.sort((a, b) => b.postCount - a.postCount)
@@ -351,21 +361,59 @@ const loadContributors = async () => {
   }
 }
 
+// 最热帖子（右侧置顶）
+const hotPosts = ref<Array<{ id: number; title: string; views?: number }>>([])
+const loadHotPosts = async () => {
+  try {
+    const response = await getHotPosts(3)
+    hotPosts.value = response.data.list
+  } catch (error) {
+    console.error('加载最热帖子失败:', error)
+  }
+}
+
+// 标签列表及统计（右侧标签筛选）
+const tagsFromApi = ref<Array<{ name: string; count: number }>>([])
+const loadTags = async () => {
+  try {
+    const response = await getTags(selectedDepartment.value || undefined)
+    tagsFromApi.value = response.data.list || []
+  } catch (error) {
+    console.error('加载标签列表失败:', error)
+  }
+}
+
+// 部门排名列表（右侧部门归类）
+const departmentsFromApi = ref<Array<{ id: number; name: string; postCount: number; contributorCount: number }>>([])
+const loadDepartments = async () => {
+  try {
+    // 注意：这三个“标签”底层可能对应 category（非 tags），后端 /practices/departments 可能不支持
+    // 仅在普通标签时把 tag 透传给后端；否则用后端默认排行榜
+    const tagParam =
+      selectedTag.value && selectedTag.value !== '全部' && !specialTagToCategory[selectedTag.value]
+        ? selectedTag.value
+        : undefined
+
+    const response = await getDepartments(tagParam)
+    departmentsFromApi.value = (response.data.list || []).map((d, idx) => ({ id: idx + 1, ...d }))
+  } catch (error) {
+    console.error('加载部门排名失败:', error)
+  }
+}
+
 // 过滤后的普通帖子（不包含精华帖，精华帖始终显示）
 const filteredNormalPosts = computed(() => {
   // 只过滤普通帖子
   let result = [...posts.value]
 
-  // 按分类过滤（培训赋能、AI训战、用户交流）
-  if (selectedCategory.value) {
-    result = result.filter(post => post.category === selectedCategory.value)
-  }
-
   // 按标签过滤（排除"全部"）
   if (selectedTag.value && selectedTag.value !== '全部') {
-    result = result.filter(post =>
-      post.tags && post.tags.includes(selectedTag.value!)
-    )
+    const category = specialTagToCategory[selectedTag.value]
+    if (category) {
+      result = result.filter(post => post.category === category)
+    } else {
+      result = result.filter(post => post.tags && post.tags.includes(selectedTag.value!))
+    }
   }
 
   // 按部门过滤
@@ -417,12 +465,11 @@ const paginatedPosts = computed(() => {
 
 // 最热的3个帖子（按浏览量排序，用于右侧分栏顶部展示）
 const topHotPosts = computed(() => {
-  // 合并所有帖子（包括精华帖和普通帖子）
+  // 优先使用后端接口返回的 hot-posts
+  if (hotPosts.value.length > 0) return hotPosts.value
+  // 兜底：本地计算
   const allPosts = [...featuredPosts.value, ...posts.value]
-  // 按浏览量降序排序，取前3个
-  return allPosts
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 3)
+  return allPosts.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3)
 })
 
 
@@ -465,11 +512,14 @@ const handleTagClick = (tagName: string) => {
   if (tagName === '全部') {
     // 点击"全部"时清除标签过滤
     selectedTag.value = null
+    router.replace({ query: { ...route.query, tag: undefined } })
   } else if (selectedTag.value === tagName) {
     // 再次点击已选中的标签时清除
     selectedTag.value = null
+    router.replace({ query: { ...route.query, tag: undefined } })
   } else {
     selectedTag.value = tagName
+    router.replace({ query: { ...route.query, tag: tagName } })
   }
   currentPage.value = 1 // 重置到第一页
 }
@@ -493,6 +543,7 @@ const handleResetDepartment = () => {
 // 重置标签过滤
 const handleResetTag = () => {
   selectedTag.value = null
+  router.replace({ query: { ...route.query, tag: undefined } })
   currentPage.value = 1
 }
 
@@ -521,52 +572,38 @@ const handlePostClick = (post: { id: number }) => {
   })
 }
 
-// 从 URL 读取分类参数
-const initCategoryFromRoute = () => {
-  const category = route.query.category as string
-  if (category && Object.keys(categoryConfig).includes(category)) {
-    selectedCategory.value = category
-  }
+// 从 URL 读取标签参数（支持首页跳转：?tag=培训赋能/AI训战/用户交流）
+const initTagFromRoute = () => {
+  const tag = route.query.tag as string
+  selectedTag.value = tag || null
 }
 
-// 监听路由变化，更新分类筛选
-watch(() => route.query.category, (newCategory) => {
-  if (newCategory && Object.keys(categoryConfig).includes(newCategory as string)) {
-    selectedCategory.value = newCategory as string
-  } else if (!newCategory) {
-    selectedCategory.value = null
-  }
+// 监听路由变化，更新标签筛选
+watch(() => route.query.tag, (newTag) => {
+  selectedTag.value = (newTag as string) || null
 })
 
-// 处理分类点击
-const handleCategoryClick = (category: string) => {
-  if (selectedCategory.value === category) {
-    selectedCategory.value = null
-    // 清除 URL 中的 category 参数
-    router.replace({ query: { ...route.query, category: undefined } })
-  } else {
-    selectedCategory.value = category
-    // 更新 URL 中的 category 参数
-    router.replace({ query: { ...route.query, category } })
-  }
-  currentPage.value = 1
-}
+// 部门变化时：重新拉取标签统计（后端支持 department 参数）
+watch(selectedDepartment, async () => {
+  await loadTags()
+})
 
-// 重置分类筛选
-const handleResetCategory = () => {
-  selectedCategory.value = null
-  router.replace({ query: { ...route.query, category: undefined } })
-  currentPage.value = 1
-}
+// 标签变化时：重新拉取部门排名（后端可能按 tag 过滤）
+watch(selectedTag, async () => {
+  await loadDepartments()
+})
 
 // 页面加载时获取数据
 onMounted(async () => {
-  // 从 URL 读取初始分类
-  initCategoryFromRoute()
+  // 从 URL 读取初始标签
+  initTagFromRoute()
 
   await Promise.all([
     loadPosts(),
-    loadContributors()
+    loadContributors(),
+    loadHotPosts(),
+    loadTags(),
+    loadDepartments(),
   ])
 })
 </script>
@@ -633,48 +670,6 @@ onMounted(async () => {
 
         &:hover {
           color: #409eff;
-        }
-      }
-    }
-
-    .category-filter {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .category-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        background: rgba(255, 255, 255, 0.8);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        transition: all 0.2s ease;
-
-        &:hover {
-          background: rgba(64, 158, 255, 0.08);
-          border-color: rgba(64, 158, 255, 0.2);
-        }
-
-        &.active {
-          background: rgba(64, 158, 255, 0.15);
-          border-color: #409eff;
-
-          .category-name {
-            color: #409eff;
-            font-weight: 600;
-          }
-        }
-
-        .category-icon {
-          font-size: 18px;
-        }
-
-        .category-name {
-          font-size: 14px;
-          color: #333;
         }
       }
     }

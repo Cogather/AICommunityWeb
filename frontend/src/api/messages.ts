@@ -128,7 +128,18 @@ export async function getMessages(
   if (!useRealApi) {
     return mockGetMessages(type, page, pageSize)
   }
-  return get<PaginatedData<Message>>('/messages', { type, page, pageSize })
+  // 后端接口：/api/messages?type=xx&page=xx&pageSize=xx
+  const params: Record<string, any> = { page, pageSize }
+  if (type) {
+    params.type = type
+  }
+  
+  // 后端返回 PageResult<MessageVO>，需映射为前端 PaginatedData<Message>
+  // MessageVO 字段: id, type, title, content, relatedId, relatedType, commentId, replyId, fromUserId, fromUserName, read, createdAt, link
+  // Message 字段: id, type, title, content, relatedId, relatedType, commentId, replyId, fromUserId, fromUserName, read, createdAt, link
+  // 字段完全匹配，只需注意 PageResult 结构
+  
+  return get<PaginatedData<Message>>('/messages', params)
 }
 
 /**
@@ -139,6 +150,7 @@ export async function getUnreadCount(): Promise<ApiResponse<{ count: number }>> 
   if (!useRealApi) {
     return mockGetUnreadCount()
   }
+  // 后端返回 { count: number }
   return get<{ count: number }>('/messages/unread-count')
 }
 
@@ -161,6 +173,7 @@ export async function markAllAsRead(): Promise<ApiResponse<{ count: number }>> {
   if (!useRealApi) {
     return mockMarkAllAsRead()
   }
+  // 后端返回 { count: number }
   return put<{ count: number }>('/messages/read-all')
 }
 

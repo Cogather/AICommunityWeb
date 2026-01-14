@@ -18,7 +18,13 @@ import type {
 export interface UserPointsData {
   totalPoints: number
   monthlyPoints: number
-  history: PaginatedData<PointsHistory>
+  ranking?: number
+  history: {
+    list: PointsHistory[]
+    total: number
+    page: number
+    pageSize: number
+  }
   rules: PointsRule[]
 }
 
@@ -177,9 +183,9 @@ export async function getCurrentUser(): Promise<ApiResponse<UserProfile>> {
  * 根据ID获取用户信息
  * GET /api/user/:id
  */
-export async function getUserById(id: number): Promise<ApiResponse<UserProfile>> {
+export async function getUserById(id: number | string): Promise<ApiResponse<UserProfile>> {
   if (!useRealApi) {
-    return mockGetUserById(id)
+    return mockGetUserById(Number(id))
   }
   return get<UserProfile>(`/user/${id}`)
 }
@@ -214,7 +220,25 @@ export async function getUserPoints(page = 1, pageSize = 15): Promise<ApiRespons
   if (!useRealApi) {
     return mockGetUserPoints()
   }
-  return get<UserPointsData>('/user/points', { page, pageSize })
+  // 后端返回 UserPointsVO，需要适配前端 UserPointsData
+  const response = await get<any>('/user/points', { page, pageSize })
+  if (response.code === 200 && response.data) {
+    // 适配逻辑：后端没有 total，暂时用 list.length 或 mock 一个 total
+    // UserPointsVO: { totalPoints, monthlyPoints, ranking, pointsHistory: [], pointsRules: [] }
+    const vo = response.data
+    response.data = {
+      totalPoints: vo.totalPoints,
+      monthlyPoints: vo.monthlyPoints,
+      history: {
+        list: vo.pointsHistory || [],
+        total: (vo.pointsHistory || []).length, // 后端未返回 total，暂时这样
+        page,
+        pageSize
+      },
+      rules: vo.pointsRules || []
+    }
+  }
+  return response
 }
 
 /**
@@ -222,7 +246,7 @@ export async function getUserPoints(page = 1, pageSize = 15): Promise<ApiRespons
  * GET /api/user/:userId/posts
  */
 export async function getUserPosts(
-  userId: number,
+  userId: number | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Post>>> {
@@ -237,7 +261,7 @@ export async function getUserPosts(
  * GET /api/user/:userId/favorites
  */
 export async function getUserFavorites(
-  userId: number,
+  userId: number | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Post>>> {
@@ -252,7 +276,7 @@ export async function getUserFavorites(
  * GET /api/user/:userId/comments
  */
 export async function getUserComments(
-  userId: number,
+  userId: number | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Comment>>> {
@@ -267,7 +291,7 @@ export async function getUserComments(
  * GET /api/user/:userId/activities
  */
 export async function getUserActivities(
-  userId: number,
+  userId: number | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Activity>>> {
@@ -282,7 +306,7 @@ export async function getUserActivities(
  * GET /api/user/:userId/created-activities
  */
 export async function getUserCreatedActivities(
-  userId: number,
+  userId: number | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Activity>>> {
@@ -293,14 +317,16 @@ export async function getUserCreatedActivities(
 }
 
 /**
- * 根据用户名获取用户资料
- * GET /api/user/by-name/:name
+ * 根据用户名获取用户资料 (已废弃，请使用 getUserById)
+ * @deprecated 后端不支持按用户名查询，请使用 ID
  */
-export async function getUserByName(name: string): Promise<ApiResponse<UserProfile>> {
+export async function getUserByName(_name: string): Promise<ApiResponse<UserProfile>> {
   if (!useRealApi) {
     return mockGetCurrentUser()
   }
-  return get<UserProfile>(`/user/by-name/${encodeURIComponent(name)}`)
+  // 临时方案：如果必须用 name，这里暂时无法实现真实调用
+  console.warn('getUserByName is deprecated and not supported by backend. Please use getUserById.')
+  return Promise.reject(new Error('Backend does not support fetching user by name'))
 }
 
 /**

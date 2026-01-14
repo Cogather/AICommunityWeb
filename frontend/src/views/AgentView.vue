@@ -134,7 +134,7 @@ import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { getPinnedPost, checkOwnerPermission, getPosts, getActivities } from '../api/agent'
+import { getFeaturedPost, getTags, checkOwnerPermission, getPosts, getActivities } from '../api/agent'
 import { getCurrentUser } from '../api/user'
 
 const router = useRouter()
@@ -188,14 +188,15 @@ const allTags = ref<Array<{ name: string; count: number }>>([
 // 加载标签列表
 const loadTags = async () => {
   try {
-    const { getTags } = await import('../api/agent')
     const response = await getTags()
     // 构建标签列表，包含"全部"
     const tags: Array<{ name: string; count: number }> = [
       { name: '全部', count: totalPosts.value }
     ]
-    response.data.list.forEach((tag: { name: string; count?: number }) => {
-      tags.push({ name: tag.name, count: tag.count || 0 })
+    response.data.list
+      .filter((t) => t.name !== '全部')
+      .forEach((tag: { name: string; count?: number }) => {
+        tags.push({ name: tag.name, count: tag.count || 0 })
     })
     allTags.value = tags
   } catch (error) {
@@ -247,11 +248,11 @@ const featuredPost = ref<{ id: number; title: string; image?: string; createTime
 // 加载置顶帖子
 const loadFeaturedPost = async () => {
   try {
-    const response = await getPinnedPost()
+    const response = await getFeaturedPost()
     if (response.data.post) {
       featuredPost.value = {
         ...response.data.post,
-        image: response.data.post.cover || '',
+        image: response.data.post.image || response.data.post.cover || '',
         createTime: typeof response.data.post.createTime === 'string' 
           ? response.data.post.createTime 
           : new Date(response.data.post.createTime).toLocaleDateString('zh-CN')
@@ -273,8 +274,9 @@ const totalPosts = ref(0)
 // 加载帖子列表
 const loadPosts = async () => {
   try {
-    // sortBy 只支持 'newest' | 'hot' | 'comments'，将 'likes' 映射为 'hot'
-    const apiSortBy = sortBy.value === 'likes' ? 'hot' : sortBy.value as 'newest' | 'hot' | 'comments'
+    // 后端 /api/tools/posts 的 sortBy 实现仅支持 newest/hot/comments（见 ToolPostMapper.xml）
+    // likes 在后端不会单独处理，这里映射为 hot，保证前端“点赞最多”仍有合理效果。
+    const apiSortBy = sortBy.value === 'likes' ? 'hot' : (sortBy.value as 'newest' | 'hot' | 'comments')
     const response = await getPosts({
       tag: selectedTag.value || undefined,
       keyword: searchKeyword.value || undefined,
@@ -285,8 +287,9 @@ const loadPosts = async () => {
     allPosts.value = response.data.list.map((p) => ({
       id: p.id,
       title: p.title,
-      description: p.summary || '',
-      author: p.authorName || '',
+      // 后端工具帖子列表返回字段：description/author/cover（见 ToolPostItemVO + ToolPostMapper.xml）
+      description: (p as unknown as { description?: string }).description || p.summary || '',
+      author: (p as unknown as { author?: string }).author || p.authorName || '',
       createTime: typeof p.createTime === 'string' 
         ? p.createTime 
         : new Date(p.createTime).toLocaleDateString('zh-CN'),

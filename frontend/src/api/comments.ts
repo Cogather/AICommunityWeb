@@ -20,7 +20,8 @@ export interface CommentUpdateParams {
 /** 创建回复参数 */
 export interface ReplyCreateParams {
   content: string
-  replyToId?: number  // 被回复的回复ID
+  replyToId?: number  // 被回复的回复ID (用于前端定位)
+  replyToUserId?: number | string // 被回复者用户ID
 }
 
 /** 点赞响应 */
@@ -189,17 +190,16 @@ export async function createComment(
 
 /**
  * 回复评论
- * POST /api/posts/:postId/comments/:commentId/reply
+ * POST /api/comments/:commentId/replies
  */
 export async function replyComment(
-  postId: number,
   commentId: number,
   params: ReplyCreateParams
 ): Promise<ApiResponse<Reply>> {
   if (!useRealApi) {
     return mockCreateReply(commentId, params)
   }
-  return post<Reply>(`/posts/${postId}/comments/${commentId}/reply`, params)
+  return post<Reply>(`/comments/${commentId}/replies`, params)
 }
 
 /**

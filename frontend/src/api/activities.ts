@@ -14,6 +14,27 @@ type ActivityType = 'activity' | 'training' | 'workshop' | 'empowerment'
 export interface ActivityDetail extends Activity {
   content: string
   registrations?: ActivityRegistration[]
+  // 新增字段
+  startTime?: string
+  endTime?: string
+  location?: string
+  meetingLink?: string
+  speaker?: string
+  speakerTitle?: string
+  speakerAvatar?: string
+  maxParticipants?: number
+  currentParticipants?: number
+  participants?: ActivityParticipant[]
+  creatorId?: number
+  creatorName?: string
+}
+
+/** 活动参与者 */
+export interface ActivityParticipant {
+  userId: number
+  userName: string
+  userAvatar?: string
+  department?: string
 }
 
 /** 活动报名记录 */
@@ -28,16 +49,18 @@ export interface ActivityRegistration {
 
 /** 创建活动参数 */
 export interface ActivityCreateParams {
-  toolId?: number
+  toolId: number
   type: ActivityType
   title: string
   content: string
-  cover?: string
-  date: string
-  startTime?: string
-  endTime?: string
-  location?: string
+  cover: string
+  date: string // YYYY-MM-DD
+  startTime: string // HH:mm
+  endTime: string // HH:mm
+  location: string
   meetingLink?: string
+  speaker?: string
+  speakerTitle?: string
   maxParticipants?: number
 }
 
@@ -46,8 +69,9 @@ export type ActivityUpdateParams = Partial<ActivityCreateParams>
 
 /** 报名响应 */
 export interface JoinResponse {
-  joined: boolean
-  currentParticipants: number
+  activityId: number
+  userId: number
+  joinTime: string
 }
 
 // ==================== Mock 数据 ====================
@@ -101,6 +125,7 @@ const mockCreateActivity = async (params: ActivityCreateParams): Promise<ApiResp
   return success({
     id: Date.now(),
     ...params,
+    toolName: 'Mock Tool',
     status: 'upcoming',
     currentParticipants: 0,
     isJoined: false,
@@ -130,8 +155,9 @@ const mockDeleteActivity = async (): Promise<ApiResponse<null>> => {
 const mockJoinActivity = async (): Promise<ApiResponse<JoinResponse>> => {
   await delay()
   return success({
-    joined: true,
-    currentParticipants: 46,
+    activityId: 1,
+    userId: 1,
+    joinTime: new Date().toISOString()
   })
 }
 

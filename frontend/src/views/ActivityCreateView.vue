@@ -28,6 +28,8 @@
         <el-form-item label="活动类型" prop="type">
           <el-radio-group v-model="formData.type">
             <el-radio label="activity">活动</el-radio>
+            <el-radio label="training">培训</el-radio>
+            <el-radio label="workshop">工作坊</el-radio>
             <el-radio label="empowerment">赋能</el-radio>
           </el-radio-group>
         </el-form-item>
@@ -48,17 +50,70 @@
           </el-select>
         </el-form-item>
 
-        <!-- 活动时间 -->
-        <el-form-item label="活动时间" prop="date">
+        <!-- 活动日期 -->
+        <el-form-item label="活动日期" prop="date">
           <el-date-picker
             v-model="formData.date"
-            type="datetime"
-            placeholder="选择活动时间"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm"
+            type="date"
+            placeholder="选择活动日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
             style="width: 100%"
-            :key="datePickerKey"
           />
+        </el-form-item>
+
+        <!-- 活动时间 -->
+        <el-form-item label="活动时间" required>
+          <div class="time-range-container">
+            <el-form-item prop="startTime" style="margin-bottom: 0; flex: 1;">
+              <el-time-select
+                v-model="formData.startTime"
+                start="08:00"
+                step="00:15"
+                end="22:00"
+                placeholder="开始时间"
+                style="width: 100%"
+              />
+            </el-form-item>
+            <span class="time-separator">-</span>
+            <el-form-item prop="endTime" style="margin-bottom: 0; flex: 1;">
+              <el-time-select
+                v-model="formData.endTime"
+                start="08:00"
+                step="00:15"
+                end="22:00"
+                :min-time="formData.startTime"
+                placeholder="结束时间"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </div>
+        </el-form-item>
+
+        <!-- 活动地点 -->
+        <el-form-item label="活动地点" prop="location">
+          <el-input v-model="formData.location" placeholder="请输入活动地点（如：会议室名称或'线上'）" />
+        </el-form-item>
+
+        <!-- 会议链接 -->
+        <el-form-item label="会议链接" prop="meetingLink">
+          <el-input v-model="formData.meetingLink" placeholder="请输入线上会议链接（选填）" />
+        </el-form-item>
+
+        <!-- 主讲人信息 -->
+        <div class="form-row">
+          <el-form-item label="主讲人" prop="speaker" style="flex: 1">
+            <el-input v-model="formData.speaker" placeholder="请输入主讲人姓名" />
+          </el-form-item>
+          <el-form-item label="主讲人职称" prop="speakerTitle" style="flex: 1">
+            <el-input v-model="formData.speakerTitle" placeholder="请输入主讲人职称" />
+          </el-form-item>
+        </div>
+
+        <!-- 最大参与人数 -->
+        <el-form-item label="最大人数" prop="maxParticipants">
+          <el-input-number v-model="formData.maxParticipants" :min="0" :step="10" placeholder="0表示不限制" />
+          <span class="form-tip">（0 或不填表示不限制人数）</span>
         </el-form-item>
 
         <!-- 封面图片 -->
@@ -124,12 +179,12 @@
 import { ref, computed, onMounted, onBeforeUnmount, shallowRef, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ROUTES } from '../router/paths'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor'
 // API 层 - 支持 Mock/Real API 自动切换
 import { createActivity, updateActivity, getActivityDetail } from '../api/activities'
+import type { ActivityDetail } from '../api/activities'
 import { getTools } from '../api/home'
 import {
   Plus,
@@ -143,7 +198,6 @@ const formRef = ref()
 const publishing = ref(false)
 const editorRef = shallowRef<IDomEditor>()
 const editorMode = 'default'
-const datePickerKey = ref(0) // 用于强制重新渲染日期选择器
 
 // 是否为编辑模式
 const isEditMode = computed(() => {
@@ -196,6 +250,13 @@ const formData = ref({
   type: 'activity' as 'activity' | 'training' | 'workshop' | 'empowerment',
   toolId: null as number | null,
   date: '',
+  startTime: '',
+  endTime: '',
+  location: '',
+  meetingLink: '',
+  speaker: '',
+  speakerTitle: '',
+  maxParticipants: 0,
   cover: '',
   content: ''
 })
@@ -205,7 +266,10 @@ const rules = {
   title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }],
   type: [{ required: true, message: '请选择活动类型', trigger: 'change' }],
   toolId: [{ required: true, message: '请选择工具', trigger: 'change' }],
-  date: [{ required: true, message: '请选择活动时间', trigger: 'change' }],
+  date: [{ required: true, message: '请选择活动日期', trigger: 'change' }],
+  startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
+  location: [{ required: true, message: '请输入活动地点', trigger: 'blur' }],
   cover: [{ required: true, message: '请上传封面图片', trigger: 'change' }],
   content: [{ required: true, message: '请输入活动内容', trigger: 'blur' }]
 }
@@ -317,52 +381,15 @@ const loadActivityForEdit = async () => {
   }
 
   try {
-    // 首先尝试从sessionStorage获取（从活动详情页传递过来的数据）
-    const editingActivityStr = sessionStorage.getItem('editing_activity')
-    if (editingActivityStr) {
-      try {
-        const editingActivity = JSON.parse(editingActivityStr)
-        console.log('从sessionStorage获取活动数据:', editingActivity)
-        
-        // 验证ID是否匹配
-        const editingId = typeof editingActivity.id === 'number' 
-          ? editingActivity.id.toString() 
-          : String(editingActivity.id)
-        
-        if (editingId === String(activityId)) {
-          // ID匹配，使用sessionStorage中的数据
-          console.log('使用sessionStorage中的活动数据')
-          
-          // 如果sessionStorage中的数据没有toolId，需要从toolName查找
-          if (!editingActivity.toolId && editingActivity.toolName) {
-            const tool = allToolsList.value.find(t => t.name === editingActivity.toolName)
-            if (tool) {
-              editingActivity.toolId = tool.id
-              console.log('从toolName找到toolId:', tool.id)
-            }
-          }
-          
-          fillFormData(editingActivity)
-          // 清除sessionStorage
-          sessionStorage.removeItem('editing_activity')
-          return
-        } else {
-          console.warn('sessionStorage中的活动ID不匹配，继续从mock API查找')
-        }
-      } catch (e) {
-        console.warn('解析sessionStorage数据失败:', e)
-      }
-    }
-    
-    // 从mock API获取活动数据
+    // 从API获取活动数据
     const activityIdNum = Number(activityId)
-    console.log('从mock API获取活动数据，ID:', activityIdNum)
+    console.log('从API获取活动数据，ID:', activityIdNum)
     
     const response = await getActivityDetail(activityIdNum)
     const activity = response.data
     
     if (activity) {
-      console.log('从mock API找到活动:', activity)
+      console.log('API返回活动数据:', activity)
       fillFormData(activity)
     } else {
       console.error('未找到活动')
@@ -375,176 +402,34 @@ const loadActivityForEdit = async () => {
 }
 
 // 填充表单数据的辅助函数
-const fillFormData = (activity: { title: string; toolId?: number; type?: string; date?: string; cover?: string; content?: string }) => {
+const fillFormData = (activity: ActivityDetail) => {
   console.log('填充表单数据，活动:', activity)
-  console.log('活动标题:', activity.title)
-  console.log('活动工具ID:', activity.toolId, '类型:', typeof activity.toolId)
-  console.log('活动时间:', activity.date, '类型:', typeof activity.date)
-  console.log('活动封面:', activity.cover ? '有封面' : '无封面')
-  console.log('活动内容长度:', activity.content ? activity.content.length : 0)
   
-  // 处理工具ID - 确保类型正确
-  let toolId = null
-  if (activity.toolId !== undefined && activity.toolId !== null) {
-    // 如果是数字，直接使用
-    if (typeof activity.toolId === 'number') {
-      toolId = activity.toolId
-    } else {
-      // 如果是字符串，尝试转换为数字
-      const parsed = Number(activity.toolId)
-      toolId = isNaN(parsed) ? null : parsed
-    }
-  }
-  
-  // 处理日期 - 确保格式正确（YYYY-MM-DD HH:mm）
-  let date = ''
-  if (activity.date) {
-    console.log('原始日期值:', activity.date, '类型:', typeof activity.date)
-    
-    // 如果已经是正确格式，直接使用
-    if (typeof activity.date === 'string') {
-      // 检查是否是 YYYY-MM-DD HH:mm 格式
-      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(activity.date)) {
-        date = activity.date
-        console.log('日期格式正确，直接使用:', date)
-      } 
-      // 检查是否是 YYYY-MM-DD HH:mm:ss 格式（去掉秒）
-      else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(activity.date)) {
-        date = activity.date.substring(0, 16)
-        console.log('日期格式（带秒），截取:', date)
-      }
-      // 处理中文日期格式（如：2024年5月10日 14:00）
-      else if (/^\d{4}年\d{1,2}月\d{1,2}日/.test(activity.date)) {
-        try {
-          // 提取年月日和时分
-          const match = activity.date.match(/(\d{4})年(\d{1,2})月(\d{1,2})日\s*(\d{1,2}):(\d{1,2})/)
-          if (match) {
-            const year = match[1]
-            const month = String(match[2]).padStart(2, '0')
-            const day = String(match[3]).padStart(2, '0')
-            const hours = String(match[4] || '00').padStart(2, '0')
-            const minutes = String(match[5] || '00').padStart(2, '0')
-            date = `${year}-${month}-${day} ${hours}:${minutes}`
-            console.log('中文日期格式转换成功:', date)
-          }
-        } catch (e) {
-          console.warn('中文日期格式转换失败:', e)
-        }
-      }
-      // 尝试转换日期格式
-      else {
-        try {
-          const dateObj = new Date(activity.date)
-          if (!isNaN(dateObj.getTime())) {
-            // 格式化为 YYYY-MM-DD HH:mm
-            const year = dateObj.getFullYear()
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-            const day = String(dateObj.getDate()).padStart(2, '0')
-            const hours = String(dateObj.getHours()).padStart(2, '0')
-            const minutes = String(dateObj.getMinutes()).padStart(2, '0')
-            date = `${year}-${month}-${day} ${hours}:${minutes}`
-            console.log('日期格式转换成功:', date)
-          } else {
-            console.warn('日期无效:', activity.date)
-            date = ''
-          }
-        } catch (e) {
-          console.warn('日期格式转换失败:', e, '原始值:', activity.date)
-          date = ''
-        }
-      }
-    } else {
-      // 如果不是字符串，尝试转换
-      try {
-        const dateObj = new Date(activity.date)
-        if (!isNaN(dateObj.getTime())) {
-          const year = dateObj.getFullYear()
-          const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-          const day = String(dateObj.getDate()).padStart(2, '0')
-          const hours = String(dateObj.getHours()).padStart(2, '0')
-          const minutes = String(dateObj.getMinutes()).padStart(2, '0')
-          date = `${year}-${month}-${day} ${hours}:${minutes}`
-          console.log('日期格式转换成功（非字符串）:', date)
-        } else {
-          console.warn('日期无效（非字符串）:', activity.date)
-          date = ''
-        }
-      } catch (e) {
-        console.warn('日期格式转换失败（非字符串）:', e)
-        date = ''
-      }
-    }
-  }
-  
-  console.log('最终日期值:', date)
-  
-  // 填充表单数据 - 使用响应式更新
   formData.value.title = activity.title || ''
-  formData.value.type = (activity.type || 'activity') as 'activity' | 'training' | 'empowerment' | 'workshop'
-  formData.value.toolId = toolId
+  formData.value.type = (activity.type || 'activity') as 'activity' | 'training' | 'workshop' | 'empowerment'
+  formData.value.toolId = activity.toolId || null
   formData.value.cover = activity.cover || ''
   formData.value.content = activity.content || ''
   
-  // 日期需要特殊处理，确保格式正确并触发响应式更新
-  if (date) {
-    // 先清空，再设置，确保触发响应式更新
-    formData.value.date = ''
-    // 强制重新渲染日期选择器
-    datePickerKey.value++
-    nextTick(() => {
-      formData.value.date = date
-      console.log('日期已设置（nextTick）:', formData.value.date)
-      // 再次强制更新，确保日期选择器显示
-      nextTick(() => {
-        if (formData.value.date !== date) {
-          formData.value.date = date
-          datePickerKey.value++
-        }
-      })
-    })
-  } else {
-    formData.value.date = ''
-    console.warn('日期为空，无法设置')
-  }
-  
-  console.log('表单数据已填充:', formData.value)
-  console.log('工具ID:', formData.value.toolId, '类型:', typeof formData.value.toolId)
-  console.log('日期:', formData.value.date, '类型:', typeof formData.value.date, '长度:', formData.value.date?.length)
-  
-  // 确保工具选择框能正确显示
-  nextTick(() => {
-    console.log('工具列表:', allToolsList.value)
-    console.log('当前工具ID:', formData.value.toolId)
-    const tool = allToolsList.value.find(t => t.id === formData.value.toolId)
-    console.log('找到的工具:', tool)
-  })
+  // 填充新增字段
+  formData.value.date = activity.date || ''
+  formData.value.startTime = activity.startTime || ''
+  formData.value.endTime = activity.endTime || ''
+  formData.value.location = activity.location || ''
+  formData.value.meetingLink = activity.meetingLink || ''
+  formData.value.speaker = activity.speaker || ''
+  formData.value.speakerTitle = activity.speakerTitle || ''
+  formData.value.maxParticipants = activity.maxParticipants || 0
   
   // 设置编辑器内容
   if (editorRef.value) {
-    // 等待编辑器完全准备好
     nextTick(() => {
       setTimeout(() => {
-        if (editorRef.value) {
-          if (activity.content) {
-            console.log('设置编辑器内容，长度:', activity.content.length)
-            editorRef.value.setHtml(activity.content)
-          } else {
-            console.warn('活动内容为空')
-            editorRef.value.setHtml('')
-          }
-        } else {
-          console.error('编辑器实例不存在')
+        if (editorRef.value && activity.content) {
+          editorRef.value.setHtml(activity.content)
         }
       }, 200)
     })
-  } else {
-    console.warn('编辑器还未创建，等待创建...')
-    // 如果编辑器还没创建，等待一下再试
-    setTimeout(() => {
-      if (editorRef.value && activity.content) {
-        editorRef.value.setHtml(activity.content)
-      }
-    }, 1000)
   }
   
   ElMessage.success('活动数据已加载')
@@ -566,30 +451,37 @@ const handlePublish = async () => {
       return
     }
 
+    if (!formData.value.toolId) {
+      ElMessage.error('请选择工具')
+      return
+    }
+
     publishing.value = true
+
+    const submitData = {
+      title: formData.value.title,
+      toolId: formData.value.toolId,
+      type: formData.value.type,
+      date: formData.value.date,
+      startTime: formData.value.startTime,
+      endTime: formData.value.endTime,
+      location: formData.value.location,
+      meetingLink: formData.value.meetingLink,
+      speaker: formData.value.speaker,
+      speakerTitle: formData.value.speakerTitle,
+      maxParticipants: formData.value.maxParticipants || undefined,
+      cover: formData.value.cover,
+      content: formData.value.content
+    }
 
     // 判断是创建还是更新
     if (isEditMode.value) {
       // 编辑模式：更新现有活动
       const activityId = Number(route.query.id)
-      await updateActivity(activityId, {
-        title: formData.value.title,
-        toolId: formData.value.toolId || undefined,
-        type: formData.value.type,
-        date: formData.value.date,
-        cover: formData.value.cover,
-        content: formData.value.content
-      })
+      await updateActivity(activityId, submitData)
     } else {
       // 新建模式：创建新活动
-      await createActivity({
-        title: formData.value.title,
-        toolId: formData.value.toolId || undefined,
-        type: formData.value.type,
-        date: formData.value.date,
-        cover: formData.value.cover,
-        content: formData.value.content
-      })
+      await createActivity(submitData)
     }
 
     publishing.value = false
@@ -600,7 +492,8 @@ const handlePublish = async () => {
     if (isEditMode.value) {
       router.push(`/activity/${route.query.id}`)
     } else {
-      router.push(ROUTES.ADMIN)
+      // router.push(ROUTES.ADMIN) // 原逻辑
+      router.push(`/tools?toolId=${formData.value.toolId}&tab=activities`) // 跳转到对应工具的活动列表
     }
   } catch (error: unknown) {
     console.error('发布活动失败:', error)
@@ -614,35 +507,26 @@ const handleBack = () => {
   router.back()
 }
 
-// 组件挂载时，如果是编辑模式且编辑器还未创建，也尝试加载
+// 组件挂载时
 onMounted(async () => {
   // 加载工具列表
   await loadToolsList()
+  
   // 如果URL中有toolId参数，自动选中对应工具
   const toolIdParam = route.query.toolId
   if (toolIdParam && !isEditMode.value) {
     const toolId = Number(toolIdParam)
     if (!isNaN(toolId)) {
-      // 检查工具是否存在于列表中
       const tool = allToolsList.value.find(t => t.id === toolId)
       if (tool) {
         formData.value.toolId = toolId
-        console.log('从URL参数自动选中工具:', tool.name, 'ID:', toolId)
-      } else {
-        console.warn('URL参数中的toolId不存在于工具列表中:', toolId)
       }
     }
   }
   
   if (isEditMode.value) {
-    console.log('组件挂载，编辑模式，准备加载活动数据')
-    // 如果编辑器已经创建，直接加载
-    if (editorRef.value) {
-      nextTick(() => {
-        loadActivityForEdit()
-      })
-    }
-    // 否则等待编辑器创建（在 handleEditorCreated 中处理）
+    // 等待编辑器创建后再加载数据
+    // 注意：数据加载会在 handleEditorCreated 中触发
   }
 })
 
@@ -767,5 +651,30 @@ onBeforeUnmount(() => {
   padding-top: 24px;
   border-top: 1px solid #e4e7ed;
 }
-</style>
 
+.time-range-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.time-separator {
+  color: #909399;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+}
+
+.form-tip {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #909399;
+}
+</style>

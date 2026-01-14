@@ -77,7 +77,7 @@
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
                 :page-sizes="[10, 15, 20, 30, 50]"
-                :total="filteredPosts.length"
+                :total="totalPosts"
                 layout="total, sizes, prev, pager, next, jumper"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange"
@@ -182,7 +182,7 @@ import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { checkOwnerPermission, getToolPosts, getToolActivities, getFeaturedPost } from '../api/tools'
+import { getTools, checkOwnerPermission, getToolPosts, getToolActivities, getFeaturedPost, getToolTags, getToolDepartments } from '../api/tools'
 import { getCurrentUser } from '../api/user'
 import type { Post } from '../api/types'
 
@@ -213,88 +213,17 @@ const featuredPostsArray = computed(() => {
 const currentPage = ref(1)
 const pageSize = ref(15)
 
-// 所有标签（动态计算，包含"全部"选项）
+// 其他工具（toolId=0）的标签/部门统计（走真实接口，支持 mock/real 切换）
+const toolTags = ref<Array<{ name: string; count: number }>>([])
+const toolDepartments = ref<Array<{ id: number; name: string; postCount: number; contributorCount: number }>>([])
+
 const displayedTags = computed(() => {
-  // 获取所有帖子（其他工具的帖子）
-  const allPosts = currentToolPosts.value
-
-  // 根据当前选择的部门过滤帖子
-  const filteredPosts = allPosts
-  if (selectedDepartment.value) {
-    // 这里需要从帖子数据中获取部门信息，暂时简化处理
-    // filteredPosts = filteredPosts.filter(post => post.department === selectedDepartment.value)
-  }
-
-  // 统计每个标签的数量
-  const tagCountMap = new Map<string, number>()
-  filteredPosts.forEach(post => {
-    if (post.tag) {
-      tagCountMap.set(post.tag, (tagCountMap.get(post.tag) || 0) + 1)
-    }
-  })
-
-  // 构建标签列表，包含"全部"
-  const tags: Array<{ name: string; count: number }> = [
-    { name: '全部', count: filteredPosts.length }
-  ]
-
-  // 添加其他标签
-  const tagNames = ['新手', '进阶', '最佳实践', '技巧', '案例', '优化', '通用', '入门']
-  tagNames.forEach(tagName => {
-    const count = tagCountMap.get(tagName) || 0
-    if (count > 0 || !selectedDepartment.value) {
-      tags.push({ name: tagName, count })
-    }
-  })
-
-  return tags
+  const list = toolTags.value || []
+  const hasAll = list.some(t => t.name === '全部')
+  return hasAll ? list : [{ name: '全部', count: list.reduce((s, t) => s + (t.count || 0), 0) }, ...list]
 })
 
-// 部门排名统计（动态计算）
-const displayedDepartments = computed(() => {
-  // 获取所有帖子（其他工具的帖子）
-  const allPosts = currentToolPosts.value
-
-  // 根据当前选择的标签过滤帖子
-  let filteredPosts = allPosts
-  if (selectedTag.value && selectedTag.value !== '全部') {
-    filteredPosts = filteredPosts.filter(post => post.tag === selectedTag.value)
-  }
-
-  // 统计每个部门的发帖数和贡献者
-  const deptMap = new Map<string, { postCount: number; contributors: Set<string> }>()
-
-  filteredPosts.forEach(post => {
-    // 这里需要从帖子数据中获取部门信息，暂时简化处理
-    // 假设所有帖子都属于某个部门，这里用模拟数据
-    const deptName = '研发部' // 实际应该从post.department获取
-    if (!deptMap.has(deptName)) {
-      deptMap.set(deptName, { postCount: 0, contributors: new Set() })
-    }
-    const dept = deptMap.get(deptName)!
-    dept.postCount++
-    if (post.author) {
-      dept.contributors.add(post.author)
-    }
-  })
-
-  // 获取所有部门名称（从所有帖子中提取，这里简化处理）
-  const allDepts = new Set<string>(['研发部', '产品部', '技术部', '数据部', '算法部', '运营部', '设计部', '测试部'])
-
-  // 构建部门列表
-  const departments = Array.from(allDepts).map((name, index) => {
-    const stats = deptMap.get(name) || { postCount: 0, contributors: new Set() }
-    return {
-      id: index + 1,
-      name,
-      postCount: stats.postCount,
-      contributorCount: stats.contributors.size
-    }
-  })
-
-  // 按发帖数排序
-  return departments.sort((a, b) => b.postCount - a.postCount)
-})
+const displayedDepartments = computed(() => toolDepartments.value || [])
 
 interface ToolInfo {
   id: number
@@ -374,10 +303,13 @@ watch(selectedToolId, async (newToolId) => {
     await checkToolOwner(newToolId)
     await loadPosts(newToolId)
     await loadActivities(newToolId)
+    featuredPost.value = null
   } else {
     isToolOwner.value = false
+    await loadOtherToolStats()
     await loadPosts(0) // 加载"其他工具"的帖子
     await loadActivities(0)
+    await loadFeaturedPost()
   }
 })
 
@@ -388,110 +320,57 @@ onUnmounted(() => {
   window.removeEventListener('adminConfigUpdated', handleConfigUpdate)
 })
 
-// 工具列表 - 从API加载（与首页共用 /api/tools 接口）
+// 工具列表 - GET /api/tools（api/tools.ts 内部支持 mock/real 切换）
 const loadTools = async () => {
-  try {
-    const { getTools } = await import('../api/home')
-    const toolsResponse = await getTools()
-    return (toolsResponse.data?.list || []).map((item: { id: number; name: string; desc?: string; logo?: string; link?: string; color?: string }) => ({
-      id: item.id,
-      name: item.name,
-      desc: item.desc || '',
-      logo: item.logo || '',
-      link: item.link || `/tools?toolId=${item.id}`,
-      color: item.color || '#409eff'
-    }))
-  } catch (e) {
-    console.error('加载工具配置失败:', e)
-    return [
-    {
-      id: 1,
-      name: 'TestMate',
-      desc: '自动化测试助手',
-      logo: 'https://picsum.photos/80/80?random=1',
-      link: '/tools?toolId=1',
-      color: '#36cfc9'
-    },
-    {
-      id: 2,
-      name: 'CodeMate',
-      desc: '智能代码补全',
-      logo: 'https://picsum.photos/80/80?random=2',
-      link: '/tools?toolId=2',
-      color: '#9254de'
-    },
-    {
-      id: 3,
-      name: '云集',
-      desc: '云端计算集群',
-      logo: 'https://picsum.photos/80/80?random=3',
-      link: '/tools?toolId=3',
-      color: '#597ef7'
-    },
-    {
-      id: 4,
-      name: '云见',
-      desc: '智能监控平台',
-      logo: 'https://picsum.photos/80/80?random=4',
-      link: '/tools?toolId=4',
-      color: '#ff9c6e'
-    },
-    {
-      id: 5,
-      name: '扶摇',
-      desc: 'Agent编排引擎',
-      logo: 'https://picsum.photos/80/80?random=5',
-      link: '/tools?toolId=5',
-      color: '#4096ff'
-    },
-    {
-      id: 6,
-      name: '纠错Agent',
-      desc: '智能代码纠错工具',
-      logo: 'https://picsum.photos/80/80?random=6',
-      link: '/tools?toolId=6',
-      color: '#ffc53d'
-    },
-    {
-      id: 7,
-      name: 'DT',
-      desc: '数据转换工具',
-      logo: 'https://picsum.photos/80/80?random=7',
-      link: '/tools?toolId=7',
-      color: '#73d13d'
-    }
-  ]
-  }
+  const toolsResponse = await getTools()
+  return (toolsResponse.data?.list || []).map((item: { id: number; name: string; desc?: string; logo?: string; link?: string; color?: string }) => ({
+    id: item.id,
+    name: item.name,
+    desc: item.desc || '',
+    logo: item.logo || '',
+    link: item.link || `/tools?toolId=${item.id}`,
+    color: item.color || '#409eff'
+  }))
 }
 
 // 扩展 Post 类型，添加本地使用的字段
-type LocalPost = Post & { author?: string; description?: string; image?: string; tag?: string; category?: string }
+type LocalPost = Post & { author?: string; description?: string; image?: string; tag?: string; category?: 'guide' | 'excellent' }
 
-// 所有帖子数据
-const allPosts = ref<LocalPost[]>([])
+// 当前列表（后端分页）
+const postList = ref<LocalPost[]>([])
+const totalPosts = ref(0)
 
-// 加载帖子列表
+// 加载帖子列表（真实接口：GET /api/tools/posts）
 const loadPosts = async (toolId?: number) => {
   try {
+    const isOther = toolId === 0 || selectedToolId.value === 'other'
     const response = await getToolPosts({
-      toolId: toolId,
-      page: 1,
-      pageSize: 100 // 获取所有帖子
+      toolId,
+      category: !isOther && typeof selectedToolId.value === 'number' ? (activePostTab.value as 'guide' | 'excellent') : undefined,
+      tag: isOther && selectedTag.value && selectedTag.value !== '全部' ? selectedTag.value : undefined,
+      department: isOther ? (selectedDepartment.value || undefined) : undefined,
+      keyword: isOther ? (searchKeyword.value || undefined) : undefined,
+      sortBy: isOther ? (sortBy.value as 'newest' | 'hot' | 'comments') : undefined,
+      page: currentPage.value,
+      pageSize: pageSize.value,
     })
+    totalPosts.value = response.data.total || 0
+
     // 字段映射
-    allPosts.value = response.data.list.map((post: Post): LocalPost => ({
+    postList.value = (response.data.list || []).map((post: Post): LocalPost => ({
       ...post,
-      author: post.authorName || '',
-      description: post.summary || '',
-      image: post.cover || '',
+      author: post.authorName || (post as unknown as { author?: string }).author || '',
+      description: post.summary || (post as unknown as { description?: string }).description || '',
+      image: post.cover || (post as unknown as { image?: string }).image || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN'),
       tag: post.tags && post.tags.length > 0 ? post.tags[0] : '',
-      category: 'guide' // 保留category字段用于分类
+      category: post.category === 'guide' || post.category === 'excellent' ? post.category : undefined
     }))
   } catch (error: unknown) {
     console.error('加载帖子列表失败:', error)
     ElMessage.error((error as Error).message || '加载帖子列表失败')
-    allPosts.value = []
+    totalPosts.value = 0
+    postList.value = []
   }
 }
 
@@ -522,6 +401,11 @@ const allActivities = ref<Array<{ id: number; toolId: number; type: 'activity' |
 // 加载活动列表
 const loadActivities = async (toolId?: number) => {
   try {
+    // 其他工具没有活动区块
+    if (toolId === 0 || selectedToolId.value === 'other') {
+      allActivities.value = []
+      return
+    }
     const response = await getToolActivities({
       toolId: toolId,
       page: 1,
@@ -543,10 +427,29 @@ const loadActivities = async (toolId?: number) => {
   }
 }
 
+// 加载“其他工具”的标签/部门统计
+const loadOtherToolStats = async () => {
+  if (selectedToolId.value !== 'other') return
+  try {
+    const [tagsRes, deptsRes] = await Promise.all([
+      getToolTags(0, selectedDepartment.value || undefined),
+      getToolDepartments(0, selectedTag.value && selectedTag.value !== '全部' ? selectedTag.value : undefined),
+    ])
+    toolTags.value = tagsRes.data.list || []
+    const list = deptsRes.data.list || []
+    toolDepartments.value = list.map((d, idx) => ({ id: (d as { id?: number }).id ?? idx + 1, ...d }))
+  } catch (e) {
+    console.error('加载其他工具统计失败:', e)
+    toolTags.value = []
+    toolDepartments.value = []
+  }
+}
+
 // 选择工具
 const selectTool = async (toolId: number | string) => {
   selectedToolId.value = toolId
   activePostTab.value = 'guide' // 重置为操作指导
+  currentPage.value = 1
 
   // 检查是否为工具Owner（仅对普通工具检查，不包括"其他工具"）
   if (typeof toolId === 'number') {
@@ -557,6 +460,7 @@ const selectTool = async (toolId: number | string) => {
   } else {
     // "其他工具"
     isToolOwner.value = false
+    await loadOtherToolStats()
     await loadPosts(0)
     await loadActivities(0)
     await loadFeaturedPost() // 加载精华帖子
@@ -600,80 +504,8 @@ const handlePublishActivity = () => {
   router.push(`/activity/create?toolId=${selectedToolId.value}`)
 }
 
-// 当前工具的帖子
-const currentToolPosts = computed(() => {
-  let posts = []
-
-  if (selectedToolId.value === 'other') {
-    posts = allPosts.value.filter(post => post.toolId === 0)
-  } else if (selectedToolId.value) {
-    posts = allPosts.value.filter(post => post.toolId === selectedToolId.value)
-  } else {
-    return []
-  }
-
-  // 按标签过滤（排除"全部"）
-  if (selectedTag.value && selectedTag.value !== '全部') {
-    posts = posts.filter(post => post.tag === selectedTag.value)
-  }
-
-  // 按部门过滤（这里简化处理，实际应该从帖子数据中获取部门信息）
-  // if (selectedDepartment.value) {
-  //   posts = posts.filter(post => post.department === selectedDepartment.value)
-  // }
-
-  return posts
-})
-
-// 过滤后的帖子（根据分类）
-const filteredPosts = computed(() => {
-  let posts = currentToolPosts.value
-
-  // 如果不是"其他"工具，按分类过滤
-  if (selectedToolId.value !== 'other') {
-    posts = posts.filter(post => post.category === activePostTab.value)
-  }
-
-  // 按标签过滤（排除"全部"）
-  if (selectedTag.value && selectedTag.value !== '全部') {
-    posts = posts.filter(post => post.tag === selectedTag.value)
-  }
-
-  // 按部门过滤（这里简化处理，实际应该从帖子数据中获取部门信息）
-  // if (selectedDepartment.value) {
-  //   posts = posts.filter(post => post.department === selectedDepartment.value)
-  // }
-
-  // 搜索过滤
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    posts = posts.filter(post =>
-      post.title.toLowerCase().includes(keyword) ||
-      (post.author?.toLowerCase().includes(keyword) ?? false) ||
-      (post.description && post.description.toLowerCase().includes(keyword))
-    )
-  }
-
-  // 排序
-  if (sortBy.value === 'hot') {
-    posts.sort((a, b) => b.views - a.views)
-  } else if (sortBy.value === 'comments') {
-    // 如果帖子没有comments属性，使用views作为替代
-    posts.sort((a, b) => (b.views || 0) - (a.views || 0))
-  } else {
-    // 按时间排序（这里简化处理）
-    posts.sort((a, b) => b.id - a.id)
-  }
-
-  return posts
-})
-
-// 分页后的帖子
-const paginatedPosts = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredPosts.value.slice(start, end)
-})
+// 后端分页返回的帖子列表
+const paginatedPosts = computed(() => postList.value)
 
 // 当前工具的活动
 const currentToolActivities = computed(() => {
@@ -759,18 +591,27 @@ const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
 const handleTabChange = (tab: 'guide' | 'excellent') => {
   activePostTab.value = tab
   currentPage.value = 1 // 重置到第一页
+  if (typeof selectedToolId.value === 'number') {
+    loadPosts(selectedToolId.value)
+  }
 }
 
 // 处理搜索
 const handleSearch = (keyword: string) => {
   searchKeyword.value = keyword
   currentPage.value = 1 // 重置到第一页
+  if (selectedToolId.value === 'other') {
+    loadPosts(0)
+  }
 }
 
 // 处理排序
 const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
   sortBy.value = sort as 'newest' | 'hot' | 'comments'
   currentPage.value = 1 // 重置到第一页
+  if (selectedToolId.value === 'other') {
+    loadPosts(0)
+  }
 }
 
 // 处理活动点击
@@ -791,6 +632,10 @@ const handleTagClick = (tagName: string) => {
     selectedTag.value = tagName
   }
   currentPage.value = 1 // 重置到第一页
+  if (selectedToolId.value === 'other') {
+    loadOtherToolStats()
+    loadPosts(0)
+  }
 }
 
 // 处理部门点击
@@ -801,12 +646,20 @@ const handleDepartmentClick = (departmentName: string) => {
     selectedDepartment.value = departmentName
   }
   currentPage.value = 1 // 重置到第一页
+  if (selectedToolId.value === 'other') {
+    loadOtherToolStats()
+    loadPosts(0)
+  }
 }
 
 // 重置部门过滤
 const handleResetDepartment = () => {
   selectedDepartment.value = null
   currentPage.value = 1
+  if (selectedToolId.value === 'other') {
+    loadOtherToolStats()
+    loadPosts(0)
+  }
 }
 
 // 处理发帖
@@ -818,6 +671,11 @@ const handlePostCreate = () => {
 const handleSizeChange = (val: number) => {
   pageSize.value = val
   currentPage.value = 1 // 重置到第一页
+  if (selectedToolId.value === 'other') {
+    loadPosts(0)
+  } else if (typeof selectedToolId.value === 'number') {
+    loadPosts(selectedToolId.value)
+  }
 }
 
 // 处理当前页变化
@@ -825,6 +683,11 @@ const handleCurrentChange = (val: number) => {
   currentPage.value = val
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (selectedToolId.value === 'other') {
+    loadPosts(0)
+  } else if (typeof selectedToolId.value === 'number') {
+    loadPosts(selectedToolId.value)
+  }
 }
 </script>
 

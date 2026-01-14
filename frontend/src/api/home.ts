@@ -286,11 +286,14 @@ async function mockGetNews(): Promise<ApiResponse<{ list: NewsItem[] }>> {
 /**
  * 获取新闻资讯
  * GET /api/home/news
+ * 警告: 后端目前没有对应的 NewsController 或 /api/home/news 接口。
+ * 如果开启 useRealApi，调用此接口将返回 404。
  */
 export async function getNews(): Promise<ApiResponse<{ list: NewsItem[] }>> {
   if (!useRealApi) {
     return mockGetNews()
   }
+  console.warn('getNews API missing in backend')
   return get<{ list: NewsItem[] }>('/home/news')
 }
 

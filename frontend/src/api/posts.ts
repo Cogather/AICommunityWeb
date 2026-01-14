@@ -31,7 +31,7 @@ export interface PostUpdateParams {
 /** 点赞操作响应 */
 export interface ActionResponse {
   liked: boolean
-  count: number
+  likes: number
 }
 
 /** 收藏操作响应 */
@@ -41,10 +41,8 @@ export interface CollectResponse {
 
 /** 设置精华响应 */
 export interface FeaturedResponse {
-  featured: boolean
-  postId: number
   success: boolean
-  message?: string
+  featured: boolean
 }
 
 // ==================== Mock 数据 ====================
@@ -127,7 +125,7 @@ const mockLikePost = async (isLike: boolean): Promise<ApiResponse<ActionResponse
   await delay()
   return success({
     liked: isLike,
-    count: isLike ? 21 : 20,
+    likes: isLike ? 21 : 20,
   })
 }
 
@@ -141,10 +139,8 @@ const mockCollectPost = async (isCollect: boolean): Promise<ApiResponse<CollectR
 const mockSetFeatured = async (id: number, featured: boolean): Promise<ApiResponse<FeaturedResponse>> => {
   await delay()
   return success({
-    postId: id,
     featured,
     success: true,
-    message: featured ? '已设为精华' : '已取消精华'
   })
 }
 
@@ -278,22 +274,23 @@ let mockDraft: { data: PostCreateParams | null; updateTime: string } = {
 
 /**
  * 获取推荐封面
- * GET /api/posts/recommended-covers
+ * GET /api/covers/recommended
  */
 export async function getRecommendedCovers(params?: {
   zone?: string
   count?: number
-}): Promise<ApiResponse<{ list: typeof mockRecommendedCovers }>> {
+}): Promise<ApiResponse<{ list: { id: number; url: string; name?: string }[] }>> {
   if (!useRealApi) {
     await delay(200)
     const count = params?.count || 6
     return success({ list: mockRecommendedCovers.slice(0, count) })
   }
-  return get<{ list: typeof mockRecommendedCovers }>('/posts/recommended-covers', params)
+  return get<{ list: { id: number; url: string; name?: string }[] }>('/covers/recommended', params)
 }
 
-/** 草稿数据（比 PostCreateParams 更宽松） */
+/** 草稿数据（对应后端 DraftVO） */
 export interface DraftData {
+  draftId?: string
   zone?: string
   toolId?: number | null
   title?: string
@@ -306,32 +303,37 @@ export interface DraftData {
 
 /**
  * 保存草稿
- * POST /api/posts/draft
+ * POST /api/drafts
  */
-export async function saveDraft(data: DraftData): Promise<ApiResponse<{ id: number; updateTime: string }>> {
+export async function saveDraft(data: DraftData): Promise<ApiResponse<{ draftId: string; savedAt: string }>> {
   if (!useRealApi) {
     await delay(200)
     mockDraft = { data: data as PostCreateParams, updateTime: new Date().toISOString() }
-    return success({ id: 1, updateTime: mockDraft.updateTime })
+    return success({ draftId: '1', savedAt: mockDraft.updateTime })
   }
-  return post<{ id: number; updateTime: string }>('/posts/draft', data)
+  return post<{ draftId: string; savedAt: string }>('/drafts', data)
 }
 
 /**
  * 获取草稿
- * GET /api/posts/draft
+ * GET /api/drafts
  */
-export async function getDraft(): Promise<ApiResponse<{ data: PostCreateParams | null; updateTime: string }>> {
+export async function getDraft(): Promise<ApiResponse<DraftData | null>> {
   if (!useRealApi) {
     await delay(200)
-    return success(mockDraft)
+    // 适配 Mock 格式到 DraftData
+    if (!mockDraft.data) return success(null)
+    return success({
+      ...mockDraft.data,
+      savedAt: mockDraft.updateTime
+    })
   }
-  return get<{ data: PostCreateParams | null; updateTime: string }>('/posts/draft')
+  return get<DraftData | null>('/drafts')
 }
 
 /**
  * 删除草稿
- * DELETE /api/posts/draft
+ * DELETE /api/drafts
  */
 export async function deleteDraft(): Promise<ApiResponse<null>> {
   if (!useRealApi) {
@@ -339,7 +341,7 @@ export async function deleteDraft(): Promise<ApiResponse<null>> {
     mockDraft = { data: null, updateTime: '' }
     return success(null)
   }
-  return del<null>('/posts/draft')
+  return del<null>('/drafts')
 }
 
 // ==================== 导出 ====================

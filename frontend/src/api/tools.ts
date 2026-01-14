@@ -24,8 +24,12 @@ export interface DepartmentStat {
 /** Owner权限检查响应 */
 export interface OwnerPermission {
   isOwner: boolean
-  isAdmin: boolean
-  canManage: boolean
+  // 后端可能返回更多信息
+  toolId?: number
+  permissions?: string[]
+  // 兼容旧字段（有些页面用到）
+  isAdmin?: boolean
+  canManage?: boolean
 }
 
 /** 精华帖子响应 */
@@ -118,6 +122,8 @@ const mockCheckOwner = async (): Promise<ApiResponse<OwnerPermission>> => {
   await delay()
   return success({
     isOwner: true,
+    toolId: 1,
+    permissions: ['publish_activity', 'manage_posts', 'set_featured'],
     isAdmin: true,
     canManage: true,
   })

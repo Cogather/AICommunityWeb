@@ -253,7 +253,7 @@ import {
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
 // API 层 - 支持 Mock/Real API 自动切换
-import { getTeamAwards, giveFlower, getHonorList } from '../api/honor'
+import { getTeamAwards, giveFlower, getHonorList, getLeaderboard, getAwardNames, getDepartments } from '../api/honor'
 import type { HonorRecord } from '../api/types'
 
 // --- 类型定义 ---
@@ -273,9 +273,23 @@ const viewModes = [
 ];
 const availableViewModes = computed(() => filterScope.value === 'mine' ? [viewModes[0]] : viewModes);
 
-// --- 荣誉数据（从 mock API 加载）---
+// --- 荣誉数据（通过 api/honor.ts 获取；内部支持 mock/real 切换）---
 const honorList = ref<HonorItem[]>([])
 const honorListLoading = ref(false)
+
+// 下拉筛选项（优先走后端接口；无数据时降级为从 honorList 推导）
+const awardNamesFromApi = ref<string[]>([])
+const departmentNamesFromApi = ref<string[]>([])
+
+// 荣誉影响力榜（优先走后端接口；无数据时降级为从 honorList 推导）
+interface LeaderboardUser {
+  name: string;
+  department: string;
+  avatar?: string;
+  count: number;
+  totalFlowers: number;
+}
+const leaderboardFromApi = ref<LeaderboardUser[]>([])
 
 // 加载荣誉列表数据
 const loadHonorList = async () => {
@@ -286,7 +300,7 @@ const loadHonorList = async () => {
       pageSize: pageSize.value,
       scope: filterScope.value as 'all' | 'mine',
       filterType: honorFilterType.value as 'award' | 'department',
-      filterValue: activeSubFilter.value,
+      filterValue: activeSubFilter.value !== '全部' ? activeSubFilter.value : undefined,
       keyword: searchQuery.value || undefined,
       view: currentViewMode.value as 'grid' | 'timeline',
       userName: currentTimelineUserName.value || undefined
@@ -298,6 +312,33 @@ const loadHonorList = async () => {
     ElMessage.error('加载荣誉列表失败')
   } finally {
     honorListLoading.value = false
+  }
+}
+
+// 加载奖项/部门筛选项
+const loadHonorFilterOptions = async () => {
+  try {
+    const [awardsRes, deptsRes] = await Promise.all([getAwardNames(), getDepartments()])
+    awardNamesFromApi.value = awardsRes.data.list || []
+    departmentNamesFromApi.value = deptsRes.data.list || []
+  } catch (e) {
+    console.error('加载荣誉筛选项失败:', e)
+  }
+}
+
+// 加载荣耀影响力榜
+const loadLeaderboard = async () => {
+  try {
+    const params = {
+      limit: 10,
+      scope: filterScope.value as 'all' | 'mine',
+      filterType: honorFilterType.value as 'award' | 'department',
+      filterValue: activeSubFilter.value !== '全部' ? activeSubFilter.value : undefined,
+    }
+    const res = await getLeaderboard(params)
+    leaderboardFromApi.value = res.data.list || []
+  } catch (e) {
+    console.error('加载荣耀影响力榜失败:', e)
   }
 }
 
@@ -342,9 +383,7 @@ const handleGiveFlowerToTeam = async (img: TeamAwardImage) => {
     return
   }
   try {
-    // 注意：团队荣誉送花可能需要不同的接口，这里先使用荣誉送花接口
-    // 如果后端有专门的团队荣誉送花接口，需要更新
-    const response = await giveFlower(img.id)
+    const response = await giveFlower(img.id, 'team')
     img.flowers = response.data.flowers
     img.hasGivenFlower = response.data.hasGivenFlower
     ElMessage.success('送花成功！')
@@ -354,7 +393,7 @@ const handleGiveFlowerToTeam = async (img: TeamAwardImage) => {
   }
 };
 
-// 团队奖数据 - 从mock API加载
+// 团队奖数据（通过 api/honor.ts 获取；内部支持 mock/real 切换）
 interface TeamAwardImage {
   id: number;
   image: string;
@@ -398,34 +437,8 @@ const loadTeamAwards = async (): Promise<TeamAward[]> => {
     console.error('加载团队奖项失败:', e);
   }
 
-  // 默认数据
-  return [
-    {
-      id: 1,
-      title: '年度最佳AI创新团队',
-      year: '2026',
-      images: [
-        { id: 1, image: 'https://picsum.photos/800/600?random=101', imageType: 'url', winnerName: '架构平台部AI团队', teamField: 'AI技术研发', flowers: 15, hasGivenFlower: false },
-        { id: 2, image: 'https://picsum.photos/800/600?random=102', imageType: 'url', winnerName: '效能工程部', teamField: '工程效能', flowers: 12, hasGivenFlower: false }
-      ]
-    },
-    {
-      id: 2,
-      title: 'AI效能提升先锋',
-      year: '2026',
-      images: [
-        { id: 3, image: 'https://picsum.photos/800/600?random=103', imageType: 'url', winnerName: 'UED 设计中心', teamField: '设计创新', flowers: 18, hasGivenFlower: false }
-      ]
-    },
-    {
-      id: 3,
-      title: 'AI设计创新金奖',
-      year: '2025',
-      images: [
-        { id: 4, image: 'https://picsum.photos/800/600?random=104', imageType: 'url', winnerName: '开源办公室', teamField: '开源社区', flowers: 20, hasGivenFlower: false }
-      ]
-    }
-  ];
+  // 不在页面里写死 mock：mock/real 由 api/honor.ts 内部统一切换
+  return [];
 };
 
 const teamAwards = ref<TeamAward[]>([]);
@@ -491,6 +504,8 @@ watch(
   [filterScope, honorFilterType, activeSubFilter, searchQuery, currentViewMode, currentTimelineUserName, currentPage],
   () => {
     loadHonorList()
+    // 榜单也跟随筛选条件更新（后端支持则用后端数据；否则降级本地计算）
+    loadLeaderboard()
   }
 )
 
@@ -508,6 +523,10 @@ onMounted(async () => {
   
   // 初始化加载荣誉列表
   await loadHonorList();
+
+  // 初始化加载筛选项/榜单
+  await loadHonorFilterOptions();
+  await loadLeaderboard();
 
   // 通知导航栏当前状态
   notifyNavbarUpdate();
@@ -592,15 +611,7 @@ const paginatedList = computed(() => {
   return processedList.value.slice(start, start + pageSize.value);
 });
 
-interface LeaderboardUser {
-  name: string;
-  department: string;
-  avatar?: string;
-  count: number;
-  totalFlowers: number;
-}
-
-const leaderboardData = computed(() => {
+const leaderboardFallback = computed(() => {
   const map = new Map<string, LeaderboardUser>();
   processedList.value.forEach(item => {
     if (!map.has(item.name)) {
@@ -621,8 +632,21 @@ const leaderboardData = computed(() => {
   return Array.from(map.values()).sort((a, b) => b.count - a.count || b.totalFlowers - a.totalFlowers).slice(0, 10);
 });
 
-const allDepartments = computed(() => ['全部', ...Array.from(new Set(honorList.value.map(i => i.department)))]);
-const allAwards = computed(() => ['全部', ...Array.from(new Set(honorList.value.map(i => i.awardName)))]);
+const leaderboardData = computed(() => (leaderboardFromApi.value.length > 0 ? leaderboardFromApi.value : leaderboardFallback.value));
+
+const allDepartments = computed(() => {
+  const list = departmentNamesFromApi.value.length > 0
+    ? departmentNamesFromApi.value
+    : Array.from(new Set(honorList.value.map(i => i.department))).filter(Boolean) as string[]
+  return ['全部', ...list]
+});
+
+const allAwards = computed(() => {
+  const list = awardNamesFromApi.value.length > 0
+    ? awardNamesFromApi.value
+    : Array.from(new Set(honorList.value.map(i => i.awardName))).filter(Boolean) as string[]
+  return ['全部', ...list]
+});
 const showSecondaryFilter = computed(() => filterScope.value === 'all' && currentViewMode.value === 'grid');
 const activeFilterOptions = computed(() => {
   if (currentViewMode.value === 'grid') return honorFilterType.value === 'award' ? allAwards.value : allDepartments.value;

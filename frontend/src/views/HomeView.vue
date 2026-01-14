@@ -139,7 +139,13 @@
                 class="empowerment-item"
                 @click="router.push(ROUTES.EMPOWERMENT)"
               >
+              <el-tooltip
+                :content="post.title"
+                placement="top"
+                :show-after="500"
+              >
                 <div class="empowerment-title">{{ post.title }}</div>
+              </el-tooltip>
                 <div class="empowerment-meta">
                   <span class="meta-time">{{ post.time }}</span>
                   <span class="meta-views">
@@ -169,7 +175,7 @@
               text
               size="small"
               class="more-btn-pill header-more-btn"
-              @click="router.push({ path: ROUTES.PRACTICES, query: { category: 'training' } })"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: '培训赋能' } })"
             >
               更多
             </el-button>
@@ -181,7 +187,13 @@
               class="practice-item"
               @click="handlePracticeClick(practice)"
             >
-              <h4 class="practice-title">{{ practice.title }}</h4>
+              <el-tooltip
+                :content="practice.title"
+                placement="top"
+                :show-after="500"
+              >
+                <h4 class="practice-title">{{ practice.title }}</h4>
+              </el-tooltip>
               <div class="practice-meta">
                 <span class="practice-author">{{ practice.author }}</span>
                 <span class="practice-time">{{ practice.time }}</span>
@@ -198,7 +210,7 @@
               text
               size="small"
               class="more-btn-pill header-more-btn"
-              @click="router.push({ path: ROUTES.PRACTICES, query: { category: 'training-battle' } })"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: 'AI训战' } })"
             >
               更多
             </el-button>
@@ -210,7 +222,13 @@
               class="practice-item"
               @click="handlePracticeClick(practice)"
             >
-              <h4 class="practice-title">{{ practice.title }}</h4>
+              <el-tooltip
+                :content="practice.title"
+                placement="top"
+                :show-after="500"
+              >
+                <h4 class="practice-title">{{ practice.title }}</h4>
+              </el-tooltip>
               <div class="practice-meta">
                 <span class="practice-author">{{ practice.author }}</span>
                 <span class="practice-time">{{ practice.time }}</span>
@@ -227,7 +245,7 @@
               text
               size="small"
               class="more-btn-pill header-more-btn"
-              @click="router.push({ path: ROUTES.PRACTICES, query: { category: 'user-exchange' } })"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: '用户交流' } })"
             >
               更多
             </el-button>
@@ -239,7 +257,13 @@
               class="practice-item"
               @click="handlePracticeClick(practice)"
             >
-              <h4 class="practice-title">{{ practice.title }}</h4>
+              <el-tooltip
+                :content="practice.title"
+                placement="top"
+                :show-after="500"
+              >
+                <h4 class="practice-title">{{ practice.title }}</h4>
+              </el-tooltip>
               <div class="practice-meta">
                 <span class="practice-author">{{ practice.author }}</span>
                 <span class="practice-time">{{ practice.time }}</span>
@@ -288,8 +312,15 @@
             style="margin-bottom: 20px;"
           >
             <div
-              class="tool-card glass-card hover-effect"
+              class="tool-card hover-effect"
               @click="handleToolClick(tool)"
+              :style="{
+                '--tool-color': tool.color || '#409eff',
+                '--tool-bg': hexToRgba(tool.color || '#409eff', 0.06),
+                '--tool-bg-hover': hexToRgba(tool.color || '#409eff', 0.12),
+                '--tool-border': hexToRgba(tool.color || '#409eff', 0.25),
+                '--tool-shadow': hexToRgba(tool.color || '#409eff', 0.25)
+              }"
             >
               <div class="tool-logo-wrapper">
                 <img
@@ -300,8 +331,7 @@
                 />
                 <div
                   v-else
-                  class="tool-icon"
-                  :style="{ background: tool.color || '#409eff' }"
+                  class="tool-icon-placeholder"
                 >
                   {{ tool.name[0] }}
                 </div>
@@ -309,6 +339,9 @@
               <div class="tool-info">
                 <h4>{{ tool.name }}</h4>
                 <p>{{ tool.desc }}</p>
+              </div>
+              <div class="tool-action-icon">
+                <el-icon><ArrowRight /></el-icon>
               </div>
             </div>
           </el-col>
@@ -346,7 +379,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Trophy, Star, View } from '@element-plus/icons-vue'
+import { Trophy, Star, View, ArrowRight } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
 import { getHonor, getToolPlatform, getTools, getPractices, getToolBanners, getLatestWinners, getEmpowerment, getNews } from '../api/home'
@@ -354,6 +387,26 @@ import type { LatestWinner } from '../api/types'
 import { ROUTES } from '../router/paths'
 
 const router = useRouter()
+
+// 辅助函数：十六进制颜色转 RGBA
+const hexToRgba = (hex: string, alpha: number) => {
+  let r = 0, g = 0, b = 0
+  // 处理 #RRGGBB
+  if (hex && hex.length === 7) {
+    r = parseInt(hex.slice(1, 3), 16)
+    g = parseInt(hex.slice(3, 5), 16)
+    b = parseInt(hex.slice(5, 7), 16)
+  } else if (hex && hex.length === 4) {
+    // 处理 #RGB
+    r = parseInt(hex.slice(1, 2) + hex.slice(1, 2), 16)
+    g = parseInt(hex.slice(2, 3) + hex.slice(2, 3), 16)
+    b = parseInt(hex.slice(3, 4) + hex.slice(3, 4), 16)
+  } else {
+    // 默认颜色 (如果hex无效) - 使用深蓝色 fallback
+    return `rgba(64, 158, 255, ${alpha})`
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 // 荣誉殿堂配置
 const loadHonorConfig = async () => {
@@ -1469,10 +1522,10 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 .honor-header-bar {
   background: transparent;
   position: relative;
-  padding: 14px 20px;
+  height: 60px; /* 增加固定高度 */
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start; /* 顶部对齐，以便制造落差 */
   border-radius: 16px 16px 0 0;
   overflow: hidden;
 
@@ -1515,7 +1568,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   .header-title {
     position: relative;
     z-index: 2;
-    margin: 0;
+    margin: 16px 0 0 24px; /* 定位：保持较高位置 */
     font-size: 15px;
     font-weight: 600;
     color: #ffffff;
@@ -1537,6 +1590,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     font-weight: 500;
     transition: all 0.3s ease;
     backdrop-filter: blur(4px);
+    margin: 24px 24px 0 0; /* 定位：下移，制造落差 */
 
     &:hover {
       background: rgba(100, 100, 100, 0.2);
@@ -2126,6 +2180,34 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     color: #1e3a8a; /* 深蓝色标题 */
     font-weight: 700;
     text-shadow: none; /* 移除阴影，深色背景不需要 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+
+    /* 左右小翅膀装饰 */
+    &::before,
+    &::after {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 24px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.8;
+    }
+
+    &::before {
+      /* 左翅膀 SVG - 抽象流线型 */
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 10 Q12 0 22 8 Q15 8 18 12 Q12 10 8 14 Q10 14 12 18 Q5 18 2 10 Z' fill='%231e3a8a'/%3E%3C/svg%3E");
+    }
+
+    &::after {
+      /* 右翅膀 SVG - 翻转 */
+      transform: scaleX(-1);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 10 Q12 0 22 8 Q15 8 18 12 Q12 10 8 14 Q10 14 12 18 Q5 18 2 10 Z' fill='%231e3a8a'/%3E%3C/svg%3E");
+    }
   }
   p {
     margin: 5px 0 0;
@@ -2344,69 +2426,162 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 }
 
 .tool-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 20px;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  
+  /* 动态背景 - 渐变毛玻璃 */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), var(--tool-bg));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--tool-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 
-  &.hover-effect:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  /* 光效层 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.4) 0%, 
+      rgba(255, 255, 255, 0.1) 100%
+    );
+    z-index: 0;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* 装饰圆 */
+  &::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 100px;
+    height: 100px;
+    background: var(--tool-color);
+    filter: blur(40px);
+    opacity: 0.1;
+    border-radius: 50%;
+    z-index: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  &:hover {
+    transform: translateY(-4px) scale(1.01);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), var(--tool-bg-hover));
+    box-shadow: 
+      0 12px 30px -8px var(--tool-shadow),
+      0 4px 10px rgba(0, 0, 0, 0.05);
+    border-color: var(--tool-color);
+
+    &::after {
+      opacity: 0.2;
+      transform: scale(1.2);
+    }
+
+    .tool-logo-wrapper {
+      transform: scale(1.05) rotate(-3deg);
+      box-shadow: 0 8px 16px -4px var(--tool-shadow);
+    }
+
+    .tool-action-icon {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--tool-color);
+    }
   }
 
   .tool-logo-wrapper {
     flex-shrink: 0;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
+    transition: all 0.3s ease;
+    border-radius: 14px;
+    background: #fff;
+    padding: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     .tool-logo {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      object-fit: contain;
+      border-radius: 8px;
     }
 
-    .tool-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+    .tool-icon-placeholder {
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 20px;
-      color: #000000; /* 改为黑色 */
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      font-weight: 800;
+      font-size: 22px;
+      color: #fff;
+      background: var(--tool-color);
+      border-radius: 10px;
     }
   }
 
   .tool-info {
     flex: 1;
-    min-width: 0; /* 允许文本截断 */
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 
     h4 {
-      margin: 0 0 4px;
+      margin: 0;
       font-size: 16px;
-      color: #000000; /* 黑色 */
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: 0.3px;
     }
 
     p {
       margin: 0;
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.7); /* 黑色，70% 透明度 */
+      font-size: 13px;
+      color: #666;
       line-height: 1.4;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+  }
+
+  .tool-action-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+    color: #999;
+    
+    .el-icon {
+      font-size: 18px;
     }
   }
 }

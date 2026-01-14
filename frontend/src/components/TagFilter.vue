@@ -109,12 +109,16 @@ const getTagStyle = (tagName: string) => {
   if (tagName === '全部') {
     const isActive = props.selectedTag === null || props.selectedTag === '全部'
     return {
-      backgroundColor: isActive ? 'rgba(64, 158, 255, 0.2)' : 'rgba(64, 158, 255, 0.1)',
-      borderColor: '#409eff',
-      color: '#409eff',
+      // 用 CSS 变量统一 ElementPlus el-tag 的渲染
+      '--tag-bg': isActive ? 'rgba(64, 158, 255, 0.95)' : 'rgba(243, 244, 246, 1)',
+      '--tag-border': isActive ? 'rgba(37, 99, 235, 1)' : 'rgba(209, 213, 219, 1)',
+      '--tag-color': isActive ? '#ffffff' : '#111827',
+      backgroundColor: isActive ? 'rgba(64, 158, 255, 0.95)' : 'rgba(243, 244, 246, 1)',
+      borderColor: isActive ? 'rgba(37, 99, 235, 1)' : 'rgba(209, 213, 219, 1)',
+      color: isActive ? '#ffffff' : '#111827',
       borderWidth: isActive ? '2px' : '1px',
       borderStyle: 'solid',
-      fontWeight: isActive ? '700' : '500'
+      fontWeight: isActive ? '700' : '600'
     }
   }
   

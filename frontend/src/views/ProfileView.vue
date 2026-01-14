@@ -310,7 +310,7 @@ import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'
 import FlowerIcon from '../components/FlowerIcon.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { getCurrentUser, getUserByName, getUserPosts, getUserFavorites, getUserComments, getUserActivities, getUserCreatedActivities, getRegistrations } from '../api/user'
+import { getCurrentUser, getUserById, getUserPosts, getUserFavorites, getUserComments, getUserActivities, getUserCreatedActivities, getRegistrations } from '../api/user'
 import type { Post, Comment, Activity } from '../api/types'
 
 const router = useRouter()
@@ -327,12 +327,12 @@ const activeTab = ref('posts')
 
 // 判断是否在查看其他用户
 const isViewingOtherUser = computed(() => {
-  return !!route.query.user && typeof route.query.user === 'string'
+  return !!route.query.userId
 })
 
 // 用户信息
 const userInfo = ref({
-  id: 0,
+  id: 0 as number | string,
   name: '',
   avatar: '',
   bio: '',
@@ -350,7 +350,7 @@ const myPosts = ref<Post[]>([])
 const favoritePosts = ref<Post[]>([])
 
 // 加载收藏的帖子
-const loadFavoritePosts = async (userId: number) => {
+const loadFavoritePosts = async (userId: number | string) => {
   try {
     const response = await getUserFavorites(userId, 1, 100)
     // 字段映射
@@ -374,7 +374,7 @@ const loadFavoritePosts = async (userId: number) => {
 const handleFavoritesUpdate = async (_event: Event) => {
   // 重新加载收藏列表
   if (userInfo.value.id) {
-    await loadFavoritePosts(userInfo.value.id)
+    await loadFavoritePosts(Number(userInfo.value.id))
   }
 }
 
@@ -382,7 +382,7 @@ const handleFavoritesUpdate = async (_event: Event) => {
 const myComments = ref<Comment[]>([])
 
 // 加载用户评论列表
-const loadUserComments = async (userId: number) => {
+const loadUserComments = async (userId: number | string) => {
   try {
     const response = await getUserComments(userId, 1, 100)
     myComments.value = response.data.list.map((comment: Comment) => ({
@@ -415,7 +415,7 @@ const myActivities = ref<ExtendedActivity[]>([])
 const myCreatedActivities = ref<ExtendedActivity[]>([])
 
 // 加载报名的活动
-const loadRegisteredActivities = async (userId: number) => {
+const loadRegisteredActivities = async (userId: number | string) => {
   try {
     const response = await getUserActivities(userId, 1, 100)
     myActivities.value = response.data.list.map((activity: { id: number; title: string; date: string | Date }) => ({
@@ -432,7 +432,7 @@ const loadRegisteredActivities = async (userId: number) => {
 }
 
 // 加载我发布的活动
-const loadMyCreatedActivities = async (userId: number) => {
+const loadMyCreatedActivities = async (userId: number | string) => {
   try {
     const response = await getUserCreatedActivities(userId, 1, 100)
     myCreatedActivities.value = response.data.list.map((activity: { id: number; title: string; date: string | Date }) => ({
@@ -450,7 +450,7 @@ const loadMyCreatedActivities = async (userId: number) => {
 const handleActivityRegistered = async (_event: Event) => {
   // 重新加载报名的活动
   if (userInfo.value.id) {
-    await loadRegisteredActivities(userInfo.value.id)
+    await loadRegisteredActivities(Number(userInfo.value.id))
   }
 }
 
@@ -485,10 +485,10 @@ const paginatedMyActivities = computed(() => {
   return myCreatedActivities.value.slice(start, end)
 })
 
-// 根据用户名加载用户数据
-const loadUserProfile = async (userName: string) => {
+// 根据用户ID加载用户数据
+const loadUserProfile = async (userId: number | string) => {
   try {
-    const response = await getUserByName(userName)
+    const response = await getUserById(userId)
     const profile = response.data
     userInfo.value = {
       id: profile.id,
@@ -506,15 +506,15 @@ const loadUserProfile = async (userName: string) => {
     userInfo.value.id = profile.id
     
     // 加载该用户的帖子
-    await loadUserPosts(profile.id)
+    await loadUserPosts(Number(profile.id))
     // 加载该用户的评论
-    await loadUserComments(profile.id)
+    await loadUserComments(Number(profile.id))
     // 加载该用户收藏的帖子
-    await loadFavoritePosts(profile.id)
+    await loadFavoritePosts(Number(profile.id))
     // 加载该用户参与的活动
-    await loadRegisteredActivities(profile.id)
+    await loadRegisteredActivities(Number(profile.id))
     // 加载该用户发布的活动
-    await loadMyCreatedActivities(profile.id)
+    await loadMyCreatedActivities(Number(profile.id))
   } catch (error: unknown) {
     console.error('加载用户资料失败:', error)
     ElMessage.error((error as Error).message || '加载用户资料失败')
@@ -522,7 +522,7 @@ const loadUserProfile = async (userName: string) => {
 }
 
 // 根据用户ID加载帖子列表
-const loadUserPosts = async (userId: number) => {
+const loadUserPosts = async (userId: number | string) => {
   try {
     const response = await getUserPosts(userId, 1, 100)
     // 字段映射
@@ -543,9 +543,9 @@ const loadUserPosts = async (userId: number) => {
 }
 
 // 监听路由参数，支持查看其他用户
-watch(() => route.query.user, (userName) => {
-  if (typeof userName === 'string' && userName) {
-    loadUserProfile(userName)
+watch(() => route.query.userId, (userId) => {
+  if (userId) {
+    loadUserProfile(userId as string)
   } else {
     // 如果没有指定用户，加载当前用户的数据
     loadUserData()
@@ -679,12 +679,13 @@ const loadUserData = async () => {
     }
     
     // 加载当前用户的所有数据
+    const userIdNum = Number(profile.id)
     await Promise.all([
-      loadUserPosts(profile.id),
-      loadFavoritePosts(profile.id),
-      loadUserComments(profile.id),
-      loadRegisteredActivities(profile.id),
-      loadMyCreatedActivities(profile.id)
+      loadUserPosts(userIdNum),
+      loadFavoritePosts(userIdNum),
+      loadUserComments(userIdNum),
+      loadRegisteredActivities(userIdNum),
+      loadMyCreatedActivities(userIdNum)
     ])
   } catch (error: unknown) {
     console.error('加载用户数据失败:', error)
@@ -695,7 +696,7 @@ const loadUserData = async () => {
 onMounted(() => {
   // 如果路由中有用户参数，会在 watch 中处理
   // 否则加载当前用户数据
-  if (!route.query.user) {
+  if (!route.query.userId) {
     loadUserData()
   }
 

@@ -243,6 +243,7 @@ import { getTools } from '../api/home'
 const DRAFT_STORAGE_KEY = 'post_draft'
 
 interface StoredDraft {
+  draftId?: string
   zone?: string
   toolId?: number | null
   title?: string
@@ -1184,8 +1185,10 @@ const checkAndLoadDraft = async () => {
   // 1. 尝试从后端获取草稿
   try {
     const backendResult = await getDraft()
-    if (backendResult && backendResult.data && backendResult.data.data) {
-      backendDraft = backendResult.data.data
+    // getDraft 返回的是 ApiResponse<DraftData | null>
+    // backendResult.data 就是 DraftData 对象
+    if (backendResult && backendResult.data) {
+      backendDraft = backendResult.data
     }
   } catch (error) {
     console.error('从后端获取草稿失败:', error)

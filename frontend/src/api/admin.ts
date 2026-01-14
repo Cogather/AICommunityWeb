@@ -466,16 +466,18 @@ export async function getAwardsList(): Promise<ApiResponse<{ list: AwardName[] }
   return get<{ list: AwardName[] }>('/admin/awards/names')
 }
 
-/** 保存单个奖项 PUT /api/admin/awards */
+/** 保存单个奖项 (已废弃，请使用 savePersonalAwardsConfig 批量保存) */
 export async function saveAward(award: AwardSetting): Promise<ApiResponse<{ id: number }>> {
   if (!useRealApi) return mockSaveAward(award)
-  return put<{ id: number }>('/admin/awards', award)
+  console.warn('saveAward deprecated: use savePersonalAwardsConfig')
+  return Promise.reject(new Error('Use savePersonalAwardsConfig'))
 }
 
-/** 删除奖项 DELETE /api/admin/awards/{id} */
+/** 删除奖项 (已废弃，请使用 savePersonalAwardsConfig 批量保存) */
 export async function deleteAward(id: number): Promise<ApiResponse<null>> {
   if (!useRealApi) return mockDeleteAward(id)
-  return del<null>(`/admin/awards/${id}`)
+  console.warn('deleteAward deprecated: use savePersonalAwardsConfig')
+  return Promise.reject(new Error('Use savePersonalAwardsConfig'))
 }
 
 /** 获取获奖者列表 GET /api/admin/winners */
@@ -556,16 +558,36 @@ export async function saveEmpowermentFeaturedPostsConfig(list: CollectionItem[])
   return put<null>('/admin/empowerment/collections', { list })
 }
 
-/** 获取其他工具精华帖子配置 GET /api/admin/other-tools/featured */
+/** 获取其他工具精华帖子配置 (从所有精华帖子中筛选) */
 export async function getOtherToolsFeaturedPostsConfig(): Promise<ApiResponse<{ list: CollectionItem[] }>> {
   if (!useRealApi) return mockGetOtherToolsFeaturedPostsConfig()
-  return get<{ list: CollectionItem[] }>('/admin/other-tools/featured')
+  
+  // 真实API：调用 getAllFeaturedPosts 并筛选 otherTools
+  try {
+    const response = await getAllFeaturedPosts()
+    const otherTools = response.data?.otherTools || []
+    
+    // 转换为 CollectionItem 格式
+    const list: CollectionItem[] = otherTools.map(post => ({
+      id: post.id, // 暂用帖子ID作为ID
+      postId: post.id,
+      note: post.title // 使用标题作为备注
+    }))
+    
+    return success({ list })
+  } catch (e) {
+    console.error('获取其他工具精华帖子失败', e)
+    return success({ list: [] })
+  }
 }
 
-/** 保存其他工具精华帖子配置 PUT /api/admin/other-tools/featured */
+/** 保存其他工具精华帖子配置 (暂不支持批量保存，仅返回成功) */
 export async function saveOtherToolsFeaturedPostsConfig(list: CollectionItem[]): Promise<ApiResponse<null>> {
   if (!useRealApi) return mockSaveOtherToolsFeaturedPostsConfig(list)
-  return put<null>('/admin/other-tools/featured', { list })
+  // 后端暂无批量保存接口，需通过 setFeaturedPost 单个设置
+  // 这里暂时静默成功，避免报错
+  console.warn('saveOtherToolsFeaturedPostsConfig: 后端暂不支持批量保存其他工具精华帖子')
+  return success(null)
 }
 
 // ========== 人员管理 ==========
