@@ -23,16 +23,16 @@
           
           <div class="post-info">
             <div class="author-info">
-              <div class="avatar-wrapper" @click="handleAuthorClick">
-                <el-avatar :src="postData.authorAvatar" :size="40" class="author-avatar-clickable">
+              <div class="avatar-wrapper">
+                <el-avatar :src="postData.authorAvatar" :size="40">
                   {{ postData.authorName?.charAt(0) || 'U' }}
                 </el-avatar>
-                <el-tag v-if="postData.isAuthor" type="success" size="small" class="author-badge">
+                <el-tag type="success" size="small" class="author-badge">
                   楼主
                 </el-tag>
               </div>
               <div class="author-details">
-                <span class="author-name author-name-clickable" @click="handleAuthorClick">{{ postData.authorName }}</span>
+                <span class="author-name">{{ postData.authorName }}</span>
                 <span class="post-time">{{ postData.createTime }}</span>
               </div>
             </div>
@@ -585,16 +585,6 @@ const isAuthor = (userName: string) => {
   return userName === postData.value.authorName
 }
 
-// 点击作者头像或姓名，跳转到用户信息中心
-const handleAuthorClick = () => {
-  router.push({
-    path: '/profile',
-    query: {
-      userId: postData.value.authorId
-    }
-  })
-}
-
 // 返回上一页（返回到记录的导航页面，避免循环）
 const handleBack = () => {
   const backRoute = getBackRoute()
@@ -624,7 +614,7 @@ const loadPostDetail = async () => {
       title: post.title,
       content: post.content || '',
       cover: post.cover || '',
-      authorName: post.authorName || '',
+      authorName: post.authorName || post.author || '',
       authorAvatar: post.authorAvatar || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleString('zh-CN'),
       views: post.views,
