@@ -122,7 +122,7 @@
         <el-col :xs="24" :md="8">
           <div class="glass-card empowerment-section">
             <div class="card-header empowerment-header">
-              <h3>🗣️ 赋能交流</h3>
+              <h3>🗣️ AI使能站</h3>
               <el-button
                 text
                 size="small"
@@ -354,19 +354,18 @@
           <h2>AI 资讯</h2>
         </div>
 
-      <div class="glass-card wide-banner section-row">
+      <div class="glass-card wide-banner section-row" v-if="newsTop.title">
         <div class="info-content">
-          <h3>AI 领域周报 (2026年1月1日 - 1月7日)</h3>
+          <h3>{{ newsTop.title }}</h3>
           <p>
-            本周 AI 领域持续升温，OpenAI 发布最新推理模型，国内大模型在长文本处理上取得突破性进展。
-            同时，AI 在软件工程中的实际落地效果获得更多量化验证...
+            {{ newsTop.summary || newsTop.description || '' }}
           </p>
         </div>
         <el-button
           text
           size="small"
           class="more-btn-pill"
-          @click="router.push(ROUTES.NEWS)"
+          @click="handleNewsClick(newsTop)"
         >
           阅读更多
         </el-button>
@@ -382,7 +381,7 @@ import { useRouter } from 'vue-router'
 import { Trophy, Star, View, ArrowRight } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { getHonor, getToolPlatform, getTools, getPractices, getToolBanners, getLatestWinners, getEmpowerment, getNews } from '../api/home'
+import { getHonor, getToolPlatform, getTools, getPractices, getToolBanners, getLatestWinners, getEmpowerment, getNews, getAiNews } from '../api/home'
 import type { LatestWinner } from '../api/types'
 import { ROUTES } from '../router/paths'
 
@@ -489,7 +488,7 @@ const empowermentPosts = ref<EmpowermentItem[]>([])
 // 加载赋能交流数据 (home/empowerment)
 const loadEmpowermentPosts = async () => {
   try {
-    const response = await getEmpowerment(6)
+    const response = await getEmpowerment(7)
     if (response && response.data && response.data.list) {
       empowermentPosts.value = response.data.list.map((item: { id: number; title: string; time?: string; views?: number }) => ({
         id: item.id,
@@ -633,51 +632,54 @@ const practices = ref({
   userExchange: [] as PracticePost[]
 })
 
-// 新闻数据 - 从 API 加载 (home/news)
-const newsList = ref<{ title: string; date: string; image?: string; link: string }[]>([])
+// 新闻数据
+const newsTop = ref<any>({})
 
 const loadNewsList = async () => {
+  const userMessageStr = localStorage.getItem('userMessage')
+  if (!userMessageStr) {
+    // 默认数据
+    newsTop.value = {
+      title: 'AI 领域周报 (2026年1月1日 - 1月7日)',
+      summary: '本周 AI 领域持续升温，OpenAI 发布最新推理模型，国内大模型在长文本处理上取得突破性进展。同时，AI 在软件工程中的实际落地效果获得更多量化验证...',
+      link: '/news'
+    }
+    return
+  }
+
   try {
-    const response = await getNews()
-    if (response && response.data && response.data.list && response.data.list.length > 0) {
-      newsList.value = response.data.list.map((item: { title: string; time: string; image?: string; link?: string }) => ({
-        title: item.title,
-        date: item.time,
-        image: item.image,
-        link: item.link || '/news'
-      }))
-      return
+    const userMessage = JSON.parse(userMessageStr)
+    const userName = userMessage.userName
+
+    if (userName) {
+      getAiNews(userName)
+        .then((res: any) => {
+          // 适配接口返回
+          const data = res.data || res
+          const topItem = Array.isArray(data) ? data[0] : data
+          newsTop.value = topItem || {}
+        })
+        .catch((err: any) => {
+          console.error('获取AI资讯失败:', err)
+        })
     }
   } catch (e) {
-    console.error('加载头条配置失败:', e)
+    console.error('解析用户信息失败:', e)
   }
-  // 默认数据
-  newsList.value = [
-    {
-      title: '【大模型专题】多模态模型在医疗影像中的最新应用突破',
-      date: '刚刚',
-      image: 'https://picsum.photos/300/200?random=20',
-      link: '/news'
-    },
-    {
-      title: '【社区活动】2026 AI 开发者大会早鸟票开启预售',
-      date: '1小时前',
-      image: 'https://picsum.photos/300/200?random=21',
-      link: '/news'
-    },
-    {
-      title: '【开源动态】轻量级 LLM 本地部署最佳实践指南',
-      date: '昨天',
-      image: 'https://picsum.photos/300/200?random=22',
-      link: '/news'
-    },
-    {
-      title: '【深度解析】Agent 自主智能体的未来发展趋势',
-      date: '昨天',
-      image: 'https://picsum.photos/300/200?random=23',
-      link: '/news'
-    },
-  ]
+}
+
+// 处理头条点击
+const handleNewsClick = (news: { link?: string; url?: string }) => {
+  const targetLink = news.link || news.url
+  if (targetLink) {
+    if (targetLink.startsWith('http')) {
+      window.open(targetLink, '_blank')
+    } else {
+      router.push(targetLink)
+    }
+  } else {
+    router.push(ROUTES.NEWS)
+  }
 }
 
 
@@ -900,19 +902,6 @@ const handleToolPlatformClick = (tool: { id: number; platformUrl?: string }) => 
 const handlePracticeClick = (_practice: { id: number | string }) => {
   // 跳转到实践详情或列表页
   router.push(ROUTES.PRACTICES)
-}
-
-// 处理头条点击
-const _handleNewsClick = (news: { link?: string }) => {
-  if (news.link) {
-    if (news.link.startsWith('http')) {
-      window.open(news.link, '_blank')
-    } else {
-      router.push(news.link)
-    }
-  } else {
-    router.push(ROUTES.NEWS)
-  }
 }
 
 // AI工具专区轮播图数据

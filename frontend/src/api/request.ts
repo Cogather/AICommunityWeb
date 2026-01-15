@@ -102,7 +102,7 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const url = `${FINAL_API_URL}${endpoint}`
+  const url = endpoint.startsWith('http') ? endpoint : `${FINAL_API_URL}${endpoint}`
 
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
