@@ -133,7 +133,7 @@ import { User, Clock, View, ChatDotRound } from '@element-plus/icons-vue'
 import HeartIcon from './HeartIcon.vue'
 
 interface Post {
-  id: number
+  id: number | string
   title: string
   description?: string
   author?: string

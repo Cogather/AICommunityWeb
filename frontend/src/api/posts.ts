@@ -69,9 +69,10 @@ const mockPosts: Post[] = [
 
 // ==================== Mock API 实现 ====================
 
-const mockGetPostDetail = async (id: number): Promise<ApiResponse<PostDetail>> => {
+const mockGetPostDetail = async (id: number | string): Promise<ApiResponse<PostDetail>> => {
   await delay()
-  const mockPost = mockPosts.find(p => p.id === id) || mockPosts[0]
+  // Mock数据中ID是数字，如果传入字符串尝试转换比较，或者直接比较
+  const mockPost = mockPosts.find(p => String(p.id) === String(id)) || mockPosts[0]
   return success({
     ...mockPost,
     content: '<p>这是帖子的详细内容...</p>',
@@ -107,9 +108,9 @@ const mockCreatePost = async (params: PostCreateParams): Promise<ApiResponse<Pos
   } as PostDetail)
 }
 
-const mockUpdatePost = async (id: number, _params: PostUpdateParams): Promise<ApiResponse<PostDetail>> => {
+const mockUpdatePost = async (id: number | string, _params: PostUpdateParams): Promise<ApiResponse<PostDetail>> => {
   await delay()
-  const mockPost = mockPosts.find(p => p.id === id) || mockPosts[0]
+  const mockPost = mockPosts.find(p => String(p.id) === String(id)) || mockPosts[0]
   return success({
     ...mockPost,
     content: '<p>更新后的内容</p>',
@@ -162,7 +163,7 @@ const mockGetZoneTags = async (): Promise<ApiResponse<{ list: TagStat[] }>> => {
  * 获取帖子详情
  * GET /api/posts/:id
  */
-export async function getPostDetail(id: number): Promise<ApiResponse<PostDetail>> {
+export async function getPostDetail(id: number | string): Promise<ApiResponse<PostDetail>> {
   if (!useRealApi) {
     return mockGetPostDetail(id)
   }
@@ -184,7 +185,7 @@ export async function createPost(params: PostCreateParams): Promise<ApiResponse<
  * 更新帖子
  * PUT /api/posts/:id
  */
-export async function updatePost(id: number, params: PostUpdateParams): Promise<ApiResponse<PostDetail>> {
+export async function updatePost(id: number | string, params: PostUpdateParams): Promise<ApiResponse<PostDetail>> {
   if (!useRealApi) {
     return mockUpdatePost(id, params)
   }
@@ -195,7 +196,7 @@ export async function updatePost(id: number, params: PostUpdateParams): Promise<
  * 删除帖子
  * DELETE /api/posts/:id
  */
-export async function deletePost(id: number): Promise<ApiResponse<null>> {
+export async function deletePost(id: number | string): Promise<ApiResponse<null>> {
   if (!useRealApi) {
     return mockDeletePost()
   }
@@ -207,7 +208,7 @@ export async function deletePost(id: number): Promise<ApiResponse<null>> {
  * POST /api/posts/:id/like
  * @param action 'like' | 'unlike'
  */
-export async function likePost(id: number, action: 'like' | 'unlike'): Promise<ApiResponse<ActionResponse>> {
+export async function likePost(id: number | string, action: 'like' | 'unlike'): Promise<ApiResponse<ActionResponse>> {
   if (!useRealApi) {
     return mockLikePost(action === 'like')
   }
@@ -219,7 +220,7 @@ export async function likePost(id: number, action: 'like' | 'unlike'): Promise<A
  * POST /api/posts/:id/collect
  * @param action 'collect' | 'uncollect'
  */
-export async function collectPost(id: number, action: 'collect' | 'uncollect'): Promise<ApiResponse<CollectResponse>> {
+export async function collectPost(id: number | string, action: 'collect' | 'uncollect'): Promise<ApiResponse<CollectResponse>> {
   if (!useRealApi) {
     return mockCollectPost(action === 'collect')
   }
@@ -231,13 +232,13 @@ export async function collectPost(id: number, action: 'collect' | 'uncollect'): 
  * PUT /api/posts/:id/featured
  */
 export async function setFeaturedPost(
-  id: number,
+  id: number | string,
   featured: boolean,
   zone?: string,
   toolId?: number
 ): Promise<ApiResponse<FeaturedResponse>> {
   if (!useRealApi) {
-    return mockSetFeatured(id, featured)
+    return mockSetFeatured(typeof id === 'number' ? id : parseInt(String(id)), featured)
   }
   return put<FeaturedResponse>(`/posts/${id}/featured`, { featured, zone, toolId })
 }

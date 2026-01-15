@@ -59,7 +59,7 @@ export interface LatestWinner {
 
 /** 赋能交流帖子（首页简略版） */
 export interface EmpowermentPost {
-  id: number
+  id: number | string
   title: string
   tag: string
   tagType?: 'blue' | 'green' | 'orange' | 'red' | 'purple'
@@ -70,7 +70,7 @@ export interface EmpowermentPost {
 
 /** AI 优秀实践帖子（首页简略版） */
 export interface PracticePost {
-  id: number
+  id: number | string
   title: string
   author: string
   time: string
@@ -179,7 +179,7 @@ export interface LoginResponse {
 
 /** 帖子基础信息 */
 export interface Post {
-  id: number
+  id: number | string
   title: string
   description?: string
   summary?: string
@@ -235,7 +235,7 @@ export interface Reply {
 /** 评论 */
 export interface Comment {
   id: number
-  postId: number
+  postId: number | string
   postTitle?: string
   userId: number
   userName: string

@@ -276,7 +276,7 @@
 
       <section class="section-block">
         <div class="section-title-center">
-          <h2>AI 工具专区</h2>
+          <h2>AI 百宝箱</h2>
         </div>
 
         <!-- AI工具专区轮播图 Banner -->
@@ -479,7 +479,7 @@ const handleAwardClick = (award: { id: number; name: string; desc?: string; year
 
 // 赋能交流数据
 interface EmpowermentItem {
-  id: number
+  id: number | string
   title: string
   time: string
   views: number
@@ -619,7 +619,7 @@ const loadPractices = async () => {
 }
 
 interface PracticePost {
-  id: number
+  id: number | string
   title: string
   description?: string
   image?: string
@@ -897,7 +897,7 @@ const handleToolPlatformClick = (tool: { id: number; platformUrl?: string }) => 
 }
 
 // 处理实践点击
-const handlePracticeClick = (_practice: { id: number }) => {
+const handlePracticeClick = (_practice: { id: number | string }) => {
   // 跳转到实践详情或列表页
   router.push(ROUTES.PRACTICES)
 }

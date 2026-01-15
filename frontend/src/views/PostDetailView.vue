@@ -431,7 +431,7 @@ const getBackRoute = (): string => {
 
 // 帖子数据
 const postData = ref({
-  id: 1,
+  id: 1 as number | string,
   title: '这是一个示例帖子标题',
   content: '<p>这是帖子的内容，支持富文本格式。</p><p>可以包含<strong>加粗</strong>、<em>斜体</em>等格式。</p>',
   cover: '',
@@ -612,19 +612,12 @@ const loadPostDetail = async () => {
     return
   }
 
-  // 确保 postId 是字符串
-  const postIdStr = Array.isArray(postId) ? postId[0] : postId
-  const postIdNum = Number(postIdStr)
+  // 确保 postId 是字符串或数字
+  const finalPostId = Array.isArray(postId) ? postId[0] : postId
   
-  if (isNaN(postIdNum)) {
-    ElMessage.error('帖子ID格式错误')
-    router.push(ROUTES.PRACTICES)
-    return
-  }
-
   loading.value = true
   try {
-    const response = await getPostDetail(postIdNum)
+    const response = await getPostDetail(finalPostId)
     const post = response.data
     postData.value = {
       id: post.id,

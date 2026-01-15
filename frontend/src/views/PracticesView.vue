@@ -362,7 +362,7 @@ const loadContributors = async () => {
 }
 
 // 最热帖子（右侧置顶）
-const hotPosts = ref<Array<{ id: number; title: string; views?: number }>>([])
+const hotPosts = ref<Array<{ id: number | string; title: string; views?: number }>>([])
 const loadHotPosts = async () => {
   try {
     const response = await getHotPosts(3)
@@ -557,7 +557,7 @@ const handleContributorClick = (contributorName: string) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: { id: number }) => {
+const handlePostClick = (post: { id: number | string }) => {
   console.log('PracticesView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)

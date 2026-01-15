@@ -95,10 +95,10 @@ const pageSize = ref(15)
 const totalPosts = ref(0)
 
 // 精华帖（置顶，不参与分页和筛选）
-const featuredPosts = ref<Array<Partial<Post> & { id: number; title: string; image?: string; createTime: string }>>([])
+const featuredPosts = ref<Array<Partial<Post> & { id: number | string; title: string; image?: string; createTime: string }>>([])
 
 // 普通帖子
-const posts = ref<Array<Partial<Post> & { id: number; title: string; image?: string; createTime: string }>>([])
+const posts = ref<Array<Partial<Post> & { id: number | string; title: string; image?: string; createTime: string }>>([])
 
 
 // 标签列表
@@ -108,7 +108,7 @@ const displayedTags = ref<Array<{ name: string; count: number }>>([])
 const loadFeaturedPosts = async () => {
   try {
     const response = await getFeaturedPosts()
-    featuredPosts.value = response.data.list.map((post: { id: number; title: string; image?: string; cover?: string; createTime: string }) => ({
+    featuredPosts.value = response.data.list.map((post: { id: number | string; title: string; image?: string; cover?: string; createTime: string }) => ({
       ...post,
       image: post.image || post.cover || '',
       createTime: formatDate(post.createTime)
@@ -128,7 +128,7 @@ const loadPosts = async () => {
       page: currentPage.value,
       pageSize: pageSize.value
     })
-    posts.value = response.data.list.map((post: { id: number; title: string; image?: string; cover?: string; createTime: string }) => ({
+    posts.value = response.data.list.map((post: { id: number | string; title: string; image?: string; cover?: string; createTime: string }) => ({
       ...post,
       image: post.image || post.cover || '',
       createTime: formatDate(post.createTime)
@@ -266,7 +266,7 @@ const handleCurrentChange = async (val: number) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: { id: number }) => {
+const handlePostClick = (post: { id: number | string }) => {
   console.log('EmpowermentView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)

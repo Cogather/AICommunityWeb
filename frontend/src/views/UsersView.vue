@@ -173,7 +173,7 @@
                   <div class="user-info"><div class="user-name">{{ item.name }}</div><div class="dept-badge">{{ item.department }}</div></div>
                   <div class="year-ribbon"><span>{{ item.year }}</span></div>
                 </div>
-                <div class="award-center"><h3 class="award-name">{{ item.awardName }}</h3><el-tooltip v-if="item.achievement" :content="item.achievement" placement="top" effect="dark" :show-after="300"><div class="achievement-text">{{ item.achievement }}</div></el-tooltip></div>
+                <div class="award-center"><h3 class="award-name">{{ item.awardName }}</h3><el-tooltip v-if="item.achievement" :content="item.achievement" placement="top" effect="dark" :show-after="300" popper-class="achievement-tooltip"><div class="achievement-text">{{ item.achievement }}</div></el-tooltip></div>
                 <div class="card-bottom">
                   <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
                   <button
@@ -743,6 +743,13 @@ watch(() => route.query.type, (newType) => {
   }
 });
 </script>
+
+<style lang="scss">
+.achievement-tooltip {
+  max-width: 300px !important;
+  line-height: 1.5;
+}
+</style>
 
 <style scoped lang="scss">
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
@@ -1726,8 +1733,8 @@ watch(() => route.query.type, (newType) => {
   margin-top: 2px;
   flex: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 7; /* 增加到7行 */
-  line-clamp: 7;
+  -webkit-line-clamp: 12; /* 增加到12行 */
+  line-clamp: 12;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;

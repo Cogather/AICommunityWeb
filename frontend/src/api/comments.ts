@@ -75,7 +75,7 @@ const mockComments: Comment[] = [
 // ==================== Mock API 实现 ====================
 
 const mockGetComments = async (
-  _postId: number,
+  _postId: number | string,
   page: number,
   pageSize: number
 ): Promise<ApiResponse<PaginatedData<Comment>>> => {
@@ -89,7 +89,7 @@ const mockGetComments = async (
 }
 
 const mockCreateComment = async (
-  postId: number,
+  postId: number | string,
   params: CommentCreateParams
 ): Promise<ApiResponse<Comment>> => {
   await delay()
@@ -163,7 +163,7 @@ const mockLikeComment = async (isLike: boolean): Promise<ApiResponse<LikeRespons
  * GET /api/posts/:postId/comments
  */
 export async function getComments(
-  postId: number,
+  postId: number | string,
   page = 1,
   pageSize = 15,
   sortBy: 'newest' | 'hot' = 'newest'
@@ -179,7 +179,7 @@ export async function getComments(
  * POST /api/posts/:postId/comments
  */
 export async function createComment(
-  postId: number,
+  postId: number | string,
   params: CommentCreateParams
 ): Promise<ApiResponse<Comment>> {
   if (!useRealApi) {
