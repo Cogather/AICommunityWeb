@@ -199,15 +199,36 @@ class LoginService {
       // 避免无限重定向：如果已经包含 redirect 参数或正在进行 login_uid 验证，则不跳转
       if (!currHref.includes('?redirect=') && !currHref.includes('login_uid')) {
          // 环境判断：开发环境是否跳转 SSO
-         const isProduction = import.meta.env.PROD || window.location.hostname.includes('huawei');
+         // 判定规则：如果是生产环境(PROD模式) 或 域名包含 huawei/10.x IP，则认为是正式/测试环境，需要跳转登录
+         const isProduction = import.meta.env.PROD || window.location.hostname.includes('huawei') || window.location.hostname.includes('10.');
          
-         // 只有在非本地环境或明确配置了 SSO 时才跳转，避免开发时死循环
-         // 这里假设 .huawei.com 域名下都启用 SSO
-         if (isProduction || window.location.hostname.includes('10.')) {
+         if (isProduction) {
             console.log('未登录，跳转 SSO')
             window.location.href = `${LOGIN_URL}?redirect=${encodeURIComponent(appHome)}?returnUrl=${encodeURIComponent(currHref)}`
          } else {
-             console.warn('开发环境：未检测到登录信息。请手动设置 localStorage user_info 或 cookie userId 以模拟登录。')
+             // 本地开发环境：使用 Mock 数据模拟登录
+             console.log('开发环境：使用 Mock 用户登录')
+             const mockUser = {
+               uid: 'y30022452',
+               userId: 'y30022452',
+               userName: 'yuanrongqian',
+               name: 'yuanrongqian',
+               chnName: '袁榕谦',
+               isMember: true
+             }
+
+             // 设置全局变量
+             ;(window as any).userId = mockUser.userId
+             ;(window as any).userName = mockUser.userName
+
+             // 写入 Cookie
+             document.cookie = `userId=${mockUser.userId};path=/`
+             document.cookie = `username=${mockUser.userName};path=/`
+
+             // 更新缓存
+             setCache(CACHE_KEY, mockUser)
+             
+             return Promise.resolve(true)
          }
       }
     }
