@@ -376,17 +376,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Trophy, Star, View, ArrowRight } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
 import { getHonor, getToolPlatform, getTools, getPractices, getToolBanners, getLatestWinners, getEmpowerment, getNews, getAiNews } from '../api/home'
 import loginService from '../utils/loginService'
+import { addCommunity, getManager } from '../api/user'
 import type { LatestWinner } from '../api/types'
 import { ROUTES } from '../router/paths'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
+
+// 用户相关状态
+const isMember = ref(false)
+const showJoinButton = ref(true)
+const isAdmin = ref(false)
+const userInfo = ref<any>({})
+
+// 检查用户状态 (合并旧平台 AiTopBar 逻辑)
+const checkUserStatus = async () => {
+  const cachedUser = loginService.userInfo
+  if (cachedUser) {
+    userInfo.value = cachedUser
+    isMember.value = !!cachedUser.isMember
+    showJoinButton.value = !isMember.value
+    
+    // 检查管理员权限
+    try {
+      const res = await getManager()
+      const adminIds = (res.data || []).map((item: any) => item.userName)
+      // 注意：这里假设 userId 是数字或字符串，需保持一致
+      isAdmin.value = adminIds.includes(String(cachedUser.userId))
+    } catch (e) {
+      console.warn('获取管理员列表失败', e)
+    }
+  }
+}
+
+// 加入社区
+const handleJoinCommunity = async () => {
+  if (!userInfo.value.userId) {
+    ElMessage.warning('请先登录')
+    loginService.login()
+    return
+  }
+  
+  try {
+    const res = await addCommunity(userInfo.value.userId)
+    if (res && (res.data || (res as any).succeed)) {
+      ElMessage.success('已加入社区')
+      showJoinButton.value = false
+      isMember.value = true
+      // 刷新用户信息缓存
+      loginService.logout() // 简单处理：登出让用户重新登录刷新，或者手动更新缓存
+      loginService.login() 
+    }
+  } catch (e) {
+    console.error('加入社区失败', e)
+    ElMessage.error('加入社区失败，请稍后重试')
+  }
+}
 
 // 辅助函数：十六进制颜色转 RGBA
 const hexToRgba = (hex: string, alpha: number) => {
@@ -516,6 +569,7 @@ const loadEmpowermentPosts = async () => {
 onMounted(async () => {
   // 验证登录状态
   await loginService.validate()
+  await checkUserStatus()
   
   honorConfig.value = await loadHonorConfig()
   await loadLatestWinners()

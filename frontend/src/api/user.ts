@@ -14,6 +14,15 @@ import type {
 
 // ==================== 扩展类型 ====================
 
+/** 社区成员信息 */
+export interface CommunityMemberInfo {
+  userId: string
+  userName: string
+  chnName: string
+  // 其他可能返回的字段
+  [key: string]: any
+}
+
 /** 用户积分信息 */
 export interface UserPointsData {
   totalPoints: number
@@ -70,6 +79,12 @@ const mockCurrentUser: UserProfile = {
   points: 1000,
   roles: ['admin', 'user'],
   ownedTools: [{ toolId: 1, toolName: 'TestMate' }],
+}
+
+const mockCommunityMemberInfo: CommunityMemberInfo = {
+  userId: '1',
+  userName: 'admin',
+  chnName: '管理员',
 }
 
 const mockUserPosts: Post[] = [
@@ -164,6 +179,31 @@ const mockGetUserActivities = async (): Promise<ApiResponse<PaginatedData<Activi
     page: 1,
     pageSize: 15,
   })
+}
+
+const mockGetRegistrations = async (): Promise<ApiResponse<PaginatedData<any>>> => {
+  await delay()
+  return success({
+    list: [],
+    total: 0,
+    page: 1,
+    pageSize: 20,
+  })
+}
+
+const mockCheckCommunityMembership = async (_userId: string): Promise<ApiResponse<CommunityMemberInfo>> => {
+  await delay()
+  return success(mockCommunityMemberInfo)
+}
+
+const mockAddCommunity = async (_userId: string): Promise<ApiResponse<any>> => {
+  await delay()
+  return success({ succeed: true, data: mockCommunityMemberInfo })
+}
+
+const mockGetManager = async (): Promise<ApiResponse<{ userName: string }[]>> => {
+  await delay()
+  return success([{ userName: '1' }]) // Mock admin user ID
 }
 
 // ==================== API 函数 ====================
@@ -339,15 +379,42 @@ export async function getRegistrations(
   pageSize = 20
 ): Promise<ApiResponse<PaginatedData<{ id: number; userId: number; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>> {
   if (!useRealApi) {
-    await delay(300)
-    return success({
-      list: [],
-      total: 0,
-      page,
-      pageSize,
-    })
+    return mockGetRegistrations()
   }
   return get<PaginatedData<{ id: number; userId: number; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>(`/activities/${activityId}/registrations`, { page, pageSize })
+}
+
+/**
+ * 检查用户是否加入社区 (对应 aiFrontPage.isAddCommunity)
+ * GET /api/user/community/membership
+ */
+export async function checkCommunityMembership(userId: string): Promise<ApiResponse<CommunityMemberInfo>> {
+  if (!useRealApi) {
+    return mockCheckCommunityMembership(userId)
+  }
+  return get<CommunityMemberInfo>(`/user/community/membership`, { userId })
+}
+
+/**
+ * 用户加入社区 (对应 aiFrontPage.addCommunity)
+ * POST /api/user/community/join
+ */
+export async function addCommunity(userId: string): Promise<ApiResponse<any>> {
+  if (!useRealApi) {
+    return mockAddCommunity(userId)
+  }
+  return put<any>(`/user/community/join`, { userId })
+}
+
+/**
+ * 获取管理员列表 (对应 aiFrontPage.getManager)
+ * GET /api/user/community/managers
+ */
+export async function getManager(): Promise<ApiResponse<{ userName: string }[]>> {
+  if (!useRealApi) {
+    return mockGetManager()
+  }
+  return get<{ userName: string }[]>('/user/community/managers')
 }
 
 // ==================== 导出 ====================
@@ -365,6 +432,9 @@ export const userApi = {
   getUserCreatedActivities,
   getUserByName,
   getRegistrations,
+  checkCommunityMembership,
+  addCommunity,
+  getManager,
 }
 
 export default userApi

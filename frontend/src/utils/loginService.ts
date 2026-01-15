@@ -1,4 +1,5 @@
 import { get } from '@/api/request'
+import { checkCommunityMembership } from '@/api/user'
 import commonMethods from '@/utils/common'
 
 // 缓存 Key
@@ -155,13 +156,26 @@ class LoginService {
            ;(window as any).userId = uid
            ;(window as any).userName = name
            
+           // 4. 检查社区成员资格并获取详细信息 (集成旧平台逻辑)
+           let communityInfo = {};
+           try {
+             // 这里调用 application backend
+             const memberRes = await checkCommunityMembership(String(uid))
+             if (memberRes && memberRes.data && Object.keys(memberRes.data).length > 0) {
+                communityInfo = memberRes.data;
+             }
+           } catch (e) {
+             console.warn('获取社区成员信息失败:', e)
+           }
+
            // 更新缓存
            setCache(CACHE_KEY, {
              uid: uid,
              userId: uid,
              userName: name,
-             // 保存更多用户信息
-             ...userData
+             ...userData,
+             ...communityInfo, // 合并社区信息 (如 chnName)
+             isMember: Object.keys(communityInfo).length > 0 // 标记是否为成员
            });
            
            // 记录访问日志
