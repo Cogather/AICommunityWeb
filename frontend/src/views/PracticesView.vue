@@ -168,9 +168,9 @@ const selectedContributor = ref<string | null>(null)
 
 // 首页“AI优秀实践”三个入口实际按标签筛选（但底层数据可能来自 category 字段）
 const specialTagToCategory: Record<string, string> = {
-  培训赋能: 'training',
-  AI训战: 'training-battle',
-  用户交流: 'user-exchange',
+  代码生成: 'training',
+  脚本生成: 'training-battle',
+  问题处理: 'user-exchange',
 }
 
 // 分页相关
@@ -203,11 +203,11 @@ const allTags = computed(() => {
     { name: '全部', count: filteredPosts.length }
   ]
 
-  // 添加其他标签（包含首页“培训赋能 / AI训战 / 用户交流”）
+  // 添加其他标签（包含首页“代码生成 / 脚本生成 / 问题处理”）
   const tagNames = [
-    '培训赋能',
-    'AI训战',
-    '用户交流',
+    '代码生成',
+    '脚本生成',
+    '问题处理',
     '自然语言处理',
     '计算机视觉',
     '深度学习',
@@ -247,7 +247,7 @@ const displayedTags = computed(() => {
     const all = [...featuredPosts.value, ...posts.value]
     const basePosts = selectedDepartment.value ? all.filter(p => p.department === selectedDepartment.value) : all
 
-    const specials = ['培训赋能', 'AI训战', '用户交流'].map((name) => {
+    const specials = ['代码生成', '脚本生成', '问题处理'].map((name) => {
       const category = specialTagToCategory[name]
       const count = category ? basePosts.filter(p => p.category === category).length : 0
       return { name, count }
