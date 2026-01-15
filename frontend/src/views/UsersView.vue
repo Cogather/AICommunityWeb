@@ -1504,13 +1504,17 @@ watch(() => route.query.type, (newType) => {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* 固定一行三个 */
   gap: 20px; /* 卡片间距 */
-  width: 100%; /* 占满父容器宽度 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .honor-card-3d {
   position: relative;
   height: 380px; /* 加大卡片高度 */
   perspective: 1000px;
+  min-width: 0; /* 防止 grid 项目溢出 */
+  max-width: 100%;
+  box-sizing: border-box;
 
   &.innovation {
     --theme-color: #0891b2;
@@ -1554,13 +1558,14 @@ watch(() => route.query.type, (newType) => {
   backdrop-filter: blur(14px) saturate(120%);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 12px 28px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .card-content-glass::before {
@@ -1697,8 +1702,9 @@ watch(() => route.query.type, (newType) => {
   align-items: flex-start;
   text-align: left;
   z-index: 1;
-  padding-top: 6px; /* 减少顶部间距 */
+  padding-top: 4px;
   overflow: hidden;
+  min-height: 0; /* 允许 flex 子项收缩 */
 }
 
 .award-name {
@@ -1718,14 +1724,14 @@ watch(() => route.query.type, (newType) => {
   line-height: 1.6;
   color: #475569;
   margin-top: 4px;
-  flex: 1; /* 占满剩余高度 */
   display: -webkit-box;
-  -webkit-line-clamp: 5; /* 增加到5行 */
-  line-clamp: 5;
+  -webkit-line-clamp: 4; /* 最多显示4行 */
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
+  max-height: calc(13px * 1.6 * 4); /* 4行的最大高度 */
   transition: color 0.3s ease;
   font-weight: 500;
   width: 100%;
@@ -2166,8 +2172,9 @@ watch(() => route.query.type, (newType) => {
 
 .view-area {
   flex: 1;
-  min-width: 0;
-  overflow: hidden; /* 防止内容溢出 */
+  min-width: 0; /* 关键：允许 flex 项目收缩到小于内容宽度 */
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .ranking-sidebar {
