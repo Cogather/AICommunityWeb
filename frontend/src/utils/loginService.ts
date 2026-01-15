@@ -66,14 +66,8 @@ class LoginService {
 
   login() {
     console.log('Login: redirecting to SSO', window.location.href)
-    // 构造回调地址：当前应用的首页
-    const redirectUrl = encodeURIComponent(this.appHomeUrl)
-    // 构造返回地址：当前页面的完整 URL (用于登录后跳回具体页面)
-    const returnUrl = encodeURIComponent(window.location.href)
-    
-    // 跳转到 SSO 登录页
-    // 格式：https://login.huawei.com/login/?redirect={应用首页}?returnUrl={当前页}
-    window.location.href = `${LOGIN_URL}?redirect=${redirectUrl}?returnUrl=${returnUrl}`
+    const redirectUrl = encodeURIComponent(window.location.href)
+    window.location.href = `${LOGIN_URL}?redirect=${redirectUrl}`
   }
 
   logout() {
@@ -205,7 +199,7 @@ class LoginService {
          
          if (isProduction) {
             console.log('未登录，跳转 SSO')
-            window.location.href = `${LOGIN_URL}?redirect=${encodeURIComponent(appHome)}?returnUrl=${encodeURIComponent(currHref)}`
+            window.location.href = `${LOGIN_URL}?redirect=${encodeURIComponent(currHref)}`
          } else {
              // 本地开发环境：使用 Mock 数据模拟登录
              console.log('开发环境：使用 Mock 用户登录')
