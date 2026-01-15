@@ -27,11 +27,13 @@ export type Environment = 'production' | 'test' | 'development'
 function detectEnvironment(): Environment {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
   
-  if (hostname.includes('aicommunity.coreai.rnd.huawei.com')) {
+  // 生产环境：匹配核心关键词
+  if (hostname.includes('aicommunity.coreai')) {
     return 'production'
   }
   
-  if (hostname.includes('corecode-aicommunity-beta.rnd.huawei.com')) {
+  // 测试环境：匹配项目代号或 beta 标识
+  if (hostname.includes('corecode-aicommunity') || hostname.includes('beta') || hostname.includes('test')) {
     return 'test'
   }
   
