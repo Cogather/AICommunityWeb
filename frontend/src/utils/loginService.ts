@@ -199,8 +199,9 @@ class LoginService {
       // 避免无限重定向：如果已经包含 redirect 参数或正在进行 login_uid 验证，则不跳转
       if (!currHref.includes('?redirect=') && !currHref.includes('login_uid')) {
          // 环境判断：开发环境是否跳转 SSO
-         // 判定规则：如果是生产环境(PROD模式) 或 域名包含 huawei/10.x IP，则认为是正式/测试环境，需要跳转登录
-         const isProduction = import.meta.env.PROD || window.location.hostname.includes('huawei') || window.location.hostname.includes('10.');
+         // 判定规则：只在域名包含 huawei 时跳转 SSO (生产环境)
+         // 本地环境 (localhost, 127.0.0.1) 和 局域网环境 (IP访问) 均使用 Mock 登录
+         const isProduction = window.location.hostname.includes('huawei');
          
          if (isProduction) {
             console.log('未登录，跳转 SSO')

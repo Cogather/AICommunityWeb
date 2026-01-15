@@ -33,7 +33,7 @@
               <div
                 class="filter-type-tab"
                 :class="{ active: honorFilterType === 'award' }"
-                @click="honorFilterType = 'award'; activeSubFilter = '全部'"
+                @click="honorFilterType = 'award'; activeSubFilter = '全部'; chipSearchQuery = ''"
               >
                 <el-icon><Star /></el-icon>
                 <span>按奖项名称</span>
@@ -41,7 +41,7 @@
               <div
                 class="filter-type-tab"
                 :class="{ active: honorFilterType === 'department' }"
-                @click="honorFilterType = 'department'; activeSubFilter = '全部'"
+                @click="honorFilterType = 'department'; activeSubFilter = '全部'; chipSearchQuery = ''"
               >
                 <el-icon><OfficeBuilding /></el-icon>
                 <span>按获奖者部门</span>
@@ -56,9 +56,17 @@
               </div>
             </div>
             <div class="chip-scroll-wrapper">
+              <el-input
+                v-model="chipSearchQuery"
+                placeholder="搜索筛选项..."
+                class="chip-search-input"
+                clearable
+                :prefix-icon="Search"
+              />
               <el-button class="scroll-btn scroll-btn-left" :disabled="!canScrollLeft" @click="scrollChips('left')" circle size="small"><el-icon><ArrowLeft /></el-icon></el-button>
               <div ref="chipContainerRef" class="chip-container" @scroll="handleChipScroll">
                 <div v-for="item in activeFilterOptions" :key="item" class="gem-chip" :class="{ active: activeSubFilter === item }" @click="activeSubFilter = item">{{ item }}</div>
+                <div v-if="activeFilterOptions.length === 0 && chipSearchQuery" class="chip-empty-hint">未找到匹配的筛选项</div>
               </div>
               <el-button class="scroll-btn scroll-btn-right" :disabled="!canScrollRight" @click="scrollChips('right')" circle size="small"><el-icon><ArrowRight /></el-icon></el-button>
             </div>
@@ -164,23 +172,23 @@
 
       <div class="view-area">
         <transition-group v-if="currentViewMode !== 'timeline'" name="staggered-list" tag="div" class="card-grid">
-           <div v-for="item in paginatedList" :key="item.id" class="honor-card-3d" :class="item.category">
-              <div class="card-content-glass">
-                <div class="bg-decoration-circle"></div>
-                <div class="bg-decoration-icon"><el-icon><Trophy /></el-icon></div>
-                <div class="card-top">
-                  <div class="avatar-halo" @click.stop="handleUserClick(item.name)"><el-avatar :size="50" :src="item.avatar" class="user-avatar" /><div class="halo-ring"></div></div>
-                  <div class="user-info"><div class="user-name">{{ item.name }}</div><div class="dept-badge">{{ item.department }}</div></div>
-                  <div class="year-ribbon"><span>{{ item.year }}</span></div>
-                </div>
-                <div class="award-center"><h3 class="award-name">{{ item.awardName }}</h3><div v-if="item.achievement" class="achievement-text">{{ item.achievement }}</div></div>
-                <div class="card-bottom">
-                  <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
-                  <button
-                    class="flower-section-btn"
-                    :class="{ 'is-given': item.hasGivenFlower }"
-                    @click.stop="handleGiveFlower(item)"
-                  >
+          <div v-for="item in paginatedList" :key="item.id" class="honor-card-3d" :class="item.category">
+            <div class="card-content-glass">
+              <div class="bg-decoration-circle"></div>
+              <div class="bg-decoration-icon"><el-icon><Trophy /></el-icon></div>
+              <div class="card-top">
+                <div class="avatar-halo" @click.stop="handleUserClick(item.name)"><el-avatar :size="50" :src="item.avatar" class="user-avatar" /><div class="halo-ring"></div></div>
+                <div class="user-info"><div class="user-name">{{ item.name }}</div><div class="dept-badge">{{ item.department }}</div></div>
+                <div class="year-ribbon"><span>{{ item.year }}</span></div>
+              </div>
+              <div class="award-center"><h3 class="award-name">{{ item.awardName }}</h3><div v-if="item.achievement" class="achievement-text">{{ item.achievement }}</div></div>
+              <div class="card-bottom">
+                <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
+                <button
+                  class="flower-section-btn"
+                  :class="{ 'is-given': item.hasGivenFlower }"
+                  @click.stop="handleGiveFlower(item)"
+                >
                     <span class="flower-icon-container">
                       <FlowerIcon
                         :filled="item.hasGivenFlower"
@@ -191,16 +199,16 @@
                       />
                       <span v-if="!item.hasGivenFlower" class="flower-particles"></span>
                     </span>
-                    <span class="flower-label">{{ item.hasGivenFlower ? '已送' : '送花' }}</span>
-                    <span class="flower-num">{{ item.flowers || 0 }}</span>
-                  </button>
-                </div>
+                  <span class="flower-label">{{ item.hasGivenFlower ? '已送' : '送花' }}</span>
+                  <span class="flower-num">{{ item.flowers || 0 }}</span>
+                </button>
               </div>
             </div>
+          </div>
         </transition-group>
 
         <div v-else class="timeline-container">
-           <div v-if="currentTimelineUser" class="timeline-user-header glass-panel">
+          <div v-if="currentTimelineUser" class="timeline-user-header glass-panel">
             <el-avatar :size="60" :src="currentTimelineUser.avatar" />
             <div class="timeline-user-info">
               <h3 class="timeline-user-name">{{ currentTimelineUser.name }}</h3>
@@ -227,7 +235,7 @@
 
         <div v-if="paginatedList.length === 0 && currentViewMode !== 'timeline'" class="empty-zone"><el-empty description="暂无荣耀记录" :image-size="160" /></div>
         <div v-if="timelineData.length === 0 && currentViewMode === 'timeline'" class="empty-zone"><el-empty description="暂无时光轴记录" :image-size="160" /></div>
-        <div v-if="currentViewMode !== 'timeline' && processedList.length > 0" class="pagination-bar"><el-pagination background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10, 12, 20, 30, 50]" :page-size="pageSize" :current-page="currentPage" :total="totalHonors" @size-change="handleSizeChange" @current-change="handleCurrentChange" /></div>
+        <div v-if="currentViewMode !== 'timeline' && honorListTotal > 0" class="pagination-bar"><el-pagination background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10, 12, 20, 30, 50]" :page-size="pageSize" :current-page="currentPage" :total="honorListTotal" @size-change="handleSizeChange" @current-change="handleCurrentChange" /></div>
       </div>
 
       <div class="ranking-sidebar">
@@ -249,7 +257,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
   Grid, Timer, Trophy, OfficeBuilding, TrendCharts, Medal,
-  Star, ArrowLeft, ArrowRight, ArrowDown
+  Star, ArrowLeft, ArrowRight, ArrowDown, Search
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
 // API 层 - 支持 Mock/Real API 自动切换
@@ -276,7 +284,8 @@ const availableViewModes = computed(() => filterScope.value === 'mine' ? [viewMo
 // --- 荣誉数据（通过 api/honor.ts 获取；内部支持 mock/real 切换）---
 const honorList = ref<HonorItem[]>([])
 const honorListLoading = ref(false)
-const totalHonors = ref(0)
+const honorListTotal = ref(0) // 🔑 接口返回的总条数
+const honorListTotalPages = ref(0) // 🔑 接口返回的总页数
 
 // 下拉筛选项（优先走后端接口；无数据时降级为从 honorList 推导）
 const awardNamesFromApi = ref<string[]>([])
@@ -308,7 +317,9 @@ const loadHonorList = async () => {
     }
     const response = await getHonorList(params)
     honorList.value = response.data.list
-    totalHonors.value = response.data.total
+    // 🔑 保存接口返回的分页信息
+    honorListTotal.value = response.data.total || 0
+    honorListTotalPages.value = response.data.totalPages || 0
   } catch (error) {
     console.error('加载荣誉列表失败:', error)
     ElMessage.error('加载荣誉列表失败')
@@ -357,6 +368,7 @@ const currentTimelineUserName = ref<string | null>(null);
 const chipContainerRef = ref<HTMLElement | null>(null);
 const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
+const chipSearchQuery = ref(''); // 🔑 筛选项搜索关键词
 
 // 团队奖状态
 const selectedYear = ref<string>('2026'); // 默认选中最新
@@ -501,6 +513,11 @@ const handleStorageChange = (e: StorageEvent) => {
   }
 };
 
+// 窗口大小变化时的处理（保留以防后续需要）
+const handleResize = () => {
+  // CSS flex 布局已自动处理滚动条
+};
+
 // 监听筛选条件变化，重新加载荣誉列表
 watch(
   [filterScope, honorFilterType, activeSubFilter, searchQuery, currentViewMode, currentTimelineUserName, currentPage],
@@ -511,6 +528,15 @@ watch(
   }
 )
 
+// 🔑 单独监听pageSize变化，重置到第一页并重新加载
+watch(pageSize, () => {
+  if (currentPage.value !== 1) {
+    currentPage.value = 1 // 这会触发上面的watch
+  } else {
+    loadHonorList() // currentPage已经是1，手动调用
+  }
+})
+
 onMounted(async () => {
   // 先设置事件监听器（确保能接收到导航栏发送的事件）
   window.addEventListener('awardTypeChange', handleAwardTypeChange);
@@ -519,10 +545,12 @@ onMounted(async () => {
   window.addEventListener('adminConfigUpdated', handleConfigUpdate);
   // 初始化时也监听storage事件（跨标签页同步）
   window.addEventListener('storage', handleStorageChange);
+  // 监听窗口大小变化
+  window.addEventListener('resize', handleResize);
 
   // 初始化加载团队奖项
   teamAwards.value = await loadTeamAwards();
-  
+
   // 初始化加载荣誉列表
   await loadHonorList();
 
@@ -568,6 +596,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('teamAwardIndexChange', handleTeamAwardIndexChange);
   window.removeEventListener('adminConfigUpdated', handleConfigUpdate);
   window.removeEventListener('storage', handleStorageChange);
+  window.removeEventListener('resize', handleResize);
 });
 
 const teamAwardYears = computed(() => {
@@ -593,14 +622,24 @@ watch([awardType, selectedYear, activeTeamAwardIndex, currentTeamAwards], () => 
 
 // --- Computed Logic (保持原有逻辑) ---
 const processedList = computed(() => {
-  // 后端已处理过滤和搜索，直接返回列表
   let result = honorList.value;
+  if (currentViewMode.value === 'timeline' && currentTimelineUserName.value) {
+    result = result.filter(item => item.name === currentTimelineUserName.value);
+  } else {
+    if (filterScope.value === 'mine') result = result.filter(item => item.isMine);
+    if (searchQuery.value) result = result.filter(item => item.name.includes(searchQuery.value));
+    if (currentViewMode.value === 'grid' && activeSubFilter.value !== '全部') {
+      if (honorFilterType.value === 'award') result = result.filter(item => item.awardName === activeSubFilter.value);
+      else if (honorFilterType.value === 'department') result = result.filter(item => item.department === activeSubFilter.value);
+    }
+  }
   return result;
 });
 
 const paginatedList = computed(() => {
-  // 后端已处理分页，直接返回
-  return processedList.value;
+  // 🔑 后端已经做了分页，前端直接使用返回的列表
+  if (currentViewMode.value === 'timeline') return processedList.value;
+  return honorList.value;
 });
 
 const leaderboardFallback = computed(() => {
@@ -641,7 +680,15 @@ const allAwards = computed(() => {
 });
 const showSecondaryFilter = computed(() => filterScope.value === 'all' && currentViewMode.value === 'grid');
 const activeFilterOptions = computed(() => {
-  if (currentViewMode.value === 'grid') return honorFilterType.value === 'award' ? allAwards.value : allDepartments.value;
+  if (currentViewMode.value === 'grid') {
+    const options = honorFilterType.value === 'award' ? allAwards.value : allDepartments.value;
+    // 🔑 根据搜索关键词过滤
+    if (chipSearchQuery.value) {
+      const keyword = chipSearchQuery.value.toLowerCase();
+      return options.filter(item => item.toLowerCase().includes(keyword));
+    }
+    return options;
+  }
   return [];
 });
 
@@ -679,10 +726,19 @@ const updateScrollButtons = () => { if (chipContainerRef.value) { canScrollLeft.
 const scrollChips = (dir: 'left' | 'right') => { if (chipContainerRef.value) chipContainerRef.value.scrollTo({ left: chipContainerRef.value.scrollLeft + (dir === 'left' ? -200 : 200), behavior: 'smooth' }); };
 const handleChipScroll = () => updateScrollButtons();
 watch([activeFilterOptions, honorFilterType], () => nextTick(() => setTimeout(updateScrollButtons, 100)));
+// 🔑 搜索关键词变化时，重置滚动位置到最左边
+watch(chipSearchQuery, () => {
+  nextTick(() => {
+    if (chipContainerRef.value) {
+      chipContainerRef.value.scrollLeft = 0;
+    }
+    setTimeout(updateScrollButtons, 100);
+  });
+});
 onMounted(() => nextTick(() => setTimeout(updateScrollButtons, 200)));
 
 const getRankClass = (idx: number) => ['rank-1', 'rank-2', 'rank-3'][idx] || 'rank-normal';
-const switchMode = (mode: string) => { currentViewMode.value = mode as ViewMode; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; searchQuery.value = ''; router.replace({ path: '/users' }); };
+const switchMode = (mode: string) => { currentViewMode.value = mode as ViewMode; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; searchQuery.value = ''; chipSearchQuery.value = ''; router.replace({ path: '/users' }); };
 const handleUserClick = (name: string) => { if (currentViewMode.value === 'grid') router.push({ path: '/users', query: { view: 'timeline', user: name } }); else { currentTimelineUserName.value = name; router.replace({ path: '/users', query: { view: 'timeline', user: name } }); } };
 const formatAwardDate = (d: string) => { const dt = new Date(d); return `${dt.getFullYear()}年${String(dt.getMonth()+1).padStart(2,'0')}月`; };
 const handleGiveFlower = async (item: HonorItem) => {
@@ -700,10 +756,17 @@ const handleGiveFlower = async (item: HonorItem) => {
     ElMessage.error((error as Error).message || '送花失败')
   }
 }
-const handleSizeChange = (val: number) => { pageSize.value = val; currentPage.value = 1; };
-const handleCurrentChange = (val: number) => { currentPage.value = val; window.scrollTo({ top: 0, behavior: 'smooth' }); };
+const handleSizeChange = (val: number) => {
+  pageSize.value = val;
+  // 🔑 pageSize 变化会触发 watch，自动重置页码并加载数据
+};
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 🔑 currentPage 变化会触发 watch，自动加载数据
+};
 
-watch(filterScope, (v) => { if (v === 'mine') { currentViewMode.value = 'grid'; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; } });
+watch(filterScope, (v) => { if (v === 'mine') { currentViewMode.value = 'grid'; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; chipSearchQuery.value = ''; } });
 watch(() => route.query.view, (v) => { if (v === 'timeline') { currentViewMode.value = 'timeline'; filterScope.value = 'all'; currentTimelineUserName.value = (route.query.user as string) || null; } else { currentViewMode.value = 'grid'; currentTimelineUserName.value = null; } }, { immediate: true });
 watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline') currentTimelineUserName.value = (v as string) || null; });
 
@@ -736,6 +799,10 @@ watch(() => route.query.type, (newType) => {
 });
 </script>
 
+<style lang="scss">
+/* 全局样式 */
+</style>
+
 <style scoped lang="scss">
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
 
@@ -749,6 +816,8 @@ watch(() => route.query.type, (newType) => {
   font-family: 'Outfit', sans-serif;
   color: #1e293b;
   position: relative;
+  box-sizing: border-box; /* 🔑 确保padding不增加宽度 */
+  overflow-x: hidden; /* 🔑 防止横向滚动 */
 }
 
 /* ================== 1. 团队奖：流光时光轴 ================== */
@@ -770,12 +839,12 @@ watch(() => route.query.type, (newType) => {
   right: 8%;
   height: 4px;
   background: linear-gradient(
-    90deg,
-    rgba(99, 102, 241, 0.8) 0%,
-    rgba(34, 211, 238, 0.9) 25%,
-    rgba(244, 114, 182, 0.9) 50%,
-    rgba(168, 85, 247, 0.9) 75%,
-    rgba(99, 102, 241, 0.8) 100%
+      90deg,
+      rgba(99, 102, 241, 0.8) 0%,
+      rgba(34, 211, 238, 0.9) 25%,
+      rgba(244, 114, 182, 0.9) 50%,
+      rgba(168, 85, 247, 0.9) 75%,
+      rgba(99, 102, 241, 0.8) 100%
   );
   z-index: 0;
   border-radius: 999px;
@@ -794,13 +863,13 @@ watch(() => route.query.type, (newType) => {
   height: 200%;
   transform: translateY(-50%);
   background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(99, 102, 241, 0.4),
-    rgba(34, 211, 238, 0.5),
-    rgba(244, 114, 182, 0.5),
-    rgba(168, 85, 247, 0.4),
-    transparent
+      90deg,
+      transparent,
+      rgba(99, 102, 241, 0.4),
+      rgba(34, 211, 238, 0.5),
+      rgba(244, 114, 182, 0.5),
+      rgba(168, 85, 247, 0.4),
+      transparent
   );
   border-radius: 999px;
   filter: blur(8px);
@@ -893,15 +962,15 @@ watch(() => route.query.type, (newType) => {
 
   &:hover, &.active {
     transform: translateY(-4px) scale(1.03);
-    
+
     .ribbon-shape {
       background: linear-gradient(
-        180deg,
-        rgba(255, 215, 0, 0.9) 0%,
-        rgba(255, 179, 71, 0.9) 50%,
-        rgba(255, 140, 0, 0.9) 100%
+          180deg,
+          rgba(255, 215, 0, 0.9) 0%,
+          rgba(255, 179, 71, 0.9) 50%,
+          rgba(255, 140, 0, 0.9) 100%
       );
-      box-shadow: 
+      box-shadow:
         0 6px 20px rgba(255, 165, 0, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
@@ -917,11 +986,11 @@ watch(() => route.query.type, (newType) => {
   position: relative;
   /* 金色渐变 - 带透明度 */
   background: linear-gradient(
-    180deg,
-    rgba(255, 224, 102, 0.85) 0%,
-    rgba(255, 201, 64, 0.85) 30%,
-    rgba(255, 176, 32, 0.85) 70%,
-    rgba(255, 149, 0, 0.85) 100%
+      180deg,
+      rgba(255, 224, 102, 0.85) 0%,
+      rgba(255, 201, 64, 0.85) 30%,
+      rgba(255, 176, 32, 0.85) 70%,
+      rgba(255, 149, 0, 0.85) 100%
   );
   border: none;
   padding: 12px 24px;
@@ -931,7 +1000,7 @@ watch(() => route.query.type, (newType) => {
   font-weight: 800;
   font-size: 14px;
   letter-spacing: 0.5px;
-  box-shadow: 
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.05),
     0 8px 16px rgba(251, 191, 36, 0.15);
   overflow: hidden;
@@ -980,10 +1049,10 @@ watch(() => route.query.type, (newType) => {
   width: 50%;
   height: 100%;
   background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 255, 255, 0.7),
-    transparent
+      to right,
+      transparent,
+      rgba(255, 255, 255, 0.7),
+      transparent
   );
   transform: skewX(-20deg);
   animation: shine 3s infinite;
@@ -1022,7 +1091,7 @@ watch(() => route.query.type, (newType) => {
     transform: translateY(-4px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   }
-  
+
   &.is-expanded {
     margin-bottom: 200px; /* 展开时为抽屉留出空间 */
     box-shadow: 0 12px 32px rgba(99, 102, 241, 0.2);
@@ -1047,10 +1116,10 @@ watch(() => route.query.type, (newType) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 5;
   transition: all 0.3s ease;
-  
+
   .el-icon {
     transition: transform 0.3s ease;
-    
+
     &.is-rotated {
       transform: rotate(180deg);
     }
@@ -1064,7 +1133,7 @@ watch(() => route.query.type, (newType) => {
   border-top: 1px solid rgba(99, 102, 241, 0.2);
   padding: 16px 20px;
   margin-top: -12px;
-  
+
   .drawer-header {
     display: flex;
     align-items: center;
@@ -1073,27 +1142,27 @@ watch(() => route.query.type, (newType) => {
     font-weight: 600;
     color: #6366f1;
     margin-bottom: 12px;
-    
+
     .el-icon {
       color: #f59e0b;
       font-size: 18px;
     }
   }
-  
+
   .drawer-content {
     font-size: 14px;
     line-height: 1.7;
     color: #4b5563;
-    
+
     p {
       margin: 8px 0;
     }
-    
+
     ul, ol {
       margin: 8px 0;
       padding-left: 20px;
     }
-    
+
     li {
       margin: 4px 0;
     }
@@ -1152,13 +1221,13 @@ watch(() => route.query.type, (newType) => {
 
   /* 七彩玻璃背景 - 更加绚丽 */
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 235, 245, 0.88) 20%,
-    rgba(235, 245, 255, 0.88) 40%,
-    rgba(240, 255, 245, 0.88) 60%,
-    rgba(255, 250, 235, 0.88) 80%,
-    rgba(255, 255, 255, 0.92) 100%
+      135deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 235, 245, 0.88) 20%,
+      rgba(235, 245, 255, 0.88) 40%,
+      rgba(240, 255, 245, 0.88) 60%,
+      rgba(255, 250, 235, 0.88) 80%,
+      rgba(255, 255, 255, 0.92) 100%
   );
   backdrop-filter: blur(24px) saturate(200%);
   -webkit-backdrop-filter: blur(24px) saturate(200%);
@@ -1192,13 +1261,13 @@ watch(() => route.query.type, (newType) => {
   right: 0;
   height: 3px;
   background: linear-gradient(
-    90deg,
-    #f472b6 0%,
-    #c084fc 20%,
-    #60a5fa 40%,
-    #34d399 60%,
-    #fbbf24 80%,
-    #f472b6 100%
+      90deg,
+      #f472b6 0%,
+      #c084fc 20%,
+      #60a5fa 40%,
+      #34d399 60%,
+      #fbbf24 80%,
+      #f472b6 100%
   );
   background-size: 200% 100%;
   animation: rainbow-flow 3s linear infinite;
@@ -1321,10 +1390,10 @@ watch(() => route.query.type, (newType) => {
     width: 100%;
     height: 100%;
     background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.4),
-      transparent
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
     );
     transition: left 0.5s ease;
   }
@@ -1482,6 +1551,10 @@ watch(() => route.query.type, (newType) => {
 /* ================== 通用动画 ================== */
 .fade-in-content {
   animation: contentFadeIn 0.5s ease-out;
+  width: 100%; /* 🔑 占满父容器宽度 */
+  max-width: 100%; /* 🔑 不超出父容器 */
+  overflow: hidden; /* 🔑 隐藏超出部分 */
+  box-sizing: border-box;
 }
 @keyframes contentFadeIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -1498,15 +1571,19 @@ watch(() => route.query.type, (newType) => {
   gap: 20px; /* 卡片间距 */
   width: 100%;
   box-sizing: border-box;
+  padding: 10px; /* 🔑 添加padding容纳hover放大效果 */
+  margin: -10px; /* 🔑 负margin抵消padding，保持原有布局 */
 }
 
 .honor-card-3d {
   position: relative;
-  height: 420px; /* 恢复默认高度 */
+  height: 420px; /* 加大卡片高度 */
   perspective: 1000px;
   min-width: 0; /* 防止 grid 项目溢出 */
   max-width: 100%;
   box-sizing: border-box;
+  z-index: 1; /* 🔑 默认层级 */
+  transition: z-index 0s 0.3s; /* 🔑 延迟重置z-index */
 
   &.innovation {
     --theme-color: #0891b2;
@@ -1529,6 +1606,10 @@ watch(() => route.query.type, (newType) => {
     --trophy-color: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
   }
 
+  &:hover {
+    z-index: 10; /* 🔑 hover时提升层级 */
+    transition: z-index 0s 0s; /* 🔑 立即提升z-index */
+  }
   &:hover .card-content-glass {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--theme-color);
@@ -1550,7 +1631,7 @@ watch(() => route.query.type, (newType) => {
   backdrop-filter: blur(14px) saturate(120%);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  padding: 16px;
+  padding: 24px 16px 16px 16px; /* 🔑 上边距从16px增加到24px */
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1631,7 +1712,7 @@ watch(() => route.query.type, (newType) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 6px;
+  margin-bottom: 14px; /* 🔑 从6px增加到14px */
   z-index: 1;
   flex-shrink: 0;
 }
@@ -1686,6 +1767,7 @@ watch(() => route.query.type, (newType) => {
   box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
 }
 
+/* 🔑 方案C核心样式：award-center 使用 flex 布局 */
 .award-center {
   flex: 1;
   display: flex;
@@ -1696,7 +1778,7 @@ watch(() => route.query.type, (newType) => {
   z-index: 1;
   padding-top: 2px;
   overflow: hidden;
-  min-height: 0;
+  min-height: 0; /* 关键：允许 flex 子项收缩 */
 }
 
 .award-name {
@@ -1708,37 +1790,46 @@ watch(() => route.query.type, (newType) => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   cursor: pointer;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0;
+  flex-shrink: 0; /* 不压缩 */
 }
 
-  .achievement-text {
+/* 🔑 achievement-text 改为滚动条显示 */
+.achievement-text {
   font-size: 13px;
   line-height: 1.55;
   color: #475569;
   margin-top: 2px;
   flex: 1;
-  /* 改用滚动条展示全部内容 */
-  overflow-y: auto;
+  min-height: 0;
+  overflow-y: auto; /* 🔑 垂直方向超出显示滚动条 */
+  overflow-x: hidden; /* 🔑 禁止横向滚动 */
+  cursor: default;
   font-weight: 500;
   width: 100%;
-  padding-right: 4px;
+  padding-right: 4px; /* 给滚动条留出空间 */
 
-  /* 美化滚动条 */
+  /* 🔑 强制长文本/链接折行 */
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+
+  /* 🔑 美化滚动条 */
   &::-webkit-scrollbar {
     width: 4px;
   }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.3);
-    border-radius: 4px;
-  }
+
   &::-webkit-scrollbar-track {
     background: transparent;
+    border-radius: 4px;
   }
 
-  &:hover {
-    color: #334155;
-    &::-webkit-scrollbar-thumb {
-      background: rgba(148, 163, 184, 0.5);
+  &::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(148, 163, 184, 0.6);
     }
   }
 }
@@ -1923,6 +2014,10 @@ watch(() => route.query.type, (newType) => {
   margin-bottom: 24px;
   position: relative;
   z-index: 5;
+  width: 100%; /* 🔑 占满父容器宽度 */
+  max-width: 100%; /* 🔑 不超出父容器 */
+  overflow: hidden; /* 🔑 隐藏超出部分 */
+  box-sizing: border-box;
 }
 
 .hud-top-row {
@@ -2008,6 +2103,10 @@ watch(() => route.query.type, (newType) => {
   padding: 16px 0;
   /* 去掉背景 */
   align-items: flex-start;
+  width: 100%; /* 🔑 占满父容器宽度 */
+  max-width: 100%; /* 🔑 不超出父容器 */
+  overflow: hidden; /* 🔑 隐藏超出部分 */
+  box-sizing: border-box;
 }
 
 .filter-type-switcher {
@@ -2050,6 +2149,65 @@ watch(() => route.query.type, (newType) => {
   align-items: center;
   gap: 8px;
   position: relative;
+  width: 100%; /* 🔑 占满父容器宽度 */
+  max-width: 100%; /* 🔑 不超出父容器 */
+  overflow: hidden; /* 🔑 隐藏超出部分 */
+}
+
+/* 🔑 筛选项搜索框样式 */
+.chip-search-input {
+  width: 160px;
+  flex-shrink: 0;
+
+  :deep(.el-input__wrapper) {
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: none !important;
+    border: 1px solid rgba(203, 213, 225, 0.6);
+    transition: all 0.3s;
+    height: 32px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.95) !important;
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    &.is-focus {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+    }
+  }
+
+  :deep(.el-input__inner) {
+    color: #1e293b;
+    font-weight: 500;
+    font-size: 12px;
+
+    &::placeholder {
+      color: #94a3b8;
+    }
+  }
+
+  :deep(.el-input__prefix) {
+    .el-icon {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  }
+
+  :deep(.el-input__suffix) {
+    .el-icon {
+      font-size: 14px;
+      color: #94a3b8;
+      cursor: pointer;
+
+      &:hover {
+        color: #6366f1;
+      }
+    }
+  }
 }
 
 .scroll-btn {
@@ -2085,12 +2243,21 @@ watch(() => route.query.type, (newType) => {
   overflow-y: hidden;
   padding-bottom: 4px;
   flex: 1;
+  min-width: 0; /* 🔑 关键：允许flex子项收缩 */
   scrollbar-width: none;
   -ms-overflow-style: none;
 
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* 🔑 筛选项空状态提示 */
+.chip-empty-hint {
+  white-space: nowrap;
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 6px 16px;
 }
 
 .search-wrapper {
@@ -2170,12 +2337,13 @@ watch(() => route.query.type, (newType) => {
   align-items: flex-start;
   z-index: 2;
   position: relative;
+  overflow: visible; /* 🔑 允许子元素溢出 */
 }
 
 .view-area {
   flex: 1;
   min-width: 0; /* 关键：允许 flex 项目收缩到小于内容宽度 */
-  overflow: hidden;
+  overflow: visible; /* 🔑 改为 visible，允许 hover 效果溢出 */
   box-sizing: border-box;
 }
 
@@ -2409,12 +2577,12 @@ watch(() => route.query.type, (newType) => {
   bottom: 0;
   width: 4px;
   background: linear-gradient(
-    to bottom,
-    rgba(99, 102, 241, 0) 0%,
-    rgba(99, 102, 241, 0.9) 25%,
-    rgba(34, 211, 238, 0.9) 50%,
-    rgba(244, 114, 182, 0.9) 75%,
-    rgba(99, 102, 241, 0) 100%
+      to bottom,
+      rgba(99, 102, 241, 0) 0%,
+      rgba(99, 102, 241, 0.9) 25%,
+      rgba(34, 211, 238, 0.9) 50%,
+      rgba(244, 114, 182, 0.9) 75%,
+      rgba(99, 102, 241, 0) 100%
   );
   box-shadow: 0 0 16px rgba(99, 102, 241, 0.4), 0 0 10px rgba(34, 211, 238, 0.35);
   border-radius: 999px;
@@ -2549,12 +2717,16 @@ watch(() => route.query.type, (newType) => {
 
   .card-grid {
     grid-template-columns: repeat(2, 1fr); /* 小屏幕一行两个 */
+    padding: 10px;
+    margin: -10px;
   }
 }
 
 @media (max-width: 600px) {
   .card-grid {
     grid-template-columns: 1fr; /* 手机端一行一个 */
+    padding: 10px;
+    margin: -10px;
   }
 }
 </style>
