@@ -51,8 +51,8 @@ export interface HonorData {
 
 /** 最新获奖者 */
 export interface LatestWinner {
-  userId: string
-  userName: string
+  id: number | string
+  name: string
   avatar?: string
   awardName: string
 }
@@ -91,6 +91,7 @@ export interface NewsItem {
   link?: string
   time: string
   source?: string
+  overview?: string
 }
 
 /** 悬浮工具平台项 */

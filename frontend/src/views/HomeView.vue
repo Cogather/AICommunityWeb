@@ -101,15 +101,15 @@
                   <div 
                     class="winner-card" 
                     v-for="winner in latestWinners" 
-                    :key="winner.userId"
-                    @click="router.push({ path: '/users', query: { keyword: winner.userName } })"
+                    :key="winner.id"
+                    @click="router.push({ path: '/users', query: { view: 'timeline', user: winner.name } })"
                   >
                     <el-avatar 
                       :size="40" 
                       :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" 
                     />
                     <div class="winner-info">
-                      <span class="winner-name">{{ winner.userName }}</span>
+                      <span class="winner-name">{{ winner.name }}</span>
                       <span class="winner-award">{{ winner.awardName }}</span>
                     </div>
                   </div>
@@ -137,7 +137,7 @@
                 v-for="post in empowermentPosts"
                 :key="post.id"
                 class="empowerment-item"
-                @click="router.push(ROUTES.EMPOWERMENT)"
+                @click="router.push(`/post/${post.id}`)"
               >
               <el-tooltip
                 :content="post.title"
@@ -357,9 +357,7 @@
       <div class="glass-card wide-banner section-row" v-if="newsTop.title">
         <div class="info-content">
           <h3>{{ newsTop.title }}</h3>
-          <p>
-            {{ newsTop.summary || newsTop.description || '' }}
-          </p>
+          <div class="news-content-text" v-html="newsTop.overview || newsTop.summary || newsTop.description || ''"></div>
         </div>
         <el-button
           text
@@ -2988,13 +2986,20 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
       text-shadow: 0 2px 4px rgba(30, 58, 138, 0.1);
       letter-spacing: 0.5px;
     }
-    p {
+    .news-content-text {
       margin: 0;
       font-size: 16px;
       color: #333; /* 深灰色，更易读 */
       max-width: 900px;
       line-height: 1.8;
       font-weight: 500;
+
+      :deep(p) {
+        margin: 0 0 8px 0;
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
     }
   }
 
