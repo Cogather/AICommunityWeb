@@ -2913,6 +2913,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 32px; /* 添加间距 */
   padding: 32px 40px;
   /* 使用发白的毛玻璃质感，覆盖原有的渐变背景 */
   background: rgba(255, 255, 255, 0.55) !important;
@@ -2990,7 +2991,6 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
       margin: 0;
       font-size: 16px;
       color: #333; /* 深灰色，更易读 */
-      max-width: 900px;
       line-height: 1.8;
       font-weight: 500;
 
@@ -3014,6 +3014,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     border: none;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
     transition: all 0.3s ease;
+    flex-shrink: 0; /* 防止按钮被挤压 */
 
     &:hover {
       transform: translateY(-2px);
