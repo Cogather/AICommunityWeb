@@ -276,14 +276,14 @@ const loadPosts = async () => {
     const allPosts = response.data.list
     featuredPosts.value = allPosts.filter((p: Post) => p.featured).map((post: Post) => ({
       ...post,
-      author: post.authorName || '',
+      author: post.author || post.authorName || '',
       description: post.summary || '',
       image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
     posts.value = allPosts.filter((p: Post) => !p.featured).map((post: Post) => ({
       ...post,
-      author: post.authorName || '',
+      author: post.author || post.authorName || '',
       description: post.summary || '',
       image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
