@@ -42,7 +42,7 @@
           <div class="glass-card honor-section">
             <!-- 顶部标题条 -->
             <div class="honor-header-bar">
-              <h3 class="header-title">AI使用达人·荣誉殿堂</h3>
+              <h3 class="header-title">AI荣誉殿堂</h3>
               <el-button
                 text
                 size="small"
@@ -1518,7 +1518,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 }
 
-/* 顶部标题条 - AI使用达人·荣誉殿堂 */
+/* 顶部标题条 - AI荣誉殿堂 */
 .honor-header-bar {
   background: transparent;
   position: relative;
