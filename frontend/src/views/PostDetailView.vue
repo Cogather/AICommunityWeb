@@ -33,7 +33,7 @@
               </div>
               <div class="author-details">
                 <span class="author-name">{{ postData.authorName }}</span>
-                <span class="post-time">{{ postData.createTime }}</span>
+                <span class="post-time">{{ formatDate(postData.createTime) }}</span>
               </div>
             </div>
             <div class="post-stats">
@@ -184,7 +184,7 @@
                   <el-tag v-if="isAuthor(comment.userName)" type="success" size="small" class="author-tag-inline">
                     楼主
                   </el-tag>
-                  <span class="comment-time">{{ comment.createTime }}</span>
+                  <span class="comment-time">{{ formatDate(comment.createTime) }}</span>
                 </div>
                 <div class="comment-text">{{ comment.content }}</div>
                 <div class="comment-actions">
@@ -277,7 +277,7 @@
                           回复
                           <span class="reply-to-name">{{ reply.replyTo }}</span>
                         </span>
-                        <span class="reply-time">{{ reply.createTime }}</span>
+                        <span class="reply-time">{{ formatDate(reply.createTime) }}</span>
                       </div>
                       <div class="reply-text">{{ reply.content }}</div>
                       <div class="reply-actions">
@@ -1104,6 +1104,21 @@ const scrollToAnchor = () => {
   }
 }
 
+// 格式化日期
+const formatDate = (date: string | Date | undefined) => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return String(date)
+
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
 // 初始化
 onMounted(async () => {
   // 记录来源导航页面（用于返回按钮）
@@ -1232,14 +1247,18 @@ onMounted(async () => {
 
         .author-badge {
           position: absolute;
-          bottom: -4px;
-          right: -4px;
+          bottom: -2px;
+          right: -8px;
           font-size: 10px;
-          padding: 2px 6px;
-          border-radius: 8px;
-          font-weight: 600;
+          padding: 0 4px;
+          height: 16px;
+          line-height: 16px;
+          border-radius: 4px;
+          font-weight: 500;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
           z-index: 1;
+          transform: scale(0.9);
+          transform-origin: bottom right;
         }
       }
 
