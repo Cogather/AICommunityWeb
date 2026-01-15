@@ -289,7 +289,7 @@ const loadPosts = async () => {
       title: p.title,
       // 后端工具帖子列表返回字段：description/author/cover（见 ToolPostItemVO + ToolPostMapper.xml）
       description: (p as unknown as { description?: string }).description || p.summary || '',
-      author: (p as unknown as { author?: string }).author || p.authorName || '',
+      author: (p as unknown as { author?: string }).author || p.userName || '',
       createTime: typeof p.createTime === 'string' 
         ? p.createTime 
         : new Date(p.createTime).toLocaleDateString('zh-CN'),

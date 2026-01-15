@@ -308,12 +308,12 @@ const mockGetRecommendedWinners = async (_month?: string): Promise<ApiResponse<{
   return success({ list: mockRecommendedWinners })
 }
 
-const mockSetUserAward = async (_params: { userId: number; awardId: number; awardDate: string }): Promise<ApiResponse<{ honorId: number }>> => {
+const mockSetUserAward = async (_params: { userId: string; awardId: number; awardDate: string }): Promise<ApiResponse<{ honorId: number }>> => {
   await delay()
   return success({ honorId: Date.now() })
 }
 
-const mockCancelUserAward = async (_params: { userId: number; honorId: number }): Promise<ApiResponse<null>> => {
+const mockCancelUserAward = async (_params: { userId: string; honorId: number }): Promise<ApiResponse<null>> => {
   await delay()
   return success(null)
 }
@@ -499,13 +499,13 @@ export async function getRecommendedWinners(month?: string): Promise<ApiResponse
 }
 
 /** 设置用户获奖 POST /api/admin/winners/set-award */
-export async function setUserAward(params: { userId: number; awardId: number; awardDate: string }): Promise<ApiResponse<{ honorId: number }>> {
+export async function setUserAward(params: { userId: string; awardId: number; awardDate: string }): Promise<ApiResponse<{ honorId: number }>> {
   if (!useRealApi) return mockSetUserAward(params)
   return post<{ honorId: number }>('/admin/winners/set-award', params)
 }
 
 /** 取消用户获奖 DELETE /api/admin/winners/cancel-award */
-export async function cancelUserAward(params: { userId: number; honorId: number }): Promise<ApiResponse<null>> {
+export async function cancelUserAward(params: { userId: string; honorId: number }): Promise<ApiResponse<null>> {
   if (!useRealApi) return mockCancelUserAward(params)
   return del<null>('/admin/winners/cancel-award', params)
 }

@@ -330,9 +330,9 @@
                   <el-table :data="allFeaturedPosts.practices" style="width: 100%" v-loading="loadingFeaturedPosts">
                     <el-table-column prop="id" label="帖子ID" width="100" />
                     <el-table-column prop="title" label="标题" min-width="200" />
-                    <el-table-column prop="authorName" label="作者" width="120">
+                    <el-table-column prop="userName" label="作者" width="120">
                       <template #default="{ row }">
-                        {{ row.author || row.authorName || '-' }}
+                        {{ row.author || row.userName || '-' }}
                       </template>
                     </el-table-column>
                     <el-table-column prop="createTime" label="发布时间" width="180">
@@ -369,9 +369,9 @@
                   <el-table :data="allFeaturedPosts.empowerment" style="width: 100%" v-loading="loadingFeaturedPosts">
                     <el-table-column prop="id" label="帖子ID" width="100" />
                     <el-table-column prop="title" label="标题" min-width="200" />
-                    <el-table-column prop="authorName" label="作者" width="120">
+                    <el-table-column prop="userName" label="作者" width="120">
                       <template #default="{ row }">
-                        {{ row.author || row.authorName || '-' }}
+                        {{ row.author || row.userName || '-' }}
                       </template>
                     </el-table-column>
                     <el-table-column prop="createTime" label="发布时间" width="180">
@@ -408,9 +408,9 @@
                   <el-table :data="allFeaturedPosts.agent" style="width: 100%" v-loading="loadingFeaturedPosts">
                     <el-table-column prop="id" label="帖子ID" width="100" />
                     <el-table-column prop="title" label="标题" min-width="200" />
-                    <el-table-column prop="authorName" label="作者" width="120">
+                    <el-table-column prop="userName" label="作者" width="120">
                       <template #default="{ row }">
-                        {{ row.author || row.authorName || '-' }}
+                        {{ row.author || row.userName || '-' }}
                       </template>
                     </el-table-column>
                     <el-table-column prop="createTime" label="发布时间" width="180">
@@ -447,9 +447,9 @@
                   <el-table :data="allFeaturedPosts.otherTools" style="width: 100%" v-loading="loadingFeaturedPosts">
                     <el-table-column prop="id" label="帖子ID" width="100" />
                     <el-table-column prop="title" label="标题" min-width="200" />
-                    <el-table-column prop="authorName" label="作者" width="120">
+                    <el-table-column prop="userName" label="作者" width="120">
                       <template #default="{ row }">
-                        {{ row.author || row.authorName || '-' }}
+                        {{ row.author || row.userName || '-' }}
                       </template>
                     </el-table-column>
                     <el-table-column prop="createTime" label="发布时间" width="180">

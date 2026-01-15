@@ -3,6 +3,7 @@
  */
 
 import { get, put, useRealApi, delay, success } from './request'
+import { getCachedUserInfo, removeCachedUserInfo } from '@/utils/storage'
 import type {
   ApiResponse,
   UserProfile,
@@ -93,7 +94,7 @@ const mockUserPosts: Post[] = [
     title: '我的第一篇帖子',
     summary: '这是一篇测试帖子',
     author: '当前用户',
-    authorId: 1,
+    userId: '1',
     views: 100,
     comments: 10,
     likes: 20,
@@ -213,9 +214,16 @@ const mockGetManager = async (): Promise<ApiResponse<{ userName: string }[]>> =>
  * GET /api/user/current
  */
 export async function getCurrentUser(): Promise<ApiResponse<UserProfile>> {
+  // 尝试从缓存获取
+  const cachedUser = getCachedUserInfo()
+  if (cachedUser && cachedUser.userId) {
+    return success(cachedUser)
+  }
+
   if (!useRealApi) {
     return mockGetCurrentUser()
   }
+
   return get<UserProfile>('/user/current')
 }
 
@@ -249,7 +257,11 @@ export async function updateCurrentUser(params: UserUpdateParams): Promise<ApiRe
   if (!useRealApi) {
     return mockUpdateUser(params)
   }
-  return put<null>('/user/current', params)
+  const res = await put<null>('/user/current', params)
+  if (res.code === 200) {
+    removeCachedUserInfo()
+  }
+  return res
 }
 
 /**
@@ -286,7 +298,7 @@ export async function getUserPoints(page = 1, pageSize = 15): Promise<ApiRespons
  * GET /api/user/:userId/posts
  */
 export async function getUserPosts(
-  userId: number | string,
+  userId: string | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Post>>> {
@@ -301,7 +313,7 @@ export async function getUserPosts(
  * GET /api/user/:userId/favorites
  */
 export async function getUserFavorites(
-  userId: number | string,
+  userId: string | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Post>>> {
@@ -316,7 +328,7 @@ export async function getUserFavorites(
  * GET /api/user/:userId/comments
  */
 export async function getUserComments(
-  userId: number | string,
+  userId: string | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Comment>>> {
@@ -331,7 +343,7 @@ export async function getUserComments(
  * GET /api/user/:userId/activities
  */
 export async function getUserActivities(
-  userId: number | string,
+  userId: string | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Activity>>> {
@@ -346,7 +358,7 @@ export async function getUserActivities(
  * GET /api/user/:userId/created-activities
  */
 export async function getUserCreatedActivities(
-  userId: number | string,
+  userId: string | string,
   page = 1,
   pageSize = 15
 ): Promise<ApiResponse<PaginatedData<Activity>>> {
@@ -377,11 +389,11 @@ export async function getRegistrations(
   activityId: number,
   page = 1,
   pageSize = 20
-): Promise<ApiResponse<PaginatedData<{ id: number; userId: number; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>> {
+): Promise<ApiResponse<PaginatedData<{ id: number; userId: string; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>> {
   if (!useRealApi) {
     return mockGetRegistrations()
   }
-  return get<PaginatedData<{ id: number; userId: number; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>(`/activities/${activityId}/registrations`, { page, pageSize })
+  return get<PaginatedData<{ id: number; userId: string; userName: string; userAvatar?: string; department?: string; registerTime: string; status: string }>>(`/activities/${activityId}/registrations`, { page, pageSize })
 }
 
 /**

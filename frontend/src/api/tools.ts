@@ -61,7 +61,7 @@ const mockToolPosts: Post[] = [
     title: 'TestMate快速入门指南',
     summary: '本文详细介绍如何快速上手使用TestMate进行自动化测试',
     author: '张测试',
-    authorId: 10,
+    userId: '10',
     createTime: '2026-01-12',
     views: 1580,
     comments: 45,

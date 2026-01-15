@@ -3,14 +3,15 @@
  */
 
 import { post, useRealApi, delay, success, error } from './request'
+import { setCachedUserInfo, removeCachedUserInfo } from '@/utils/storage'
 import type { ApiResponse, UserProfile, LoginParams, LoginResponse } from './types'
 
 // ==================== Mock 数据 ====================
 
 const mockCurrentUser: UserProfile = {
-  id: 1,
+  userId: 'x12345667',
   employeeId: 'E001',
-  name: '当前用户',
+  userName: '当前用户',
   avatar: 'https://picsum.photos/100/100?random=user',
   bio: '这是一个测试用户',
   department: '技术部/AI研发中心/智能应用组',
@@ -35,20 +36,20 @@ const mockCurrentUser: UserProfile = {
 
 const mockLogin = async (params: LoginParams): Promise<ApiResponse<LoginResponse>> => {
   await delay(500)
-  
+
   // 模拟登录验证
-  if (params.employeeId === 'E001' && params.password === '123456') {
+  if (params.userId === 'x12345667' && params.password === '123456') {
     return success({
       token: 'mock_token_' + Date.now(),
       expiresIn: 86400,
       user: mockCurrentUser,
     })
   }
-  
+
   if (params.password !== '123456') {
     return error('密码错误', 40002) as ApiResponse<LoginResponse>
   }
-  
+
   return error('工号不存在', 40001) as ApiResponse<LoginResponse>
 }
 
@@ -64,10 +65,18 @@ const mockLogout = async (): Promise<ApiResponse<null>> => {
  * POST /api/auth/login
  */
 export async function login(params: LoginParams): Promise<ApiResponse<LoginResponse>> {
+  let res: ApiResponse<LoginResponse>
   if (!useRealApi) {
-    return mockLogin(params)
+    res = await mockLogin(params)
+  } else {
+    res = await post<LoginResponse>('/auth/login', params)
   }
-  return post<LoginResponse>('/auth/login', params)
+
+  if (res.code === 200 && res.data && res.data.user) {
+    setCachedUserInfo(res.data.user)
+  }
+
+  return res
 }
 
 /**
@@ -75,10 +84,18 @@ export async function login(params: LoginParams): Promise<ApiResponse<LoginRespo
  * POST /api/auth/logout
  */
 export async function logout(): Promise<ApiResponse<null>> {
+  let res: ApiResponse<null>
   if (!useRealApi) {
-    return mockLogout()
+    res = await mockLogout()
+  } else {
+    res = await post<null>('/auth/logout')
   }
-  return post<null>('/auth/logout')
+
+  if (res.code === 200) {
+    removeCachedUserInfo()
+  }
+
+  return res
 }
 
 // ==================== 导出 ====================

@@ -48,8 +48,8 @@
             <p class="message-text">{{ message.content }}</p>
             <div class="message-meta">
               <span class="message-time">{{ formatTime(message.createdAt) }}</span>
-              <span v-if="message.fromUserName" class="message-from">
-                来自：{{ message.fromUserName }}
+              <span v-if="message.userName" class="message-from">
+                来自：{{ message.userName }}
               </span>
             </div>
           </div>

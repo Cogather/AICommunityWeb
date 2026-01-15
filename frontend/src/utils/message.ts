@@ -13,13 +13,13 @@ export interface Message {
   type: MessageType
   title: string
   content: string
-  userId: number // 接收消息的用户ID
+  userId: string // 接收消息的用户ID
   relatedId?: number // 相关ID（如帖子ID、活动ID等）
   relatedType?: string // 相关类型（如'post', 'activity', 'comment'等）
   commentId?: number // 评论ID（用于定位到具体评论，POST_COMMENT和COMMENT_REPLY类型使用）
   replyId?: number // 回复ID（用于定位到具体回复，COMMENT_REPLY类型使用）
-  fromUserId?: number // 发送消息的用户ID
-  fromUserName?: string // 发送消息的用户名
+  userId: string // 发送消息的用户ID
+  userName?: string // 发送消息的用户名
   read: boolean
   createdAt: string
   link?: string // 自定义跳转链接（可选）
@@ -29,7 +29,7 @@ export interface Message {
 const messagesStore: Map<number, Message[]> = new Map()
 
 // 初始化mock消息数据
-const initMockMessages = (userId: number): Message[] => {
+const initMockMessages = (userId: string): Message[] => {
   return [
     {
       id: 1,
@@ -40,8 +40,8 @@ const initMockMessages = (userId: number): Message[] => {
       relatedId: 1,           // 帖子ID（对应mockPosts中id=1的帖子）
       relatedType: 'post',
       commentId: 101,         // 评论ID，对应mockComments中id=101的评论
-      fromUserId: 2,
-      fromUserName: '李四',
+      userId: '2',
+      userName: '李四',
       read: false,
       createdAt: new Date(Date.now() - 3600000).toISOString()
     },
@@ -53,8 +53,8 @@ const initMockMessages = (userId: number): Message[] => {
       userId: userId,
       relatedId: 1,           // 活动ID
       relatedType: 'activity',
-      fromUserId: 3,
-      fromUserName: '李四',
+      userId: '3',
+      userName: '李四',
       read: false,
       createdAt: new Date(Date.now() - 7200000).toISOString()
     },
@@ -66,8 +66,8 @@ const initMockMessages = (userId: number): Message[] => {
       userId: userId,
       relatedId: 1,           // 帖子ID（对应mockPosts中id=1的帖子）
       relatedType: 'post',
-      fromUserId: 4,
-      fromUserName: '王五',
+      userId: '4',
+      userName: '王五',
       read: true,
       createdAt: new Date(Date.now() - 86400000).toISOString()
     },
@@ -81,8 +81,8 @@ const initMockMessages = (userId: number): Message[] => {
       relatedType: 'post',
       commentId: 101,         // 评论ID，对应mockComments中id=101的评论
       replyId: 1002,          // 回复ID，对应mockComments中id=1002的回复（赵六发的）
-      fromUserId: 5,
-      fromUserName: '赵六',
+      userId: '5',
+      userName: '赵六',
       read: false,
       createdAt: new Date(Date.now() - 172800000).toISOString()
     },
@@ -96,8 +96,8 @@ const initMockMessages = (userId: number): Message[] => {
       relatedType: 'post',
       commentId: 102,         // 评论ID，对应mockComments中id=102的评论
       replyId: 1003,          // 回复ID，对应mockComments中id=1003的回复
-      fromUserId: 1,
-      fromUserName: '张三',
+      userId: '1',
+      userName: '张三',
       read: true,
       createdAt: new Date(Date.now() - 259200000).toISOString()
     }
@@ -105,7 +105,7 @@ const initMockMessages = (userId: number): Message[] => {
 }
 
 // 获取用户消息列表
-export const getUserMessages = (userId: number): Message[] => {
+export const getUserMessages = (userId: string): Message[] => {
   if (!messagesStore.has(userId)) {
     // 初始化mock数据
     messagesStore.set(userId, initMockMessages(userId))
@@ -117,7 +117,7 @@ export const getUserMessages = (userId: number): Message[] => {
 }
 
 // 获取未读消息数量
-export const getUnreadMessageCount = (userId: number): number => {
+export const getUnreadMessageCount = (userId: string): number => {
   const messages = getUserMessages(userId)
   return messages.filter(msg => !msg.read).length
 }
@@ -139,7 +139,7 @@ export const addMessage = (message: Omit<Message, 'id' | 'read' | 'createdAt'>):
 }
 
 // 标记消息为已读
-export const markMessageAsRead = (userId: number, messageId: number): void => {
+export const markMessageAsRead = (userId: string, messageId: number): void => {
   const messages = getUserMessages(userId)
   const message = messages.find(msg => msg.id === messageId)
   if (message) {
@@ -150,7 +150,7 @@ export const markMessageAsRead = (userId: number, messageId: number): void => {
 }
 
 // 标记所有消息为已读
-export const markAllMessagesAsRead = (userId: number): void => {
+export const markAllMessagesAsRead = (userId: string): void => {
   const messages = getUserMessages(userId)
   messages.forEach(msg => {
     msg.read = true
@@ -160,7 +160,7 @@ export const markAllMessagesAsRead = (userId: number): void => {
 }
 
 // 删除消息
-export const deleteMessage = (userId: number, messageId: number): void => {
+export const deleteMessage = (userId: string, messageId: number): void => {
   const messages = getUserMessages(userId)
   const filtered = messages.filter(msg => msg.id !== messageId)
   messagesStore.set(userId, filtered)
@@ -171,7 +171,7 @@ export const deleteMessage = (userId: number, messageId: number): void => {
 export const sendActivityRegistrationMessage = (
   activityId: number,
   activityTitle: string,
-  authorId: number,
+  userId: string,
   registrantId: number,
   registrantName: string
 ): void => {
@@ -179,11 +179,11 @@ export const sendActivityRegistrationMessage = (
     type: MessageType.ACTIVITY_REGISTRATION,
     title: '活动报名通知',
     content: `${registrantName} 报名参加了您发布的活动《${activityTitle}》`,
-    userId: authorId,
+    userId: userId,
     relatedId: activityId,
     relatedType: 'activity',
-    fromUserId: registrantId,
-    fromUserName: registrantName
+    userId: registrantId,
+    userName: registrantName
   })
 }
 
@@ -212,7 +212,7 @@ export const sendAwardNotificationMessage = (
     userId: winnerId,
     relatedId: awardId,
     relatedType: 'award',
-    fromUserName: '系统通知'
+    userName: '系统通知'
   })
 }
 
@@ -220,7 +220,7 @@ export const sendAwardNotificationMessage = (
 export const sendPostCommentMessage = (
   postId: number,
   postTitle: string,
-  authorId: number,
+  userId: string,
   commenterId: number,
   commenterName: string,
   commentId: number          // 新增：评论ID，用于定位到具体评论
@@ -229,12 +229,12 @@ export const sendPostCommentMessage = (
     type: MessageType.POST_COMMENT,
     title: '帖子评论通知',
     content: `${commenterName} 评论了您的帖子《${postTitle}》`,
-    userId: authorId,
+    userId: userId,
     relatedId: postId,
     relatedType: 'post',
     commentId: commentId,    // 评论ID，点击消息跳转到 /post/{postId}#comment-{commentId}
-    fromUserId: commenterId,
-    fromUserName: commenterName
+    userId: commenterId,
+    userName: commenterName
   })
 }
 
@@ -256,8 +256,8 @@ export const sendCommentReplyMessage = (
     relatedType: 'post',
     commentId: commentId,    // 评论ID
     replyId: replyId,        // 回复ID，点击消息跳转到 /post/{postId}#reply-{replyId}
-    fromUserId: replierId,
-    fromUserName: replierName
+    userId: replierId,
+    userName: replierName
   })
 }
 
@@ -265,7 +265,7 @@ export const sendCommentReplyMessage = (
 export const sendPostLikeMessage = (
   postId: number,
   postTitle: string,
-  authorId: number,
+  userId: string,
   likerId: number,
   likerName: string
 ): void => {
@@ -273,11 +273,11 @@ export const sendPostLikeMessage = (
     type: MessageType.POST_LIKE,
     title: '点赞通知',
     content: `${likerName} 赞了您的帖子《${postTitle}》`,
-    userId: authorId,
+    userId: userId,
     relatedId: postId,
     relatedType: 'post',
-    fromUserId: likerId,
-    fromUserName: likerName
+    userId: likerId,
+    userName: likerName
   })
 }
 

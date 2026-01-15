@@ -74,10 +74,10 @@ export interface Post {
   summary?: string
   description?: string
   content?: string
-  authorName?: string
-  author?: string
+  userName?: string
+  userName?: string
   authorAvatar?: string
-  authorId?: number
+  userId: string
   createTime: string | Date
   updateTime?: string | Date
   views: number
@@ -112,7 +112,7 @@ export interface Comment {
   id: number
   postId: number
   postTitle?: string
-  userId: number
+  userId: string
   userName: string
   userAvatar: string
   content: string
@@ -130,10 +130,10 @@ export interface Comment {
 export interface Reply {
   id: number
   commentId: number
-  userId: number
+  userId: string
   userName: string
   userAvatar: string
-  replyToUserId?: number
+  replyToUserId?: string
   replyToId?: number  // 被回复的回复ID
   replyTo?: string    // 被回复者名称
   content: string
@@ -151,9 +151,9 @@ export interface DepartmentInfo {
 }
 
 export interface UserProfile {
-  id: number
+  userId: string
   employeeId?: string    // 工号
-  name: string           // 姓名
+  userName: string           // 姓名
   avatar: string         // 头像URL
   bio?: string           // 个人简介
   department?: string    // 部门名称（向下兼容）
@@ -190,8 +190,8 @@ export interface Activity {
   date: string | Date
   location?: string
   meetingLink?: string
-  authorId: number
-  authorName: string
+  userId: string
+  userName: string
   authorAvatar?: string
   registeredCount?: number
   maxRegistrations?: number
@@ -222,7 +222,7 @@ export enum MessageType {
 
 export interface Message {
   id: number
-  userId: number
+  userId: string
   type: string
   title: string
   content: string
@@ -231,8 +231,8 @@ export interface Message {
   relatedType?: string // 相关类型（如'post', 'activity', 'comment'等）
   commentId?: number // 评论ID（用于定位到具体评论，POST_COMMENT和COMMENT_REPLY类型使用）
   replyId?: number // 回复ID（用于定位到具体回复，COMMENT_REPLY类型使用）
-  fromUserId?: number
-  fromUserName?: string
+  userId?: string
+  userName?: string
   read: boolean
   createTime: string | Date
   createdAt?: string | Date // 兼容字段（与utils/message.ts一致）
@@ -353,23 +353,21 @@ const mockNews: NewsItem[] = [
 
 const mockPractices: PracticesInfo = {
   training: [
-    { id: 1, title: 'AI培训课程1', author: '张老师', time: '2026-01-15', category: 'training' },
-    { id: 2, title: 'AI培训课程2', author: '李老师', time: '2026-01-20', category: 'training' }
+    { id: 1, title: 'AI培训课程1', userName: '张老师', time: '2026-01-15', category: 'training' },
+    { id: 2, title: 'AI培训课程2', userName: '李老师', time: '2026-01-20', category: 'training' }
   ],
   trainingBattle: [
-    { id: 3, title: 'AI训战项目1', author: '王老师', time: '2026-01-10', category: 'training-battle' },
-    { id: 4, title: 'AI训战项目2', author: '赵老师', time: '2026-01-12', category: 'training-battle' }
+    { id: 3, title: 'AI训战项目1', userName: '王老师', time: '2026-01-10', category: 'training-battle' },
+    { id: 4, title: 'AI训战项目2', userName: '赵老师', time: '2026-01-12', category: 'training-battle' }
   ],
   userExchange: [
-    { id: 5, title: '用户交流1', author: '用户A', time: '2026-01-08', category: 'user-exchange' },
-    { id: 6, title: '用户交流2', author: '用户B', time: '2026-01-09', category: 'user-exchange' }
+    { id: 5, title: '用户交流1', userName: '用户A', time: '2026-01-08', category: 'user-exchange' },
+    { id: 6, title: '用户交流2', userName: '用户B', time: '2026-01-09', category: 'user-exchange' }
   ]
 }
 
 const mockCurrentUser: UserProfile = {
-  id: 1,
-  employeeId: 'E001',
-  name: '当前用户',
+  userName: '当前用户',
   avatar: 'https://picsum.photos/100/100?random=user',
   bio: '这是一个测试用户',
   department: '技术部/AI研发中心/智能应用组',  // 完整部门路径
@@ -394,10 +392,10 @@ const mockPosts: Post[] = [
     summary: '这是一篇关于AI技术实践的分享文章',
     description: '这是一篇关于AI技术实践的分享文章',
     content: '<p>这是文章内容</p>',
-    author: '张三',
-    authorName: '张三',
+    userName: '张三',
+    userName: '张三',
     authorAvatar: 'https://picsum.photos/100/100?random=1',
-    authorId: 1,
+    userId: '1',
     createTime: '2026-01-10',
     updateTime: '2026-01-10',
     views: 100,
@@ -418,10 +416,10 @@ const mockPosts: Post[] = [
     summary: '分享如何使用扶摇Agent编排引擎实现智能代码生成功能，提升开发效率。',
     description: '分享如何使用扶摇Agent编排引擎实现智能代码生成功能，提升开发效率。',
     content: '<p>本文详细介绍如何利用扶摇Agent的智能编排能力实现代码自动生成...</p>',
-    author: '张工程师',
-    authorName: '张工程师',
+    userName: '张工程师',
+    userName: '张工程师',
     authorAvatar: 'https://picsum.photos/100/100?random=101',
-    authorId: 1,
+    userId: '1',
     createTime: '2026-01-12',
     updateTime: '2026-01-12',
     views: 890,
@@ -444,10 +442,10 @@ const mockPosts: Post[] = [
     summary: '通过实际案例展示如何利用扶摇Agent编排复杂的工作流程。',
     description: '通过实际案例展示如何利用扶摇Agent编排复杂的工作流程。',
     content: '<p>工作流编排是扶摇Agent的核心能力之一...</p>',
-    author: '李开发者',
-    authorName: '李开发者',
+    userName: '李开发者',
+    userName: '李开发者',
     authorAvatar: 'https://picsum.photos/100/100?random=102',
-    authorId: 2,
+    userId: '2',
     createTime: '2026-01-10',
     updateTime: '2026-01-10',
     views: 720,
@@ -469,10 +467,10 @@ const mockPosts: Post[] = [
     summary: '介绍如何使用扶摇Agent进行自动化测试，提高测试效率和覆盖率。',
     description: '介绍如何使用扶摇Agent进行自动化测试，提高测试效率和覆盖率。',
     content: '<p>自动化测试是保证代码质量的重要手段...</p>',
-    author: '王测试',
-    authorName: '王测试',
+    userName: '王测试',
+    userName: '王测试',
     authorAvatar: 'https://picsum.photos/100/100?random=103',
-    authorId: 3,
+    userId: '3',
     createTime: '2026-01-08',
     updateTime: '2026-01-08',
     views: 650,
@@ -494,10 +492,10 @@ const mockPosts: Post[] = [
     summary: '总结扶摇Agent智能编排的最佳实践和注意事项。',
     description: '总结扶摇Agent智能编排的最佳实践和注意事项。',
     content: '<p>智能编排需要遵循一些基本原则...</p>',
-    author: '陈架构师',
-    authorName: '陈架构师',
+    userName: '陈架构师',
+    userName: '陈架构师',
     authorAvatar: 'https://picsum.photos/100/100?random=104',
-    authorId: 4,
+    userId: '4',
     createTime: '2026-01-06',
     updateTime: '2026-01-06',
     views: 580,
@@ -519,10 +517,10 @@ const mockPosts: Post[] = [
     summary: '分享扶摇Agent在企业级应用中的实际应用案例和经验。',
     description: '分享扶摇Agent在企业级应用中的实际应用案例和经验。',
     content: '<p>企业级应用对稳定性和可扩展性有更高要求...</p>',
-    author: '赵医生',
-    authorName: '赵医生',
+    userName: '赵医生',
+    userName: '赵医生',
     authorAvatar: 'https://picsum.photos/100/100?random=105',
-    authorId: 5,
+    userId: '5',
     createTime: '2026-01-05',
     updateTime: '2026-01-05',
     views: 520,
@@ -545,10 +543,10 @@ const mockPosts: Post[] = [
     summary: '本文详细介绍如何快速上手使用TestMate进行自动化测试，从安装配置到编写第一个测试用例。',
     description: '本文详细介绍如何快速上手使用TestMate进行自动化测试，从安装配置到编写第一个测试用例。',
     content: '<p>TestMate是一款强大的自动化测试助手...</p><h2>安装配置</h2><p>首先需要安装TestMate插件...</p>',
-    author: '张测试',
-    authorName: '张测试',
+    userName: '张测试',
+    userName: '张测试',
     authorAvatar: 'https://picsum.photos/100/100?random=201',
-    authorId: 10,
+    userId: '10',
     createTime: '2026-01-12',
     updateTime: '2026-01-12',
     views: 1580,
@@ -572,10 +570,10 @@ const mockPosts: Post[] = [
     summary: '深入讲解TestMate的接口测试功能，包括RESTful API测试、GraphQL测试和Mock数据管理。',
     description: '深入讲解TestMate的接口测试功能，包括RESTful API测试、GraphQL测试和Mock数据管理。',
     content: '<p>接口测试是保证系统稳定性的重要环节...</p>',
-    author: '李工程师',
-    authorName: '李工程师',
+    userName: '李工程师',
+    userName: '李工程师',
     authorAvatar: 'https://picsum.photos/100/100?random=202',
-    authorId: 11,
+    userId: '11',
     createTime: '2026-01-11',
     updateTime: '2026-01-11',
     views: 1250,
@@ -598,10 +596,10 @@ const mockPosts: Post[] = [
     summary: '学习如何使用TestMate进行UI自动化测试，包括元素定位、交互操作和断言验证。',
     description: '学习如何使用TestMate进行UI自动化测试，包括元素定位、交互操作和断言验证。',
     content: '<p>UI自动化测试可以大幅提升测试效率...</p>',
-    author: '王自动化',
-    authorName: '王自动化',
+    userName: '王自动化',
+    userName: '王自动化',
     authorAvatar: 'https://picsum.photos/100/100?random=203',
-    authorId: 12,
+    userId: '12',
     createTime: '2026-01-10',
     updateTime: '2026-01-10',
     views: 980,
@@ -624,10 +622,10 @@ const mockPosts: Post[] = [
     summary: '详细介绍TestMate的性能测试模块，包括压力测试、负载测试和性能监控配置。',
     description: '详细介绍TestMate的性能测试模块，包括压力测试、负载测试和性能监控配置。',
     content: '<p>性能测试是保证系统可用性的关键...</p>',
-    author: '陈性能',
-    authorName: '陈性能',
+    userName: '陈性能',
+    userName: '陈性能',
     authorAvatar: 'https://picsum.photos/100/100?random=204',
-    authorId: 13,
+    userId: '13',
     createTime: '2026-01-09',
     updateTime: '2026-01-09',
     views: 850,
@@ -651,10 +649,10 @@ const mockPosts: Post[] = [
     summary: '分享我们团队如何利用TestMate的智能测试选择功能，将回归测试时间从4小时缩短到45分钟。',
     description: '分享我们团队如何利用TestMate的智能测试选择功能，将回归测试时间从4小时缩短到45分钟。',
     content: '<p>在引入TestMate之前，我们的回归测试需要4个小时...</p>',
-    author: '赵效率',
-    authorName: '赵效率',
+    userName: '赵效率',
+    userName: '赵效率',
     authorAvatar: 'https://picsum.photos/100/100?random=205',
-    authorId: 14,
+    userId: '14',
     createTime: '2026-01-08',
     updateTime: '2026-01-08',
     views: 2150,
@@ -677,10 +675,10 @@ const mockPosts: Post[] = [
     summary: '探讨如何在微服务架构下使用TestMate进行端到端测试和服务间契约测试。',
     description: '探讨如何在微服务架构下使用TestMate进行端到端测试和服务间契约测试。',
     content: '<p>微服务架构带来了新的测试挑战...</p>',
-    author: '钱架构',
-    authorName: '钱架构',
+    userName: '钱架构',
+    userName: '钱架构',
     authorAvatar: 'https://picsum.photos/100/100?random=206',
-    authorId: 15,
+    userId: '15',
     createTime: '2026-01-07',
     updateTime: '2026-01-07',
     views: 1680,
@@ -703,10 +701,10 @@ const mockPosts: Post[] = [
     summary: '详细介绍如何将TestMate无缝集成到Jenkins、GitLab CI等CI/CD流水线中。',
     description: '详细介绍如何将TestMate无缝集成到Jenkins、GitLab CI等CI/CD流水线中。',
     content: '<p>持续集成和持续部署需要可靠的自动化测试...</p>',
-    author: '孙DevOps',
-    authorName: '孙DevOps',
+    userName: '孙DevOps',
+    userName: '孙DevOps',
     authorAvatar: 'https://picsum.photos/100/100?random=207',
-    authorId: 16,
+    userId: '16',
     createTime: '2026-01-06',
     updateTime: '2026-01-06',
     views: 1420,
@@ -729,10 +727,10 @@ const mockPosts: Post[] = [
     summary: '分享我们如何利用TestMate的数据驱动测试功能，实现测试数据的统一管理和复用。',
     description: '分享我们如何利用TestMate的数据驱动测试功能，实现测试数据的统一管理和复用。',
     content: '<p>测试数据管理是自动化测试的重要一环...</p>',
-    author: '周数据',
-    authorName: '周数据',
+    userName: '周数据',
+    userName: '周数据',
     authorAvatar: 'https://picsum.photos/100/100?random=208',
-    authorId: 17,
+    userId: '17',
     createTime: '2026-01-05',
     updateTime: '2026-01-05',
     views: 920,
@@ -755,10 +753,10 @@ const mockPosts: Post[] = [
     summary: '分享使用TestMate进行iOS和Android App自动化测试的经验和踩坑记录。',
     description: '分享使用TestMate进行iOS和Android App自动化测试的经验和踩坑记录。',
     content: '<p>移动端测试有其特殊的挑战...</p>',
-    author: '吴移动',
-    authorName: '吴移动',
+    userName: '吴移动',
+    userName: '吴移动',
     authorAvatar: 'https://picsum.photos/100/100?random=209',
-    authorId: 18,
+    userId: '18',
     createTime: '2026-01-04',
     updateTime: '2026-01-04',
     views: 1120,
@@ -781,10 +779,10 @@ const mockPosts: Post[] = [
     summary: '介绍如何定制TestMate的测试报告，以及如何利用报告数据进行测试质量分析。',
     description: '介绍如何定制TestMate的测试报告，以及如何利用报告数据进行测试质量分析。',
     content: '<p>好的测试报告能帮助团队快速定位问题...</p>',
-    author: '郑分析',
-    authorName: '郑分析',
+    userName: '郑分析',
+    userName: '郑分析',
     authorAvatar: 'https://picsum.photos/100/100?random=210',
-    authorId: 19,
+    userId: '19',
     createTime: '2026-01-03',
     updateTime: '2026-01-03',
     views: 780,
@@ -808,10 +806,10 @@ const mockPosts: Post[] = [
     summary: '本文汇总了各类AI工具的使用技巧，帮助你全面提升工作效率，涵盖代码、文档、设计等多个领域。',
     description: '本文汇总了各类AI工具的使用技巧，帮助你全面提升工作效率，涵盖代码、文档、设计等多个领域。',
     content: '<p>AI工具已经成为提升工作效率的重要手段...</p>',
-    author: '效率达人',
-    authorName: '效率达人',
+    userName: '效率达人',
+    userName: '效率达人',
     authorAvatar: 'https://picsum.photos/100/100?random=301',
-    authorId: 20,
+    userId: '20',
     createTime: '2026-01-12',
     updateTime: '2026-01-12',
     views: 3580,
@@ -834,10 +832,10 @@ const mockPosts: Post[] = [
     summary: '深入讲解如何编写高质量的ChatGPT提示词，让AI更好地理解你的意图并给出准确的回答。',
     description: '深入讲解如何编写高质量的ChatGPT提示词，让AI更好地理解你的意图并给出准确的回答。',
     content: '<p>提示词工程是使用AI的关键技能...</p>',
-    author: '提示词专家',
-    authorName: '提示词专家',
+    userName: '提示词专家',
+    userName: '提示词专家',
     authorAvatar: 'https://picsum.photos/100/100?random=302',
-    authorId: 21,
+    userId: '21',
     createTime: '2026-01-11',
     updateTime: '2026-01-11',
     views: 2890,
@@ -859,10 +857,10 @@ const mockPosts: Post[] = [
     summary: '分享使用Midjourney进行AI绘图的技巧和经验，包括提示词编写、风格调整等。',
     description: '分享使用Midjourney进行AI绘图的技巧和经验，包括提示词编写、风格调整等。',
     content: '<p>Midjourney是一款强大的AI绘图工具...</p>',
-    author: '设计师小王',
-    authorName: '设计师小王',
+    userName: '设计师小王',
+    userName: '设计师小王',
     authorAvatar: 'https://picsum.photos/100/100?random=303',
-    authorId: 22,
+    userId: '22',
     createTime: '2026-01-10',
     updateTime: '2026-01-10',
     views: 1850,
@@ -884,10 +882,10 @@ const mockPosts: Post[] = [
     summary: '如何高效使用GitHub Copilot进行代码补全，提升编程效率的实践经验分享。',
     description: '如何高效使用GitHub Copilot进行代码补全，提升编程效率的实践经验分享。',
     content: '<p>GitHub Copilot可以显著提升编程效率...</p>',
-    author: '码农老张',
-    authorName: '码农老张',
+    userName: '码农老张',
+    userName: '码农老张',
     authorAvatar: 'https://picsum.photos/100/100?random=304',
-    authorId: 23,
+    userId: '23',
     createTime: '2026-01-09',
     updateTime: '2026-01-09',
     views: 2150,
@@ -909,10 +907,10 @@ const mockPosts: Post[] = [
     summary: '介绍如何使用Notion AI进行文档撰写、总结和优化，提升文档工作效率。',
     description: '介绍如何使用Notion AI进行文档撰写、总结和优化，提升文档工作效率。',
     content: '<p>Notion AI让文档工作变得更加高效...</p>',
-    author: '文档达人',
-    authorName: '文档达人',
+    userName: '文档达人',
+    userName: '文档达人',
     authorAvatar: 'https://picsum.photos/100/100?random=305',
-    authorId: 24,
+    userId: '24',
     createTime: '2026-01-08',
     updateTime: '2026-01-08',
     views: 1680,
@@ -934,10 +932,10 @@ const mockPosts: Post[] = [
     summary: '分享使用Claude处理长文本的技巧，包括文档分析、摘要生成、信息提取等场景。',
     description: '分享使用Claude处理长文本的技巧，包括文档分析、摘要生成、信息提取等场景。',
     content: '<p>Claude在长文本处理方面有独特优势...</p>',
-    author: 'AI研究员',
-    authorName: 'AI研究员',
+    userName: 'AI研究员',
+    userName: 'AI研究员',
     authorAvatar: 'https://picsum.photos/100/100?random=306',
-    authorId: 25,
+    userId: '25',
     createTime: '2026-01-07',
     updateTime: '2026-01-07',
     views: 1420,
@@ -959,7 +957,7 @@ const mockComments: Comment[] = [
   {
     id: 101,  // 与消息中心的 commentId 对应
     postId: 1,
-    userId: 2,
+    userId: '2',
     userName: '李四',
     userAvatar: 'https://picsum.photos/100/100?random=2',
     content: '这是一条很棒的帖子，学到了很多知识！感谢作者的分享。',
@@ -970,7 +968,7 @@ const mockComments: Comment[] = [
       {
         id: 1001,  // 与消息中心的 replyId 对应
         commentId: 101,
-        userId: 1,
+        userId: '1',
         userName: '张三',
         userAvatar: 'https://picsum.photos/100/100?random=1',
         content: '感谢您的评论！欢迎继续交流讨论。',
@@ -983,7 +981,7 @@ const mockComments: Comment[] = [
       {
         id: 1002,
         commentId: 101,
-        userId: 5,
+        userId: '5',
         userName: '赵六',
         userAvatar: 'https://picsum.photos/100/100?random=5',
         content: '同意楼上的观点，这个帖子很有价值！',
@@ -998,7 +996,7 @@ const mockComments: Comment[] = [
   {
     id: 102,
     postId: 1,
-    userId: 3,
+    userId: '3',
     userName: '王五',
     userAvatar: 'https://picsum.photos/100/100?random=3',
     content: '请问有没有相关的实战案例分享？想深入学习一下。',
@@ -1009,7 +1007,7 @@ const mockComments: Comment[] = [
       {
         id: 1003,
         commentId: 102,
-        userId: 1,
+        userId: '1',
         userName: '张三',
         userAvatar: 'https://picsum.photos/100/100?random=1',
         content: '可以参考我之前发布的另一篇帖子，里面有详细的实战案例。',
@@ -1036,8 +1034,8 @@ const mockActivities: Activity[] = [
     date: '2026-01-20',
     location: '线上腾讯会议',
     meetingLink: 'https://meeting.tencent.com/testmate1',
-    authorId: 10,
-    authorName: '张测试',
+    userId: '10',
+    userName: '张测试',
     authorAvatar: 'https://picsum.photos/100/100?random=10',
     registeredCount: 45,
     maxRegistrations: 100,
@@ -1057,8 +1055,8 @@ const mockActivities: Activity[] = [
     type: 'workshop',
     date: '2026-01-22',
     location: 'C区培训室201',
-    authorId: 11,
-    authorName: '李工程师',
+    userId: '11',
+    userName: '李工程师',
     authorAvatar: 'https://picsum.photos/100/100?random=11',
     registeredCount: 28,
     maxRegistrations: 30,
@@ -1079,8 +1077,8 @@ const mockActivities: Activity[] = [
     date: '2026-01-28',
     location: '线上会议',
     meetingLink: 'https://meeting.example.com/perf',
-    authorId: 13,
-    authorName: '陈性能',
+    userId: '13',
+    userName: '陈性能',
     authorAvatar: 'https://picsum.photos/100/100?random=13',
     registeredCount: 35,
     maxRegistrations: 80,
@@ -1100,8 +1098,8 @@ const mockActivities: Activity[] = [
     type: 'training',
     date: '2026-02-05',
     location: 'B区会议室502',
-    authorId: 10,
-    authorName: '张测试',
+    userId: '10',
+    userName: '张测试',
     authorAvatar: 'https://picsum.photos/100/100?random=10',
     registeredCount: 20,
     maxRegistrations: 50,
@@ -1122,8 +1120,8 @@ const mockActivities: Activity[] = [
     type: 'training',
     date: '2026-01-25',
     location: 'B区会议室301',
-    authorId: 2,
-    authorName: '李四',
+    userId: '2',
+    userName: '李四',
     authorAvatar: 'https://picsum.photos/100/100?random=2',
     registeredCount: 25,
     maxRegistrations: 30,
@@ -1144,8 +1142,8 @@ const mockActivities: Activity[] = [
     date: '2026-02-01',
     location: '线上会议',
     meetingLink: 'https://meeting.example.com/456',
-    authorId: 1,
-    authorName: '张三',
+    userId: '1',
+    userName: '张三',
     authorAvatar: 'https://picsum.photos/100/100?random=1',
     registeredCount: 15,
     maxRegistrations: 100,
@@ -1165,8 +1163,8 @@ const mockActivities: Activity[] = [
     type: 'activity',
     date: '2026-02-10',
     location: 'A区报告厅',
-    authorId: 3,
-    authorName: '王五',
+    userId: '3',
+    userName: '王五',
     authorAvatar: 'https://picsum.photos/100/100?random=3',
     registeredCount: 50,
     maxRegistrations: 200,
@@ -1181,63 +1179,63 @@ const mockActivities: Activity[] = [
 const mockMessages: Message[] = [
   {
     id: 1,
-    userId: 1,
+    userId: '1',
     type: 'post_comment',
     title: '帖子评论通知',
     content: '张三 评论了您的帖子《AI技术实践分享》',
     relatedId: 101,           // 帖子ID
     relatedType: 'post',
     commentId: 1001,          // 评论ID，用于定位到具体评论
-    fromUserId: 2,
-    fromUserName: '张三',
+    userId: '2',
+    userName: '张三',
     read: false,
     createTime: new Date(Date.now() - 3600000),
     createdAt: new Date(Date.now() - 3600000).toISOString()
   },
   {
     id: 2,
-    userId: 1,
+    userId: '1',
     type: 'activity_registration',
     title: '活动报名通知',
     content: '李四 报名参加了您发布的活动《扶摇Agent新手入门培训》',
     relatedId: 1,             // 活动ID
     relatedType: 'activity',
-    fromUserId: 3,
-    fromUserName: '李四',
+    userId: '3',
+    userName: '李四',
     read: false,
     createTime: new Date(Date.now() - 7200000),
     createdAt: new Date(Date.now() - 7200000).toISOString()
   },
   {
     id: 3,
-    userId: 1,
+    userId: '1',
     type: 'award_notification',
     title: '恭喜您获得奖项！',
     content: '恭喜！您在 2026-01 荣获【创新突破】类别的「年度创新贡献奖」奖项',
     relatedId: 10,            // 奖项ID
     relatedType: 'award',
-    fromUserName: '系统通知',
+    userName: '系统通知',
     read: false,
     createTime: new Date(Date.now() - 86400000),
     createdAt: new Date(Date.now() - 86400000).toISOString()
   },
   {
     id: 4,
-    userId: 1,
+    userId: '1',
     type: 'post_like',
     title: '点赞通知',
     content: '王五 赞了您的帖子《使用扶摇Agent实现智能代码生成》',
     relatedId: 102,           // 帖子ID
     relatedType: 'post',
-    fromUserId: 4,
-    fromUserName: '王五',
+    userId: '4',
+    userName: '王五',
     read: true,
     createTime: new Date(Date.now() - 172800000),
     createdAt: new Date(Date.now() - 172800000).toISOString()
   },
   {
     id: 5,
-    userId: 1,
+    userId: '1',
     type: 'comment_reply',
     title: '评论回复通知',
     content: '赵六 回复了您的评论',
@@ -1245,8 +1243,8 @@ const mockMessages: Message[] = [
     relatedType: 'post',
     commentId: 1001,          // 评论ID
     replyId: 2001,            // 回复ID，用于定位到具体回复
-    fromUserId: 5,
-    fromUserName: '赵六',
+    userId: '5',
+    userName: '赵六',
     read: true,
     createTime: new Date(Date.now() - 259200000),
     createdAt: new Date(Date.now() - 259200000).toISOString()
@@ -1410,7 +1408,7 @@ export const getHomeEmpowerment = async (limit: number = 5): Promise<{ list: Hom
       title: '如何使用 Agent 提升代码开发效率？',
       tag: '讨论',
       tagType: 'blue',
-      author: '张三',
+      userName: '张三',
       time: '2小时前'
     },
     {
@@ -1418,7 +1416,7 @@ export const getHomeEmpowerment = async (limit: number = 5): Promise<{ list: Hom
       title: '分享一个提升工作效率的AI工具使用技巧',
       tag: '分享',
       tagType: 'green',
-      author: '李四',
+      userName: '李四',
       time: '3小时前'
     },
     {
@@ -1426,7 +1424,7 @@ export const getHomeEmpowerment = async (limit: number = 5): Promise<{ list: Hom
       title: '关于AI辅助编程的一些疑问',
       tag: '提问',
       tagType: 'orange',
-      author: '王五',
+      userName: '王五',
       time: '5小时前'
     },
     {
@@ -1434,7 +1432,7 @@ export const getHomeEmpowerment = async (limit: number = 5): Promise<{ list: Hom
       title: 'Prompt工程最佳实践经验总结',
       tag: '经验',
       tagType: 'purple',
-      author: '赵六',
+      userName: '赵六',
       time: '6小时前'
     },
     {
@@ -1442,7 +1440,7 @@ export const getHomeEmpowerment = async (limit: number = 5): Promise<{ list: Hom
       title: '推荐几个好用的AI工具',
       tag: '工具',
       tagType: 'blue',
-      author: '钱七',
+      userName: '钱七',
       time: '8小时前'
     }
   ]
@@ -1512,7 +1510,7 @@ export const getCurrentUser = async (): Promise<UserProfile> => {
   return mockCurrentUser
 }
 
-export const getUserProfileById = async (userId: number): Promise<UserProfile> => {
+export const getUserProfileById = async (userId: string): Promise<UserProfile> => {
   await delay()
   return { ...mockCurrentUser, id: userId }
 }
@@ -1523,7 +1521,7 @@ export const getUserProfileByName = async (name: string): Promise<UserProfile> =
 }
 
 // 根据工号获取用户信息
-export const getUserByEmployeeId = async (employeeId: string): Promise<UserProfile | null> => {
+export const getUserByEmployeeId = async (userId: string): Promise<UserProfile | null> => {
   await delay()
   // 模拟根据工号查找用户
   if (employeeId === mockCurrentUser.employeeId) {
@@ -1637,27 +1635,27 @@ export const getUserPoints = async (): Promise<{
   }
 }
 
-export const getUserPosts = async (_userId: number, params?: PaginationParams): Promise<PageResult<Post>> => {
+export const getUserPosts = async (_userId: string, params?: PaginationParams): Promise<PageResult<Post>> => {
   await delay()
   return { list: mockPosts, total: mockPosts.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserFavorites = async (_userId: number, params?: PaginationParams): Promise<PageResult<Post>> => {
+export const getUserFavorites = async (_userId: string, params?: PaginationParams): Promise<PageResult<Post>> => {
   await delay()
   return { list: mockPosts, total: mockPosts.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserComments = async (_userId: number, params?: PaginationParams): Promise<PageResult<Comment>> => {
+export const getUserComments = async (_userId: string, params?: PaginationParams): Promise<PageResult<Comment>> => {
   await delay()
   return { list: mockComments, total: mockComments.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserActivities = async (_userId: number, params?: PaginationParams): Promise<PageResult<Activity>> => {
+export const getUserActivities = async (_userId: string, params?: PaginationParams): Promise<PageResult<Activity>> => {
   await delay()
   return { list: mockActivities, total: mockActivities.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
 
-export const getUserCreatedActivities = async (_userId: number, params?: PaginationParams): Promise<PageResult<Activity>> => {
+export const getUserCreatedActivities = async (_userId: string, params?: PaginationParams): Promise<PageResult<Activity>> => {
   await delay()
   return { list: mockActivities, total: mockActivities.length, page: params?.page || 1, pageSize: params?.pageSize || 15 }
 }
@@ -1740,7 +1738,7 @@ export const createPost = async (data: Partial<Post>): Promise<Post> => {
     createTime: new Date(),
     ...data,
     author: mockCurrentUser.name,
-    authorName: mockCurrentUser.name,
+    userName: mockCurrentUser.name,
     authorAvatar: mockCurrentUser.avatar,
     authorId: mockCurrentUser.id
   }
@@ -2134,7 +2132,7 @@ export const createActivity = async (data: Partial<Activity>): Promise<Activity>
     type: data.type || 'activity',
     date: data.date || new Date(),
     authorId: mockCurrentUser.id,
-    authorName: mockCurrentUser.name,
+    userName: mockCurrentUser.name,
     authorAvatar: mockCurrentUser.avatar,
     registeredCount: 0,
     status: 'upcoming',
@@ -2183,7 +2181,7 @@ export const cancelRegistration = async (id: number): Promise<{ success: boolean
 export interface Registration {
   id: number
   activityId?: number
-  userId: number
+  userId: string
   userName: string
   userAvatar: string
   employeeId?: string
@@ -2198,7 +2196,7 @@ export const getRegistrations = async (_id: number, params?: { page?: number; pa
     {
       id: 1,
       activityId: _id,
-      userId: 2,
+      userId: '2',
       userName: '李四',
       userAvatar: 'https://picsum.photos/100/100?random=2',
       employeeId: 'E002',
@@ -2208,7 +2206,7 @@ export const getRegistrations = async (_id: number, params?: { page?: number; pa
     {
       id: 2,
       activityId: _id,
-      userId: 3,
+      userId: '3',
       userName: '王五',
       userAvatar: 'https://picsum.photos/100/100?random=3',
       employeeId: 'E003',
@@ -2218,7 +2216,7 @@ export const getRegistrations = async (_id: number, params?: { page?: number; pa
     {
       id: 3,
       activityId: _id,
-      userId: 4,
+      userId: '4',
       userName: '赵六',
       userAvatar: 'https://picsum.photos/100/100?random=4',
       employeeId: 'E004',
@@ -2228,7 +2226,7 @@ export const getRegistrations = async (_id: number, params?: { page?: number; pa
     {
       id: 4,
       activityId: _id,
-      userId: 5,
+      userId: '5',
       userName: '钱七',
       userAvatar: 'https://picsum.photos/100/100?random=5',
       employeeId: 'E005',
@@ -2238,7 +2236,7 @@ export const getRegistrations = async (_id: number, params?: { page?: number; pa
     {
       id: 5,
       activityId: _id,
-      userId: 6,
+      userId: '6',
       userName: '孙八',
       userAvatar: 'https://picsum.photos/100/100?random=6',
       employeeId: 'E006',
@@ -2712,7 +2710,7 @@ interface EmpowermentPost {
   title: string
   description: string
   author: string
-  authorId: number
+  userId: string
   authorAvatar: string
   createTime: string
   views: number
@@ -2730,8 +2728,8 @@ const empowermentFeaturedPosts: EmpowermentPost[] = [
     id: 1001,
     title: '如何高效使用Agent提升开发效率',
     description: '分享使用Agent工具在开发过程中的最佳实践和技巧。',
-    author: '张工程师',
-    authorId: 101,
+    userName: '张工程师',
+    userId: '101',
     authorAvatar: 'https://picsum.photos/100/100?random=1001',
     createTime: '2026-01-10T10:30:00Z',
     views: 1250,
@@ -2750,8 +2748,8 @@ const empowermentPosts: EmpowermentPost[] = [
     id: 1002,
     title: 'Prompt工程的最佳实践分享',
     description: '如何编写高质量的Prompt，提升AI模型输出效果。',
-    author: '李开发者',
-    authorId: 102,
+    userName: '李开发者',
+    userId: '102',
     authorAvatar: 'https://picsum.photos/100/100?random=1002',
     createTime: '2026-01-12T14:30:00Z',
     views: 890,
@@ -2764,8 +2762,8 @@ const empowermentPosts: EmpowermentPost[] = [
     id: 1003,
     title: '大模型微调 vs 提示工程的选择',
     description: '讨论在不同场景下应该选择微调还是提示工程。',
-    author: '王测试',
-    authorId: 103,
+    userName: '王测试',
+    userId: '103',
     authorAvatar: 'https://picsum.photos/100/100?random=1003',
     createTime: '2026-01-11T09:00:00Z',
     views: 650,
@@ -2778,8 +2776,8 @@ const empowermentPosts: EmpowermentPost[] = [
     id: 1004,
     title: 'AI工具链的构建与优化',
     description: '分享如何构建高效的AI工具链，提升团队协作效率。',
-    author: '赵医生',
-    authorId: 104,
+    userName: '赵医生',
+    userId: '104',
     authorAvatar: 'https://picsum.photos/100/100?random=1004',
     createTime: '2026-01-10T15:00:00Z',
     views: 520,
@@ -2792,8 +2790,8 @@ const empowermentPosts: EmpowermentPost[] = [
     id: 1005,
     title: '如何解决Agent执行中的常见问题',
     description: '总结Agent使用过程中遇到的问题及解决方案。',
-    author: '陈架构师',
-    authorId: 105,
+    userName: '陈架构师',
+    userId: '105',
     authorAvatar: 'https://picsum.photos/100/100?random=1005',
     createTime: '2026-01-09T11:00:00Z',
     views: 720,
@@ -2806,8 +2804,8 @@ const empowermentPosts: EmpowermentPost[] = [
     id: 1006,
     title: 'Prompt模板库分享',
     description: '分享常用的Prompt模板，提高工作效率。',
-    author: '刘设计师',
-    authorId: 106,
+    userName: '刘设计师',
+    userId: '106',
     authorAvatar: 'https://picsum.photos/100/100?random=1006',
     createTime: '2026-01-08T16:00:00Z',
     views: 450,
@@ -3145,7 +3143,7 @@ const mockWinnersConfigData: WinnerConfig[] = [
   {
     id: 1,
     name: '林星辰',
-    userId: 1,
+    userId: '1',
     userName: '林星辰',
     awardTime: '2026-01',
     awardName: '技术创新奖',
@@ -3155,7 +3153,7 @@ const mockWinnersConfigData: WinnerConfig[] = [
   {
     id: 2,
     name: 'Sarah',
-    userId: 2,
+    userId: '2',
     userName: 'Sarah',
     awardTime: '2025-12',
     awardName: '最佳实践奖',
@@ -3165,7 +3163,7 @@ const mockWinnersConfigData: WinnerConfig[] = [
   {
     id: 3,
     name: '张伟',
-    userId: 3,
+    userId: '3',
     userName: '张伟',
     awardTime: '2025-11',
     awardName: '效能提升奖',
@@ -3175,7 +3173,7 @@ const mockWinnersConfigData: WinnerConfig[] = [
   {
     id: 4,
     name: '王芳',
-    userId: 4,
+    userId: '4',
     userName: '王芳',
     awardTime: '2025-10',
     awardName: '社区贡献奖',
@@ -3260,7 +3258,7 @@ export const saveTeamAwardsConfig = async (list: TeamAward[]): Promise<void> => 
 // 推荐获奖者类型（兼容 AdminView 中的 RecommendedWinner）
 export interface RecommendedWinner {
   id: number
-  employeeId: string
+  userId: string
   name: string
   avatar: string
   department: string
@@ -3276,7 +3274,7 @@ export interface RecommendedWinner {
 
 // 设置奖项参数类型
 interface SetUserAwardParams {
-  userId: number
+  userId: string
   awardId: number
   awardName?: string
   awardDate?: string
@@ -3301,7 +3299,7 @@ interface UserListItem {
   email: string
   avatar: string
   department: string
-  employeeId: string
+  userId: string
   currentRole: 'user' | 'admin' | 'tool_owner'
 }
 
@@ -3600,11 +3598,11 @@ export const getUsersList = async (params?: SearchUsersParams): Promise<{ list: 
   return { list, total: list.length }
 }
 
-export const addUserRole = async (_userId: number, _params: RoleParams): Promise<void> => {
+export const addUserRole = async (_userId: string, _params: RoleParams): Promise<void> => {
   await delay()
 }
 
-export const removeUserRole = async (_userId: number, _params: RoleParams): Promise<void> => {
+export const removeUserRole = async (_userId: string, _params: RoleParams): Promise<void> => {
   await delay()
 }
 
@@ -3699,7 +3697,7 @@ interface Contributor {
 
 // 登录参数类型
 interface LoginParams {
-  employeeId: string  // 工号（与接口文档一致）
+  userId: string  // 工号（与接口文档一致）
   password: string
 }
 

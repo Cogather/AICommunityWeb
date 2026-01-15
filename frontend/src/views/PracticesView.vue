@@ -292,7 +292,7 @@ const loadPosts = async () => {
     
     posts.value = allPosts.map((post: Post) => ({
       ...post,
-      author: post.author || post.authorName || '',
+      author: post.author || post.userName || '',
       description: post.summary || '',
       image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')

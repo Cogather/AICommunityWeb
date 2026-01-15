@@ -51,8 +51,8 @@ export interface HonorData {
 
 /** 最新获奖者 */
 export interface LatestWinner {
-  id: number
-  name: string
+  userId: string
+  userName: string
   avatar?: string
   awardName: string
 }
@@ -63,7 +63,7 @@ export interface EmpowermentPost {
   title: string
   tag: string
   tagType?: 'blue' | 'green' | 'orange' | 'red' | 'purple'
-  author?: string
+  userName?: string
   time: string
   views?: number
 }
@@ -72,7 +72,7 @@ export interface EmpowermentPost {
 export interface PracticePost {
   id: number | string
   title: string
-  author: string
+  userName: string
   time: string
   category: 'training' | 'training-battle' | 'user-exchange'
 }
@@ -135,9 +135,9 @@ export interface DepartmentInfo {
 
 /** 用户信息 */
 export interface UserProfile {
-  id: number | string
-  employeeId?: string
-  name: string
+  userId: string
+  userName: string
+  employeeId?: string // 保留以兼容，但主要使用 userId
   avatar: string
   bio?: string
   department?: string
@@ -164,7 +164,7 @@ export interface UserProfile {
 
 /** 登录参数 */
 export interface LoginParams {
-  employeeId: string
+  userId: string
   password: string
 }
 
@@ -186,9 +186,8 @@ export interface Post {
   content?: string
   cover?: string
   image?: string
-  author: string
-  authorName?: string
-  authorId: number
+  userId: string
+  userName?: string
   authorAvatar?: string
   department?: string
   zone?: 'practices' | 'tools' | 'agent' | 'empowerment'
@@ -221,12 +220,12 @@ export interface PostDetail extends Post {
 export interface Reply {
   id: number
   commentId: number
-  userId: number
+  userId: string
   userName: string
   userAvatar?: string
   content: string
   replyTo?: string
-  replyToUserId?: number
+  replyToUserId?: string
   replyToId?: number
   likes: number
   createTime: string
@@ -237,7 +236,7 @@ export interface Comment {
   id: number
   postId: number | string
   postTitle?: string
-  userId: number
+  userId: string
   userName: string
   userAvatar?: string
   content: string
@@ -282,8 +281,8 @@ export interface Activity {
   status: ActivityStatus
   isJoined?: boolean
   createTime?: string
-  creatorId?: number
-  creatorName?: string
+  userId?: string
+  userName?: string
 }
 
 // ==================== 标签类型 ====================
@@ -314,8 +313,8 @@ export interface Message {
   relatedType?: 'post' | 'activity' | 'award'
   commentId?: number
   replyId?: number
-  fromUserId?: number
-  fromUserName?: string
+  userId?: string
+  userName?: string
   read: boolean
   createdAt: string
   link?: string
@@ -326,7 +325,7 @@ export interface Message {
 /** 个人荣誉 */
 export interface HonorRecord {
   id: number
-  name: string
+  userName: string
   department: string
   avatar?: string
   awardName: string
@@ -361,7 +360,7 @@ export interface TeamAward {
 
 /** 排行榜用户 */
 export interface LeaderboardUser {
-  name: string
+  userName: string
   department: string
   avatar?: string
   count: number
@@ -400,7 +399,7 @@ export interface DraftResponse {
 export interface Registration {
   id: number
   activityId: number
-  userId: number
+  userId: string
   userName: string
   userAvatar?: string
   department?: string

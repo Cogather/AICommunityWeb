@@ -36,7 +36,7 @@ const mockComments: Comment[] = [
   {
     id: 1,
     postId: 1,
-    userId: 2,
+    userId: '2',
     userName: '李四',
     userAvatar: 'https://picsum.photos/100/100?random=2',
     content: '很棒的分享，学习了！',
@@ -47,7 +47,7 @@ const mockComments: Comment[] = [
       {
         id: 101,
         commentId: 1,
-        userId: 1,
+        userId: '1',
         userName: '张三',
         userAvatar: 'https://picsum.photos/100/100?random=1',
         content: '谢谢支持！',
@@ -61,7 +61,7 @@ const mockComments: Comment[] = [
   {
     id: 2,
     postId: 1,
-    userId: 3,
+    userId: '3',
     userName: '王五',
     userAvatar: 'https://picsum.photos/100/100?random=3',
     content: '请问有没有相关的实战案例？',
@@ -96,7 +96,7 @@ const mockCreateComment = async (
   return success({
     id: Date.now(),
     postId,
-    userId: 1,
+    userId: '1',
     userName: '当前用户',
     userAvatar: 'https://picsum.photos/100/100?random=user',
     content: params.content,
@@ -115,7 +115,7 @@ const mockCreateReply = async (
   return success({
     id: Date.now(),
     commentId,
-    userId: 1,
+    userId: '1',
     userName: '当前用户',
     userAvatar: 'https://picsum.photos/100/100?random=user',
     content: params.content,
@@ -132,7 +132,7 @@ const mockUpdateComment = async (
   return success({
     id: 1,
     postId: 1,
-    userId: 1,
+    userId: '1',
     userName: '当前用户',
     userAvatar: 'https://picsum.photos/100/100?random=user',
     content: params.content,

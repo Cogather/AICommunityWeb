@@ -359,7 +359,7 @@ const loadPosts = async (toolId?: number) => {
     // 字段映射
     postList.value = (response.data.list || []).map((post: Post): LocalPost => ({
       ...post,
-      author: post.authorName || (post as unknown as { author?: string }).author || '',
+      author: post.userName || (post as unknown as { author?: string }).author || '',
       description: post.summary || (post as unknown as { description?: string }).description || '',
       image: post.cover || (post as unknown as { image?: string }).image || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN'),

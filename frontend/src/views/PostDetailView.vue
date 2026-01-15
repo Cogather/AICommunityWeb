@@ -25,14 +25,14 @@
             <div class="author-info">
               <div class="avatar-wrapper">
                 <el-avatar :src="postData.authorAvatar" :size="40">
-                  {{ postData.authorName?.charAt(0) || 'U' }}
+                  {{ postData.userName?.charAt(0) || 'U' }}
                 </el-avatar>
                 <el-tag type="success" size="small" class="author-badge">
                   楼主
                 </el-tag>
               </div>
               <div class="author-details">
-                <span class="author-name">{{ postData.authorName }}</span>
+                <span class="author-name">{{ postData.userName }}</span>
                 <span class="post-time">{{ formatDate(postData.createTime) }}</span>
               </div>
             </div>
@@ -435,7 +435,7 @@ const postData = ref({
   title: '这是一个示例帖子标题',
   content: '<p>这是帖子的内容，支持富文本格式。</p><p>可以包含<strong>加粗</strong>、<em>斜体</em>等格式。</p>',
   cover: '',
-  authorName: '张三',
+  userName: '张三',
   authorAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
   createTime: '2024-01-07 10:30:00',
   views: 1234,
@@ -450,13 +450,13 @@ const postData = ref({
   toolId: null as number | null,  // 工具ID（AI工具专区使用）
   featured: false,  // 是否精华/置顶
   isFeatured: false,  // 是否精华/置顶（兼容字段）
-  authorId: 0 as number | string
+  userId: '' as string
 })
 
 // 评论类型定义
 interface CommentItem {
   id: number
-  userId?: number | string
+  userId: string
   userName: string
   userAvatar?: string
   content: string
@@ -491,19 +491,19 @@ const commentCount = computed(() => {
 })
 
 // 当前用户信息（实际应该从登录状态获取）
-const currentUser = ref<{ id: number | string; name: string; avatar: string }>({
-  id: 1, // 当前用户ID
-  name: '当前用户', // 当前用户名
+const currentUser = ref<{ userId: string; userName: string; avatar: string }>({
+  userId: '1', // 当前用户ID
+  userName: '当前用户', // 当前用户名
   avatar: '' // 用户头像
 })
 
 // 当前用户ID和用户名（用于评论和回复）
-const currentUserId = computed(() => currentUser.value.id)
-const currentUserName = computed(() => currentUser.value.name)
+const currentUserId = computed(() => currentUser.value.userId)
+const currentUserName = computed(() => currentUser.value.userName)
 
 // 判断是否是当前用户
 const _isCurrentUser = (userName: string) => {
-  return userName === currentUser.value.name
+  return userName === currentUser.value.userName
 }
 
 // 判断是否是自己的评论
@@ -579,10 +579,10 @@ const getTagType = (tag: string) => {
 
 // 判断是否是楼主
 const isAuthor = (userName: string) => {
-  if (!userName || !postData.value.authorName) {
+  if (!userName || !postData.value.userName) {
     return false
   }
-  return userName === postData.value.authorName
+  return userName === postData.value.userName
 }
 
 // 返回上一页（返回到记录的导航页面，避免循环）
@@ -614,7 +614,7 @@ const loadPostDetail = async () => {
       title: post.title,
       content: post.content || '',
       cover: post.cover || '',
-      authorName: post.authorName || post.author || '',
+      userName: post.userName || post.author || '',
       authorAvatar: post.authorAvatar || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleString('zh-CN'),
       views: post.views,
@@ -629,7 +629,7 @@ const loadPostDetail = async () => {
       toolId: post.toolId ?? null,
       featured: post.featured || false,
       isFeatured: post.featured || false,
-      authorId: post.authorId || 0
+      userId: post.userId || ''
     }
     // 检查收藏状态
     isCollected.value = post.isCollected || false
@@ -985,7 +985,7 @@ const handleReplyLike = async (reply: { isLiked?: boolean; likes?: number }) => 
 }
 
 // 判断是否是自己的回复
-const isMyReply = (reply: { userId?: number | string; userName?: string }) => {
+const isMyReply = (reply: { userId: string | string; userName?: string }) => {
   // 通过 userId 或 userName 判断是否是当前用户发布的回复
   if (reply.userId && currentUserId.value) {
     return reply.userId === currentUserId.value
@@ -1129,8 +1129,8 @@ onMounted(async () => {
     const response = await getCurrentUser()
     const user = response.data
     currentUser.value = {
-      id: user.id,
-      name: user.name,
+      userId: user.userId,
+      userName: user.userName,
       avatar: user.avatar
     }
     isAdmin.value = user.roles?.includes('admin') || false

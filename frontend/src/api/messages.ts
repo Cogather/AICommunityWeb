@@ -16,8 +16,8 @@ const mockMessages: Message[] = [
     relatedId: 101,
     relatedType: 'post',
     commentId: 1001,
-    fromUserId: 2,
-    fromUserName: '张三',
+    userId: '2',
+    userName: '张三',
     read: false,
     createdAt: new Date(Date.now() - 3600000).toISOString(),
   },
@@ -28,8 +28,8 @@ const mockMessages: Message[] = [
     content: '李四 报名参加了您发布的活动《扶摇Agent新手入门培训》',
     relatedId: 1,
     relatedType: 'activity',
-    fromUserId: 3,
-    fromUserName: '李四',
+    userId: '3',
+    userName: '李四',
     read: false,
     createdAt: new Date(Date.now() - 7200000).toISOString(),
   },
@@ -40,7 +40,7 @@ const mockMessages: Message[] = [
     content: '恭喜！您在 2026-01 荣获【创新突破】类别的「年度创新贡献奖」奖项',
     relatedId: 10,
     relatedType: 'award',
-    fromUserName: '系统通知',
+    userName: '系统通知',
     read: false,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
@@ -51,8 +51,8 @@ const mockMessages: Message[] = [
     content: '王五 赞了您的帖子《使用扶摇Agent实现智能代码生成》',
     relatedId: 102,
     relatedType: 'post',
-    fromUserId: 4,
-    fromUserName: '王五',
+    userId: '4',
+    userName: '王五',
     read: true,
     createdAt: new Date(Date.now() - 172800000).toISOString(),
   },
@@ -65,8 +65,8 @@ const mockMessages: Message[] = [
     relatedType: 'post',
     commentId: 1001,
     replyId: 2001,
-    fromUserId: 5,
-    fromUserName: '赵六',
+    userId: '5',
+    userName: '赵六',
     read: true,
     createdAt: new Date(Date.now() - 259200000).toISOString(),
   },
@@ -135,8 +135,8 @@ export async function getMessages(
   }
   
   // 后端返回 PageResult<MessageVO>，需映射为前端 PaginatedData<Message>
-  // MessageVO 字段: id, type, title, content, relatedId, relatedType, commentId, replyId, fromUserId, fromUserName, read, createdAt, link
-  // Message 字段: id, type, title, content, relatedId, relatedType, commentId, replyId, fromUserId, fromUserName, read, createdAt, link
+  // MessageVO 字段: id, type, title, content, relatedId, relatedType, commentId, replyId, userId, userName, read, createdAt, link
+  // Message 字段: id, type, title, content, relatedId, relatedType, commentId, replyId, userId, userName, read, createdAt, link
   // 字段完全匹配，只需注意 PageResult 结构
   
   return get<PaginatedData<Message>>('/messages', params)

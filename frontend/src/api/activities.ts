@@ -25,13 +25,13 @@ export interface ActivityDetail extends Activity {
   maxParticipants?: number
   currentParticipants?: number
   participants?: ActivityParticipant[]
-  creatorId?: number
-  creatorName?: string
+  userId: string
+  userName?: string
 }
 
 /** 活动参与者 */
 export interface ActivityParticipant {
-  userId: number
+  userId: string
   userName: string
   userAvatar?: string
   department?: string
@@ -40,7 +40,7 @@ export interface ActivityParticipant {
 /** 活动报名记录 */
 export interface ActivityRegistration {
   id: number
-  userId: number
+  userId: string
   userName: string
   userAvatar?: string
   department?: string
@@ -70,7 +70,7 @@ export type ActivityUpdateParams = Partial<ActivityCreateParams>
 /** 报名响应 */
 export interface JoinResponse {
   activityId: number
-  userId: number
+  userId: string
   joinTime: string
 }
 
@@ -129,8 +129,8 @@ const mockCreateActivity = async (params: ActivityCreateParams): Promise<ApiResp
     status: 'upcoming',
     currentParticipants: 0,
     isJoined: false,
-    creatorId: 1,
-    creatorName: '当前用户',
+    userId: '1',
+    userName: '当前用户',
     createTime: new Date().toISOString(),
   } as ActivityDetail)
 }
@@ -156,7 +156,7 @@ const mockJoinActivity = async (): Promise<ApiResponse<JoinResponse>> => {
   await delay()
   return success({
     activityId: 1,
-    userId: 1,
+    userId: '1',
     joinTime: new Date().toISOString()
   })
 }
@@ -174,7 +174,7 @@ const mockGetRegistrations = async (
     list: [
       {
         id: 1,
-        userId: 2,
+        userId: '2',
         userName: '李四',
         userAvatar: 'https://picsum.photos/100/100?random=r1',
         department: '技术部',

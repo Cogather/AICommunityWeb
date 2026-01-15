@@ -277,7 +277,7 @@ const getDisabledReason = () => {
 // 是否有权限编辑/删除
 const canEditActivity = computed(() => {
   // 管理员、工具Owner、或者活动的创建者
-  return isAdmin.value || isToolOwner.value || (currentUserId.value === activityData.value.creatorId)
+  return isAdmin.value || isToolOwner.value || (currentUserId.value === activityData.value.userId)
 })
 
 // 加载活动数据
