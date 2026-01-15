@@ -638,14 +638,14 @@ const allDepartments = computed(() => {
   const list = departmentNamesFromApi.value.length > 0
     ? departmentNamesFromApi.value
     : Array.from(new Set(honorList.value.map(i => i.department))).filter(Boolean) as string[]
-  return ['全部', ...list]
+  return ['全部', ...list.filter(i => i !== '全部')]
 });
 
 const allAwards = computed(() => {
   const list = awardNamesFromApi.value.length > 0
     ? awardNamesFromApi.value
     : Array.from(new Set(honorList.value.map(i => i.awardName))).filter(Boolean) as string[]
-  return ['全部', ...list]
+  return ['全部', ...list.filter(i => i !== '全部')]
 });
 const showSecondaryFilter = computed(() => filterScope.value === 'all' && currentViewMode.value === 'grid');
 const activeFilterOptions = computed(() => {
