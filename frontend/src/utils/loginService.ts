@@ -5,7 +5,9 @@ import commonMethods from '@/utils/common'
 const CACHE_KEY = 'user_info'
 
 // 基础 URL 配置
-const NGX_BASE_URL = 'https://coretool.rnd.huawei.com' // 假设的 Base URL，根据原代码推断
+// 注意：原代码中的 NGX_BASE_URL 是 https://coretool.rnd.huawei.com
+// 这里我们将其调整为当前应用的 API 地址，或者如果后端有统一的 Auth 服务，应该配置为 Auth 服务地址
+// 鉴于这是一个移植模块，我们暂时保留结构，但 login/logout 主要依赖 SSO 跳转
 const LOGIN_URL = 'https://login.huawei.com/login/'
 
 // 辅助函数
@@ -37,33 +39,50 @@ class LoginService {
     return getCache(CACHE_KEY)
   }
 
+  // 获取当前应用的主页地址，用于 SSO 回调
+  get appHomeUrl() {
+    // 自动获取当前协议+域名+端口
+    return window.location.origin
+  }
+
+  // 以下 Endpoint 保留用于兼容，但实际逻辑主要依赖 login/validate 方法
   get loginEndpoint() {
-    return `${NGX_BASE_URL}/login/v2/login`
+    return '/login/v2/login'
   }
 
   get logoutEndpoint() {
-    return `${NGX_BASE_URL}/login/v2/logout`
+    return '/login/v2/logout'
   }
 
   get validateEndpoint() {
-    return `${NGX_BASE_URL}/login/v2/validate`
+    return '/login/v2/validate'
   }
 
   // 验证用户是否登录，并根据cookice信息生成新老token
   getTokens() {
-    return fetch(`${NGX_BASE_URL}/login/v2/tokens`)
+    return fetch('/login/v2/tokens')
   }
 
   login() {
-    console.log('window.location.href', window.location.href)
-    const redirectUrl = encodeURIComponent('https://coretool.rnd.huawei.com/#/home')
+    console.log('Login: redirecting to SSO', window.location.href)
+    // 构造回调地址：当前应用的首页
+    const redirectUrl = encodeURIComponent(this.appHomeUrl)
+    // 构造返回地址：当前页面的完整 URL (用于登录后跳回具体页面)
     const returnUrl = encodeURIComponent(window.location.href)
+    
+    // 跳转到 SSO 登录页
+    // 格式：https://login.huawei.com/login/?redirect={应用首页}?returnUrl={当前页}
     window.location.href = `${LOGIN_URL}?redirect=${redirectUrl}?returnUrl=${returnUrl}`
   }
 
   logout() {
     removeCache(CACHE_KEY)
+    // 清除 cookie (可选，视具体需求)
+    document.cookie = 'userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    
     const params = new URLSearchParams()
+    // 登出后通常跳转回当前页或首页，触发 SSO 重新登录流程或显示未登录态
     params.append('redirect', window.location.href)
     window.location.href = `${LOGIN_URL}?${params.toString()}`
   }
@@ -87,74 +106,94 @@ class LoginService {
     const cachedUserInfo = getCache(CACHE_KEY)
     const { uid, userId, userName } = cachedUserInfo || {}
     
-    // 如果缓存中有用户信息，且不是初始化检查，则认为已登录
+    // 1. 如果缓存中有用户信息，且不是初始化检查，则认为已登录
     if (uid && userId && userName && !init) {
       return Promise.resolve(true)
     }
 
     const query = this.getQueryObject(window.location.href)
     
-    // 检查 Cookie 中的 userId
+    // 2. 检查 Cookie 中的 userId (兼容旧逻辑)
     if (getCookie('userId')) {
       (window as any).userId = getCookie('userId');
       (window as any).userName = getCookie('userName');
+      
+      // 确保缓存同步
+      if (!cachedUserInfo) {
+        setCache(CACHE_KEY, {
+          uid: getCookie('userId'),
+          userId: getCookie('userId'),
+          userName: getCookie('userName'),
+        })
+      }
       return Promise.resolve(true)
     }
 
-    // 检查 URL 参数中的 login_uid 与 Cookie 是否匹配
+    // 3. SSO 回调验证：检查 URL 参数中的 login_uid 与 Cookie 中的 login_uid 是否匹配
+    // 注意：SSO 登录成功后会写 login_uid cookie 并重定向回带有 login_uid 参数的 URL
     if (query.login_uid && query.login_uid == getCookie('login_uid')) {
       try {
         // 调用外部接口获取用户信息
-        // 注意：baseURL 设置为空字符串以使用绝对路径
+        // 使用绝对路径调用鉴权服务
         const res = await get<any>(
           `https://corecode-prod.inhuawei.com/developtest/v1/auth/user/${query.login_uid}`
         )
         
-        if (res && (res as any).data) { // 适配直接返回或者 ApiResponse
-           const userData = (res as any).data || res; // 兼容不同结构
-           // 如果 res.data 存在且有 user 字段，说明结构可能是 { data: { user: ... } }，或者 res 本身就是数据
-           // 原代码: if (res.data) { ... res.data.user ... }
-           // get<T> 返回的是 ApiResponse<T>，即 { code, data, message }
-           // 外部接口可能直接返回数据，request.ts 中处理了 response.json()
-           
-           // 假设 request.ts 返回的是 data (response.json())
-           // 让我们假设 res.data 是用户对象
-           const userObj = userData; 
+        // 适配返回结构：可能是 res.data (ApiResponse) 或直接是数据
+        const userData = (res as any).data || res;
 
-           if (userObj) {
-              document.cookie = `userId=${userObj.user};path=/`
-              document.cookie = `username=${userObj.name};path=/`
-              document.cookie = `user_login_time=${new Date().getTime()};path=/`
-              
-              ;(window as any).userId = userObj.user
-              ;(window as any).userName = userObj.name
-              
-              setCache(CACHE_KEY, {
-                uid: userObj.user,
-                userId: userObj.user,
-                userName: userObj.name,
-              });
-              
-              (window as any).userLoginTime = getCookie('user_login_time')
-              const accessTime = commonMethods.timestampToDateTime(parseInt((window as any).userLoginTime))
-              await commonMethods.addViewsInfo(accessTime)
+        if (userData && (userData.user || userData.uid)) {
+           const uid = userData.user || userData.uid
+           const name = userData.name || userData.userName
+
+           // 写入 Cookie
+           document.cookie = `userId=${uid};path=/`
+           document.cookie = `username=${encodeURIComponent(name)};path=/`
+           document.cookie = `user_login_time=${new Date().getTime()};path=/`
+           
+           // 设置全局变量 (兼容旧代码)
+           ;(window as any).userId = uid
+           ;(window as any).userName = name
+           
+           // 更新缓存
+           setCache(CACHE_KEY, {
+             uid: uid,
+             userId: uid,
+             userName: name,
+             // 保存更多用户信息
+             ...userData
+           });
+           
+           // 记录访问日志
+           const loginTime = getCookie('user_login_time')
+           if (loginTime) {
+             const accessTime = commonMethods.timestampToDateTime(parseInt(loginTime))
+             await commonMethods.addViewsInfo(accessTime)
            }
+           
+           // 登录成功后，通常建议清除 URL 中的敏感参数，但这取决于具体需求
+           // window.history.replaceState({}, document.title, window.location.pathname);
         }
       } catch (error) {
         console.error('获取用户信息失败:', error)
       }
     } else {
-      // 未登录，跳转到登录页
-      const url = 'http://coretool.rnd.huawei.com/#/home'
+      // 4. 未登录状态处理
+      const appHome = this.appHomeUrl
       const currHref = document.location.href
-      // 避免无限重定向
+      
+      // 避免无限重定向：如果已经包含 redirect 参数或正在进行 login_uid 验证，则不跳转
       if (!currHref.includes('?redirect=') && !currHref.includes('login_uid')) {
-         // 注意：开发环境可能不希望跳转，可以加个判断
+         // 环境判断：开发环境是否跳转 SSO
          const isProduction = import.meta.env.PROD || window.location.hostname.includes('huawei');
-         if (isProduction) {
-            window.location.href = `${LOGIN_URL}?redirect=${encodeURIComponent(url)}?returnUrl=${encodeURIComponent(currHref)}`
+         
+         // 只有在非本地环境或明确配置了 SSO 时才跳转，避免开发时死循环
+         // 这里假设 .huawei.com 域名下都启用 SSO
+         if (isProduction || window.location.hostname.includes('10.')) {
+            console.log('未登录，跳转 SSO')
+            window.location.href = `${LOGIN_URL}?redirect=${encodeURIComponent(appHome)}?returnUrl=${encodeURIComponent(currHref)}`
          } else {
-             console.warn('开发环境：未检测到登录信息，但阻止跳转到 SSO')
+             console.warn('开发环境：未检测到登录信息。请手动设置 localStorage user_info 或 cookie userId 以模拟登录。')
          }
       }
     }
