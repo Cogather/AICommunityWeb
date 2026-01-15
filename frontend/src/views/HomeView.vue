@@ -382,6 +382,7 @@ import { Trophy, Star, View, ArrowRight } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
 import { getHonor, getToolPlatform, getTools, getPractices, getToolBanners, getLatestWinners, getEmpowerment, getNews, getAiNews } from '../api/home'
+import loginService from '../utils/loginService'
 import type { LatestWinner } from '../api/types'
 import { ROUTES } from '../router/paths'
 
@@ -513,6 +514,9 @@ const loadEmpowermentPosts = async () => {
 
 // 初始化加载所有配置
 onMounted(async () => {
+  // 验证登录状态
+  await loginService.validate()
+  
   honorConfig.value = await loadHonorConfig()
   await loadLatestWinners()
   await loadToolPlatform() // 加载悬浮工具平台 (/api/home/tool-platform)
@@ -636,8 +640,10 @@ const practices = ref({
 const newsTop = ref<any>({})
 
 const loadNewsList = async () => {
-  const userMessageStr = localStorage.getItem('userMessage')
-  if (!userMessageStr) {
+  // 尝试从 LoginService 获取用户信息
+  const userInfo = loginService.userInfo
+  
+  if (!userInfo || !userInfo.userName) {
     // 默认数据
     newsTop.value = {
       title: 'AI 领域周报 (2026年1月1日 - 1月7日)',
@@ -648,8 +654,7 @@ const loadNewsList = async () => {
   }
 
   try {
-    const userMessage = JSON.parse(userMessageStr)
-    const userName = userMessage.userName
+    const userName = userInfo.userName
 
     if (userName) {
       getAiNews(userName)
@@ -664,7 +669,7 @@ const loadNewsList = async () => {
         })
     }
   } catch (e) {
-    console.error('解析用户信息失败:', e)
+    console.error('获取AI资讯失败:', e)
   }
 }
 
