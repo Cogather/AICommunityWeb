@@ -1558,7 +1558,7 @@ watch(() => route.query.type, (newType) => {
   backdrop-filter: blur(14px) saturate(120%);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  padding: 18px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1638,10 +1638,10 @@ watch(() => route.query.type, (newType) => {
 .card-top {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px; /* 减小底部间距 */
+  gap: 10px;
+  margin-bottom: 6px;
   z-index: 1;
-  flex-shrink: 0; /* 不压缩 */
+  flex-shrink: 0;
 }
 
 .avatar-halo {
@@ -1698,40 +1698,40 @@ watch(() => route.query.type, (newType) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* 从顶部开始排列 */
+  justify-content: flex-start;
   align-items: flex-start;
   text-align: left;
   z-index: 1;
-  padding-top: 4px;
+  padding-top: 2px;
   overflow: hidden;
-  min-height: 0; /* 允许 flex 子项收缩 */
+  min-height: 0;
 }
 
 .award-name {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.3;
   color: #020617;
-  margin: 0 0 6px 0; /* 减小底部间距，让标题更靠上 */
+  margin: 0 0 4px 0;
   font-weight: 900;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   cursor: pointer;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0; /* 不缩小 */
+  flex-shrink: 0;
 }
 
 .achievement-text {
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.55;
   color: #475569;
-  margin-top: 4px;
+  margin-top: 2px;
+  flex: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 4; /* 最多显示4行 */
-  line-clamp: 4;
+  -webkit-line-clamp: 7; /* 增加到7行 */
+  line-clamp: 7;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-  max-height: calc(13px * 1.6 * 4); /* 4行的最大高度 */
   transition: color 0.3s ease;
   font-weight: 500;
   width: 100%;
@@ -1743,14 +1743,14 @@ watch(() => route.query.type, (newType) => {
 
 .card-bottom {
   border-top: 1px solid rgba(0,0,0,0.08);
-  padding-top: 10px;
-  margin-top: auto; /* 自动推到底部 */
+  padding-top: 8px;
+  margin-top: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
   z-index: 1;
-  flex-shrink: 0; /* 不压缩 */
+  flex-shrink: 0;
 }
 
 .date-text {
