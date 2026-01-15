@@ -1503,9 +1503,8 @@ watch(() => route.query.type, (newType) => {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* 固定一行三个 */
-  gap: 24px; /* 加大间距 */
-  max-width: 1400px;
-  margin: 0 auto;
+  gap: 20px; /* 卡片间距 */
+  width: 100%; /* 占满父容器宽度 */
 }
 
 .honor-card-3d {
@@ -1635,8 +1634,9 @@ watch(() => route.query.type, (newType) => {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px; /* 减小底部间距 */
   z-index: 1;
+  flex-shrink: 0; /* 不压缩 */
 }
 
 .avatar-halo {
@@ -1693,37 +1693,42 @@ watch(() => route.query.type, (newType) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* 从顶部开始排列 */
   align-items: flex-start;
   text-align: left;
   z-index: 1;
+  padding-top: 6px; /* 减少顶部间距 */
+  overflow: hidden;
 }
 
 .award-name {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.3;
   color: #020617;
-  margin: 0 0 10px 0;
+  margin: 0 0 6px 0; /* 减小底部间距，让标题更靠上 */
   font-weight: 900;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   cursor: pointer;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0; /* 不缩小 */
 }
 
 .achievement-text {
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #475569;
-  margin-top: 8px;
+  margin-top: 4px;
+  flex: 1; /* 占满剩余高度 */
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 5; /* 增加到5行 */
+  line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
   transition: color 0.3s ease;
   font-weight: 500;
+  width: 100%;
 
   &:hover {
     color: #334155;
@@ -1732,13 +1737,14 @@ watch(() => route.query.type, (newType) => {
 
 .card-bottom {
   border-top: 1px solid rgba(0,0,0,0.08);
-  padding-top: 12px;
-  margin-top: 8px;
+  padding-top: 10px;
+  margin-top: auto; /* 自动推到底部 */
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
   z-index: 1;
+  flex-shrink: 0; /* 不压缩 */
 }
 
 .date-text {
@@ -2161,6 +2167,7 @@ watch(() => route.query.type, (newType) => {
 .view-area {
   flex: 1;
   min-width: 0;
+  overflow: hidden; /* 防止内容溢出 */
 }
 
 .ranking-sidebar {
