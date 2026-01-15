@@ -398,35 +398,35 @@ export async function getRegistrations(
 
 /**
  * 检查用户是否加入社区 (对应 aiFrontPage.isAddCommunity)
- * GET /api/user/community/membership
+ * GET /home/isAddCommunity
  */
 export async function checkCommunityMembership(userId: string): Promise<ApiResponse<CommunityMemberInfo>> {
   if (!useRealApi) {
     return mockCheckCommunityMembership(userId)
   }
-  return get<CommunityMemberInfo>(`/user/community/membership`, { userId })
+  return get<CommunityMemberInfo>(`/home/isAddCommunity`, { userId })
 }
 
 /**
  * 用户加入社区 (对应 aiFrontPage.addCommunity)
- * POST /api/user/community/join
+ * POST /home/addCommunity
  */
 export async function addCommunity(userId: string): Promise<ApiResponse<any>> {
   if (!useRealApi) {
     return mockAddCommunity(userId)
   }
-  return put<any>(`/user/community/join`, { userId })
+  return put<any>(`/home/addCommunity`, { userId })
 }
 
 /**
  * 获取管理员列表 (对应 aiFrontPage.getManager)
- * GET /api/user/community/managers
+ * GET /home/getManager
  */
 export async function getManager(): Promise<ApiResponse<{ userName: string }[]>> {
   if (!useRealApi) {
     return mockGetManager()
   }
-  return get<{ userName: string }[]>('/user/community/managers')
+  return get<{ userName: string }[]>('/home/getManager')
 }
 
 // ==================== 导出 ====================

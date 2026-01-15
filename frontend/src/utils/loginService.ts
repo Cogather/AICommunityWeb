@@ -97,6 +97,54 @@ class LoginService {
     return obj
   }
 
+  // 完善用户信息：获取社区身份、管理员权限、头像等
+  async fetchDetailedUserInfo(userId: string) {
+    let communityInfo: any = {};
+    let isAdmin = false;
+    
+    // 1. 检查社区成员资格 (对应 checkMembership)
+    try {
+      const memberRes = await checkCommunityMembership(userId);
+      if (memberRes && memberRes.data && Object.keys(memberRes.data).length > 0) {
+        communityInfo = memberRes.data;
+        // 兼容旧代码，将详细信息存入 localStorage 的 userMessage
+        localStorage.setItem('userMessage', JSON.stringify(communityInfo));
+      }
+    } catch (e) {
+      console.warn('获取社区成员信息失败:', e);
+    }
+
+    // 2. 检查管理员权限 (对应 fetchAdminFlag)
+    try {
+      // 假设 getManager 返回管理员列表
+      const adminRes = await import('@/api/user').then(m => m.getManager());
+      const adminIds = (adminRes.data || []).map((item: any) => item.userName);
+      isAdmin = adminIds.includes(userId);
+    } catch (e) {
+      console.warn('获取管理员权限失败:', e);
+    }
+
+    // 3. 构造头像 URL (对应 setAvatarUrl)
+    // 格式: https://w3.huawei.com/w3lab/rest/yellowpage/face/{工号}/120
+    // 注意：userId 可能是 'x12345' 或 '12345'，需要根据实际情况截取
+    const employeeId = userId.startsWith('x') || userId.startsWith('y') ? userId.substring(1) : userId;
+    const avatarUrl = `https://w3.huawei.com/w3lab/rest/yellowpage/face/${employeeId}/120`;
+
+    // 4. 更新主缓存
+    const currentCache = getCache(CACHE_KEY) || {};
+    const detailedUser = {
+      ...currentCache,
+      ...communityInfo, // 合并 chnName 等字段
+      isMember: Object.keys(communityInfo).length > 0,
+      isAdmin,
+      avatar: avatarUrl, // 设置标准头像
+      employeeId: userId, // 确保 employeeId 存在
+    };
+    
+    setCache(CACHE_KEY, detailedUser);
+    return detailedUser;
+  }
+
   async validate(init?: boolean) {
     const cachedUserInfo = getCache(CACHE_KEY)
     const { uid, userId, userName } = cachedUserInfo || {}
@@ -124,8 +172,7 @@ class LoginService {
       return Promise.resolve(true)
     }
 
-    // 3. SSO 回调验证：检查 URL 参数中的 login_uid 与 Cookie 中的 login_uid 是否匹配
-    // 注意：SSO 登录成功后会写 login_uid cookie 并重定向回带有 login_uid 参数的 URL
+    // 3. SSO 回调验证
     if (query.login_uid && query.login_uid == getCookie('login_uid')) {
       try {
         // 调用外部接口获取用户信息
@@ -134,43 +181,29 @@ class LoginService {
           `https://corecode-prod.inhuawei.com/developtest/v1/auth/user/${query.login_uid}`
         )
         
-        // 适配返回结构：可能是 res.data (ApiResponse) 或直接是数据
+        // 适配返回结构
         const userData = (res as any).data || res;
 
         if (userData && (userData.user || userData.uid)) {
-           const uid = userData.user || userData.uid
-           const name = userData.name || userData.userName
-
            // 写入 Cookie
-           document.cookie = `userId=${uid};path=/`
-           document.cookie = `username=${encodeURIComponent(name)};path=/`
+           document.cookie = `userId=${userData.user};path=/`
+           document.cookie = `username=${userData.name};path=/`
            document.cookie = `user_login_time=${new Date().getTime()};path=/`
            
-           // 设置全局变量 (兼容旧代码)
-           ;(window as any).userId = uid
-           ;(window as any).userName = name
+           // 设置全局变量
+           ;(window as any).userId = userData.user
+           ;(window as any).userName = userData.name
            
-           // 4. 检查社区成员资格并获取详细信息 (集成旧平台逻辑)
-           let communityInfo = {};
-           try {
-             // 这里调用 application backend
-             const memberRes = await checkCommunityMembership(String(uid))
-             if (memberRes && memberRes.data && Object.keys(memberRes.data).length > 0) {
-                communityInfo = memberRes.data;
-             }
-           } catch (e) {
-             console.warn('获取社区成员信息失败:', e)
-           }
-
-           // 更新缓存
+           // 更新缓存基础信息
            setCache(CACHE_KEY, {
-             uid: uid,
-             userId: uid,
-             userName: name,
-             ...userData,
-             ...communityInfo, // 合并社区信息 (如 chnName)
-             isMember: Object.keys(communityInfo).length > 0 // 标记是否为成员
+             uid: userData.user,
+             userId: userData.user,
+             userName: userData.name,
            });
+
+           // 4. 获取详细社区信息 (集成旧平台逻辑)
+           // 包含 isAdmin, isMember, chnName, avatarUrl, points 等
+           await this.fetchDetailedUserInfo(userData.user);
            
            // 记录访问日志
            const loginTime = getCookie('user_login_time')
@@ -178,9 +211,6 @@ class LoginService {
              const accessTime = commonMethods.timestampToDateTime(parseInt(loginTime))
              await commonMethods.addViewsInfo(accessTime)
            }
-           
-           // 登录成功后，通常建议清除 URL 中的敏感参数，但这取决于具体需求
-           // window.history.replaceState({}, document.title, window.location.pathname);
         }
       } catch (error) {
         console.error('获取用户信息失败:', error)
@@ -210,7 +240,9 @@ class LoginService {
                userName: 'yuanrongqian',
                name: 'yuanrongqian',
                chnName: '袁榕谦',
-               isMember: true
+               isMember: true,
+               isAdmin: true,
+               avatar: 'https://w3.huawei.com/w3lab/rest/yellowpage/face/30022452/120'
              }
 
              // 设置全局变量
@@ -223,6 +255,7 @@ class LoginService {
 
              // 更新缓存
              setCache(CACHE_KEY, mockUser)
+             localStorage.setItem('userMessage', JSON.stringify(mockUser))
              
              return Promise.resolve(true)
          }
