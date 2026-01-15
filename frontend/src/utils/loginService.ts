@@ -65,9 +65,9 @@ class LoginService {
   }
 
   login() {
-    console.log('Login: redirecting to SSO', window.location.href)
-    const redirectUrl = encodeURIComponent(window.location.href)
-    window.location.href = `${LOGIN_URL}?redirect=${redirectUrl}`
+    console.log('window.location.href', window.location.href);
+    window.location.href = 'https://login.huawei.com/login/?redirect='
+      + `${encodeURIComponent(window.location.origin)}?returnUrl=${encodeURIComponent(window.location.href)}`;
   }
 
   logout() {
@@ -76,10 +76,10 @@ class LoginService {
     document.cookie = 'userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
     document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
     
-    const params = new URLSearchParams()
     // 登出后通常跳转回当前页或首页，触发 SSO 重新登录流程或显示未登录态
+    const params = new URLSearchParams()
     params.append('redirect', window.location.href)
-    window.location.href = `${LOGIN_URL}?${params.toString()}`
+    window.location.href = `https://login.huawei.com/login/?${params.toString()}`
   }
 
   getQueryObject(url: string | null) {
@@ -199,7 +199,8 @@ class LoginService {
          
          if (isProduction) {
             console.log('未登录，跳转 SSO')
-            window.location.href = `${LOGIN_URL}?redirect=${encodeURIComponent(currHref)}`
+            window.location.href = 'https://login.huawei.com/login/?'
+              + `redirect=${encodeURIComponent(window.location.origin)}?returnUrl=${encodeURIComponent(currHref)}`;
          } else {
              // 本地开发环境：使用 Mock 数据模拟登录
              console.log('开发环境：使用 Mock 用户登录')
