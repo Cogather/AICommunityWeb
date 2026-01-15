@@ -89,7 +89,7 @@
           <div class="tab-content">
             <div class="comments-list">
               <div
-                v-for="comment in paginatedComments"
+                v-for="comment in myComments"
                 :key="comment.id"
                 class="comment-item glass-card"
               >
@@ -99,7 +99,7 @@
                   </el-avatar>
                   <div class="comment-info">
                     <span class="comment-author">{{ comment.userName }}</span>
-                    <span class="comment-time">{{ comment.createTime }}</span>
+                    <span class="comment-time">{{ formatDate(comment.createTime) }}</span>
                   </div>
                 </div>
                 <div class="comment-content">
@@ -136,7 +136,7 @@
           <div class="tab-content">
             <div class="activities-list">
               <div
-                v-for="activity in paginatedActivities"
+                v-for="activity in myActivities"
                 :key="activity.id"
                 class="activity-item glass-card"
                 @click="handleActivityClick(activity)"
@@ -151,7 +151,7 @@
                   <div class="activity-meta">
                     <span class="activity-date">
                       <el-icon><Calendar /></el-icon>
-                      {{ activity.date }}
+                      {{ formatDate(activity.date) }}
                     </span>
                     <span class="activity-location" v-if="activity.location">
                       <el-icon><Location /></el-icon>
@@ -183,7 +183,7 @@
           <div class="tab-content">
             <div class="my-activities-grid">
               <div
-                v-for="activity in paginatedMyActivities"
+                v-for="activity in myCreatedActivities"
                 :key="activity.id"
                 class="my-activity-card"
               >
@@ -212,7 +212,7 @@
                   <div class="card-info">
                     <div class="info-item">
                       <el-icon><Calendar /></el-icon>
-                      <span>{{ activity.date }}</span>
+                      <span>{{ formatDate(activity.date) }}</span>
                     </div>
                   </div>
                   <div class="card-footer">
@@ -349,10 +349,17 @@ const myPosts = ref<Post[]>([])
 // 我收藏的帖子
 const favoritePosts = ref<Post[]>([])
 
+// 分页 total
+const postsTotal = ref(0)
+const favoritesTotal = ref(0)
+const commentsTotal = ref(0)
+const activitiesTotal = ref(0)
+const myActivitiesTotal = ref(0)
+
 // 加载收藏的帖子
 const loadFavoritePosts = async (userId: number | string) => {
   try {
-    const response = await getUserFavorites(userId, 1, 100)
+    const response = await getUserFavorites(userId, favoritesPage.value, favoritesPageSize.value)
     // 字段映射
     favoritePosts.value = response.data.list.map((post: Post) => ({
       ...post,
@@ -362,7 +369,8 @@ const loadFavoritePosts = async (userId: number | string) => {
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
     // 更新收藏数量
-    userInfo.value.favoritesCount = response.data.total || favoritePosts.value.length
+    favoritesTotal.value = response.data.total
+    userInfo.value.favoritesCount = response.data.total // 同步更新头部统计
   } catch (error: unknown) {
     console.error('加载收藏列表失败:', error)
     ElMessage.error((error as Error).message || '加载收藏列表失败')
@@ -384,13 +392,14 @@ const myComments = ref<Comment[]>([])
 // 加载用户评论列表
 const loadUserComments = async (userId: number | string) => {
   try {
-    const response = await getUserComments(userId, 1, 100)
+    const response = await getUserComments(userId, commentsPage.value, commentsPageSize.value)
     myComments.value = response.data.list.map((comment: Comment) => ({
       ...comment,
       createTime: typeof comment.createTime === 'string' ? comment.createTime : new Date(comment.createTime).toLocaleString('zh-CN')
     }))
     // 更新评论数量
-    userInfo.value.commentsCount = response.data.total || myComments.value.length
+    commentsTotal.value = response.data.total
+    userInfo.value.commentsCount = response.data.total
   } catch (error: unknown) {
     console.error('加载用户评论失败:', error)
     ElMessage.error((error as Error).message || '加载用户评论失败')
@@ -417,13 +426,14 @@ const myCreatedActivities = ref<ExtendedActivity[]>([])
 // 加载报名的活动
 const loadRegisteredActivities = async (userId: number | string) => {
   try {
-    const response = await getUserActivities(userId, 1, 100)
+    const response = await getUserActivities(userId, activitiesPage.value, activitiesPageSize.value)
     myActivities.value = response.data.list.map((activity: { id: number; title: string; date: string | Date }) => ({
       ...activity,
       date: typeof activity.date === 'string' ? activity.date : new Date(activity.date).toLocaleString('zh-CN')
     }))
     // 更新活动数量
-    userInfo.value.activitiesCount = response.data.total || myActivities.value.length
+    activitiesTotal.value = response.data.total
+    userInfo.value.activitiesCount = response.data.total
   } catch (error: unknown) {
     console.error('加载报名活动列表失败:', error)
     ElMessage.error((error as Error).message || '加载报名活动列表失败')
@@ -434,11 +444,12 @@ const loadRegisteredActivities = async (userId: number | string) => {
 // 加载我发布的活动
 const loadMyCreatedActivities = async (userId: number | string) => {
   try {
-    const response = await getUserCreatedActivities(userId, 1, 100)
+    const response = await getUserCreatedActivities(userId, myActivitiesPage.value, myActivitiesPageSize.value)
     myCreatedActivities.value = response.data.list.map((activity: { id: number; title: string; date: string | Date }) => ({
       ...activity,
       date: typeof activity.date === 'string' ? activity.date : new Date(activity.date).toLocaleString('zh-CN')
     }))
+    myActivitiesTotal.value = response.data.total
   } catch (error: unknown) {
     console.error('加载发布活动列表失败:', error)
     ElMessage.error((error as Error).message || '加载发布活动列表失败')
@@ -452,6 +463,21 @@ const handleActivityRegistered = async (_event: Event) => {
   if (userInfo.value.id) {
     await loadRegisteredActivities(Number(userInfo.value.id))
   }
+}
+
+// 格式化日期
+const formatDate = (date: string | Date | undefined) => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return String(date)
+
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
 // 分页
@@ -524,7 +550,7 @@ const loadUserProfile = async (userId: number | string) => {
 // 根据用户ID加载帖子列表
 const loadUserPosts = async (userId: number | string) => {
   try {
-    const response = await getUserPosts(userId, 1, 100)
+    const response = await getUserPosts(userId, postsPage.value, postsPageSize.value)
     // 字段映射
     myPosts.value = response.data.list.map((post: Post) => ({
       ...post,
@@ -534,7 +560,8 @@ const loadUserPosts = async (userId: number | string) => {
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
     // 更新用户统计信息
-    userInfo.value.postsCount = response.data.total || myPosts.value.length
+    postsTotal.value = response.data.total
+    userInfo.value.postsCount = response.data.total
   } catch (error: unknown) {
     console.error('加载用户帖子失败:', error)
     ElMessage.error((error as Error).message || '加载用户帖子失败')
@@ -583,26 +610,31 @@ const handleActivityClick = (activity: { id: number }) => {
 // 分页变化处理
 const handlePostsPageChange = (page: number) => {
   postsPage.value = page
+  loadUserPosts(userInfo.value.id)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const handleFavoritesPageChange = (page: number) => {
   favoritesPage.value = page
+  loadFavoritePosts(userInfo.value.id)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const handleCommentsPageChange = (page: number) => {
   commentsPage.value = page
+  loadUserComments(userInfo.value.id)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const handleActivitiesPageChange = (page: number) => {
   activitiesPage.value = page
+  loadRegisteredActivities(userInfo.value.id)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const handleMyActivitiesPageChange = (page: number) => {
   myActivitiesPage.value = page
+  loadMyCreatedActivities(userInfo.value.id)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 

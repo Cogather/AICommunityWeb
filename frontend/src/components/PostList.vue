@@ -37,7 +37,7 @@
           </span>
           <span class="meta-item">
             <el-icon><Clock /></el-icon>
-            {{ post.createTime }}
+            {{ formatDate(post.createTime) }}
           </span>
           <span class="meta-item">
             <el-icon><View /></el-icon>
@@ -98,7 +98,7 @@
           </span>
           <span class="meta-item">
             <el-icon><Clock /></el-icon>
-            {{ post.createTime }}
+            {{ formatDate(post.createTime) }}
           </span>
           <span class="meta-item">
             <el-icon><View /></el-icon>
@@ -198,6 +198,21 @@ const getTagType = (tag: string) => {
 const handlePostClick = (post: Post) => {
   console.log('PostList: 帖子被点击', post)
   emit('postClick', post)
+}
+
+// 格式化日期
+const formatDate = (date: string | Date) => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return date.toString()
+
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 </script>
 
