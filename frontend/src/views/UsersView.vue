@@ -227,7 +227,7 @@
 
         <div v-if="paginatedList.length === 0 && currentViewMode !== 'timeline'" class="empty-zone"><el-empty description="暂无荣耀记录" :image-size="160" /></div>
         <div v-if="timelineData.length === 0 && currentViewMode === 'timeline'" class="empty-zone"><el-empty description="暂无时光轴记录" :image-size="160" /></div>
-        <div v-if="currentViewMode !== 'timeline' && processedList.length > 0" class="pagination-bar"><el-pagination background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10, 12, 20, 30, 50]" :page-size="pageSize" :current-page="currentPage" :total="processedList.length" @size-change="handleSizeChange" @current-change="handleCurrentChange" /></div>
+        <div v-if="currentViewMode !== 'timeline' && processedList.length > 0" class="pagination-bar"><el-pagination background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10, 12, 20, 30, 50]" :page-size="pageSize" :current-page="currentPage" :total="totalHonors" @size-change="handleSizeChange" @current-change="handleCurrentChange" /></div>
       </div>
 
       <div class="ranking-sidebar">
@@ -276,6 +276,7 @@ const availableViewModes = computed(() => filterScope.value === 'mine' ? [viewMo
 // --- 荣誉数据（通过 api/honor.ts 获取；内部支持 mock/real 切换）---
 const honorList = ref<HonorItem[]>([])
 const honorListLoading = ref(false)
+const totalHonors = ref(0)
 
 // 下拉筛选项（优先走后端接口；无数据时降级为从 honorList 推导）
 const awardNamesFromApi = ref<string[]>([])
@@ -307,6 +308,7 @@ const loadHonorList = async () => {
     }
     const response = await getHonorList(params)
     honorList.value = response.data.list
+    totalHonors.value = response.data.total
   } catch (error) {
     console.error('加载荣誉列表失败:', error)
     ElMessage.error('加载荣誉列表失败')
@@ -591,24 +593,14 @@ watch([awardType, selectedYear, activeTeamAwardIndex, currentTeamAwards], () => 
 
 // --- Computed Logic (保持原有逻辑) ---
 const processedList = computed(() => {
+  // 后端已处理过滤和搜索，直接返回列表
   let result = honorList.value;
-  if (currentViewMode.value === 'timeline' && currentTimelineUserName.value) {
-    result = result.filter(item => item.name === currentTimelineUserName.value);
-  } else {
-    if (filterScope.value === 'mine') result = result.filter(item => item.isMine);
-    if (searchQuery.value) result = result.filter(item => item.name.includes(searchQuery.value));
-    if (currentViewMode.value === 'grid' && activeSubFilter.value !== '全部') {
-      if (honorFilterType.value === 'award') result = result.filter(item => item.awardName === activeSubFilter.value);
-      else if (honorFilterType.value === 'department') result = result.filter(item => item.department === activeSubFilter.value);
-    }
-  }
   return result;
 });
 
 const paginatedList = computed(() => {
-  if (currentViewMode.value === 'timeline') return processedList.value;
-  const start = (currentPage.value - 1) * pageSize.value;
-  return processedList.value.slice(start, start + pageSize.value);
+  // 后端已处理分页，直接返回
+  return processedList.value;
 });
 
 const leaderboardFallback = computed(() => {

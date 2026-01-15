@@ -27,7 +27,7 @@
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
                 :page-sizes="[10, 15, 20, 30, 50]"
-                :total="filteredNormalPosts.length"
+                :total="totalPosts"
                 layout="total, sizes, prev, pager, next, jumper"
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange"
@@ -176,6 +176,7 @@ const specialTagToCategory: Record<string, string> = {
 // 分页相关
 const currentPage = ref(1)
 const pageSize = ref(15)
+const totalPosts = ref(0)
 
 // 所有标签（包含"全部"选项）
 const allTags = computed(() => {
@@ -268,26 +269,36 @@ const posts = ref<Post[]>([])
 // 加载帖子数据
 const loadPosts = async () => {
   try {
-    const response = await getPosts({
-      page: 1,
-      pageSize: 100 // 获取足够多的帖子用于前端过滤
-    })
-    // API 返回 PaginatedData<Post>，需要手动分离精华帖子
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchKeyword.value || undefined,
+      tag: selectedTag.value && selectedTag.value !== '全部' ? selectedTag.value : undefined,
+      department: selectedDepartment.value || undefined,
+      contributor: selectedContributor.value || undefined,
+      sortBy: sortBy.value
+    }
+
+    const response = await getPosts(params)
+    
+    // API 返回 PaginatedData<Post>
     const allPosts = response.data.list
-    featuredPosts.value = allPosts.filter((p: Post) => p.featured).map((post: Post) => ({
+    
+    // 后端分页模式下，featuredPosts 暂不从此处分离（除非有专门接口）
+    // 这里假设返回的列表就是当前页需要展示的
+    // 为了兼容 PostList 组件的展示，我们将所有帖子放入 posts
+    // 如果需要置顶精华帖，建议后端单独提供接口或在第一页返回
+    featuredPosts.value = [] 
+    
+    posts.value = allPosts.map((post: Post) => ({
       ...post,
       author: post.author || post.authorName || '',
       description: post.summary || '',
       image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
-    posts.value = allPosts.filter((p: Post) => !p.featured).map((post: Post) => ({
-      ...post,
-      author: post.author || post.authorName || '',
-      description: post.summary || '',
-      image: post.cover || '',
-      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
-    }))
+    
+    totalPosts.value = response.data.total
   } catch (error) {
     console.error('加载帖子失败:', error)
   }
@@ -393,64 +404,17 @@ const loadDepartments = async () => {
 
 // 过滤后的普通帖子（不包含精华帖，精华帖始终显示）
 const filteredNormalPosts = computed(() => {
-  // 只过滤普通帖子
-  let result = [...posts.value]
-
-  // 按标签过滤（排除"全部"）
-  if (selectedTag.value && selectedTag.value !== '全部') {
-    const category = specialTagToCategory[selectedTag.value]
-    if (category) {
-      result = result.filter(post => post.category === category)
-    } else {
-      result = result.filter(post => post.tags && post.tags.includes(selectedTag.value!))
-    }
-  }
-
-  // 按部门过滤
-  if (selectedDepartment.value) {
-    result = result.filter(post => post.department === selectedDepartment.value)
-  }
-
-  // 按贡献者过滤
-  if (selectedContributor.value) {
-    result = result.filter(post => post.author === selectedContributor.value)
-  }
-
-  // 搜索过滤
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(post =>
-      post.title.toLowerCase().includes(keyword) ||
-      (post.author && post.author.toLowerCase().includes(keyword)) ||
-      (post.description && post.description.toLowerCase().includes(keyword))
-    )
-  }
-
-  // 排序
-  if (sortBy.value === 'hot') {
-    result.sort((a, b) => b.views - a.views)
-  } else if (sortBy.value === 'comments') {
-    result.sort((a, b) => (b.comments || 0) - (a.comments || 0))
-  } else if (sortBy.value === 'likes') {
-    result.sort((a, b) => (b.likes || 0) - (a.likes || 0))
-  } else {
-    // 按时间排序（这里简化处理）
-    result.sort((a, b) => b.id - a.id)
-  }
-
-  return result
+  return posts.value
 })
 
 // 用于统计的过滤后帖子（包含精华帖和普通帖子）
 const _filteredPosts = computed(() => {
-  return [...featuredPosts.value, ...filteredNormalPosts.value]
+  return posts.value
 })
 
 // 分页后的帖子（只分页普通帖子，精华帖始终显示）
 const paginatedPosts = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredNormalPosts.value.slice(start, end)
+  return posts.value
 })
 
 // 最热的3个帖子（按浏览量排序，用于右侧分栏顶部展示）
@@ -468,23 +432,27 @@ const topHotPosts = computed(() => {
 const handleSearch = (keyword: string) => {
   searchKeyword.value = keyword
   currentPage.value = 1 // 重置到第一页
+  loadPosts()
 }
 
 // 处理排序
 const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
   sortBy.value = sort
   currentPage.value = 1 // 重置到第一页
+  loadPosts()
 }
 
 // 处理分页大小变化
 const handleSizeChange = (val: number) => {
   pageSize.value = val
   currentPage.value = 1 // 重置到第一页
+  loadPosts()
 }
 
 // 处理当前页变化
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
+  loadPosts()
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -512,6 +480,7 @@ const handleTagClick = (tagName: string) => {
     router.replace({ query: { ...route.query, tag: tagName } })
   }
   currentPage.value = 1 // 重置到第一页
+  loadPosts()
 }
 
 // 处理部门点击
@@ -522,12 +491,14 @@ const handleDepartmentClick = (departmentName: string) => {
     selectedDepartment.value = departmentName
   }
   currentPage.value = 1 // 重置到第一页
+  loadPosts()
 }
 
 // 重置部门过滤
 const handleResetDepartment = () => {
   selectedDepartment.value = null
   currentPage.value = 1
+  loadPosts()
 }
 
 // 重置标签过滤
@@ -535,6 +506,7 @@ const handleResetTag = () => {
   selectedTag.value = null
   router.replace({ query: { ...route.query, tag: undefined } })
   currentPage.value = 1
+  loadPosts()
 }
 
 // 处理贡献者点击
@@ -544,6 +516,7 @@ const handleContributorClick = (contributorName: string) => {
   } else {
     selectedContributor.value = contributorName
   }
+  loadPosts()
 }
 
 // 处理帖子点击
