@@ -84,30 +84,32 @@ const mockEmpowermentPosts: EmpowermentPost[] = [
 ]
 
 const mockPracticesData: PracticesData = {
-  training: [
-    { id: 1, title: '大模型在工业设计中的落地应用案例分享', author: '张工程师', time: '2小时前', category: 'training' },
-    { id: 2, title: 'AI辅助产品设计全流程培训', author: '李产品', time: '5小时前', category: 'training' },
-    { id: 3, title: '智能客服系统建设经验分享', author: '王技术', time: '1天前', category: 'training' },
-    { id: 4, title: '企业级AI平台架构设计', author: '陈架构', time: '2天前', category: 'training' },
-    { id: 5, title: 'AI代码生成工具使用技巧', author: '赵开发', time: '3天前', category: 'training' },
-    { id: 6, title: '深度学习模型优化实战指南', author: '孙算法', time: '4天前', category: 'training' },
-  ],
-  trainingBattle: [
-    { id: 7, title: 'AI训战实战案例：智能客服系统优化', author: '刘产品', time: '1小时前', category: 'training-battle' },
-    { id: 8, title: '数据分析AI助手开发实战', author: '孙数据', time: '4小时前', category: 'training-battle' },
-    { id: 9, title: '智能文档处理系统构建', author: '周前端', time: '8小时前', category: 'training-battle' },
-    { id: 10, title: 'AI驱动的自动化测试实践', author: '吴测试', time: '1天前', category: 'training-battle' },
-    { id: 11, title: '智能运维平台建设经验', author: '郑运维', time: '2天前', category: 'training-battle' },
-    { id: 12, title: 'AI赋能业务流程自动化', author: '钱业务', time: '3天前', category: 'training-battle' },
-  ],
-  userExchange: [
-    { id: 13, title: '如何利用AI提升日常工作效率', author: '用户A', time: '3小时前', category: 'user-exchange' },
-    { id: 14, title: '分享我的AI工具使用心得', author: '用户B', time: '6小时前', category: 'user-exchange' },
-    { id: 15, title: 'AI在项目管理中的应用探索', author: '用户C', time: '12小时前', category: 'user-exchange' },
-    { id: 16, title: '使用AI辅助写作的经验总结', author: '用户D', time: '1天前', category: 'user-exchange' },
-    { id: 17, title: 'AI工具选型经验分享', author: '用户E', time: '2天前', category: 'user-exchange' },
-    { id: 18, title: 'ChatGPT在研发流程中的最佳实践', author: '用户F', time: '3天前', category: 'user-exchange' },
-  ],
+  practices: {
+    '代码生成': [
+      { id: 1, title: '大模型在工业设计中的落地应用案例分享', author: '张工程师', time: '2小时前', category: 'training' },
+      { id: 2, title: 'AI辅助产品设计全流程培训', author: '李产品', time: '5小时前', category: 'training' },
+      { id: 3, title: '智能客服系统建设经验分享', author: '王技术', time: '1天前', category: 'training' },
+      { id: 4, title: '企业级AI平台架构设计', author: '陈架构', time: '2天前', category: 'training' },
+      { id: 5, title: 'AI代码生成工具使用技巧', author: '赵开发', time: '3天前', category: 'training' },
+      { id: 6, title: '深度学习模型优化实战指南', author: '孙算法', time: '4天前', category: 'training' },
+    ],
+    '脚本生成': [
+      { id: 7, title: 'AI训战实战案例：智能客服系统优化', author: '刘产品', time: '1小时前', category: 'training-battle' },
+      { id: 8, title: '数据分析AI助手开发实战', author: '孙数据', time: '4小时前', category: 'training-battle' },
+      { id: 9, title: '智能文档处理系统构建', author: '周前端', time: '8小时前', category: 'training-battle' },
+      { id: 10, title: 'AI驱动的自动化测试实践', author: '吴测试', time: '1天前', category: 'training-battle' },
+      { id: 11, title: '智能运维平台建设经验', author: '郑运维', time: '2天前', category: 'training-battle' },
+      { id: 12, title: 'AI赋能业务流程自动化', author: '钱业务', time: '3天前', category: 'training-battle' },
+    ],
+    '问题处理': [
+      { id: 13, title: '如何利用AI提升日常工作效率', author: '用户A', time: '3小时前', category: 'user-exchange' },
+      { id: 14, title: '分享我的AI工具使用心得', author: '用户B', time: '6小时前', category: 'user-exchange' },
+      { id: 15, title: 'AI在项目管理中的应用探索', author: '用户C', time: '12小时前', category: 'user-exchange' },
+      { id: 16, title: '使用AI辅助写作的经验总结', author: '用户D', time: '1天前', category: 'user-exchange' },
+      { id: 17, title: 'AI工具选型经验分享', author: '用户E', time: '2天前', category: 'user-exchange' },
+      { id: 18, title: 'ChatGPT在研发流程中的最佳实践', author: '用户F', time: '3天前', category: 'user-exchange' },
+    ]
+  }
 }
 
 const mockToolPlatform: ToolPlatformItem[] = [
@@ -154,15 +156,9 @@ const mockGetEmpowerment = async (limit: number = 6): Promise<ApiResponse<{ list
   return success({ list: mockEmpowermentPosts.slice(0, limit) })
 }
 
-const mockGetPractices = async (_limit: number = 6): Promise<ApiResponse<{ list: PracticePost[] }>> => {
+const mockGetPractices = async (_limit: number = 6): Promise<ApiResponse<PracticesData>> => {
   await delay()
-  // Flatten the structured mock data into a single list
-  const allPractices = [
-    ...mockPracticesData.training,
-    ...mockPracticesData.trainingBattle,
-    ...mockPracticesData.userExchange
-  ]
-  return success({ list: allPractices })
+  return success(mockPracticesData)
 }
 
 const mockGetToolPlatform = async (): Promise<ApiResponse<{ list: ToolPlatformItem[] }>> => {
@@ -233,11 +229,11 @@ export async function getEmpowerment(limit: number = 6): Promise<ApiResponse<{ l
  * GET /api/home/practices
  * @param limit 每个分类返回的数量，默认6
  */
-export async function getPractices(limit: number = 6): Promise<ApiResponse<{ list: PracticePost[] }>> {
+export async function getPractices(limit: number = 6): Promise<ApiResponse<PracticesData>> {
   if (!useRealApi) {
     return mockGetPractices(limit)
   }
-  return get<{ list: PracticePost[] }>('/home/practices', { limit })
+  return get<PracticesData>('/home/practices', { limit })
 }
 
 /**
@@ -306,11 +302,11 @@ export async function getNews(): Promise<ApiResponse<{ list: NewsItem[] }>> {
 
 /**
  * 获取AI资讯列表 (直接调用外部接口)
- * GET https://cogather.coreai.rnd.huawei.com/ailobechartbe/api/news_api/get_catalog_list/:userName
+ * GET https://cogather.coreai.rnd.huawei.com/ailobechartbe/api/news_api/get_catalog_list/:userId
  */
-export async function getAiNews(userName: string): Promise<any> {
+export async function getAiNews(userId: string): Promise<any> {
   // 外部接口直接返回数据，使用 absolute URL
-  return get<any>(`https://cogather.coreai.rnd.huawei.com/ailobechartbe/api/news_api/get_catalog_list/${userName}`)
+  return get<any>(`https://cogather.coreai.rnd.huawei.com/ailobechartbe/api/news_api/get_catalog_list/${userId}`)
 }
 
 // ==================== 导出所有 API ====================

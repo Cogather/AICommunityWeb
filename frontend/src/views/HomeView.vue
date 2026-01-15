@@ -606,12 +606,11 @@ const loadPractices = async () => {
     // 优先从API获取
     const response = await getPractices()
     if (response && response.data) {
-      // 接口返回全部数据，前端根据 category 字段进行分类
-      const list = (response.data.list || []) as any[]
+      const data = response.data.practices || {}
       return {
-        training: list.filter(item => item.category === 'training'),
-        trainingBattle: list.filter(item => item.category === 'training-battle'),
-        userExchange: list.filter(item => item.category === 'user-exchange')
+        training: data['代码生成'] || [],
+        trainingBattle: data['脚本生成'] || [],
+        userExchange: data['问题处理'] || []
       }
     }
   } catch (e) {
@@ -714,7 +713,9 @@ const loadNewsList = async () => {
     const userName = userInfo.userName
 
     if (userName) {
-      getAiNews(userName)
+      // 传递 userId (e.g., y30022452) 而不是 userName
+      const userId = userInfo.userId || userInfo.employeeId || userName;
+      getAiNews(userId)
         .then((res: any) => {
           // 适配接口返回
           const data = res.data || res

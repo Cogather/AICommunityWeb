@@ -79,9 +79,7 @@ export interface PracticePost {
 
 /** AI 优秀实践数据 */
 export interface PracticesData {
-  training: PracticePost[]
-  trainingBattle: PracticePost[]
-  userExchange: PracticePost[]
+  practices: Record<string, PracticePost[]>
 }
 
 /** 新闻资讯项 */
