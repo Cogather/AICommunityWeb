@@ -13,6 +13,7 @@ import type {
   LatestWinner,
   EmpowermentPost,
   PracticesData,
+  PracticePost,
   ToolPlatformItem,
   ToolItem,
   ToolBannerItem,
@@ -153,9 +154,15 @@ const mockGetEmpowerment = async (limit: number = 6): Promise<ApiResponse<{ list
   return success({ list: mockEmpowermentPosts.slice(0, limit) })
 }
 
-const mockGetPractices = async (_limit: number = 6): Promise<ApiResponse<PracticesData>> => {
+const mockGetPractices = async (_limit: number = 6): Promise<ApiResponse<{ list: PracticePost[] }>> => {
   await delay()
-  return success(mockPracticesData)
+  // Flatten the structured mock data into a single list
+  const allPractices = [
+    ...mockPracticesData.training,
+    ...mockPracticesData.trainingBattle,
+    ...mockPracticesData.userExchange
+  ]
+  return success({ list: allPractices })
 }
 
 const mockGetToolPlatform = async (): Promise<ApiResponse<{ list: ToolPlatformItem[] }>> => {
@@ -222,15 +229,15 @@ export async function getEmpowerment(limit: number = 6): Promise<ApiResponse<{ l
 }
 
 /**
- * 获取AI优秀实践列表
+ * 获取AI优秀实践列表 (返回全部数据列表，由前端进行分类)
  * GET /api/home/practices
  * @param limit 每个分类返回的数量，默认6
  */
-export async function getPractices(limit: number = 6): Promise<ApiResponse<PracticesData>> {
+export async function getPractices(limit: number = 6): Promise<ApiResponse<{ list: PracticePost[] }>> {
   if (!useRealApi) {
     return mockGetPractices(limit)
   }
-  return get<PracticesData>('/home/practices', { limit })
+  return get<{ list: PracticePost[] }>('/home/practices', { limit })
 }
 
 /**

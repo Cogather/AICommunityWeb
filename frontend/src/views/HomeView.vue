@@ -101,15 +101,15 @@
                   <div 
                     class="winner-card" 
                     v-for="winner in latestWinners" 
-                    :key="winner.id"
-                    @click="router.push({ path: '/users', query: { keyword: winner.name } })"
+                    :key="winner.userId"
+                    @click="router.push({ path: '/users', query: { keyword: winner.userName } })"
                   >
                     <el-avatar 
                       :size="40" 
                       :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" 
                     />
                     <div class="winner-info">
-                      <span class="winner-name">{{ winner.name }}</span>
+                      <span class="winner-name">{{ winner.userName }}</span>
                       <span class="winner-award">{{ winner.awardName }}</span>
                     </div>
                   </div>
@@ -544,7 +544,7 @@ const loadEmpowermentPosts = async () => {
   try {
     const response = await getEmpowerment(7)
     if (response && response.data && response.data.list) {
-      empowermentPosts.value = response.data.list.map((item: { id: number; title: string; time?: string; views?: number }) => ({
+      empowermentPosts.value = response.data.list.map((item: any) => ({
         id: item.id,
         title: item.title,
         time: item.time || '刚刚',
@@ -606,10 +606,12 @@ const loadPractices = async () => {
     // 优先从API获取
     const response = await getPractices()
     if (response && response.data) {
+      // 接口返回全部数据，前端根据 category 字段进行分类
+      const list = (response.data.list || []) as any[]
       return {
-        training: response.data.training || [],
-        trainingBattle: response.data.trainingBattle || [],
-        userExchange: response.data.userExchange || []
+        training: list.filter(item => item.category === 'training'),
+        trainingBattle: list.filter(item => item.category === 'training-battle'),
+        userExchange: list.filter(item => item.category === 'user-exchange')
       }
     }
   } catch (e) {
@@ -683,6 +685,7 @@ interface PracticePost {
   createTime?: string
   author?: string
   time?: string
+  category?: string
 }
 const practices = ref({
   training: [] as PracticePost[],
@@ -958,9 +961,9 @@ const handleToolPlatformClick = (tool: { id: number; platformUrl?: string }) => 
 }
 
 // 处理实践点击
-const handlePracticeClick = (_practice: { id: number | string }) => {
-  // 跳转到实践详情或列表页
-  router.push(ROUTES.PRACTICES)
+const handlePracticeClick = (practice: { id: number | string }) => {
+  // 跳转到实践详情页
+  router.push(`/post/${practice.id}`)
 }
 
 // AI工具专区轮播图数据
