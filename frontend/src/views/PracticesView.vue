@@ -204,29 +204,11 @@ const allTags = computed(() => {
   ]
 
   // 添加其他标签（包含首页“代码生成 / 脚本生成 / 问题处理”）
+  // 这里的列表仅作为兜底，实际应优先使用 API 返回的 tags
   const tagNames = [
     '代码生成',
     '脚本生成',
-    '问题处理',
-    '自然语言处理',
-    '计算机视觉',
-    '深度学习',
-    'AI伦理',
-    '机器学习',
-    '机器人',
-    '数据科学',
-    '生成式AI',
-    'PyTorch',
-    'TensorFlow',
-    '项目',
-    'AI应用',
-    '效率',
-    '自动化',
-    '实践',
-    '已解决',
-    '部署',
-    '活动',
-    'AI大会',
+    '问题处理'
   ]
 
   tagNames.forEach(tagName => {
@@ -234,6 +216,14 @@ const allTags = computed(() => {
     const count = category ? filteredPosts.filter(p => p.category === category).length : (tagCountMap.get(tagName) || 0)
     if (count > 0 || !selectedDepartment.value) {
       tags.push({ name: tagName, count })
+    }
+  })
+
+  // 如果没有从 posts 中统计到其他标签，且没有 API 数据，这里不再硬编码大量标签，
+  // 而是依赖 posts 中的实际 tags 统计
+  tagCountMap.forEach((count, name) => {
+    if (!tagNames.includes(name) && name !== '全部') {
+       tags.push({ name, count })
     }
   })
 

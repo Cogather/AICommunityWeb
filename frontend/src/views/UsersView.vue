@@ -1517,7 +1517,7 @@ watch(() => route.query.type, (newType) => {
 
 .honor-card-3d {
   position: relative;
-  height: 420px; /* 加大卡片高度 */
+  height: 460px; /* 加大卡片高度 */
   perspective: 1000px;
   min-width: 0; /* 防止 grid 项目溢出 */
   max-width: 100%;
@@ -1726,15 +1726,15 @@ watch(() => route.query.type, (newType) => {
   flex-shrink: 0;
 }
 
-.achievement-text {
+  .achievement-text {
   font-size: 13px;
   line-height: 1.55;
   color: #475569;
   margin-top: 2px;
   flex: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 12; /* 增加到12行 */
-  line-clamp: 12;
+  -webkit-line-clamp: 14; /* 增加到14行，确保能容纳用户要求的12行以上 */
+  line-clamp: 14;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
