@@ -167,15 +167,15 @@
         </div>
 
       <div class="practice-unified-container">
-        <!-- 培训赋能 -->
+        <!-- 代码生成 -->
         <div class="practice-module-card glass-card">
           <div class="practice-header-bar training-header">
-            <h3 class="header-title">📚 培训赋能</h3>
+            <h3 class="header-title">💻 代码生成</h3>
             <el-button
               text
               size="small"
               class="more-btn-pill header-more-btn"
-              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: '培训赋能' } })"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: '代码生成' } })"
             >
               更多
             </el-button>
@@ -202,15 +202,15 @@
           </div>
         </div>
 
-        <!-- AI训战 -->
+        <!-- 脚本生成 -->
         <div class="practice-module-card glass-card">
           <div class="practice-header-bar battle-header">
-            <h3 class="header-title">⚔️ AI训战</h3>
+            <h3 class="header-title">📜 脚本生成</h3>
             <el-button
               text
               size="small"
               class="more-btn-pill header-more-btn"
-              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: 'AI训战' } })"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: '脚本生成' } })"
             >
               更多
             </el-button>
@@ -237,15 +237,15 @@
           </div>
         </div>
 
-        <!-- 用户交流 -->
+        <!-- 问题处理 -->
         <div class="practice-module-card glass-card">
           <div class="practice-header-bar exchange-header">
-            <h3 class="header-title">💬 用户交流</h3>
+            <h3 class="header-title">🔧 问题处理</h3>
             <el-button
               text
               size="small"
               class="more-btn-pill header-more-btn"
-              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: '用户交流' } })"
+              @click="router.push({ path: ROUTES.PRACTICES, query: { tag: '问题处理' } })"
             >
               更多
             </el-button>

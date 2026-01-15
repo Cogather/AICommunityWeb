@@ -350,7 +350,7 @@ const searchQuery = ref('');
 const honorFilterType = ref<HonorFilterType>('award');
 const activeSubFilter = ref<string>('全部');
 const currentPage = ref(1);
-const pageSize = ref(16);
+const pageSize = ref(12);
 const currentTimelineUserName = ref<string | null>(null);
 const chipContainerRef = ref<HTMLElement | null>(null);
 const canScrollLeft = ref(false);
@@ -1510,7 +1510,7 @@ watch(() => route.query.type, (newType) => {
 
 .honor-card-3d {
   position: relative;
-  height: 380px; /* 加大卡片高度 */
+  height: 420px; /* 加大卡片高度 */
   perspective: 1000px;
   min-width: 0; /* 防止 grid 项目溢出 */
   max-width: 100%;

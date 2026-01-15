@@ -13,6 +13,9 @@
       <nav class="nav-menu">
         <RouterLink :to="ROUTES.HOME" class="nav-item">首页</RouterLink>
         <RouterLink :to="ROUTES.PRACTICES" class="nav-item">AI优秀实践</RouterLink>
+        <RouterLink :to="ROUTES.TOOLS" class="nav-item">AI百宝箱</RouterLink>
+        <RouterLink :to="ROUTES.AGENT" class="nav-item">扶摇Agent应用</RouterLink>
+        <RouterLink :to="ROUTES.EMPOWERMENT" class="nav-item">AI使能站</RouterLink>
         <el-dropdown 
           trigger="hover" 
           placement="bottom" 
@@ -20,7 +23,7 @@
           class="users-dropdown"
         >
           <span class="nav-item users-nav-link" :class="{ 'router-link-active': isUsersPage }">
-            <span class="nav-link-text">AI使用达人</span>
+            <span class="nav-link-text">AI荣誉殿堂</span>
             <span class="dropdown-arrow">▼</span>
           </span>
           <template #dropdown>
@@ -45,10 +48,7 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <RouterLink :to="ROUTES.TOOLS" class="nav-item">AI工具专区</RouterLink>
-        <RouterLink :to="ROUTES.AGENT" class="nav-item">扶摇Agent应用</RouterLink>
-        <RouterLink :to="ROUTES.EMPOWERMENT" class="nav-item">赋能交流</RouterLink>
-        <RouterLink :to="ROUTES.NEWS" class="nav-item">AI资讯</RouterLink>
+        <RouterLink :to="ROUTES.NEWS" class="nav-item">AI情报局</RouterLink>
         <RouterLink v-if="isAdmin" :to="ROUTES.ADMIN" class="nav-item admin-link">管理</RouterLink>
       </nav>
       <div class="nav-actions">
@@ -361,8 +361,8 @@ const handleCommand = (command: string) => {
   top: 0;
   z-index: 1000;
   width: 100%;
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(30px) saturate(180%);
+  background: rgba(255, 255, 255, 0.7); /* 降低不透明度，从 0.9 -> 0.7 */
+  backdrop-filter: blur(20px) saturate(180%); /* 调整模糊度，使其看起来更像毛玻璃 */
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 
@@ -407,9 +407,9 @@ const handleCommand = (command: string) => {
     }
 
     .logo-subtitle {
-      font-size: 13px;
-      font-weight: 400;
-      color: #6b7280; /* 灰色 */
+      font-size: 15px;
+      font-weight: 500;
+      color: #4b5563; /* 更深的灰色 */
       letter-spacing: 0.5px;
     }
   }
@@ -429,7 +429,7 @@ const handleCommand = (command: string) => {
   color: #333;
   text-decoration: none;
   font-weight: 600;
-  font-size: 16px; /* 从 14px 增加到 16px */
+  font-size: 18px; /* 从 14px 增加到 18px */
   border-radius: 8px;
   transition: all 0.2s ease;
   white-space: nowrap;
