@@ -5,6 +5,8 @@ import type { ApiResponse } from './types'
 const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
 /** 生产环境接口域名 */
+// 生产环境直接使用 origin，因为前后端部署在同一域名下，或者通过 nginx 代理
+// 如果生产环境 API 地址固定，可以硬编码，例如：'https://cogather.coreai.rnd.huawei.com/aicommunitybe/api'
 export const PROD_API_BASE = `${origin}/aicommunitybe/api`
 
 /** 测试环境接口域名 */
@@ -30,11 +32,13 @@ function detectEnvironment(): Environment {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
   
   // 生产环境：匹配核心关键词
-  if (hostname.includes('aicommunity.coreai')) {
+  // 生产环境域名：cogather.coreai.rnd.huawei.com (更新为实际的生产环境域名)
+  if (hostname.includes('cogather.coreai')) {
     return 'production'
   }
   
   // 测试环境：匹配项目代号或 beta 标识
+  // 测试环境域名：通常包含 corecode-aicommunity 或 beta
   if (hostname.includes('corecode-aicommunity') || hostname.includes('beta') || hostname.includes('test')) {
     return 'test'
   }
@@ -67,7 +71,7 @@ export const AUTO_API_BASE = getApiBaseByEnvironment(currentEnvironment)
 
 /**
  * 🔧 调试模式配置
- * 
+ *
  * AUTO_MODE_ENABLED = true  → 自动根据域名检测环境（推荐用于部署）
  * AUTO_MODE_ENABLED = false → 使用下方手动配置的 DEBUG_API_URL（开发调试）
  */
