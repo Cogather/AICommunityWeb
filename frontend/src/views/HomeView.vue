@@ -2911,9 +2911,9 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 /* Section 4: AI Info */
 .wide-banner {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* 改为顶部对齐，适应长文本 */
   justify-content: space-between;
-  gap: 32px; /* 添加间距 */
+  gap: 32px;
   padding: 32px 40px;
   /* 使用发白的毛玻璃质感，覆盖原有的渐变背景 */
   background: rgba(255, 255, 255, 0.55) !important;
@@ -2921,7 +2921,8 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   -webkit-backdrop-filter: blur(25px) saturate(200%);
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* 允许内容溢出，确保完整显示 */
+  height: auto; /* 高度自适应 */
   transition: all 0.3s ease;
 
   /* 流动光感效果 */
@@ -2975,6 +2976,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
   .info-content {
     flex: 1;
+    min-width: 0; /* 防止 flex 子项溢出 */
     position: relative;
     z-index: 3; /* 确保内容在光效之上 */
 
@@ -2993,6 +2995,8 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
       color: #333; /* 深灰色，更易读 */
       line-height: 1.8;
       font-weight: 500;
+      width: 100%; /* 确保占满宽度 */
+      word-wrap: break-word; /* 防止长单词溢出 */
 
       :deep(p) {
         margin: 0 0 8px 0;
