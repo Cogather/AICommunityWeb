@@ -9,7 +9,6 @@ const CACHE_KEY = 'user_info'
 // 注意：原代码中的 NGX_BASE_URL 是 https://coretool.rnd.huawei.com
 // 这里我们将其调整为当前应用的 API 地址，或者如果后端有统一的 Auth 服务，应该配置为 Auth 服务地址
 // 鉴于这是一个移植模块，我们暂时保留结构，但 login/logout 主要依赖 SSO 跳转
-const LOGIN_URL = 'https://login.huawei.com/login/'
 
 // 辅助函数
 const getCache = (key: string) => {
@@ -220,7 +219,6 @@ class LoginService {
       }
     } else {
       // 4. 未登录状态处理
-      const appHome = this.appHomeUrl
       const currHref = document.location.href
       
       // 避免无限重定向：如果已经包含 redirect 参数或正在进行 login_uid 验证，则不跳转
