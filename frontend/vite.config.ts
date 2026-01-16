@@ -15,10 +15,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    // ==================== 基础路径配置 ====================
+// ==================== 基础路径配置 ====================
     // 所有页面路由都将以 /ai_community 为前缀
-    base: '/ai_community',
-    
+    const BASE_URL = '/ai_community'
+
+    return {
+    base: BASE_URL,
+
     plugins: [
       vue(),
       // 只在开发环境启用 vue-dev-tools
@@ -37,9 +40,24 @@ export default defineConfig(({ mode }) => {
           }
           // 替换 Favicon (Logo)
           if (env.VITE_APP_FAVICON) {
+            // 处理路径：如果配置了 base 且 favicon 是绝对路径，需要拼接 base
+            let faviconPath = env.VITE_APP_FAVICON
+            if (faviconPath.startsWith('/')) {
+              // 移除开头的 / 防止双重斜杠（如果 BASE_URL 以 / 结尾）
+              // 但这里 BASE_URL = '/ai_community'，没有结尾 /
+              // 开发环境如果 base 是 /，则不需要特殊处理（或者拼成 //logo.svg 也是合法的）
+              // 简单处理：如果不是开发环境，或者是生产构建，确保路径包含 base
+              
+              // 注意：在构建时，base 会生效。
+              // 如果 BASE_URL 不是 /，则拼接
+              if (BASE_URL !== '/') {
+                 faviconPath = `${BASE_URL}${faviconPath}`
+              }
+            }
+            
             newHtml = newHtml.replace(
               /<link rel="icon" href="(.*?)">/,
-              `<link rel="icon" href="${env.VITE_APP_FAVICON}">`
+              `<link rel="icon" href="${faviconPath}">`
             )
           }
           return newHtml
@@ -58,21 +76,21 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 5173,
       strictPort: false, // 如果端口被占用，尝试下一个可用端口
-      
+
       // 启动时自动打开浏览器
       open: false,
-  
+
       // ==================== 热更新配置 ====================
       hmr: {
         overlay: true, // 显示错误覆盖层
       },
-      
+
       // 监听文件变化
       watch: {
         usePolling: true, // 使用轮询方式监听文件变化（解决某些文件系统的兼容问题）
         interval: 100, // 轮询间隔（毫秒）
       },
-      
+
       // ==================== 代理配置 ====================
       // 当使用代理模式时（request.ts 中 API_BASE_URL = '/api'），
       // 所有 /api 开头的请求会被代理到 BACKEND_URL/aicommunity/api
