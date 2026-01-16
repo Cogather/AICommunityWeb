@@ -150,10 +150,11 @@ class LoginService {
 
   async validate(init?: boolean) {
     const cachedUserInfo = getCache(CACHE_KEY)
-    const { uid, userId, userName } = cachedUserInfo || {}
+    const { uid, userId, userName, chnName } = cachedUserInfo || {}
 
     // 1. 如果缓存中有用户信息，且不是初始化检查，则认为已登录
-    if (uid && userId && userName && !init) {
+    // 注意：userName 可能为 null/undefined (如果之前版本缓存没存)，这里主要校验核心的 uid/userId
+    if ((uid || userId) && !init) {
       return Promise.resolve(true)
     }
 
@@ -169,7 +170,8 @@ class LoginService {
         setCache(CACHE_KEY, {
           uid: getCookie('userId'),
           userId: getCookie('userId'),
-          userName: getCookie('userName'),
+          userName: getCookie('username'), // 注意 cookie key 是小写 username
+          chnName: '', // Cookie 中通常没有中文名
         })
       }
       return Promise.resolve(true)
@@ -201,8 +203,9 @@ class LoginService {
            // 更新缓存基础信息
            setCache(CACHE_KEY, {
              uid: userData.user,
-             userId: userData.user,
-             userName: userData.name,
+             userId: userData.user, // user: 短工号
+             userName: userData.name, // name: 英文名 + 工号
+             chnName: userData.chName || '', // 显式保存中文名（SSO返回字段为 chName）
            });
 
            // 4. 获取详细社区信息 (集成旧平台逻辑)
@@ -239,9 +242,9 @@ class LoginService {
              console.log('开发环境：使用 Mock 用户登录')
              const mockUser = {
                uid: 'y30022452',
-               userId: 'y30022452',
-               userName: 'yuanrongqian',
-               name: 'yuanrongqian',
+               userId: 'y30022452', // user: 短工号
+               userName: 'yuanrongqian 30022452', // name: 英文名 + 工号
+               name: 'yuanrongqian 30022452',     // name: 英文名 + 工号
                chnName: '袁榕谦',
                isMember: true,
                isAdmin: true,
