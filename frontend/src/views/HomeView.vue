@@ -357,7 +357,7 @@
       <div class="glass-card wide-banner section-row" v-if="newsTop.title">
         <div class="info-content">
           <h3>{{ newsTop.title }}</h3>
-          <div class="news-content-text" v-html="newsTop.overview || newsTop.summary || newsTop.description || ''"></div>
+          <div class="news-content-text" v-html="renderedOverview"></div>
         </div>
         <el-button
           text
@@ -376,6 +376,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { marked } from 'marked'
 import { Trophy, Star, View, ArrowRight } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
@@ -692,6 +693,19 @@ const practices = ref({
 
 // 新闻数据
 const newsTop = ref<any>({})
+
+const renderedOverview = computed(() => {
+  const content = newsTop.value.overview || newsTop.value.summary || newsTop.value.description || ''
+  if (!content) return ''
+  try {
+    const result = marked.parse(String(content), { breaks: true })
+    // Ensure result is string (marked.parse can return Promise if async option is true, but default is false)
+    return typeof result === 'string' ? result : content
+  } catch (e) {
+    console.error('Markdown parsing failed', e)
+    return content
+  }
+})
 
 const loadNewsList = async () => {
   // 尝试从 LoginService 获取用户信息
@@ -3003,6 +3017,68 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
         &:last-child {
           margin-bottom: 0;
         }
+      }
+
+      /* Markdown Styles */
+      :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
+        margin: 16px 0 8px;
+        font-weight: 600;
+        line-height: 1.4;
+        color: #1a1a1a;
+      }
+      :deep(ul), :deep(ol) {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+      :deep(li) {
+        margin-bottom: 4px;
+      }
+      :deep(strong) {
+        font-weight: 700;
+        color: #000;
+      }
+      :deep(a) {
+        color: #409eff;
+        text-decoration: none;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+      :deep(blockquote) {
+        border-left: 4px solid #ddd;
+        padding-left: 12px;
+        margin: 8px 0;
+        color: #666;
+        background: rgba(0,0,0,0.02);
+        padding: 8px 12px;
+        border-radius: 0 4px 4px 0;
+      }
+      :deep(code) {
+        background: rgba(0,0,0,0.05);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9em;
+        color: #d63384;
+      }
+      :deep(pre) {
+        background: #f6f8fa;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 12px 0;
+        
+        code {
+          background: transparent;
+          padding: 0;
+          color: inherit;
+          font-size: 13px;
+        }
+      }
+      :deep(img) {
+        max-width: 100%;
+        border-radius: 8px;
+        margin: 8px 0;
       }
     }
   }
