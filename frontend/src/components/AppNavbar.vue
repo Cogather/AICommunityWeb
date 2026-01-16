@@ -75,6 +75,12 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu class="user-dropdown-menu">
+                <!-- 用户信息概览 -->
+                <div class="user-info-section">
+                   <div class="user-info-name">{{ userInfo.name }}</div>
+                   <div class="user-info-id">{{ userInfo.userId }}</div>
+                </div>
+
                 <!-- 积分显示区域 -->
                 <div class="points-section">
                   <div class="points-header">
@@ -157,6 +163,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getUnreadMessageCount } from '../utils/message'
+import loginService from '../utils/loginService' // Import loginService
 // API 层 - 支持 Mock/Real API 自动切换
 import { getTeamAwards } from '../api/honor'
 import { ROUTES } from '../router/paths'
@@ -261,14 +268,21 @@ onBeforeUnmount(() => {
   window.removeEventListener('teamAwardsUpdate', handleTeamAwardsUpdate as EventListener)
 })
 
-// 登录状态（实际应该从 store 或 API 获取）
-const isLoggedIn = ref(true) // 暂时设为 true 用于测试
+// 登录状态
+const isLoggedIn = computed(() => {
+  return !!loginService.userInfo
+})
 
-// 用户信息（实际应该从 store 或 API 获取）
-const userInfo = ref({
-  name: '张三',
-  avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-  role: 'admin' // 'admin' | 'user' - 实际应该从 store 或 API 获取
+// 用户信息
+const userInfo = computed(() => {
+  const user = loginService.userInfo || {}
+  return {
+    name: user.chnName || user.userName || '用户', // 优先显示中文名
+    userName: user.userName || '',
+    userId: user.userId || '',
+    avatar: user.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+    role: user.isAdmin ? 'admin' : 'user'
+  }
 })
 
 // 判断是否为管理员
@@ -295,8 +309,8 @@ const userPoints = computed(() => {
          mockData.activitiesCount * 10
 })
 
-// 当前用户ID（实际应该从登录状态获取）
-const currentUserId = ref(1)
+// 当前用户ID
+const currentUserId = computed(() => userInfo.value.userId)
 
 // 未读消息数量
 const unreadMessageCount = ref(0)
@@ -331,8 +345,7 @@ onBeforeUnmount(() => {
 
 // 处理登录
 const handleLogin = () => {
-  // 这里应该跳转到登录页面或显示登录对话框
-  ElMessage.info('登录功能开发中')
+  loginService.login()
 }
 
 // 处理用户下拉菜单命令
@@ -346,8 +359,7 @@ const handleCommand = (command: string) => {
       })
       break
     case 'logout':
-      // 这里应该调用登出API
-      isLoggedIn.value = false
+      loginService.logout()
       ElMessage.success('已退出登录')
       break
   }
@@ -703,6 +715,24 @@ const handleCommand = (command: string) => {
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+}
+
+.user-info-section {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.5);
+
+  .user-info-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+  }
+
+  .user-info-id {
+    font-size: 12px;
+    color: #909399;
   }
 }
 

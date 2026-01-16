@@ -72,7 +72,7 @@ class LoginService {
     // 清除 cookie (可选，视具体需求)
     document.cookie = 'userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
     document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-    
+
     // 登出后通常跳转回当前页或首页，触发 SSO 重新登录流程或显示未登录态
     const params = new URLSearchParams()
     params.append('redirect', window.location.href)
@@ -98,7 +98,7 @@ class LoginService {
   async fetchDetailedUserInfo(userId: string) {
     let communityInfo: any = {};
     let isAdmin = false;
-    
+
     // 1. 检查社区成员资格 (对应 checkMembership)
     try {
       const memberRes = await checkCommunityMembership(userId);
@@ -137,10 +137,12 @@ class LoginService {
         avatar: avatarUrl, // 设置标准头像
         employeeId: userId, // 确保 employeeId 存在
       };
-      
+
+      console.log('LoginService - Detailed User Info:', detailedUser); // Add logging
+
       // 兼容旧代码，将详细信息（包含 userId）存入 localStorage 的 userMessage
       localStorage.setItem('userMessage', JSON.stringify(detailedUser));
-      
+
       setCache(CACHE_KEY, detailedUser);
       return detailedUser;
   }
@@ -148,19 +150,19 @@ class LoginService {
   async validate(init?: boolean) {
     const cachedUserInfo = getCache(CACHE_KEY)
     const { uid, userId, userName } = cachedUserInfo || {}
-    
+
     // 1. 如果缓存中有用户信息，且不是初始化检查，则认为已登录
     if (uid && userId && userName && !init) {
       return Promise.resolve(true)
     }
 
     const query = this.getQueryObject(window.location.href)
-    
+
     // 2. 检查 Cookie 中的 userId (兼容旧逻辑)
     if (getCookie('userId')) {
       (window as any).userId = getCookie('userId');
       (window as any).userName = getCookie('userName');
-      
+
       // 确保缓存同步
       if (!cachedUserInfo) {
         setCache(CACHE_KEY, {
@@ -180,7 +182,7 @@ class LoginService {
         const res = await get<any>(
           `https://corecode-prod.inhuawei.com/developtest/v1/auth/user/${query.login_uid}`
         )
-        
+
         // 适配返回结构
         const userData = (res as any).data || res;
 
@@ -189,11 +191,11 @@ class LoginService {
            document.cookie = `userId=${userData.user};path=/`
            document.cookie = `username=${userData.name};path=/`
            document.cookie = `user_login_time=${new Date().getTime()};path=/`
-           
+
            // 设置全局变量
            ;(window as any).userId = userData.user
            ;(window as any).userName = userData.name
-           
+
            // 更新缓存基础信息
            setCache(CACHE_KEY, {
              uid: userData.user,
@@ -204,7 +206,7 @@ class LoginService {
            // 4. 获取详细社区信息 (集成旧平台逻辑)
            // 包含 isAdmin, isMember, chnName, avatarUrl, points 等
            await this.fetchDetailedUserInfo(userData.user);
-           
+
            // 记录访问日志
            const loginTime = getCookie('user_login_time')
            if (loginTime) {
@@ -218,14 +220,14 @@ class LoginService {
     } else {
       // 4. 未登录状态处理
       const currHref = document.location.href
-      
+
       // 避免无限重定向：如果已经包含 redirect 参数或正在进行 login_uid 验证，则不跳转
       if (!currHref.includes('?redirect=') && !currHref.includes('login_uid')) {
          // 环境判断：开发环境是否跳转 SSO
          // 判定规则：只在域名包含 huawei 时跳转 SSO (生产环境)
          // 本地环境 (localhost, 127.0.0.1) 和 局域网环境 (IP访问) 均使用 Mock 登录
          const isProduction = window.location.hostname.includes('huawei');
-         
+
          if (isProduction) {
             console.log('未登录，跳转 SSO')
             window.location.href = 'https://login.huawei.com/login/?'
@@ -244,6 +246,8 @@ class LoginService {
                avatar: 'https://w3.huawei.com/w3lab/rest/yellowpage/face/30022452/120'
              }
 
+             console.log('LoginService - Mock User:', mockUser); // Add logging
+
              // 设置全局变量
              ;(window as any).userId = mockUser.userId
              ;(window as any).userName = mockUser.userName
@@ -255,7 +259,7 @@ class LoginService {
              // 更新缓存
              setCache(CACHE_KEY, mockUser)
              localStorage.setItem('userMessage', JSON.stringify(mockUser))
-             
+
              return Promise.resolve(true)
          }
       }

@@ -5,10 +5,13 @@
       <div class="user-info-card glass-card">
         <div class="user-header">
           <el-avatar :size="80" :src="userInfo.avatar" class="user-avatar">
-            {{ userInfo.userName?.charAt(0) || 'U' }}
+            {{ (userInfo.chnName || userInfo.userName)?.charAt(0) || 'U' }}
           </el-avatar>
           <div class="user-details">
-            <h2 class="user-name">{{ userInfo.userName }}</h2>
+            <h2 class="user-name">
+              {{ userInfo.chnName || userInfo.userName }}
+              <span class="user-id-tag" v-if="userInfo.userId">{{ userInfo.userId }}</span>
+            </h2>
             <p class="user-bio">{{ userInfo.bio || '这个人很懒，什么都没有留下' }}</p>
             <div class="user-stats">
               <div class="stat-item">
@@ -309,6 +312,7 @@ import { ElMessage, ElDialog } from 'element-plus'
 import PostList from '../components/PostList.vue'
 import HeartIcon from '../components/HeartIcon.vue'
 import FlowerIcon from '../components/FlowerIcon.vue'
+import loginService from '../utils/loginService' // Import loginService
 // API 层 - 支持 Mock/Real API 自动切换
 import { getCurrentUser, getUserById, getUserPosts, getUserFavorites, getUserComments, getUserActivities, getUserCreatedActivities, getRegistrations } from '../api/user'
 import type { Post, Comment, Activity } from '../api/types'
@@ -334,6 +338,7 @@ const isViewingOtherUser = computed(() => {
 const userInfo = ref({
   userId: '' as string,
   userName: '',
+  chnName: '', // Add chnName
   avatar: '',
   bio: '',
   postsCount: 0,
@@ -516,10 +521,14 @@ const loadUserProfile = async (userId: string | string) => {
   try {
     const response = await getUserById(userId)
     const profile = response.data
+    // 尝试从登录服务获取更多信息（如果是当前用户）
+    const cachedUser = loginService.userInfo && loginService.userInfo.userId === userId ? loginService.userInfo : {}
+    
     userInfo.value = {
       userId: profile.userId,
       userName: profile.userName,
-      avatar: profile.avatar,
+      chnName: cachedUser.chnName || '', // Try to get from cache
+      avatar: profile.avatar || cachedUser.avatar || '',
       bio: profile.bio || '',
       postsCount: profile.postsCount || 0,
       favoritesCount: profile.favoritesCount || 0,
@@ -698,10 +707,14 @@ const loadUserData = async () => {
     // 获取当前用户信息
     const response = await getCurrentUser()
     const profile = response.data
+    // 从登录服务获取缓存的详细信息
+    const cachedUser = loginService.userInfo || {}
+
     userInfo.value = {
       userId: profile.userId,
       userName: profile.userName,
-      avatar: profile.avatar,
+      chnName: cachedUser.chnName || '', // Get from cache
+      avatar: profile.avatar || cachedUser.avatar || '',
       bio: profile.bio || '',
       postsCount: profile.postsCount || 0,
       favoritesCount: profile.favoritesCount || 0,
@@ -782,6 +795,18 @@ onBeforeUnmount(() => {
         font-size: 24px;
         font-weight: 700;
         color: #333;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .user-id-tag {
+          font-size: 14px;
+          color: #909399;
+          font-weight: 400;
+          background: rgba(0, 0, 0, 0.05);
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
       }
 
       .user-bio {
