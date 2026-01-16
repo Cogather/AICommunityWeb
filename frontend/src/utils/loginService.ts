@@ -11,7 +11,12 @@ const NGX_BASE_URL = 'https://coretool.rnd.huawei.com'
 // 辅助函数
 const getCache = (key: string) => {
   const val = localStorage.getItem(key)
-  return val ? JSON.parse(val) : null
+  try {
+    return val ? JSON.parse(val) : null
+  } catch (e) {
+    console.error('解析缓存失败', e)
+    return null
+  }
 }
 
 const setCache = (key: string, obj: any) => {
@@ -124,18 +129,25 @@ class LoginService {
     // 格式: https://w3.huawei.com/w3lab/rest/yellowpage/face/{工号}/120
     // 注意：userId 可能是 'x12345' 或 '12345'，需要根据实际情况截取
     const employeeId = userId.startsWith('x') || userId.startsWith('y') ? userId.substring(1) : userId;
-    const avatarUrl = `https://w3.huawei.com/w3lab/rest/yellowpage/face/${employeeId}/120`;
+    // 确保 employeeId 只有数字，有时候可能有一些特殊前缀
+    const cleanEmployeeId = employeeId.replace(/[^0-9]/g, '');
+    const avatarUrl = `https://w3.huawei.com/w3lab/rest/yellowpage/face/${cleanEmployeeId}/120`;
 
     // 4. 更新主缓存
     const currentCache = getCache(CACHE_KEY) || {};
-      const detailedUser = {
-        ...currentCache,
-        ...communityInfo, // 合并 chnName 等字段
-        isMember: Object.keys(communityInfo).length > 0,
-        isAdmin,
-        avatar: avatarUrl, // 设置标准头像
-        employeeId: userId, // 确保 employeeId 存在
-      };
+    
+    // 合并逻辑：确保 communityInfo 不会覆盖已有的有效 chnName
+    const mergedChnName = communityInfo.chnName || currentCache.chnName || '';
+    
+    const detailedUser = {
+      ...currentCache,
+      ...communityInfo, // 合并其他字段
+      chnName: mergedChnName, // 显式指定 chnName，防止被覆盖
+      isMember: Object.keys(communityInfo).length > 0,
+      isAdmin,
+      avatar: avatarUrl, // 设置标准头像
+      employeeId: userId, // 确保 employeeId 存在
+    };
 
       // 兼容旧代码，将详细信息（包含 userId）存入 localStorage 的 userMessage
       localStorage.setItem('userMessage', JSON.stringify(detailedUser));
@@ -151,6 +163,15 @@ class LoginService {
     // 1. 如果缓存中有用户信息，且不是初始化检查，则认为已登录
     // 注意：userName 可能为 null/undefined (如果之前版本缓存没存)，这里主要校验核心的 uid/userId
     if ((uid || userId) && !init) {
+      // 检查头像格式，如果是旧的格式或者为空，尝试重新生成
+      if (!cachedUserInfo.avatar || !cachedUserInfo.avatar.includes('w3.huawei.com')) {
+         // 异步更新一下详细信息（包含头像）
+         // 使用 userId 或 uid
+         const currentId = userId || uid;
+         if (currentId) {
+             this.fetchDetailedUserInfo(currentId).catch(console.error);
+         }
+      }
       return Promise.resolve(true)
     }
 
