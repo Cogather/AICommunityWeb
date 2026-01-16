@@ -67,7 +67,7 @@ class LoginService {
   login() {
     console.log('window.location.href', window.location.href);
     window.location.href = 'https://login.huawei.com/login/?redirect='
-      + `${encodeURIComponent(window.location.origin)}?returnUrl=${encodeURIComponent(window.location.href)}`;
+      + `${encodeURIComponent('http://coretool.rnd.huawei.com/#/home')}?returnUrl=${encodeURIComponent(window.location.href)}`;
   }
 
   logout() {
@@ -230,7 +230,7 @@ class LoginService {
          if (isProduction) {
             console.log('未登录，跳转 SSO')
             window.location.href = 'https://login.huawei.com/login/?'
-              + `redirect=${encodeURIComponent(window.location.origin)}?returnUrl=${encodeURIComponent(currHref)}`;
+              + `redirect=${encodeURIComponent('http://coretool.rnd.huawei.com/#/home')}?returnUrl=${encodeURIComponent(currHref)}`;
          } else {
              // 本地开发环境：使用 Mock 数据模拟登录
              console.log('开发环境：使用 Mock 用户登录')
