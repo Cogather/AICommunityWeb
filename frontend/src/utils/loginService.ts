@@ -135,14 +135,16 @@ class LoginService {
 
     // 4. 更新主缓存
     const currentCache = getCache(CACHE_KEY) || {};
-    
+
     // 合并逻辑：确保 communityInfo 不会覆盖已有的有效 chnName
-    const mergedChnName = communityInfo.chnName || currentCache.chnName || '';
-    
+    // 优先顺序：communityInfo.chName (API返回) > communityInfo.chnName (兼容) > currentCache.chnName (缓存) > ''
+    const mergedChnName = communityInfo.chName || communityInfo.chnName || currentCache.chnName || '';
+
     const detailedUser = {
       ...currentCache,
       ...communityInfo, // 合并其他字段
       chnName: mergedChnName, // 显式指定 chnName，防止被覆盖
+      chName: mergedChnName,  // 同时保存 chName，方便兼容
       isMember: Object.keys(communityInfo).length > 0,
       isAdmin,
       avatar: avatarUrl, // 设置标准头像
@@ -179,18 +181,25 @@ class LoginService {
 
     // 2. 检查 Cookie 中的 userId (兼容旧逻辑)
     if (getCookie('userId')) {
-      (window as any).userId = getCookie('userId');
+      const cookieUserId = getCookie('userId');
+      (window as any).userId = cookieUserId;
       (window as any).userName = getCookie('userName');
 
       // 确保缓存同步
       if (!cachedUserInfo) {
         setCache(CACHE_KEY, {
-          uid: getCookie('userId'),
-          userId: getCookie('userId'),
+          uid: cookieUserId,
+          userId: cookieUserId,
           userName: getCookie('username'), // 注意 cookie key 是小写 username
           chnName: '', // Cookie 中通常没有中文名
         })
       }
+      
+      // 如果缓存中没有中文名（或者是刚初始化的空字符串），尝试获取详细信息
+      if (!chnName) {
+        this.fetchDetailedUserInfo(cookieUserId).catch(console.error);
+      }
+      
       return Promise.resolve(true)
     }
 
@@ -222,6 +231,7 @@ class LoginService {
              userId: userData.user, // user: 短工号
              userName: userData.name, // name: 英文名 + 工号
              chnName: userData.chName || '', // 显式保存中文名（SSO返回字段为 chName）
+             chName: userData.chName || '', // 同时保存原始 chName
            });
 
            // 4. 获取详细社区信息 (集成旧平台逻辑)
@@ -260,6 +270,7 @@ class LoginService {
                userName: 'yuanrongqian 30022452', // name: 英文名 + 工号
                name: 'yuanrongqian 30022452',     // name: 英文名 + 工号
                chnName: '袁榕谦',
+               chName: '袁榕谦',
                isMember: true,
                isAdmin: true,
                avatar: 'https://w3.huawei.com/w3lab/rest/yellowpage/face/30022452/120'
