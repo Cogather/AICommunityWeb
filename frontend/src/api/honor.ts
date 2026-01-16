@@ -99,6 +99,74 @@ const mockTeamAwards: TeamAward[] = [
       },
     ],
   },
+  {
+    id: 2,
+    title: '年度最佳贡献奖',
+    year: '2026',
+    images: [
+      {
+        id: 2,
+        image: 'https://picsum.photos/400/300?random=team2',
+        imageType: 'url',
+        winnerName: '贡献团队A',
+        teamField: '开源贡献',
+        story: '<p>年度最佳贡献团队</p>',
+        flowers: 88,
+        hasGivenFlower: false,
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: 'AI创新突破奖',
+    year: '2026',
+    images: [
+      {
+        id: 3,
+        image: 'https://picsum.photos/400/300?random=team3',
+        imageType: 'url',
+        winnerName: '创新实验室',
+        teamField: '前沿探索',
+        story: '<p>在AI领域取得重大突破</p>',
+        flowers: 256,
+        hasGivenFlower: true,
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: '效率提升大师',
+    year: '2026',
+    images: [
+      {
+        id: 4,
+        image: 'https://picsum.photos/400/300?random=team4',
+        imageType: 'url',
+        winnerName: '效能工具组',
+        teamField: '研发效能',
+        story: '<p>显著提升了研发效率</p>',
+        flowers: 150,
+        hasGivenFlower: false,
+      }
+    ]
+  },
+  {
+    id: 5,
+    title: '社区贡献奖',
+    year: '2026',
+    images: [
+      {
+        id: 5,
+        image: 'https://picsum.photos/400/300?random=team5',
+        imageType: 'url',
+        winnerName: '社区运营组',
+        teamField: '社区建设',
+        story: '<p>活跃社区氛围</p>',
+        flowers: 300,
+        hasGivenFlower: false,
+      }
+    ]
+  }
 ]
 
 const mockLeaderboard: LeaderboardUser[] = [

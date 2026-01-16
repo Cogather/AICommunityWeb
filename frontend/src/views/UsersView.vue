@@ -769,12 +769,12 @@ watch(() => route.query.view, (v) => { if (v === 'timeline') { currentViewMode.v
 watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline') currentTimelineUserName.value = (v as string) || null; });
 
 // 监听从首页跳转过来的团队荣誉参数
-watch(() => route.query.type, (newType) => {
+watch(() => [route.query.type, route.query.year, route.query.award], ([newType, newYear, newAward]) => {
   if (newType === 'team') {
     awardType.value = 'team'
 
-    const urlYear = route.query.year as string
-    const urlAward = route.query.award as string
+    const urlYear = newYear as string
+    const urlAward = newAward as string
 
     // 切换年份
     if (urlYear && teamAwardYears.value.includes(urlYear)) {
