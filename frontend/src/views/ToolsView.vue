@@ -48,7 +48,7 @@
                   class="post-tab-tag"
                   @click="handleTabChange('guide')"
                 >
-                  操作指导
+                  使用指导
                 </el-tag>
                 <el-tag
                   :type="activePostTab === 'excellent' ? 'primary' : 'info'"
@@ -57,7 +57,7 @@
                   class="post-tab-tag"
                   @click="handleTabChange('excellent')"
                 >
-                  优秀使用
+                  优秀案例
                 </el-tag>
               </div>
             </div>

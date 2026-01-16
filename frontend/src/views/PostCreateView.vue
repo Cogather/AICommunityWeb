@@ -440,7 +440,7 @@ const handleBack = () => {
 }
 
 // AI工具专区的固定标签（非"其他"工具时只能选择这两个）
-const toolFixedTags = ['操作指导', '优秀使用']
+const toolFixedTags = ['使用指导', '优秀案例']
 
 // 从后端获取的专区标签
 const fetchedZoneTags = ref<string[]>([])
