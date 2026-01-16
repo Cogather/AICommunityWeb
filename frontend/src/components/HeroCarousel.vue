@@ -291,19 +291,19 @@ import { getCarousel } from '@/api/home';
   ----------------------------------- */
   .glass-panel {
     position: absolute;
-    bottom: 12px; /* 更贴近底边 */
-    left: 12px;   /* 更贴近左边 */
+    bottom: 30px; /* 稍微上移 */
+    left: 30px;   /* 稍微右移 */
     right: auto; 
-    max-width: 320px; /* 进一步减小最大宽度 */
+    max-width: 420px; /* 宽度增加 */
     
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px) saturate(180%);
-    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
     
-    border-radius: 12px; /* 减小圆角 */
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 16px; /* 进一步减小内边距 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 16px; /* 圆角恢复适中 */
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 24px; /* 内边距增加 */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     
     opacity: 0;
     transform: translateY(20px);
@@ -311,20 +311,20 @@ import { getCarousel } from '@/api/home';
   }
 
   .title {
-    margin: 0 0 4px 0;
-    font-size: 18px; /* 进一步减小字体 */
+    margin: 0 0 8px 0;
+    font-size: 24px; /* 字体增大 */
     font-weight: 700;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
   }
   
   .desc {
-    margin: 0 0 10px 0;
-    font-size: 12px; /* 进一步减小字体 */
-    line-height: 1.4;
+    margin: 0 0 16px 0;
+    font-size: 14px; /* 字体增大 */
+    line-height: 1.6;
     color: rgba(255, 255, 255, 0.95);
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3; /* 允许显示更多行 */
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -333,12 +333,12 @@ import { getCarousel } from '@/api/home';
   .gradient-btn {
     background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
     border: none;
-    font-size: 12px; 
+    font-size: 14px; /* 字体增大 */
     font-weight: 600;
-    padding: 6px 16px; /* 进一步减小尺寸 */
-    min-height: 28px;  /* 设置最小高度 */
+    padding: 10px 24px; /* 尺寸增大 */
+    min-height: 36px;  /* 高度增加 */
     height: auto;
-    box-shadow: 0 2px 8px rgba(0, 114, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
     transition: transform 0.2s;
     color: #ffffff !important; 
     
