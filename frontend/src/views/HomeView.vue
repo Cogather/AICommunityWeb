@@ -291,12 +291,6 @@
             <el-carousel-item v-for="(banner, index) in toolZoneBanners" :key="index">
               <div class="tool-banner-item">
                 <img :src="banner.image" :alt="banner.title" class="banner-image" />
-                <div class="banner-overlay">
-                  <div class="banner-text">
-                    <h3>{{ banner.title }}</h3>
-                    <p>{{ banner.desc }}</p>
-                  </div>
-                </div>
               </div>
             </el-carousel-item>
           </el-carousel>
