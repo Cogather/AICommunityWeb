@@ -24,7 +24,7 @@ const route = useRoute()
 const goCreate = () => {
   // 检查当前是否在编辑帖子页面
   const isEditMode = route.path === ROUTES.POST_CREATE && route.query.edit === 'true' && route.query.id
-  
+
   if (isEditMode) {
     // 如果在编辑模式，先询问是否离开
     ElMessageBox.confirm(
@@ -39,7 +39,7 @@ const goCreate = () => {
       // 记录来源信息，用于返回时使用
       const fromEditId = route.query.id
       const fromPath = route.path
-      
+
       // 跳转到新建页面，并传递来源信息
       // 使用 skipLeaveCheck 标记，表示已经询问过用户，跳过 onBeforeRouteLeave 的询问
       router.push({

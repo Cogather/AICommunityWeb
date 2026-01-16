@@ -126,12 +126,7 @@ class LoginService {
     }
 
     // 3. 构造头像 URL (对应 setAvatarUrl)
-    // 格式: https://w3.huawei.com/w3lab/rest/yellowpage/face/{工号}/120
-    // 注意：userId 可能是 'x12345' 或 '12345'，需要根据实际情况截取
-    const employeeId = userId.startsWith('x') || userId.startsWith('y') ? userId.substring(1) : userId;
-    // 确保 employeeId 只有数字，有时候可能有一些特殊前缀
-    const cleanEmployeeId = employeeId.replace(/[^0-9]/g, '');
-    const avatarUrl = `https://w3.huawei.com/w3lab/rest/yellowpage/face/${cleanEmployeeId}/120`;
+    const avatarUrl = commonMethods.getAvatarUrl(userId);
 
     // 4. 更新主缓存
     const currentCache = getCache(CACHE_KEY) || {};
@@ -194,12 +189,12 @@ class LoginService {
           chnName: '', // Cookie 中通常没有中文名
         })
       }
-      
+
       // 如果缓存中没有中文名（或者是刚初始化的空字符串），尝试获取详细信息
       if (!chnName) {
         this.fetchDetailedUserInfo(cookieUserId).catch(console.error);
       }
-      
+
       return Promise.resolve(true)
     }
 

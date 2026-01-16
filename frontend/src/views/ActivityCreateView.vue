@@ -222,10 +222,10 @@ const loadToolsList = async () => {
       color: item.color || '#4096ff',
       link: item.link || `/tools?toolId=${item.id}`
     }))
-    
+
     // 确保扶摇Agent应用不在列表中（避免重复）
     const filteredTools = tools.filter((t: { id: number; name: string }) => t.id !== -1 && t.name !== '扶摇Agent应用')
-    
+
     // 添加扶摇Agent应用（始终显示在列表最前面）
     filteredTools.unshift({
       id: -1,
@@ -236,7 +236,7 @@ const loadToolsList = async () => {
       color: '#4096ff',
       link: '/agent'
     })
-    
+
     allToolsList.value = filteredTools
   } catch (error) {
     console.error('加载工具列表失败:', error)
@@ -354,7 +354,7 @@ const handleCoverChange = async (file: { raw?: File }) => {
 // 编辑器创建
 const handleEditorCreated = (editor: IDomEditor) => {
   editorRef.value = editor
-  
+
   // 如果是编辑模式，等待编辑器完全初始化后再加载活动数据
   if (isEditMode.value) {
     nextTick(() => {
@@ -383,10 +383,10 @@ const loadActivityForEdit = async () => {
   try {
     // 从API获取活动数据
     const activityIdNum = Number(activityId)
-    
+
     const response = await getActivityDetail(activityIdNum)
     const activity = response.data
-    
+
     if (activity) {
       fillFormData(activity)
     } else {
@@ -406,7 +406,7 @@ const fillFormData = (activity: ActivityDetail) => {
   formData.value.toolId = activity.toolId || null
   formData.value.cover = activity.cover || ''
   formData.value.content = activity.content || ''
-  
+
   // 填充新增字段
   formData.value.date = activity.date || ''
   formData.value.startTime = activity.startTime || ''
@@ -416,7 +416,7 @@ const fillFormData = (activity: ActivityDetail) => {
   formData.value.speaker = activity.speaker || ''
   formData.value.speakerTitle = activity.speakerTitle || ''
   formData.value.maxParticipants = activity.maxParticipants || 0
-  
+
   // 设置编辑器内容
   if (editorRef.value) {
     nextTick(() => {
@@ -427,7 +427,7 @@ const fillFormData = (activity: ActivityDetail) => {
       }, 200)
     })
   }
-  
+
   ElMessage.success('活动数据已加载')
 }
 
@@ -437,11 +437,11 @@ const handlePublish = async () => {
 
   try {
     await formRef.value.validate()
-    
+
     if (editorRef.value) {
       formData.value.content = editorRef.value.getHtml()
     }
-    
+
     if (!formData.value.content || formData.value.content === '<p><br></p>') {
       ElMessage.error('请输入活动内容')
       return
@@ -481,9 +481,9 @@ const handlePublish = async () => {
     }
 
     publishing.value = false
-    
+
     ElMessage.success(isEditMode.value ? '活动更新成功！' : '活动发布成功！')
-    
+
     // 跳转到活动详情页或管理页面
     if (isEditMode.value) {
       router.push(`/activity/${route.query.id}`)
@@ -507,7 +507,7 @@ const handleBack = () => {
 onMounted(async () => {
   // 加载工具列表
   await loadToolsList()
-  
+
   // 如果URL中有toolId参数，自动选中对应工具
   const toolIdParam = route.query.toolId
   if (toolIdParam && !isEditMode.value) {
@@ -519,7 +519,7 @@ onMounted(async () => {
       }
     }
   }
-  
+
   if (isEditMode.value) {
     // 等待编辑器创建后再加载数据
     // 注意：数据加载会在 handleEditorCreated 中触发
@@ -555,7 +555,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 16px;
   margin-bottom: 32px;
-  
+
   h2 {
     margin: 0;
     font-size: 24px;
@@ -576,7 +576,7 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    
+
     &:hover {
       border-color: #4096ff;
     }
@@ -592,13 +592,13 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   position: relative;
-  
+
   .cover-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  
+
   .cover-delete-overlay {
     position: absolute;
     top: 0;
@@ -611,7 +611,7 @@ onBeforeUnmount(() => {
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s;
-    
+
     &:hover {
       opacity: 1;
     }
@@ -662,7 +662,7 @@ onBeforeUnmount(() => {
 .form-row {
   display: flex;
   gap: 20px;
-  
+
   .el-form-item {
     margin-bottom: 18px;
   }

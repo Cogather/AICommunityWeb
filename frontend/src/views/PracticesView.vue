@@ -280,16 +280,16 @@ const loadPosts = async () => {
     }
 
     const response = await getPosts(params)
-    
+
     // API 返回 PaginatedData<Post>
     const allPosts = response.data.list
-    
+
     // 后端分页模式下，featuredPosts 暂不从此处分离（除非有专门接口）
     // 这里假设返回的列表就是当前页需要展示的
     // 为了兼容 PostList 组件的展示，我们将所有帖子放入 posts
     // 如果需要置顶精华帖，建议后端单独提供接口或在第一页返回
-    featuredPosts.value = [] 
-    
+    featuredPosts.value = []
+
     posts.value = allPosts.map((post: Post) => ({
       ...post,
       author: post.author || post.userName || '',
@@ -297,7 +297,7 @@ const loadPosts = async () => {
       image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
     }))
-    
+
     totalPosts.value = response.data.total
   } catch (error) {
     console.error('加载帖子失败:', error)

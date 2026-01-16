@@ -281,18 +281,13 @@ const viewModes = [
 ];
 const availableViewModes = computed(() => filterScope.value === 'mine' ? [viewModes[0]] : viewModes);
 
+import commonMethods from '@/utils/common'
+
 // --- 荣誉数据（通过 api/honor.ts 获取；内部支持 mock/real 切换）---
 const honorList = ref<HonorItem[]>([])
 const honorListLoading = ref(false)
 const honorListTotal = ref(0) // 🔑 接口返回的总条数
 const honorListTotalPages = ref(0) // 🔑 接口返回的总页数
-
-// 下拉筛选项（优先走后端接口；无数据时降级为从 honorList 推导）
-const awardNamesFromApi = ref<string[]>([])
-const departmentNamesFromApi = ref<string[]>([])
-
-// 荣誉影响力榜（优先走后端接口；无数据时降级为从 honorList 推导）
-const leaderboardFromApi = ref<LeaderboardUser[]>([])
 
 // 加载荣誉列表数据
 const loadHonorList = async () => {
@@ -309,7 +304,10 @@ const loadHonorList = async () => {
       userName: currentTimelineUserName.value || undefined
     }
     const response = await getHonorList(params)
-    honorList.value = response.data.list
+    honorList.value = response.data.list.map((item: HonorItem) => ({
+      ...item,
+      avatar: commonMethods.getAvatarUrl(item.avatar)
+    }))
     // 🔑 保存接口返回的分页信息
     honorListTotal.value = response.data.total || 0
     honorListTotalPages.value = response.data.totalPages || 0
@@ -342,7 +340,10 @@ const loadLeaderboard = async () => {
       filterValue: activeSubFilter.value !== '全部' ? activeSubFilter.value : undefined,
     }
     const res = await getLeaderboard(params)
-    leaderboardFromApi.value = res.data.list || []
+    leaderboardFromApi.value = (res.data.list || []).map((user: LeaderboardUser) => ({
+      ...user,
+      avatar: commonMethods.getAvatarUrl(user.avatar)
+    }))
   } catch (e) {
     console.error('加载荣耀影响力榜失败:', e)
   }

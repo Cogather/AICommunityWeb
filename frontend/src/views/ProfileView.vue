@@ -400,6 +400,7 @@ const loadUserComments = async (userId: string | string) => {
     const response = await getUserComments(userId, commentsPage.value, commentsPageSize.value)
     myComments.value = response.data.list.map((comment: Comment) => ({
       ...comment,
+      userAvatar: commonMethods.getAvatarUrl(comment.userAvatar),
       createTime: typeof comment.createTime === 'string' ? comment.createTime : new Date(comment.createTime).toLocaleString('zh-CN')
     }))
     // 更新评论数量
@@ -516,6 +517,8 @@ const paginatedMyActivities = computed(() => {
   return myCreatedActivities.value.slice(start, end)
 })
 
+import commonMethods from '@/utils/common'
+
 // 根据用户ID加载用户数据
 const loadUserProfile = async (userId: string | string) => {
   try {
@@ -528,7 +531,7 @@ const loadUserProfile = async (userId: string | string) => {
       userId: profile.userId,
       userName: profile.userName,
       chnName: cachedUser.chnName || '', // Try to get from cache
-      avatar: profile.avatar || cachedUser.avatar || '',
+      avatar: commonMethods.getAvatarUrl(profile.avatar || cachedUser.avatar || ''), // Standardize avatar URL
       bio: profile.bio || '',
       postsCount: profile.postsCount || 0,
       favoritesCount: profile.favoritesCount || 0,
@@ -689,7 +692,10 @@ const handleViewRegistrations = async (activity: ExtendedActivity) => {
   try {
     // 调用API获取报名用户列表
     const response = await getRegistrations(activity.id, 1, 100)
-    registrations.value = response.data.list
+    registrations.value = response.data.list.map((reg: any) => ({
+      ...reg,
+      userAvatar: commonMethods.getAvatarUrl(reg.userAvatar)
+    }))
   } catch (error) {
     console.error('加载报名列表失败:', error)
     ElMessage.error('加载报名列表失败')
@@ -712,7 +718,7 @@ const loadUserData = async () => {
       userId: profile.userId,
       userName: profile.userName,
       chnName: cachedUser.chnName || '', // Get from cache
-      avatar: profile.avatar || cachedUser.avatar || '',
+      avatar: commonMethods.getAvatarUrl(profile.avatar || cachedUser.avatar || ''),
       bio: profile.bio || '',
       postsCount: profile.postsCount || 0,
       favoritesCount: profile.favoritesCount || 0,

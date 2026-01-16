@@ -98,15 +98,15 @@
                   <el-tag effect="dark" round size="small" color="#626aef">最新</el-tag>
                 </div>
                 <div class="users-grid winners-grid">
-                  <div 
-                    class="winner-card" 
-                    v-for="winner in latestWinners" 
+                  <div
+                    class="winner-card"
+                    v-for="winner in latestWinners"
                     :key="winner.id"
                     @click="router.push({ path: '/users', query: { view: 'timeline', user: winner.name } })"
                   >
-                    <el-avatar 
-                      :size="40" 
-                      :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" 
+                    <el-avatar
+                      :size="40"
+                      :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
                     />
                     <div class="winner-info">
                       <span class="winner-name">{{ winner.name }}</span>
@@ -397,7 +397,7 @@ const checkUserStatus = async () => {
     userInfo.value = cachedUser
     isMember.value = !!cachedUser.isMember
     showJoinButton.value = !isMember.value
-    
+
     // 检查管理员权限
     try {
       const res = await getManager()
@@ -417,7 +417,7 @@ const handleJoinCommunity = async () => {
     loginService.login()
     return
   }
-  
+
   try {
     const res = await addCommunity(userInfo.value.userId)
     if (res && (res.data || (res as any).succeed)) {
@@ -426,7 +426,7 @@ const handleJoinCommunity = async () => {
       isMember.value = true
       // 刷新用户信息缓存
       loginService.logout() // 简单处理：登出让用户重新登录刷新，或者手动更新缓存
-      loginService.login() 
+      loginService.login()
     }
   } catch (e) {
     console.error('加入社区失败', e)
@@ -485,12 +485,21 @@ const honorConfig = ref({ bannerImage: '', awards: [] as Array<{ id: number; nam
 const honorBannerImage = computed(() => honorConfig.value.bannerImage)
 const honorAwards = computed(() => honorConfig.value.awards)
 
+import commonMethods from '@/utils/common'
+
 // AI使用达人 - 最新获奖者列表
 const latestWinners = ref<LatestWinner[]>([])
 const loadLatestWinners = async () => {
   try {
     const response = await getLatestWinners(9)
-    latestWinners.value = response.data?.list || []
+    if (response.data?.list) {
+      latestWinners.value = response.data.list.map((winner: LatestWinner) => ({
+        ...winner,
+        avatar: commonMethods.getAvatarUrl(winner.avatar || winner.userId || winner.id)
+      }))
+    } else {
+      latestWinners.value = []
+    }
   } catch (e) {
     console.error('加载最新获奖者失败:', e)
     latestWinners.value = []
@@ -563,7 +572,7 @@ onMounted(async () => {
   // 验证登录状态
   await loginService.validate()
   await checkUserStatus()
-  
+
   honorConfig.value = await loadHonorConfig()
   await loadLatestWinners()
   await loadToolPlatform() // 加载悬浮工具平台 (/api/home/tool-platform)
@@ -704,7 +713,7 @@ const renderedOverview = computed(() => {
 const loadNewsList = async () => {
   // 尝试从 LoginService 获取用户信息
   const userInfo = loginService.userInfo
-  
+
   if (!userInfo || !userInfo.userName) {
     // 默认数据
     newsTop.value = {
@@ -1358,7 +1367,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
+    background:
       radial-gradient(
         ellipse at 0% 0%,
         rgba(100, 150, 255, 0.15) 0%,
@@ -1849,7 +1858,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
   &:hover {
     transform: translateY(-4px) scale(1.03);
-    
+
     .ribbon-shape {
       background: linear-gradient(
         180deg,
@@ -1857,7 +1866,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
         rgba(255, 179, 71, 0.9) 50%,
         rgba(255, 140, 0, 0.9) 100%
       );
-      box-shadow: 
+      box-shadow:
         0 6px 20px rgba(255, 165, 0, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
@@ -1887,7 +1896,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   font-weight: 800;
   font-size: 13px; /* 字体稍微调小 */
   letter-spacing: 0.5px;
-  box-shadow: 
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.05),
     0 8px 16px rgba(251, 191, 36, 0.15);
   overflow: hidden; /* 隐藏溢出的流光 */
@@ -1906,7 +1915,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   background: linear-gradient(180deg, #d97706 0%, #b45309 100%); /* 深色阴影部分 */
   clip-path: polygon(100% 0, 100% 100%, 0 50%, 0 0); /* 只有折叠三角形部分 */
   z-index: -1; /* 在主体下方 */
-  
+
   /* 添加燕尾飘带伪元素 */
   &::before {
     content: '';
@@ -2493,7 +2502,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  
+
   /* 动态背景 - 渐变毛玻璃 */
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), var(--tool-bg));
   backdrop-filter: blur(12px);
@@ -2509,8 +2518,8 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.4) 0%, 
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.4) 0%,
       rgba(255, 255, 255, 0.1) 100%
     );
     z-index: 0;
@@ -2543,7 +2552,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   &:hover {
     transform: translateY(-4px) scale(1.01);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), var(--tool-bg-hover));
-    box-shadow: 
+    box-shadow:
       0 12px 30px -8px var(--tool-shadow),
       0 4px 10px rgba(0, 0, 0, 0.05);
     border-color: var(--tool-color);
@@ -2637,7 +2646,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     transform: translateX(-10px);
     transition: all 0.3s ease;
     color: #999;
-    
+
     .el-icon {
       font-size: 18px;
     }
@@ -3061,7 +3070,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
         border-radius: 8px;
         overflow-x: auto;
         margin: 12px 0;
-        
+
         code {
           background: transparent;
           padding: 0;

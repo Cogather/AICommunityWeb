@@ -382,8 +382,8 @@ const loadFeaturedPost = async () => {
       featuredPost.value = {
         ...response.data.post,
         image: response.data.post.cover || '',
-        createTime: typeof response.data.post.createTime === 'string' 
-          ? response.data.post.createTime 
+        createTime: typeof response.data.post.createTime === 'string'
+          ? response.data.post.createTime
           : new Date(response.data.post.createTime).toLocaleDateString('zh-CN')
       }
     } else {
@@ -798,7 +798,7 @@ const handleCurrentChange = (val: number) => {
     .tool-card-name {
       color: color-mix(in srgb, var(--tool-color) 90%, #000);
       font-weight: 700;
-      text-shadow: 
+      text-shadow:
         0 1px 0 rgba(255, 255, 255, 0.8),
         0 0 8px color-mix(in srgb, var(--tool-color) 30%, transparent);
     }

@@ -335,7 +335,7 @@ const handlePostClick = (post: { id: number | string }) => {
 
     .featured-collection {
       margin-bottom: 20px;
-      
+
       &:last-child {
         margin-bottom: 0;
       }
@@ -372,7 +372,7 @@ const handlePostClick = (post: { id: number | string }) => {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        
+
         .post-count {
           font-size: 12px;
           color: #999;

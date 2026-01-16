@@ -19,16 +19,16 @@ onMounted(async () => {
   }
 
   const baseUrl = 'https://cogather.coreai.rnd.huawei.com/homepage/news/20251208'
-  
+
   // 使用平台现在的 userId 获取方式
   const userId = loginService.userInfo?.userId || ''
-  
+
   const params = new URLSearchParams()
   params.append('noTabs', '')
   if (userId) {
     params.append('userId', userId)
   }
-  
+
   iframeSrc.value = `${baseUrl}?${params.toString()}`
 })
 </script>

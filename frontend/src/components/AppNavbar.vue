@@ -270,6 +270,8 @@ const isLoggedIn = computed(() => {
   return !!loginService.userInfo
 })
 
+import commonMethods from '@/utils/common'
+
 // 用户信息
 const userInfo = computed(() => {
   const user = loginService.userInfo || {}
@@ -277,7 +279,7 @@ const userInfo = computed(() => {
     name: user.chnName || user.userName || '用户', // 优先显示中文名
     userName: user.userName || '',
     userId: user.userId || '',
-    avatar: user.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+    avatar: commonMethods.getAvatarUrl(user.avatar || user.userId),
     role: user.isAdmin ? 'admin' : 'user'
   }
 })

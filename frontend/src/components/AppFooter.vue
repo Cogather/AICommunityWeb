@@ -1,6 +1,6 @@
 <template>
   <footer class="footer-banner">
-    <!-- 
+    <!--
       【背景图片替换位置】
       请在下方 .footer-banner 的 CSS 中修改 background-image 属性
       例如：background-image: url('@/assets/image/footer_bg.png');
@@ -9,8 +9,8 @@
       <div class="contact-box">
         <!-- 二维码区域 - 可替换为真实二维码图片 -->
         <div class="qr-placeholder">
-          <img 
-            src="https://picsum.photos/60/60?random=qr" 
+          <img
+            src="https://picsum.photos/60/60?random=qr"
             alt="二维码"
             class="qr-image"
           />
@@ -19,11 +19,11 @@
       </div>
       <div class="friend-links">
         <span>友情链接：</span>
-        <el-button 
-          v-for="link in friendLinks" 
-          :key="link.id" 
-          round 
-          size="small" 
+        <el-button
+          v-for="link in friendLinks"
+          :key="link.id"
+          round
+          size="small"
           @click="handleLinkClick(link.url)"
         >
           {{ link.name }}
@@ -58,7 +58,7 @@ const handleLinkClick = (url: string) => {
   min-height: 150px;
   overflow: hidden;
 
-  /* 
+  /*
     【背景图片配置】
     请将下面的 URL 替换为您自己的图片路径
     例如：background-image: url('@/assets/image/footer_bg.png');

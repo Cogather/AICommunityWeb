@@ -93,7 +93,7 @@
             @tag-click="handleTagClick"
           />
         </div>
-        
+
         <!-- 活动轮播 -->
         <div class="activities-section">
           <ActivityCarousel
@@ -106,9 +106,9 @@
     </el-row>
 
     <!-- 发布活动悬浮按钮（工具Owner和管理员可见） -->
-    <el-tooltip 
+    <el-tooltip
       v-if="isToolOwner || isAdmin"
-      content="发布活动" 
+      content="发布活动"
       placement="left"
     >
       <el-button
@@ -154,7 +154,7 @@ const checkToolOwnerPermission = async () => {
     // 获取当前用户信息
     const userResponse = await getCurrentUser()
     isAdmin.value = userResponse.data.roles?.includes('admin') || false
-    
+
     // 检查是否为工具Owner（toolId为-1表示扶摇Agent应用）
     const ownerResponse = await checkOwnerPermission()
     isToolOwner.value = ownerResponse.data.isOwner || false
@@ -253,8 +253,8 @@ const loadFeaturedPost = async () => {
       featuredPost.value = {
         ...response.data.post,
         image: response.data.post.image || response.data.post.cover || '',
-        createTime: typeof response.data.post.createTime === 'string' 
-          ? response.data.post.createTime 
+        createTime: typeof response.data.post.createTime === 'string'
+          ? response.data.post.createTime
           : new Date(response.data.post.createTime).toLocaleDateString('zh-CN')
       }
     } else {
@@ -290,8 +290,8 @@ const loadPosts = async () => {
       // 后端工具帖子列表返回字段：description/author/cover（见 ToolPostItemVO + ToolPostMapper.xml）
       description: (p as unknown as { description?: string }).description || p.summary || '',
       author: (p as unknown as { author?: string }).author || p.userName || '',
-      createTime: typeof p.createTime === 'string' 
-        ? p.createTime 
+      createTime: typeof p.createTime === 'string'
+        ? p.createTime
         : new Date(p.createTime).toLocaleDateString('zh-CN'),
       views: p.views,
       comments: p.comments,
