@@ -9,20 +9,20 @@
         class="ai-carousel"
       >
         <el-carousel-item v-for="item in slides" :key="item.id" class="ai-carousel-item">
-          
+
           <div class="slide-card" @click="handleSlideClick(item)" :style="{ cursor: item.link ? 'pointer' : 'default' }">
             <img :src="item.image" :alt="item.title" class="slide-bg" />
-            
+
             <div class="slide-mask"></div>
-  
+
             <div class="glass-panel" v-if="item.showContent">
               <div class="panel-content">
                 <h3 class="title">{{ item.title }}</h3>
                 <p class="desc">{{ item.desc }}</p>
-                
-                <el-button 
-                  class="gradient-btn" 
-                  round 
+
+                <el-button
+                  class="gradient-btn"
+                  round
                   v-if="item.link"
                   @click.stop="handleSlideClick(item)"
                 >
@@ -32,19 +32,19 @@
               </div>
             </div>
           </div>
-  
+
         </el-carousel-item>
       </el-carousel>
     </div>
   </template>
-  
+
   <script setup lang="ts">
   import { ref, onMounted, onUnmounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { ArrowRight } from '@element-plus/icons-vue';
   // API 层 - 支持 Mock/Real API 自动切换
 import { getCarousel } from '@/api/home';
-  
+
   interface Slide {
     id: number;
     title: string;
@@ -53,16 +53,16 @@ import { getCarousel } from '@/api/home';
     link: string;
     showContent: boolean;
   }
-  
+
   const router = useRouter();
-  
+
   // 默认轮播图数据
   const defaultSlides: Slide[] = [
     {
       id: 1,
       title: "AI 优秀实践",
       desc: "探索大模型在企业级应用中的最佳落地场景，驱动业务数智化转型。",
-      image: "https://picsum.photos/1200/600?random=1", 
+      image: "https://picsum.photos/1200/600?random=1",
       link: "/practice",
       showContent: true
     },
@@ -91,9 +91,9 @@ import { getCarousel } from '@/api/home';
       showContent: true
     }
   ];
-  
+
   const slides = ref<Slide[]>(defaultSlides);
-  
+
   // 从API加载轮播图配置
   const loadCarouselSlides = async () => {
     try {
@@ -114,12 +114,12 @@ import { getCarousel } from '@/api/home';
       slides.value = defaultSlides;
     }
   };
-  
+
   // 监听配置更新
   const handleConfigUpdate = () => {
     loadCarouselSlides();
   };
-  
+
   // 处理轮播图点击
   const handleSlideClick = (slide: Slide) => {
     if (slide.link) {
@@ -130,44 +130,44 @@ import { getCarousel } from '@/api/home';
       }
     }
   };
-  
+
   onMounted(() => {
     loadCarouselSlides();
     window.addEventListener('adminConfigUpdated', handleConfigUpdate);
   });
-  
+
   onUnmounted(() => {
     window.removeEventListener('adminConfigUpdated', handleConfigUpdate);
   });
   </script>
-  
+
   <style scoped lang="scss">
-  /* 全屏宽度容器 
+  /* 全屏宽度容器
     overflow: hidden 防止某些浏览器出现横向滚动条
   */
   .hero-carousel-wrapper {
     width: 100%;
     max-width: 100%;
     position: relative;
-    overflow: hidden; 
+    overflow: hidden;
     padding: 0; /* 去掉所有padding，与导航栏无缝连接 */
     margin: 0;
     margin-bottom: -50px; /* 负边距让底部渐消区域与下方内容重叠 */
     box-sizing: border-box;
     z-index: 1; /* 确保在背景上层，但在内容下层 */
   }
-  
+
   /* 为轮播图容器 */
   :deep(.el-carousel__container) {
     position: relative;
   }
-  
+
   /* 覆盖 Element Plus 样式 */
   :deep(.el-carousel) {
     width: 100%;
     max-width: 100%;
   }
-  
+
   :deep(.el-carousel__container) {
     /* 限制容器宽度，防止超出 */
     overflow: hidden !important; /* 强制隐藏溢出 */
@@ -179,7 +179,7 @@ import { getCarousel } from '@/api/home';
     left: 0;
     right: 0;
   }
-  
+
   :deep(.el-carousel__track) {
     width: 100%;
     max-width: 100%;
@@ -188,7 +188,7 @@ import { getCarousel } from '@/api/home';
     justify-content: center;
     align-items: center;
   }
-  
+
   /* 核心卡片样式 - 一次显示三个图，合适的宽度 */
   :deep(.el-carousel__item) {
     border-radius: 24px;
@@ -201,7 +201,7 @@ import { getCarousel } from '@/api/home';
     width: 55% !important;
     max-width: 55% !important;
   }
-  
+
   /* 激活卡片保持相同宽度，并确保居中 */
   :deep(.el-carousel__item.is-active) {
     width: 55% !important;
@@ -213,10 +213,10 @@ import { getCarousel } from '@/api/home';
     transform: translateX(-50%) !important;
     z-index: 10;
   }
-  
+
   /* 激活卡片 - 中间的大图 */
   /* Element Plus card 模式会自动处理激活状态，保持默认样式即可 */
-  
+
   /* 卡片内部容器 */
   .slide-card {
     width: 100%;
@@ -227,14 +227,14 @@ import { getCarousel } from '@/api/home';
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-sizing: border-box;
   }
-  
+
   .slide-bg {
     width: 100%;
     height: 100%;
     object-fit: cover; /* 改为 cover 让图片填满容器，不留空白 */
     transition: transform 0.8s ease;
   }
-  
+
   /* 遮罩：默认深色 */
   .slide-mask {
     position: absolute;
@@ -242,7 +242,7 @@ import { getCarousel } from '@/api/home';
     background: rgba(12, 12, 20, 0.5); /* 深蓝黑色遮罩 */
     transition: all 0.6s;
   }
-  
+
   /* -----------------------------------
      激活状态 (Active) - 中间的大图
   ----------------------------------- */
@@ -250,60 +250,60 @@ import { getCarousel } from '@/api/home';
     opacity: 1 !important;
     filter: blur(0) grayscale(0) !important; /* 清除模糊 */
     z-index: 20;
-    
+
     /* 移除 mask，让中间图完整显示 */
-    mask-image: none !important; 
+    mask-image: none !important;
     -webkit-mask-image: none !important;
-  
+
     /* 强烈的 3D 霓虹投影 */
-    box-shadow: 
+    box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.4), /* 高亮边框 */
       0 0 30px rgba(64, 158, 255, 0.5),   /* 蓝色光晕 */
       0 30px 60px rgba(0, 0, 0, 0.6);     /* 底部深投影 */
-  
+
     /* 确保居中显示 */
     left: 50% !important;
     transform: translateX(-50%) !important;
-  
+
     .slide-mask {
       background: transparent;
     }
-  
+
     .slide-bg {
       transform: scale(1.03); /* 轻微放大 */
     }
-  
+
     /* 显示信息面板 */
     .glass-panel {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  
+
   /* -----------------------------------
      非激活状态的特殊处理 (左右两侧)
-     Element Plus 会给左边的加 is-animating (如果在动) 
+     Element Plus 会给左边的加 is-animating (如果在动)
      或者我们可以通过 CSS 兄弟选择器来微调，但这里统一用默认状态即可。
   ----------------------------------- */
-  
+
   /* -----------------------------------
      毛玻璃信息面板
   ----------------------------------- */
   .glass-panel {
     position: absolute;
-    bottom: 20px; /* 靠在图片底边 */
-    left: 20px;
+    bottom: 12px; /* 更贴近底边 */
+    left: 12px;   /* 更贴近左边 */
     right: auto; 
-    max-width: 360px; /* 尺寸减小 */
+    max-width: 320px; /* 进一步减小最大宽度 */
     
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
     
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    padding: 20px; /* 内边距减小 */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-radius: 12px; /* 减小圆角 */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 16px; /* 进一步减小内边距 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     
     opacity: 0;
     transform: translateY(20px);
@@ -311,17 +311,17 @@ import { getCarousel } from '@/api/home';
   }
 
   .title {
-    margin: 0 0 6px 0;
-    font-size: 20px; /* 字体减小 */
+    margin: 0 0 4px 0;
+    font-size: 18px; /* 进一步减小字体 */
     font-weight: 700;
     color: #fff;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
   }
   
   .desc {
-    margin: 0 0 12px 0;
-    font-size: 13px; /* 字体减小 */
-    line-height: 1.5;
+    margin: 0 0 10px 0;
+    font-size: 12px; /* 进一步减小字体 */
+    line-height: 1.4;
     color: rgba(255, 255, 255, 0.95);
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -333,25 +333,26 @@ import { getCarousel } from '@/api/home';
   .gradient-btn {
     background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
     border: none;
-    font-size: 12px; /* 字体减小 */
+    font-size: 12px; 
     font-weight: 600;
-    padding: 8px 20px; /* 尺寸减小 */
+    padding: 6px 16px; /* 进一步减小尺寸 */
+    min-height: 28px;  /* 设置最小高度 */
     height: auto;
-    box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 114, 255, 0.25);
     transition: transform 0.2s;
-    color: #ffffff !important; /* 白色文字 */
+    color: #ffffff !important; 
     
     &:hover {
       transform: scale(1.05);
       background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      color: #ffffff !important; /* 悬停时保持白色 */
+      color: #ffffff !important;
     }
     
     :deep(.el-icon) {
-      color: #ffffff !important; /* 图标也改为白色 */
+      color: #ffffff !important;
     }
   }
-  
+
   /* 导航箭头样式 - 始终显示 */
   :deep(.el-carousel__arrow) {
     background: rgba(255, 255, 255, 0.2);
@@ -387,10 +388,10 @@ import { getCarousel } from '@/api/home';
     bottom: 20px !important;
     left: 50%;
     transform: translateX(-50%);
-    
+
     .el-carousel__indicator {
       margin: 0 4px;
-      
+
       button {
         background-color: rgba(255, 255, 255, 0.5);
         width: 8px;
@@ -399,7 +400,7 @@ import { getCarousel } from '@/api/home';
         transition: all 0.3s ease;
         border: none;
       }
-      
+
       &.is-active button {
         background-color: #fff;
         width: 24px;
