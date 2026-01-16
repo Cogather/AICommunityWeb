@@ -291,49 +291,53 @@ import { getCarousel } from '@/api/home';
   ----------------------------------- */
   .glass-panel {
     position: absolute;
-    bottom: 60px; /* 增加底部距离，为指示器留出空间 */
-    left: 40px;
-    right: 40px; 
-    max-width: 460px;
+    bottom: 20px; /* 靠在图片底边 */
+    left: 20px;
+    right: auto; 
+    max-width: 360px; /* 尺寸减小 */
     
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
     
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 30px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 20px; /* 内边距减小 */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
     transition: all 0.6s ease 0.2s; 
   }
-  
+
   .title {
-    margin: 0 0 10px 0;
-    font-size: 28px;
-    font-weight: 800;
+    margin: 0 0 6px 0;
+    font-size: 20px; /* 字体减小 */
+    font-weight: 700;
     color: #fff;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
   }
   
   .desc {
-    margin: 0 0 24px 0;
-    font-size: 15px;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 12px 0;
+    font-size: 13px; /* 字体减小 */
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.95);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   
   /* 按钮样式 */
   .gradient-btn {
     background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
     border: none;
-    font-size: 14px;
+    font-size: 12px; /* 字体减小 */
     font-weight: 600;
-    padding: 12px 28px;
+    padding: 8px 20px; /* 尺寸减小 */
     height: auto;
-    box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
     transition: transform 0.2s;
     color: #ffffff !important; /* 白色文字 */
     
