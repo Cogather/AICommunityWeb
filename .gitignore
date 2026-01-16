@@ -53,3 +53,7 @@ backend/.settings/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local npm cache
+.npm_cache
+frontend/.npm_cache
