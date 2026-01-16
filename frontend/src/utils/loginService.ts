@@ -6,9 +6,7 @@ import commonMethods from '@/utils/common'
 const CACHE_KEY = 'user_info'
 
 // 基础 URL 配置
-// 注意：原代码中的 NGX_BASE_URL 是 https://coretool.rnd.huawei.com
-// 这里我们将其调整为当前应用的 API 地址，或者如果后端有统一的 Auth 服务，应该配置为 Auth 服务地址
-// 鉴于这是一个移植模块，我们暂时保留结构，但 login/logout 主要依赖 SSO 跳转
+const NGX_BASE_URL = 'https://coretool.rnd.huawei.com'
 
 // 辅助函数
 const getCache = (key: string) => {
@@ -47,20 +45,20 @@ class LoginService {
 
   // 以下 Endpoint 保留用于兼容，但实际逻辑主要依赖 login/validate 方法
   get loginEndpoint() {
-    return '/login/v2/login'
+    return `${NGX_BASE_URL}/login/v2/login`
   }
 
   get logoutEndpoint() {
-    return '/login/v2/logout'
+    return `${NGX_BASE_URL}/login/v2/logout`
   }
 
   get validateEndpoint() {
-    return '/login/v2/validate'
+    return `${NGX_BASE_URL}/login/v2/validate`
   }
 
   // 验证用户是否登录，并根据cookice信息生成新老token
   getTokens() {
-    return fetch('/login/v2/tokens')
+    return fetch(`${NGX_BASE_URL}/login/v2/tokens`)
   }
 
   login() {
