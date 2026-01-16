@@ -107,8 +107,8 @@ class LoginService {
       const memberRes = await checkCommunityMembership(userId);
       if (memberRes && memberRes.data && Object.keys(memberRes.data).length > 0) {
         communityInfo = memberRes.data;
-        // 兼容旧代码，将详细信息存入 localStorage 的 userMessage
-        localStorage.setItem('userMessage', JSON.stringify(communityInfo));
+        // 兼容旧代码，将详细信息（包含 userId）存入 localStorage 的 userMessage
+        localStorage.setItem('userMessage', JSON.stringify({ ...memberRes.data, userId }));
       }
     } catch (e) {
       console.warn('获取社区成员信息失败:', e);
@@ -132,17 +132,20 @@ class LoginService {
 
     // 4. 更新主缓存
     const currentCache = getCache(CACHE_KEY) || {};
-    const detailedUser = {
-      ...currentCache,
-      ...communityInfo, // 合并 chnName 等字段
-      isMember: Object.keys(communityInfo).length > 0,
-      isAdmin,
-      avatar: avatarUrl, // 设置标准头像
-      employeeId: userId, // 确保 employeeId 存在
-    };
-    
-    setCache(CACHE_KEY, detailedUser);
-    return detailedUser;
+      const detailedUser = {
+        ...currentCache,
+        ...communityInfo, // 合并 chnName 等字段
+        isMember: Object.keys(communityInfo).length > 0,
+        isAdmin,
+        avatar: avatarUrl, // 设置标准头像
+        employeeId: userId, // 确保 employeeId 存在
+      };
+      
+      // 兼容旧代码，将详细信息（包含 userId）存入 localStorage 的 userMessage
+      localStorage.setItem('userMessage', JSON.stringify(detailedUser));
+      
+      setCache(CACHE_KEY, detailedUser);
+      return detailedUser;
   }
 
   async validate(init?: boolean) {

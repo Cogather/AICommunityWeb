@@ -17,6 +17,7 @@ export interface PostCreateParams {
   toolId?: number
   category?: 'guide' | 'excellent'
   tags?: string[]
+  authorId?: string
 }
 
 /** 更新帖子参数 */

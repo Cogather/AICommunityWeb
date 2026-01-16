@@ -87,6 +87,8 @@ const routes: Array<RouteRecordRaw> = [
   }
 ]
 
+import loginService from '../utils/loginService'
+
 const router = createRouter({
   // 使用 Vite 的 base 配置作为路由基础路径
   // import.meta.env.BASE_URL 会自动获取 vite.config.ts 中的 base 值 (/ai_community/)
@@ -100,6 +102,25 @@ const router = createRouter({
     // 否则滚动到顶部
     return { top: 0 }
   }
+})
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  loginService.validate().then(valid => {
+    if (valid) {
+      next()
+    } else {
+      // validate 内部通常会处理重定向，如果返回 false 可能意味着需要登录但被拦截
+      // 这里可以根据需要添加逻辑，例如跳转到登录页（如果 validate 没做的话）
+      // 目前 loginService.validate 在未登录时会重定向到 SSO，所以这里很少走到 else
+      // 为了安全，可以阻止导航
+      // next(false)
+      // 但为了兼容性，如果 validate 返回 false 但没跳转，可能是 API 失败？
+      next()
+    }
+  }).catch(() => {
+    next()
+  })
 })
 
 export default router

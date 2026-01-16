@@ -1064,6 +1064,13 @@ const handlePublish = async () => {
       const zone = formData.value.zone || undefined
       if (postId && route.query.edit === 'true') {
         // 更新帖子
+        // 如果路由参数中有 authorId，则在更新时带上（参考旧代码逻辑）
+        // 注意：旧代码 updatePost 并没有 authorId 参数在 params 中，但这里我们可以保留逻辑
+        // 不过 api/posts.ts 中的 updatePost 签名 params 是 PostUpdateParams，目前没有 authorId
+        // 如果后端不需要 authorId，这里可以忽略。
+        // 但为了完整性，如果 params 支持，可以添加。目前 PostUpdateParams 不支持。
+        // 所以我们只更新支持的字段。
+        
         result = await updatePost(postId, {
           title: formData.value.title,
           summary: formData.value.summary,
@@ -1079,6 +1086,19 @@ const handlePublish = async () => {
           publishing.value = false
           return
         }
+        
+        // 获取当前用户信息
+        let authorId = '';
+        try {
+          const userMessageStr = localStorage.getItem('userMessage');
+          if (userMessageStr) {
+            const userMessage = JSON.parse(userMessageStr);
+            authorId = userMessage.userId;
+          }
+        } catch (e) {
+          console.error('获取用户信息失败', e);
+        }
+
         result = await createPost({
           title: formData.value.title,
           summary: formData.value.summary,
@@ -1086,7 +1106,8 @@ const handlePublish = async () => {
           tags: formData.value.tags,
           cover: formData.value.cover,
           zone: zone as 'practices' | 'tools' | 'agent' | 'empowerment',
-          toolId: formData.value.toolId || undefined
+          toolId: formData.value.toolId || undefined,
+          authorId: authorId || undefined
         })
         ElMessage.success('帖子发布成功')
       }
