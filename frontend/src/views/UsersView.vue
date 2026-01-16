@@ -177,8 +177,8 @@
               <div class="bg-decoration-circle"></div>
               <div class="bg-decoration-icon"><el-icon><Trophy /></el-icon></div>
               <div class="card-top">
-                <div class="avatar-halo" @click.stop="handleUserClick(item.name)"><el-avatar :size="50" :src="item.avatar" class="user-avatar" /><div class="halo-ring"></div></div>
-                <div class="user-info"><div class="user-name">{{ item.name }}</div><div class="dept-badge">{{ item.department }}</div></div>
+                <div class="avatar-halo" @click.stop="handleUserClick(item.userName)"><el-avatar :size="50" :src="item.avatar" class="user-avatar" /><div class="halo-ring"></div></div>
+                <div class="user-info"><div class="user-name">{{ item.userName }}</div><div class="dept-badge">{{ item.department }}</div></div>
                 <div class="year-ribbon"><span>{{ item.year }}</span></div>
               </div>
               <div class="award-center"><h3 class="award-name">{{ item.awardName }}</h3><div v-if="item.achievement" class="achievement-text">{{ item.achievement }}</div></div>
@@ -211,7 +211,7 @@
           <div v-if="currentTimelineUser" class="timeline-user-header glass-panel">
             <el-avatar :size="60" :src="currentTimelineUser.avatar" />
             <div class="timeline-user-info">
-              <h3 class="timeline-user-name">{{ currentTimelineUser.name }}</h3>
+              <h3 class="timeline-user-name">{{ currentTimelineUser.userName }}</h3>
               <div class="timeline-user-stats">
                 <span class="timeline-stat-item"><FlowerIcon :filled="true" :size="18" color="#f472b6" /><span class="stat-value">{{ currentTimelineUser.totalFlowers }}</span><span class="stat-label">总花朵数</span></span>
               </div>
@@ -225,8 +225,8 @@
               <div v-for="item in block.items" :key="item.id" class="t-item">
                 <div class="t-node"></div>
                 <div class="t-card glass-panel" :class="item.category">
-                  <div class="t-avatar" @click.stop="handleUserClick(item.name)"><el-avatar :size="40" :src="item.avatar" /></div>
-                  <div class="t-info"><div class="t-title">{{ item.awardName }}</div><div class="t-meta">{{ item.name }} · {{ item.awardDate }}</div></div>
+                  <div class="t-avatar" @click.stop="handleUserClick(item.userName)"><el-avatar :size="40" :src="item.avatar" /></div>
+                  <div class="t-info"><div class="t-title">{{ item.awardName }}</div><div class="t-meta">{{ item.userName }} · {{ item.awardDate }}</div></div>
                 </div>
               </div>
             </div>
@@ -242,7 +242,7 @@
         <div class="leaderboard-panel">
           <div class="panel-header"><div class="header-icon"><el-icon><TrendCharts /></el-icon></div><div class="header-text"><h3>荣耀影响力</h3><span>HALL OF FAME</span></div></div>
           <div class="ranking-list">
-            <div v-for="(user, index) in leaderboardData" :key="user.name" class="rank-row" :class="getRankClass(index)"><div class="rank-badge"><span v-if="index > 2">{{ index + 1 }}</span><el-icon v-else><Medal /></el-icon></div><el-avatar :size="44" :src="user.avatar" class="rank-avatar" @click.stop="handleUserClick(user.name)" /><div class="rank-details"><div class="r-name">{{ user.name }}</div><div class="r-dept">{{ user.department }}</div></div><div class="rank-stat"><div class="stat-row"><span class="num">{{ user.count }}</span><span class="unit">勋章</span></div><div class="stat-row"><FlowerIcon :filled="true" :size="14" color="#f472b6" /><span class="num flowers">{{ user.totalFlowers }}</span></div></div></div>
+            <div v-for="(user, index) in leaderboardData" :key="user.userName" class="rank-row" :class="getRankClass(index)"><div class="rank-badge"><span v-if="index > 2">{{ index + 1 }}</span><el-icon v-else><Medal /></el-icon></div><el-avatar :size="44" :src="user.avatar" class="rank-avatar" @click.stop="handleUserClick(user.userName)" /><div class="rank-details"><div class="r-name">{{ user.userName }}</div><div class="r-dept">{{ user.department }}</div></div><div class="rank-stat"><div class="stat-row"><span class="num">{{ user.count }}</span><span class="unit">勋章</span></div><div class="stat-row"><FlowerIcon :filled="true" :size="14" color="#f472b6" /><span class="num flowers">{{ user.totalFlowers }}</span></div></div></div>
           </div>
         </div>
       </div>
@@ -262,7 +262,7 @@ import {
 import FlowerIcon from '../components/FlowerIcon.vue';
 // API 层 - 支持 Mock/Real API 自动切换
 import { getTeamAwards, giveFlower, getHonorList, getLeaderboard, getAwardNames, getDepartments } from '../api/honor'
-import type { HonorRecord } from '../api/types'
+import type { HonorRecord, LeaderboardUser } from '../api/types'
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
@@ -292,13 +292,6 @@ const awardNamesFromApi = ref<string[]>([])
 const departmentNamesFromApi = ref<string[]>([])
 
 // 荣誉影响力榜（优先走后端接口；无数据时降级为从 honorList 推导）
-interface LeaderboardUser {
-  name: string;
-  department: string;
-  avatar?: string;
-  count: number;
-  totalFlowers: number;
-}
 const leaderboardFromApi = ref<LeaderboardUser[]>([])
 
 // 加载荣誉列表数据
@@ -551,6 +544,11 @@ onMounted(async () => {
   // 初始化加载团队奖项
   teamAwards.value = await loadTeamAwards();
 
+  // 默认选中最新的年份
+  if (teamAwardYears.value.length > 0) {
+    selectedYear.value = teamAwardYears.value[0]!;
+  }
+
   // 初始化加载荣誉列表
   await loadHonorList();
 
@@ -624,10 +622,10 @@ watch([awardType, selectedYear, activeTeamAwardIndex, currentTeamAwards], () => 
 const processedList = computed(() => {
   let result = honorList.value;
   if (currentViewMode.value === 'timeline' && currentTimelineUserName.value) {
-    result = result.filter(item => item.name === currentTimelineUserName.value);
+    result = result.filter(item => item.userName === currentTimelineUserName.value);
   } else {
     if (filterScope.value === 'mine') result = result.filter(item => item.isMine);
-    if (searchQuery.value) result = result.filter(item => item.name.includes(searchQuery.value));
+    if (searchQuery.value) result = result.filter(item => item.userName.includes(searchQuery.value));
     if (currentViewMode.value === 'grid' && activeSubFilter.value !== '全部') {
       if (honorFilterType.value === 'award') result = result.filter(item => item.awardName === activeSubFilter.value);
       else if (honorFilterType.value === 'department') result = result.filter(item => item.department === activeSubFilter.value);
@@ -645,16 +643,16 @@ const paginatedList = computed(() => {
 const leaderboardFallback = computed(() => {
   const map = new Map<string, LeaderboardUser>();
   processedList.value.forEach(item => {
-    if (!map.has(item.name)) {
-      map.set(item.name, {
-        name: item.name,
+    if (!map.has(item.userName)) {
+      map.set(item.userName, {
+        userName: item.userName,
         department: item.department,
         avatar: item.avatar,
         count: 0,
         totalFlowers: 0
       });
     }
-    const user = map.get(item.name);
+    const user = map.get(item.userName);
     if (user) {
       user.count++;
       user.totalFlowers += item.flowers || 0;
@@ -710,11 +708,11 @@ const timelineData = computed(() => {
 
 const currentTimelineUser = computed(() => {
   if (currentViewMode.value !== 'timeline' || !currentTimelineUserName.value) return null;
-  const userItems = honorList.value.filter(item => item.name === currentTimelineUserName.value);
+  const userItems = honorList.value.filter(item => item.userName === currentTimelineUserName.value);
   const firstItem = userItems[0];
   if (!firstItem) return null;
   return {
-    name: firstItem.name,
+    userName: firstItem.userName,
     avatar: firstItem.avatar,
     department: firstItem.department,
     totalFlowers: userItems.reduce((s, i) => s + (i.flowers || 0), 0)
@@ -739,7 +737,7 @@ onMounted(() => nextTick(() => setTimeout(updateScrollButtons, 200)));
 
 const getRankClass = (idx: number) => ['rank-1', 'rank-2', 'rank-3'][idx] || 'rank-normal';
 const switchMode = (mode: string) => { currentViewMode.value = mode as ViewMode; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; searchQuery.value = ''; chipSearchQuery.value = ''; router.replace({ path: '/users' }); };
-const handleUserClick = (name: string) => { if (currentViewMode.value === 'grid') router.push({ path: '/users', query: { view: 'timeline', user: name } }); else { currentTimelineUserName.value = name; router.replace({ path: '/users', query: { view: 'timeline', user: name } }); } };
+const handleUserClick = (userName: string) => { if (currentViewMode.value === 'grid') router.push({ path: '/users', query: { view: 'timeline', user: userName } }); else { currentTimelineUserName.value = userName; router.replace({ path: '/users', query: { view: 'timeline', user: userName } }); } };
 const formatAwardDate = (d: string) => { const dt = new Date(d); return `${dt.getFullYear()}年${String(dt.getMonth()+1).padStart(2,'0')}月`; };
 const handleGiveFlower = async (item: HonorItem) => {
   if (item.hasGivenFlower) {
