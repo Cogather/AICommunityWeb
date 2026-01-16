@@ -62,7 +62,6 @@ class LoginService {
   }
 
   login() {
-    console.log('window.location.href', window.location.href);
     window.location.href = 'https://login.huawei.com/login/?redirect='
       + `${encodeURIComponent('http://coretool.rnd.huawei.com/#/home')}?returnUrl=${encodeURIComponent(window.location.href)}`;
   }
@@ -102,7 +101,6 @@ class LoginService {
     // 1. 检查社区成员资格 (对应 checkMembership)
     try {
       const memberRes = await checkCommunityMembership(userId);
-      console.log('LoginService - checkCommunityMembership response:', memberRes); // Log raw response
       if (memberRes && memberRes.data && Object.keys(memberRes.data).length > 0) {
         communityInfo = memberRes.data;
         // 兼容旧代码，将详细信息（包含 userId）存入 localStorage 的 userMessage
@@ -138,8 +136,6 @@ class LoginService {
         avatar: avatarUrl, // 设置标准头像
         employeeId: userId, // 确保 employeeId 存在
       };
-
-      console.log('LoginService - Detailed User Info:', detailedUser); // Add logging
 
       // 兼容旧代码，将详细信息（包含 userId）存入 localStorage 的 userMessage
       localStorage.setItem('userMessage', JSON.stringify(detailedUser));
@@ -188,7 +184,6 @@ class LoginService {
 
         // 适配返回结构
         const userData = (res as any).data || res;
-        console.log('LoginService - SSO User Data:', userData); // Log raw SSO response
 
         if (userData && (userData.user || userData.uid)) {
            // 写入 Cookie
@@ -234,12 +229,10 @@ class LoginService {
          const isProduction = window.location.hostname.includes('huawei');
 
          if (isProduction) {
-            console.log('未登录，跳转 SSO')
             window.location.href = 'https://login.huawei.com/login/?'
               + `redirect=${encodeURIComponent('http://coretool.rnd.huawei.com/#/home')}?returnUrl=${encodeURIComponent(currHref)}`;
          } else {
              // 本地开发环境：使用 Mock 数据模拟登录
-             console.log('开发环境：使用 Mock 用户登录')
              const mockUser = {
                uid: 'y30022452',
                userId: 'y30022452', // user: 短工号
@@ -250,8 +243,6 @@ class LoginService {
                isAdmin: true,
                avatar: 'https://w3.huawei.com/w3lab/rest/yellowpage/face/30022452/120'
              }
-
-             console.log('LoginService - Mock User:', mockUser); // Add logging
 
              // 设置全局变量
              ;(window as any).userId = mockUser.userId

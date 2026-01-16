@@ -478,10 +478,8 @@ const notifyNavbarUpdate = () => {
 
 // 事件处理函数
 const handleAwardTypeChange = ((e: CustomEvent) => {
-  console.log('UsersView: 接收到awardTypeChange事件', e.detail)
   if (e.detail?.type) {
     const newType = e.detail.type as 'individual' | 'team'
-    console.log('UsersView: 切换awardType从', awardType.value, '到', newType)
     awardType.value = newType
     notifyNavbarUpdate()
   }

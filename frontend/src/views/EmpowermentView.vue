@@ -229,7 +229,6 @@ const handleSort = async (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
 
 // 处理发帖
 const _handlePostCreate = () => {
-  console.log('点击发布帖子，准备跳转到 /post/create')
   router.push(ROUTES.POST_CREATE).catch((err) => {
     console.error('路由跳转失败:', err)
   })
@@ -267,7 +266,6 @@ const handleCurrentChange = async (val: number) => {
 
 // 处理帖子点击
 const handlePostClick = (post: { id: number | string }) => {
-  console.log('EmpowermentView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
     return

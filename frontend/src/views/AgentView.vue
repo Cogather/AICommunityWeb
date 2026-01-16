@@ -377,7 +377,6 @@ const handleCurrentChange = (val: number) => {
 
 // 处理帖子点击
 const handlePostClick = (post: { id: number }) => {
-  console.log('AgentView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
     return
@@ -400,7 +399,6 @@ const handleActivityClick = (activity: { id: number }) => {
 
 // 处理发帖
 const handlePostCreate = () => {
-  console.log('点击发布帖子，准备跳转到 /post/create')
   router.push(ROUTES.POST_CREATE).catch((err) => {
     console.error('路由跳转失败:', err)
   })

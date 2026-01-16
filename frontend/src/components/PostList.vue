@@ -196,7 +196,6 @@ const getTagType = (tag: string) => {
 
 // 处理帖子点击
 const handlePostClick = (post: Post) => {
-  console.log('PostList: 帖子被点击', post)
   emit('postClick', post)
 }
 

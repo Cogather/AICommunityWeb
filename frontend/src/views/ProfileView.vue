@@ -198,8 +198,8 @@
                     </el-tag>
                   </div>
                   <div class="card-status">
-                    <el-tag 
-                      :type="activity.status === 'ongoing' ? 'success' : activity.status === 'upcoming' ? 'warning' : 'info'" 
+                    <el-tag
+                      :type="activity.status === 'ongoing' ? 'success' : activity.status === 'upcoming' ? 'warning' : 'info'"
                       size="small"
                       effect="dark"
                     >
@@ -523,7 +523,7 @@ const loadUserProfile = async (userId: string | string) => {
     const profile = response.data
     // 尝试从登录服务获取更多信息（如果是当前用户）
     const cachedUser = loginService.userInfo && loginService.userInfo.userId === userId ? loginService.userInfo : {}
-    
+
     userInfo.value = {
       userId: profile.userId,
       userName: profile.userName,
@@ -536,10 +536,10 @@ const loadUserProfile = async (userId: string | string) => {
       activitiesCount: profile.activitiesCount || 0,
       flowersCount: profile.flowersCount || 0
     }
-    
+
     // 保存用户ID
     userInfo.value.userId = profile.userId
-    
+
     // 加载该用户的帖子
     await loadUserPosts(profile.userId)
     // 加载该用户的评论
@@ -590,7 +590,6 @@ watch(() => route.query.userId, (userId) => {
 
 // 处理帖子点击
 const handlePostClick = (post: { id: number }) => {
-  console.log('ProfileView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
     return
@@ -606,7 +605,6 @@ const handlePostClick = (post: { id: number }) => {
 
 // 处理活动点击
 const handleActivityClick = (activity: { id: number }) => {
-  console.log('ProfileView: 处理活动点击', activity)
   if (!activity || !activity.id) {
     console.error('活动数据无效:', activity)
     return
@@ -687,7 +685,7 @@ const handleViewRegistrations = async (activity: ExtendedActivity) => {
   currentActivity.value = activity
   showRegistrationsDialog.value = true
   loadingRegistrations.value = true
-  
+
   try {
     // 调用API获取报名用户列表
     const response = await getRegistrations(activity.id, 1, 100)
@@ -722,7 +720,7 @@ const loadUserData = async () => {
       activitiesCount: profile.activitiesCount || 0,
       flowersCount: profile.flowersCount || 0
     }
-    
+
     // 加载当前用户的所有数据
     const userId = profile.userId
     await Promise.all([
@@ -979,7 +977,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px;
   max-width: 100%;
-  
+
   &.glass-card {
     padding: 16px;
   }

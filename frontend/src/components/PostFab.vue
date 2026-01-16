@@ -22,8 +22,6 @@ const router = useRouter()
 const route = useRoute()
 
 const goCreate = () => {
-  console.log('PostFab: 点击发帖按钮')
-  
   // 检查当前是否在编辑帖子页面
   const isEditMode = route.path === ROUTES.POST_CREATE && route.query.edit === 'true' && route.query.id
   

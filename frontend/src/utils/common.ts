@@ -25,7 +25,7 @@ export const commonMethods = {
    * @param time 访问时间
    */
   async addViewsInfo(time: string): Promise<void> {
-    console.log('记录用户访问:', time)
+    // console.log('记录用户访问:', time)
     // 实际项目中这里可能调用 API
     return Promise.resolve()
   }

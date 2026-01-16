@@ -569,7 +569,6 @@ const _getTagType = (tag: string) => {
 
 // 处理帖子点击
 const handlePostClick = (post: { id: number }) => {
-  console.log('ToolsView: 处理帖子点击', post)
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
     return

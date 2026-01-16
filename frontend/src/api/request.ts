@@ -87,13 +87,13 @@ export const USE_REAL_API = import.meta.env.VITE_USE_REAL_API === 'true' || DEBU
 const FINAL_API_URL = AUTO_MODE_ENABLED ? AUTO_API_BASE : DEBUG_API_URL
 
 // 控制台输出当前配置（方便调试）
-console.log('[API Config]', {
-  autoMode: AUTO_MODE_ENABLED,
-  detectedEnv: currentEnvironment,
-  hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A',
-  apiBaseUrl: FINAL_API_URL,
-  useRealApi: USE_REAL_API,
-})
+// console.log('[API Config]', {
+//   autoMode: AUTO_MODE_ENABLED,
+//   detectedEnv: currentEnvironment,
+//   hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A',
+//   apiBaseUrl: FINAL_API_URL,
+//   useRealApi: USE_REAL_API,
+// })
 
 // ==================== 请求方法 ====================
 
@@ -125,7 +125,7 @@ async function request<T>(
   }
 
   try {
-    console.log(`[API] ${options.method || 'GET'} ${url}`)
+    // console.log(`[API] ${options.method || 'GET'} ${url}`)
     const response = await fetch(url, config)
 
     // 检查响应状态
@@ -135,7 +135,7 @@ async function request<T>(
     }
 
     const data = await response.json()
-    console.log(`[API] Response:`, data)
+    // console.log(`[API] Response:`, data)
     return data
   } catch (error) {
     console.error(`[API Error] ${url}:`, error)

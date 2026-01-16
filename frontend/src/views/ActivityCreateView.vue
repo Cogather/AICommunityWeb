@@ -383,13 +383,11 @@ const loadActivityForEdit = async () => {
   try {
     // 从API获取活动数据
     const activityIdNum = Number(activityId)
-    console.log('从API获取活动数据，ID:', activityIdNum)
     
     const response = await getActivityDetail(activityIdNum)
     const activity = response.data
     
     if (activity) {
-      console.log('API返回活动数据:', activity)
       fillFormData(activity)
     } else {
       console.error('未找到活动')
@@ -403,8 +401,6 @@ const loadActivityForEdit = async () => {
 
 // 填充表单数据的辅助函数
 const fillFormData = (activity: ActivityDetail) => {
-  console.log('填充表单数据，活动:', activity)
-  
   formData.value.title = activity.title || ''
   formData.value.type = (activity.type || 'activity') as 'activity' | 'training' | 'workshop' | 'empowerment'
   formData.value.toolId = activity.toolId || null

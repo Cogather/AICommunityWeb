@@ -214,7 +214,6 @@ watch(() => route.path, (_newPath) => {
 
 // 处理下拉菜单命令
 const handleUsersMenuCommand = (command: string) => {
-  console.log('AppNavbar: 下拉菜单命令', command)
   const [type, value] = command.split(':')
   if (type === 'awardType') {
     currentAwardType.value = value as 'individual' | 'team'
@@ -223,7 +222,6 @@ const handleUsersMenuCommand = (command: string) => {
       router.push(ROUTES.USERS).then(() => {
         // 等待页面加载完成后再发送事件
         setTimeout(() => {
-          console.log('AppNavbar: 发送awardTypeChange事件', value)
           window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
         }, 150)
       }).catch((err) => {
@@ -231,7 +229,6 @@ const handleUsersMenuCommand = (command: string) => {
       })
     } else {
       // 如果已经在用户页面，直接发送事件
-      console.log('AppNavbar: 已在用户页面，直接发送awardTypeChange事件', value)
       // 使用nextTick确保组件已更新
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
@@ -350,10 +347,8 @@ const handleLogin = () => {
 
 // 处理用户下拉菜单命令
 const handleCommand = (command: string) => {
-  console.log('AppNavbar: 下拉菜单命令', command)
   switch (command) {
     case 'profile':
-      console.log('AppNavbar: 跳转到个人中心')
       router.push(ROUTES.PROFILE).catch((err) => {
         console.error('路由跳转失败:', err)
       })
