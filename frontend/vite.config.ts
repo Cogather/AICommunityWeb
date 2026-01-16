@@ -14,12 +14,11 @@ export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '')
 
-  return {
-// ==================== 基础路径配置 ====================
-    // 所有页面路由都将以 /ai_community 为前缀
-    const BASE_URL = '/ai_community'
+  // ==================== 基础路径配置 ====================
+  // 所有页面路由都将以 /ai_community 为前缀
+  const BASE_URL = '/ai_community'
 
-    return {
+  return {
     base: BASE_URL,
 
     plugins: [
@@ -47,14 +46,14 @@ export default defineConfig(({ mode }) => {
               // 但这里 BASE_URL = '/ai_community'，没有结尾 /
               // 开发环境如果 base 是 /，则不需要特殊处理（或者拼成 //logo.svg 也是合法的）
               // 简单处理：如果不是开发环境，或者是生产构建，确保路径包含 base
-              
+
               // 注意：在构建时，base 会生效。
               // 如果 BASE_URL 不是 /，则拼接
               if (BASE_URL !== '/') {
                  faviconPath = `${BASE_URL}${faviconPath}`
               }
             }
-            
+
             newHtml = newHtml.replace(
               /<link rel="icon" href="(.*?)">/,
               `<link rel="icon" href="${faviconPath}">`
