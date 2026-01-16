@@ -19,9 +19,15 @@
       </div>
       <div class="friend-links">
         <span>友情链接：</span>
-        <el-button round size="small" @click="handleLinkClick(1)">云核心产品 1</el-button>
-        <el-button round size="small" @click="handleLinkClick(2)">云核心产品 2</el-button>
-        <el-button round size="small" @click="handleLinkClick(3)">云核心产品 3</el-button>
+        <el-button 
+          v-for="link in friendLinks" 
+          :key="link.id" 
+          round 
+          size="small" 
+          @click="handleLinkClick(link.url)"
+        >
+          {{ link.name }}
+        </el-button>
       </div>
     </div>
   </footer>
@@ -30,10 +36,17 @@
 <script setup lang="ts">
 // Footer component with background image
 
-const handleLinkClick = (id: number) => {
-  // 友情链接点击处理 - 可根据需要修改跳转地址
-  console.log(`友情链接 ${id} 被点击`)
-  // window.open(`https://example.com/product${id}`, '_blank')
+// 友情链接配置
+const friendLinks = [
+  { id: 1, name: 'CMG-CoGather', url: 'https://cogather.coreai.rnd.huawei.com' },
+  { id: 2, name: '华为云', url: 'https://www.huaweicloud.com' },
+  { id: 3, name: '昇腾社区', url: 'https://www.hiascend.com' }
+]
+
+const handleLinkClick = (url: string) => {
+  if (url) {
+    window.open(url, '_blank')
+  }
 }
 </script>
 
