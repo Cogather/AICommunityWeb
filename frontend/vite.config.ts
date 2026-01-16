@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -10,74 +10,101 @@ const BACKEND_URL = 'http://10.189.4.114:8888'
 const API_PATH = '/aicommunity'  // 后端 API 路径前缀
 
 // https://vite.dev/config/
-export default defineConfig({
-  // ==================== 基础路径配置 ====================
-  // 所有页面路由都将以 /ai_community 为前缀
-  base: '/ai_community',
-  
-  plugins: [
-    vue(),
-    // 只在开发环境启用 vue-dev-tools
-    ...(process.env.NODE_ENV === 'development' ? [vueDevTools()] : []),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    },
-  },
-  server: {
-    // ==================== 网络配置 ====================
-    // true 或 '0.0.0.0': 允许局域网访问（可通过 IP 访问）
-    // 'localhost': 仅本机访问
-    host: 'localhost',
-    port: 5173,
-    strictPort: false, // 如果端口被占用，尝试下一个可用端口
-    
-    // 启动时自动打开浏览器
-    open: false,
+export default defineConfig(({ mode }) => {
+  // 加载环境变量
+  const env = loadEnv(mode, process.cwd(), '')
 
-    // ==================== 热更新配置 ====================
-    hmr: {
-      overlay: true, // 显示错误覆盖层
-    },
+  return {
+    // ==================== 基础路径配置 ====================
+    // 所有页面路由都将以 /ai_community 为前缀
+    base: '/ai_community',
     
-    // 监听文件变化
-    watch: {
-      usePolling: true, // 使用轮询方式监听文件变化（解决某些文件系统的兼容问题）
-      interval: 100, // 轮询间隔（毫秒）
-    },
-    
-    // ==================== 代理配置 ====================
-    // 当使用代理模式时（request.ts 中 API_BASE_URL = '/api'），
-    // 所有 /api 开头的请求会被代理到 BACKEND_URL/aicommunity/api
-    proxy: {
-      '/api': {
-        target: BACKEND_URL,
-        changeOrigin: true,
-        secure: false,
-        // 重写路径：/api/xxx -> /aicommunity/api/xxx
-        rewrite: (path) => `${API_PATH}${path}`,
-        // 可选：打印代理日志，方便调试
-        configure: (proxy, _options) => {
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log(`[Proxy] ${req.method} ${req.url} -> ${BACKEND_URL}${proxyReq.path}`)
-          })
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log(`[Proxy] ${req.url} <- ${proxyRes.statusCode}`)
-          })
-          proxy.on('error', (err, req, _res) => {
-            console.error(`[Proxy Error] ${req.url}:`, err.message)
-          })
+    plugins: [
+      vue(),
+      // 只在开发环境启用 vue-dev-tools
+      ...(mode === 'development' ? [vueDevTools()] : []),
+      // 自定义 HTML 转换插件：用于动态替换标题和 Logo
+      {
+        name: 'html-transform',
+        transformIndexHtml(html) {
+          let newHtml = html
+          // 替换标题
+          if (env.VITE_APP_TITLE) {
+            newHtml = newHtml.replace(
+              /<title>(.*?)<\/title>/,
+              `<title>${env.VITE_APP_TITLE}</title>`
+            )
+          }
+          // 替换 Favicon (Logo)
+          if (env.VITE_APP_FAVICON) {
+            newHtml = newHtml.replace(
+              /<link rel="icon" href="(.*?)">/,
+              `<link rel="icon" href="${env.VITE_APP_FAVICON}">`
+            )
+          }
+          return newHtml
         }
       }
-    }
-  },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        // 使用 sass-embedded，如果遇到权限问题可以尝试其他选项
-        api: 'modern-compiler',
+    ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url))
       },
     },
-  },
+    server: {
+      // ==================== 网络配置 ====================
+      // true 或 '0.0.0.0': 允许局域网访问（可通过 IP 访问）
+      // 'localhost': 仅本机访问
+      host: 'localhost',
+      port: 5173,
+      strictPort: false, // 如果端口被占用，尝试下一个可用端口
+      
+      // 启动时自动打开浏览器
+      open: false,
+  
+      // ==================== 热更新配置 ====================
+      hmr: {
+        overlay: true, // 显示错误覆盖层
+      },
+      
+      // 监听文件变化
+      watch: {
+        usePolling: true, // 使用轮询方式监听文件变化（解决某些文件系统的兼容问题）
+        interval: 100, // 轮询间隔（毫秒）
+      },
+      
+      // ==================== 代理配置 ====================
+      // 当使用代理模式时（request.ts 中 API_BASE_URL = '/api'），
+      // 所有 /api 开头的请求会被代理到 BACKEND_URL/aicommunity/api
+      proxy: {
+        '/api': {
+          target: BACKEND_URL,
+          changeOrigin: true,
+          secure: false,
+          // 重写路径：/api/xxx -> /aicommunity/api/xxx
+          rewrite: (path) => `${API_PATH}${path}`,
+          // 可选：打印代理日志，方便调试
+          configure: (proxy, _options) => {
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log(`[Proxy] ${req.method} ${req.url} -> ${BACKEND_URL}${proxyReq.path}`)
+            })
+            proxy.on('proxyRes', (proxyRes, req, _res) => {
+              console.log(`[Proxy] ${req.url} <- ${proxyRes.statusCode}`)
+            })
+            proxy.on('error', (err, req, _res) => {
+              console.error(`[Proxy Error] ${req.url}:`, err.message)
+            })
+          }
+        }
+      }
+    },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          // 使用 sass-embedded，如果遇到权限问题可以尝试其他选项
+          api: 'modern-compiler',
+        },
+      },
+    },
+  }
 })
