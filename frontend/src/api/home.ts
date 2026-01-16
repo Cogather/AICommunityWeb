@@ -306,7 +306,8 @@ export async function getNews(): Promise<ApiResponse<{ list: NewsItem[] }>> {
  */
 export async function getAiNews(userId: string): Promise<any> {
   // 外部接口直接返回数据，使用 absolute URL
-  return get<any>(`https://cogather.coreai.rnd.huawei.com/ailobechartbe/api/news_api/get_catalog_list/${userId}`)
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  return get<any>(`${origin}/ailobechartbe/api/news_api/get_catalog_list/${userId}`)
 }
 
 // ==================== 导出所有 API ====================

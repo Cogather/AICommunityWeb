@@ -2,11 +2,13 @@ import type { ApiResponse } from './types'
 
 // ==================== 环境域名配置 ====================
 
+const origin = typeof window !== 'undefined' ? window.location.origin : ''
+
 /** 生产环境接口域名 */
-export const PROD_API_BASE = 'https://aicommunity.coreai.rnd.huawei.com/aicommunitybe/api'
+export const PROD_API_BASE = `${origin}/aicommunitybe/api`
 
 /** 测试环境接口域名 */
-export const TEST_API_BASE = 'https://corecode-aicommunity-beta.rnd.huawei.com/aicommunitybe/api'
+export const TEST_API_BASE = `${origin}/aicommunitybe/api`
 
 /** 开发调试接口域名 */
 export const DEV_API_BASE = 'http://10.189.4.114:8888/aicommunitybe/api'
