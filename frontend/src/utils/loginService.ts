@@ -102,6 +102,7 @@ class LoginService {
     // 1. 检查社区成员资格 (对应 checkMembership)
     try {
       const memberRes = await checkCommunityMembership(userId);
+      console.log('LoginService - checkCommunityMembership response:', memberRes); // Log raw response
       if (memberRes && memberRes.data && Object.keys(memberRes.data).length > 0) {
         communityInfo = memberRes.data;
         // 兼容旧代码，将详细信息（包含 userId）存入 localStorage 的 userMessage
@@ -185,6 +186,7 @@ class LoginService {
 
         // 适配返回结构
         const userData = (res as any).data || res;
+        console.log('LoginService - SSO User Data:', userData); // Log raw SSO response
 
         if (userData && (userData.user || userData.uid)) {
            // 写入 Cookie
