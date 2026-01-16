@@ -22,7 +22,7 @@ export type Environment = 'production' | 'test' | 'development'
 
 /**
  * 🔍 自动检测当前环境
- * 
+ *
  * 根据当前页面访问的域名自动判断环境：
  * - aicommunity.coreai.rnd.huawei.com → 生产环境
  * - corecode-aicommunity-beta.rnd.huawei.com → 测试环境
@@ -30,19 +30,17 @@ export type Environment = 'production' | 'test' | 'development'
  */
 function detectEnvironment(): Environment {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
-  
-  // 生产环境：匹配核心关键词
-  // 生产环境域名：cogather.coreai.rnd.huawei.com (更新为实际的生产环境域名)
-  if (hostname.includes('cogather.coreai')) {
-    return 'production'
-  }
-  
-  // 测试环境：匹配项目代号或 beta 标识
-  // 测试环境域名：通常包含 corecode-aicommunity 或 beta
-  if (hostname.includes('corecode-aicommunity') || hostname.includes('beta') || hostname.includes('test')) {
+
+  // 测试环境：如果域名包含 test，则是测试环境
+  if (hostname.includes('test')) {
     return 'test'
   }
-  
+
+  // 生产环境：域名包含 core.digitalboard 且不包含 test
+  if (hostname.includes('core.digitalboard')) {
+    return 'production'
+  }
+
   return 'development'
 }
 
