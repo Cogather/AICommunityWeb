@@ -16,9 +16,9 @@
         <RouterLink :to="ROUTES.TOOLS" class="nav-item">AI百宝箱</RouterLink>
         <RouterLink :to="ROUTES.AGENT" class="nav-item">扶摇Agent应用</RouterLink>
         <RouterLink :to="ROUTES.EMPOWERMENT" class="nav-item">AI使能站</RouterLink>
-        <el-dropdown 
-          trigger="hover" 
-          placement="bottom" 
+        <el-dropdown
+          trigger="hover"
+          placement="bottom"
           @command="handleUsersMenuCommand"
           class="users-dropdown"
         >
@@ -30,14 +30,14 @@
             <el-dropdown-menu class="users-dropdown-menu">
               <!-- 个人风采和团队荣誉切换 -->
               <div class="dropdown-section">
-                <el-dropdown-item 
+                <el-dropdown-item
                   command="awardType:individual"
                   :class="{ active: currentAwardType === 'individual' }"
                 >
                   <el-icon><UserFilled /></el-icon>
                   <span>个人风采</span>
                 </el-dropdown-item>
-                <el-dropdown-item 
+                <el-dropdown-item
                   command="awardType:team"
                   :class="{ active: currentAwardType === 'team' }"
                 >
@@ -65,7 +65,7 @@
               <el-icon :size="20"><Bell /></el-icon>
             </el-button>
           </el-badge>
-          
+
           <el-dropdown @command="handleCommand" trigger="hover" placement="bottom-end">
             <div class="user-dropdown-trigger">
               <el-avatar :size="36" :src="userInfo.avatar" class="user-avatar">
@@ -90,7 +90,7 @@
                   <div class="points-value">{{ userPoints }}</div>
                   <div class="points-hint">积分高的用户可获得AI使用达人奖项</div>
                 </div>
-                
+
                 <!-- 积分规则 -->
                 <div class="points-rules-section">
                   <div class="rules-title">积分规则</div>
@@ -127,7 +127,7 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <el-dropdown-item command="profile" divided>
                   <el-icon><User /></el-icon>
                   <span>个人中心</span>
@@ -148,10 +148,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
-import { 
-  User, 
-  SwitchButton, 
-  ArrowDown, 
+import {
+  User,
+  SwitchButton,
+  ArrowDown,
   Trophy,
   Document,
   ChatDotRound,
@@ -302,9 +302,9 @@ const userPoints = computed(() => {
     favoritesReceived: 8,  // 帖子被收藏数
     activitiesCount: 5    // 参加活动数
   }
-  return mockData.postsCount * 15 + 
-         mockData.commentsCount * 1 + 
-         mockData.likesReceived * 3 + 
+  return mockData.postsCount * 15 +
+         mockData.commentsCount * 1 +
+         mockData.likesReceived * 3 +
          mockData.favoritesReceived * 5 +
          mockData.activitiesCount * 10
 })
@@ -377,7 +377,7 @@ const handleCommand = (command: string) => {
   backdrop-filter: blur(20px) saturate(180%); /* 调整模糊度，使其看起来更像毛玻璃 */
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 
+  box-shadow:
     0 4px 24px 0 rgba(31, 38, 135, 0.15),
     0 1px 0 rgba(255, 255, 255, 0.6) inset,
     0 -1px 0 rgba(0, 0, 0, 0.1) inset;
@@ -411,7 +411,7 @@ const handleCommand = (command: string) => {
       flex-direction: column;
       line-height: 1.2;
     }
-    
+
     .logo-text {
       font-size: 18px;
       font-weight: 700;
@@ -454,7 +454,7 @@ const handleCommand = (command: string) => {
   &.router-link-active {
     color: #1e3a8a; /* 深蓝色选中，不那么刺眼 */
     font-weight: 700;
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -470,16 +470,16 @@ const handleCommand = (command: string) => {
   &.users-nav-link {
     font-weight: 700; /* 加粗字体 */
     color: #333; /* 和其他导航项一样的颜色 */
-    
+
     &.router-link-active {
       font-weight: 700; /* 选中时也保持加粗，不显示下划线 */
       color: #1e3a8a; /* 选中时的颜色 */
-      
+
       &::after {
         display: none; /* 不显示选中框 */
       }
     }
-    
+
     &:hover {
       color: #1e40af; /* 悬停时的颜色 */
     }
@@ -495,7 +495,7 @@ const handleCommand = (command: string) => {
 
     &.router-link-active {
       color: #d97706;
-      
+
       &::after {
         background-color: #f59e0b;
       }
@@ -534,7 +534,7 @@ const handleCommand = (command: string) => {
 
 .users-dropdown {
   display: inline-block;
-  
+
   :deep(.el-dropdown__caret-button) {
     display: none;
   }
@@ -575,7 +575,7 @@ const handleCommand = (command: string) => {
       color: #1e40af !important;
       background: transparent !important;
       cursor: default !important; /* 悬停时也是default */
-      
+
       .dropdown-arrow {
         transform: rotate(180deg);
         color: #1e40af;
@@ -595,7 +595,7 @@ const handleCommand = (command: string) => {
     &.router-link-active {
       color: #1e3a8a !important;
       background: transparent !important;
-      
+
       &::after {
         display: none; /* 不显示选中框 */
       }
@@ -607,7 +607,7 @@ const handleCommand = (command: string) => {
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
-    
+
     &:focus,
     &:focus-visible,
     &:active {
@@ -617,7 +617,7 @@ const handleCommand = (command: string) => {
       background: transparent !important;
     }
   }
-  
+
   :deep(.el-dropdown__trigger) {
     outline: none !important;
     border: none !important;
@@ -673,7 +673,7 @@ const handleCommand = (command: string) => {
   font-size: 20px;
   color: #606266;
   transition: color 0.3s;
-  
+
   &:hover {
     color: #4096ff;
   }
@@ -858,7 +858,7 @@ const handleCommand = (command: string) => {
     background: linear-gradient(135deg, #5568d3, #6a3f91);
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    
+
     &::before {
       left: 100%;
     }
