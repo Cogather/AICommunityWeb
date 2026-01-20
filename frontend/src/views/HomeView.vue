@@ -1362,34 +1362,43 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
 /* 通用毛玻璃卡片 - 通透白蓝磨砂质感（覆盖 base.css 的基础样式） */
 .glass-card {
-  /* 移除灰色背景，使用通透玻璃拟态 */
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  /* 精密边框：1px 半透明科技蓝 */
-  border: 1px solid rgba(0, 102, 255, 0.15) !important;
+  /* 调整背景材质厚度：降低透明度，增强可读性 */
+  background: rgba(255, 255, 255, 0.95) !important;
+  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+
+  /* 强化边框对比：更具存在感的科技蓝边框 */
+  border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
   border-radius: 16px;
+
+  /* 双边框效果：极细白色内边框，模拟玻璃边缘切角 */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    /* 引入深度阴影：多重投影，更具层次感 */
+    0 10px 25px -5px rgba(0, 102, 255, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+
   /* 增加内边距，营造呼吸感 */
   padding: 28px !important;
-  /* 外发光阴影：极其轻微的蓝色弥散光效 */
-  box-shadow: 0 8px 32px rgba(0, 102, 255, 0.04) !important;
   color: rgba(51, 65, 85, 0.88);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
 
-  /* 移除所有光晕叠加层，保持极简通透 */
-
-  /* 悬停时：上浮 4px + 边框加深 + 蓝色光影增强 */
+  /* 悬停时：显著增强投影深度并让卡片上浮 3px */
   &:hover {
-    background: rgba(255, 255, 255, 0.75) !important;
-    border-color: rgba(0, 102, 255, 0.35) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(0, 102, 255, 0.4) !important;
+    /* 悬浮感：动态阴影拉开视觉差 */
     box-shadow:
-      0 12px 40px rgba(0, 102, 255, 0.08),
-      0 0 0 1px rgba(0, 102, 255, 0.12) inset !important;
-    transform: translateY(-4px);
+      0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+      0 15px 35px -8px rgba(0, 102, 255, 0.15),
+      0 12px 15px -8px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(0, 102, 255, 0.15) inset !important;
+    transform: translateY(-3px);
   }
 }
 
@@ -1415,6 +1424,36 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   height: 560px !important; /* 固定高度，预留8个奖项位置 */
   padding: 0 !important; /* 移除内边距，让标题条占满 */
   overflow: hidden; /* 确保圆角正确显示 */
+
+  /* 确保继承 glass-card 的视觉加固样式 */
+  /* 调整背景材质厚度：降低透明度，增强可读性 */
+  background: rgba(255, 255, 255, 0.95) !important;
+  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+
+  /* 强化边框对比：更具存在感的科技蓝边框 */
+  border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
+
+  /* 双边框效果：极细白色内边框，模拟玻璃边缘切角 */
+  /* 引入深度阴影：多重投影，更具层次感 */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 10px 25px -5px rgba(0, 102, 255, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+
+  /* 悬停时：显著增强投影深度并让卡片上浮 3px */
+  &:hover {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(0, 102, 255, 0.4) !important;
+    /* 悬浮感：动态阴影拉开视觉差 */
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+      0 15px 35px -8px rgba(0, 102, 255, 0.15),
+      0 12px 15px -8px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(0, 102, 255, 0.15) inset !important;
+    transform: translateY(-3px);
+  }
 }
 
 /* 赋能交流区块 - 最热帖子排行榜 */
@@ -1426,14 +1465,35 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   padding: 0 !important;
   overflow: hidden;
 
-  /* 玻璃拟态材质：悬浮在底层神经网络背景之上 */
-  background: rgba(255, 255, 255, 0.8) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* 调整背景材质厚度：降低透明度，增强可读性 */
+  background: rgba(255, 255, 255, 0.95) !important;
+  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
 
-  /* 边框精密化 */
-  border: 1px solid rgba(0, 102, 255, 0.1);
+  /* 强化边框对比：更具存在感的科技蓝边框 */
+  border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
   border-radius: 15px;
+
+  /* 双边框效果：极细白色内边框，模拟玻璃边缘切角 */
+  /* 引入深度阴影：多重投影，更具层次感 */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 10px 25px -5px rgba(0, 102, 255, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+
+  /* 悬停时：显著增强投影深度并让卡片上浮 3px */
+  &:hover {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(0, 102, 255, 0.4) !important;
+    /* 悬浮感：动态阴影拉开视觉差 */
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+      0 15px 35px -8px rgba(0, 102, 255, 0.15),
+      0 12px 15px -8px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(0, 102, 255, 0.15) inset !important;
+    transform: translateY(-3px);
+  }
 
   .empowerment-header {
     /* 背景透明化：与卡片主体融为一体 */
@@ -1638,16 +1698,52 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   border-bottom: 1px solid rgba(0, 102, 255, 0.08);
   border-radius: 0;
   overflow: visible;
+  /* 左侧蓝色背景 + 斜切分割（从左上到右下） */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 85%;
+    height: 100%;
+    background: linear-gradient(135deg, #4C85FA 0%, #3a6fd8 100%);
+    /* 斜切效果 - 左上到右下 \ 形状 */
+    clip-path: polygon(0 0, 88% 0, 100% 100%, 0 100%);
+    /* 楼宇暗纹 */
+    background-image:
+      url("data:image/svg+xml,%3Csvg width='300' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 L0 35 L8 35 L8 22 L14 22 L14 35 L22 35 L22 18 L30 18 L30 35 L38 35 L38 12 L42 12 L42 6 L48 6 L48 12 L52 12 L52 35 L62 35 L62 25 L70 25 L70 35 L80 35 L80 15 L86 15 L86 8 L92 8 L92 15 L98 15 L98 35 L108 35 L108 20 L118 20 L118 35 L128 35 L128 14 L134 14 L134 4 L140 4 L140 14 L146 14 L146 35 L156 35 L156 28 L166 28 L166 35 L176 35 L176 18 L184 18 L184 35 L196 35 L196 22 L202 22 L202 10 L208 10 L208 22 L214 22 L214 35 L226 35 L226 26 L236 26 L236 35 L248 35 L248 16 L256 16 L256 35 L268 35 L268 24 L278 24 L278 35 L290 35 L290 20 L300 20 L300 50 Z' fill='rgba(255,255,255,0.18)'/%3E%3C/svg%3E"),
+      linear-gradient(135deg, #4C85FA 0%, #3a6fd8 100%);
+    background-size: 300px 50px, 100% 100%;
+    background-position: 0 100%, 0 0;
+    background-repeat: repeat-x, no-repeat;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* 右侧透明区域背景 */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30%;
+    height: 100%;
+    background: transparent;
+    pointer-events: none;
+    z-index: 0;
+  }
 
   /* 移除所有装饰性伪元素，保持极简 */
 
   /* 标题文字 */
   .header-title {
-    color: #1A2B4B; /* 深海蓝 */
-    font-size: 16px;
+    position: relative;
+    z-index: 2;
+    font-size: 15px;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
     font-weight: 600;
-    letter-spacing: 0.3px;
-    margin: 0;
   }
 
   /* 标题条内的更多按钮 - 空心科技蓝线框 */
@@ -2573,12 +2669,21 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible; /* 改为 visible，确保装饰条和箭头可见 */
 
-  /* 统一材质：高光磨砂玻璃 */
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 102, 255, 0.15);
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.04);
+  /* 调整背景材质厚度：降低透明度，增强可读性 */
+  background: rgba(255, 255, 255, 0.95);
+  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+
+  /* 强化边框对比：更具存在感的科技蓝边框 */
+  border: 1.5px solid rgba(0, 102, 255, 0.2);
+
+  /* 双边框效果：极细白色内边框，模拟玻璃边缘切角 */
+  /* 引入深度阴影：多重投影，更具层次感 */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 10px 25px -5px rgba(0, 102, 255, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
 
   /* 左侧 3px 装饰条 - 根据工具类型设置分类色彩 */
   &::before {
@@ -2601,12 +2706,17 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 
   /* 悬浮动态：背景变纯白，边框点亮为分类色，右侧显示箭头 */
+  /* 悬浮感：显著增强投影深度并让卡片上浮 3px */
   &:hover {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.98);
     border-color: var(--tool-category-color, #0066FF);
+    /* 动态阴影拉开视觉差 */
     box-shadow:
-      0 8px 24px rgba(0, 102, 255, 0.12),
+      0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+      0 15px 35px -8px rgba(0, 102, 255, 0.15),
+      0 12px 15px -8px rgba(0, 0, 0, 0.08),
       0 0 0 1px var(--tool-category-color, #0066FF) inset;
+    transform: translateY(-3px);
 
     &::before {
       width: 4px;
@@ -2836,6 +2946,36 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   display: flex;
   flex-direction: column;
   min-height: 380px;
+
+  /* 确保继承 glass-card 的视觉加固样式 */
+  /* 调整背景材质厚度：降低透明度，增强可读性 */
+  background: rgba(255, 255, 255, 0.95) !important;
+  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+
+  /* 强化边框对比：更具存在感的科技蓝边框 */
+  border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
+
+  /* 双边框效果：极细白色内边框，模拟玻璃边缘切角 */
+  /* 引入深度阴影：多重投影，更具层次感 */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 10px 25px -5px rgba(0, 102, 255, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+
+  /* 悬停时：显著增强投影深度并让卡片上浮 3px */
+  &:hover {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(0, 102, 255, 0.4) !important;
+    /* 悬浮感：动态阴影拉开视觉差 */
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+      0 15px 35px -8px rgba(0, 102, 255, 0.15),
+      0 12px 15px -8px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(0, 102, 255, 0.15) inset !important;
+    transform: translateY(-3px);
+  }
 }
 
 /* 通用标题栏样式 */
