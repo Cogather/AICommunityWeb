@@ -31,7 +31,7 @@
                 <span class="stat-label">活动</span>
               </div>
               <div class="stat-item">
-                <FlowerIcon :filled="true" :size="18" color="#f472b6" />
+                <FlowerIcon :filled="true" :size="18" color="#00F2FF" />
                 <span class="stat-value">{{ userInfo.flowersCount || 0 }}</span>
                 <span class="stat-label">花朵</span>
               </div>
@@ -114,7 +114,7 @@
                 </div>
                 <div class="comment-actions">
                   <span class="comment-likes">
-                    <HeartIcon :filled="false" :size="16" color="#f56c6c" />
+                    <HeartIcon :filled="false" :size="16" color="#00F2FF" />
                     {{ comment.likes || 0 }}
                   </span>
                 </div>
@@ -227,6 +227,7 @@
                       type="primary"
                       size="small"
                       round
+                      class="tech-ghost-btn"
                       @click.stop="handleViewRegistrations(activity)"
                     >
                       查看报名
@@ -298,7 +299,7 @@
         <el-empty v-else description="暂无报名用户" :image-size="80" />
       </div>
       <template #footer>
-        <el-button type="primary" @click="showRegistrationsDialog = false">关闭</el-button>
+        <el-button type="primary" class="tech-ghost-btn" @click="showRegistrationsDialog = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -773,12 +774,22 @@ onBeforeUnmount(() => {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98);
   border-radius: 16px;
   padding: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  box-shadow: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
   margin-bottom: 24px;
+
+  &:hover {
+    border-color: rgba(0, 102, 255, 0.22);
+    box-shadow: 0 10px 26px rgba(0, 82, 217, 0.14);
+    transform: translateY(-2px);
+  }
 }
 
 .user-info-card {
@@ -798,16 +809,16 @@ onBeforeUnmount(() => {
         margin: 0 0 8px 0;
         font-size: 24px;
         font-weight: 700;
-        color: #333;
+        color: rgba(15, 23, 42, 0.92);
         display: flex;
         align-items: center;
         gap: 12px;
 
         .user-id-tag {
           font-size: 14px;
-          color: #909399;
+          color: rgba(100, 116, 139, 0.9);
           font-weight: 400;
-          background: rgba(0, 0, 0, 0.05);
+          background: rgba(15, 23, 42, 0.04);
           padding: 2px 8px;
           border-radius: 4px;
         }
@@ -815,7 +826,7 @@ onBeforeUnmount(() => {
 
       .user-bio {
         margin: 0 0 16px 0;
-        color: #666;
+        color: rgba(51, 65, 85, 0.78);
         font-size: 14px;
       }
 
@@ -832,12 +843,12 @@ onBeforeUnmount(() => {
           .stat-value {
             font-size: 20px;
             font-weight: 700;
-            color: #409eff;
+            color: rgba(0, 102, 255, 0.95);
           }
 
           .stat-label {
             font-size: 12px;
-            color: #999;
+            color: rgba(100, 116, 139, 0.82);
           }
         }
       }
@@ -847,22 +858,32 @@ onBeforeUnmount(() => {
 
 .profile-tabs {
   :deep(.el-tabs__header) {
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
     border-radius: 16px 16px 0 0;
     padding: 0 24px;
     margin: 0;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.10);
     border-bottom: none;
   }
 
   :deep(.el-tabs__content) {
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
     border-radius: 0 0 16px 16px;
     padding: 24px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.10);
     border-top: none;
+  }
+
+  :deep(.el-tabs__item) {
+    color: rgba(51, 65, 85, 0.82);
+  }
+  :deep(.el-tabs__item.is-active) {
+    color: rgba(15, 23, 42, 0.92);
+  }
+  :deep(.el-tabs__active-bar) {
+    background-color: rgba(0, 102, 255, 0.95);
   }
 }
 
@@ -916,13 +937,13 @@ onBeforeUnmount(() => {
 
       .comment-author {
         font-weight: 600;
-        color: #333;
+        color: rgba(15, 23, 42, 0.92);
         font-size: 14px;
       }
 
       .comment-time {
         font-size: 12px;
-        color: #999;
+        color: rgba(100, 116, 139, 0.82);
       }
     }
   }
@@ -932,7 +953,7 @@ onBeforeUnmount(() => {
 
     .comment-text {
       margin: 0 0 12px 0;
-      color: #666;
+      color: rgba(51, 65, 85, 0.82);
       line-height: 1.6;
       font-size: 14px;
     }
@@ -941,13 +962,13 @@ onBeforeUnmount(() => {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: #409eff;
+      color: rgba(0, 102, 255, 0.92);
       font-size: 13px;
       cursor: pointer;
       transition: color 0.3s;
 
       &:hover {
-        color: #66b1ff;
+        color: rgba(0, 82, 217, 0.95);
       }
     }
   }
@@ -961,7 +982,7 @@ onBeforeUnmount(() => {
       display: flex;
       align-items: center;
       gap: 4px;
-      color: #999;
+      color: rgba(255, 255, 255, 0.55);
       font-size: 13px;
     }
   }
@@ -1067,23 +1088,28 @@ onBeforeUnmount(() => {
 
 // 我发布的活动卡片
 .my-activity-card {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
-    border-color: transparent;
+    box-shadow:
+      0 14px 40px rgba(0, 0, 0, 0.42),
+      0 0 0 1px rgba(0, 242, 255, 0.14),
+      0 0 22px rgba(0, 242, 255, 0.14);
+    border-color: rgba(0, 242, 255, 0.22);
   }
 
   .card-cover {
     position: relative;
     height: 160px;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    background: rgba(255, 255, 255, 0.03);
     overflow: hidden;
 
     img {
@@ -1119,7 +1145,7 @@ onBeforeUnmount(() => {
       margin: 0 0 8px 0;
       font-size: 17px;
       font-weight: 600;
-      color: #1f2937;
+      color: rgba(255, 255, 255, 0.92);
       line-height: 1.4;
       cursor: pointer;
       transition: color 0.2s;
@@ -1129,14 +1155,14 @@ onBeforeUnmount(() => {
       overflow: hidden;
 
       &:hover {
-        color: #6366f1;
+        color: rgba(0, 242, 255, 0.92);
       }
     }
 
     .card-desc {
       margin: 0 0 12px 0;
       font-size: 13px;
-      color: #6b7280;
+      color: rgba(255, 255, 255, 0.62);
       line-height: 1.6;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -1153,11 +1179,11 @@ onBeforeUnmount(() => {
         align-items: center;
         gap: 6px;
         font-size: 13px;
-        color: #9ca3af;
+        color: rgba(255, 255, 255, 0.62);
 
         .el-icon {
           font-size: 14px;
-          color: #6366f1;
+          color: rgba(0, 242, 255, 0.92);
         }
       }
     }
@@ -1167,16 +1193,16 @@ onBeforeUnmount(() => {
       align-items: center;
       justify-content: space-between;
       padding-top: 14px;
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid rgba(255, 255, 255, 0.10);
 
       .registered-badge {
         display: flex;
         align-items: center;
         gap: 6px;
         font-size: 13px;
-        color: #6366f1;
+        color: rgba(0, 242, 255, 0.92);
         font-weight: 500;
-        background: rgba(99, 102, 241, 0.08);
+        background: rgba(0, 242, 255, 0.06);
         padding: 6px 12px;
         border-radius: 20px;
 

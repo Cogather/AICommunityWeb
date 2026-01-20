@@ -370,20 +370,17 @@ const handleCommand = (command: string) => {
   top: 0;
   z-index: 1000;
   width: 100%;
-  background: rgba(255, 255, 255, 0.7); /* 降低不透明度，从 0.9 -> 0.7 */
-  backdrop-filter: blur(20px) saturate(180%); /* 调整模糊度，使其看起来更像毛玻璃 */
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow:
-    0 4px 24px 0 rgba(31, 38, 135, 0.15),
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+  background: rgba(255, 255, 255, 0.7); /* 纯白透明毛玻璃 */
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  /* 仅保留一条极细的浅灰底部分割线，不再使用明显投影 */
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
 }
 
 .navbar-container {
   max-width: 100%;
   margin: 0 auto;
-  padding: 16px 32px;
+  padding: 16px 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -412,13 +409,13 @@ const handleCommand = (command: string) => {
     .logo-text {
       font-size: 18px;
       font-weight: 700;
-      color: #1e3a8a; /* 深蓝色 */
+      color: rgba(15, 23, 42, 0.92);
     }
 
     .logo-subtitle {
-      font-size: 15px;
+      font-size: 12px;
       font-weight: 500;
-      color: #4b5563; /* 更深的灰色 */
+      color: rgba(100, 116, 139, 0.85);
       letter-spacing: 0.5px;
     }
   }
@@ -427,50 +424,54 @@ const handleCommand = (command: string) => {
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex: 1;
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .nav-item {
-  padding: 8px 16px;
-  color: #333;
+  padding: 10px 18px;
+  color: rgba(51, 65, 85, 0.92);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 18px; /* 从 14px 增加到 18px */
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 16px;
+  border-radius: 10px;
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.22s ease;
   white-space: nowrap;
   position: relative;
 
   &:hover {
-    color: #1e40af; /* 深蓝色悬停 */
+    color: #0066ff;
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 6px 16px rgba(0, 82, 217, 0.08);
   }
 
   &.router-link-active {
-    color: #1e3a8a; /* 深蓝色选中，不那么刺眼 */
-    font-weight: 700;
+    color: rgba(15, 23, 42, 0.92);
+    font-weight: 600;
 
     &::after {
       content: '';
       position: absolute;
-      bottom: 0;
-      left: 16px;
-      right: 16px;
-      height: 2px;
-      background-color: #1e3a8a; /* 深蓝色下划线 */
-      border-radius: 2px 2px 0 0;
+      bottom: 4px;
+      left: 50%;
+      width: 18px;
+      height: 1px;
+      transform: translateX(-50%);
+      background-color: rgba(0, 102, 255, 0.95);
+      box-shadow: 0 0 10px rgba(0, 102, 255, 0.25);
+      border-radius: 1px;
     }
   }
 
   &.users-nav-link {
     font-weight: 700; /* 加粗字体 */
-    color: #333; /* 和其他导航项一样的颜色 */
+    color: rgba(51, 65, 85, 0.92); /* 和其他导航项一样的颜色 */
 
     &.router-link-active {
       font-weight: 700; /* 选中时也保持加粗，不显示下划线 */
-      color: #1e3a8a; /* 选中时的颜色 */
+      color: rgba(15, 23, 42, 0.92); /* 选中时的颜色 */
 
       &::after {
         display: none; /* 不显示选中框 */
@@ -478,24 +479,40 @@ const handleCommand = (command: string) => {
     }
 
     &:hover {
-      color: #1e40af; /* 悬停时的颜色 */
+      color: #0066ff; /* 悬停时的颜色 */
     }
   }
 
   &.admin-link {
-    color: #f59e0b;
-    font-weight: 700;
+    color: rgba(51, 65, 85, 0.92);
+    font-weight: 600;
+    padding-right: 22px;
 
     &:hover {
-      color: #d97706;
+      color: rgba(15, 23, 42, 0.92);
+      background: rgba(255, 255, 255, 0.55);
     }
 
     &.router-link-active {
-      color: #d97706;
+      color: rgba(15, 23, 42, 0.92);
 
       &::after {
-        background-color: #f59e0b;
+        background-color: rgba(0, 102, 255, 0.95);
       }
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      width: 4px;
+      height: 4px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background: rgba(0, 102, 255, 0.95);
+      box-shadow: 0 0 10px rgba(0, 102, 255, 0.25);
+      opacity: 0.9;
     }
   }
 
@@ -545,7 +562,7 @@ const handleCommand = (command: string) => {
     outline: none !important;
     border: none !important;
     box-shadow: none !important;
-    color: #333 !important;
+    color: rgba(51, 65, 85, 0.92) !important;
     font-weight: 700 !important;
     padding: 8px 16px;
     text-decoration: none;
@@ -560,7 +577,7 @@ const handleCommand = (command: string) => {
 
     .dropdown-arrow {
       font-size: 10px;
-      color: #666;
+      color: rgba(100, 116, 139, 0.9);
       transition: transform 0.3s ease;
       display: inline-block;
       line-height: 1;
@@ -569,13 +586,13 @@ const handleCommand = (command: string) => {
     }
 
     &:hover {
-      color: #1e40af !important;
+      color: #0066ff !important;
       background: transparent !important;
       cursor: default !important; /* 悬停时也是default */
 
       .dropdown-arrow {
         transform: rotate(180deg);
-        color: #1e40af;
+        color: #0066ff;
       }
     }
 
@@ -590,7 +607,7 @@ const handleCommand = (command: string) => {
     }
 
     &.router-link-active {
-      color: #1e3a8a !important;
+      color: rgba(15, 23, 42, 0.92) !important;
       background: transparent !important;
 
       &::after {
@@ -668,11 +685,37 @@ const handleCommand = (command: string) => {
 .message-btn {
   padding: 8px;
   font-size: 20px;
-  color: #606266;
-  transition: color 0.3s;
+  color: rgba(51, 65, 85, 0.92);
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 10px;
 
   &:hover {
-    color: #4096ff;
+    color: #0066ff;
+    background: rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* 未读消息气泡：更精致圆形 + 微弱呼吸动画 */
+:deep(.el-badge__content) {
+  border-radius: 999px !important;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 6px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(0, 102, 255, 0.18);
+  animation: badgeBreath 2.2s ease-in-out infinite;
+}
+
+@keyframes badgeBreath {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(0, 102, 255, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(0, 102, 255, 0.24),
+      0 0 16px rgba(0, 102, 255, 0.18);
   }
 }
 
@@ -686,7 +729,7 @@ const handleCommand = (command: string) => {
   transition: background 0.3s ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.6);
   }
 
   .user-avatar {
@@ -695,7 +738,7 @@ const handleCommand = (command: string) => {
 
   .dropdown-icon {
     font-size: 12px;
-    color: #666;
+    color: rgba(100, 116, 139, 0.9);
     transition: transform 0.3s ease;
   }
 }
@@ -819,24 +862,24 @@ const handleCommand = (command: string) => {
 }
 
 .login-btn {
-  color: #000000; /* 黑色字体 */
+  color: rgba(51, 65, 85, 0.92);
   font-weight: 500;
 
   &:hover {
-    color: #000000; /* 悬停时保持黑色 */
-    background: rgba(0, 0, 0, 0.05);
+    color: #0066ff;
+    background: rgba(255, 255, 255, 0.6);
   }
 }
 
 .join-btn {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border: none;
+  background: #0066ff;
+  border: 1px solid #0066ff;
   color: #fff;
   font-weight: 700;
-  font-size: 18px; /* 从 16px 增加到 18px */
-  padding: 12px 28px;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
-  transition: all 0.3s ease;
+  font-size: 16px;
+  padding: 10px 22px;
+  box-shadow: 0 8px 18px rgba(0, 82, 217, 0.12);
+  transition: transform 0.18s ease, box-shadow 0.22s ease, background-color 0.22s ease;
   position: relative;
   overflow: hidden;
 
@@ -852,9 +895,9 @@ const handleCommand = (command: string) => {
   }
 
   &:hover {
-    background: linear-gradient(135deg, #5568d3, #6a3f91);
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    background: #0052d9;
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 12px 24px rgba(0, 82, 217, 0.16);
 
     &::before {
       left: 100%;
@@ -862,7 +905,7 @@ const handleCommand = (command: string) => {
   }
 
   &:active {
-    transform: translateY(-1px);
+    transform: translateY(0) scale(1);
   }
 }
 

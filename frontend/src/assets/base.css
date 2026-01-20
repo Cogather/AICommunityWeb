@@ -23,31 +23,21 @@
 
 /* semantic color variables for this project */
 :root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
+  /* 亮色通透科技风：冷灰底 + 深灰文字 + 极客蓝强调 */
+  --color-background: #f4f7fa;
+  --color-background-soft: #f0f2f5;
+  --color-background-mute: #eef2f7;
 
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
+  --color-border: rgba(15, 23, 42, 0.10);
+  --color-border-hover: rgba(0, 102, 255, 0.35);
 
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
+  --color-heading: rgba(15, 23, 42, 0.92);
+  --color-text: rgba(51, 65, 85, 0.88);
+
+  --color-accent: #0066ff; /* geek blue */
+  --color-accent-2: #0052d9; /* deeper blue */
 
   --section-gap: 160px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
 }
 
 *,
@@ -84,3 +74,87 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* 通用：通透玻璃拟态卡片（白蓝磨砂质感） */
+.glass-card,
+.glass-panel,
+.card-content-glass {
+  /* 玻璃拟态材质：极简白蓝磨砂质感 */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  /* 精密边框：1px 半透明科技蓝 */
+  border: 1px solid rgba(0, 102, 255, 0.15);
+  /* 外发光阴影：极其轻微的蓝色弥散光效 */
+  box-shadow: 0 8px 32px rgba(0, 102, 255, 0.04);
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease,
+    background 0.3s ease;
+  position: relative;
+  /* 增加内边距，营造高端实验室的呼吸感 */
+  padding: 28px;
+}
+
+.glass-card:hover,
+.glass-panel:hover,
+.honor-card-3d:hover .card-content-glass,
+.card-content-glass:hover {
+  /* Hover：上浮 4px + 边框加深 + 蓝色光影增强 */
+  border-color: rgba(0, 102, 255, 0.35);
+  box-shadow:
+    0 12px 40px rgba(0, 102, 255, 0.08),
+    0 0 0 1px rgba(0, 102, 255, 0.12) inset;
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* 统一 Icon 颜色（亮色方案下保持克制） */
+.el-icon {
+  color: var(--color-accent);
+}
+
+/* Ghost Button（白底蓝边；Hover 轻微缩放 + 光泽） */
+.tech-ghost-btn {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 102, 255, 0.55) !important;
+  color: rgba(0, 82, 217, 0.92) !important;
+  border-radius: 999px;
+  transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.18s ease, background-color 0.22s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tech-ghost-btn:hover {
+  border-color: rgba(0, 102, 255, 0.85) !important;
+  box-shadow: 0 10px 24px rgba(0, 82, 217, 0.14);
+  background: rgba(0, 102, 255, 0.06) !important;
+  transform: translateY(-1px) scale(1.01);
+}
+
+.tech-ghost-btn:active {
+  transform: translateY(0) scale(1);
+}
+
+.tech-ghost-btn :is(.el-icon, svg) {
+  color: var(--color-accent) !important;
+}
+
+/* 卡片标题标识：3px 极客蓝装饰线（用于纯白头部） */
+.tech-accent-line {
+  position: relative;
+}
+.tech-accent-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: rgba(0, 102, 255, 0.95);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* 亮色方案：保持干净利落，不加角落装饰 */

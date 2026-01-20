@@ -52,12 +52,11 @@
                   v-for="(post, index) in topHotPosts"
                   :key="post.id"
                   class="hot-post-featured-item"
-                  :class="`rank-${index + 1}`"
                   @click="handlePostClick(post)"
                 >
-                  <div class="hot-post-featured-rank">
-                    <span class="rank-number">{{ index + 1 }}</span>
-                    <div class="rank-badge"></div>
+                  <!-- 排名数字 - 冷色系渐变 -->
+                  <div class="rank-number" :class="`rank-${index + 1}`">
+                    {{ index + 1 }}
                   </div>
                   <div class="hot-post-featured-content">
                     <div class="hot-post-featured-title">{{ post.title }}</div>
@@ -717,15 +716,22 @@ onMounted(async () => {
       }
     }
 
-    // 最热帖子区域（置顶显示）
+    // 最热帖子区域（置顶显示）- 白蓝色密集神经网络风格
     &.hot-posts-section {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-      border: 2px solid rgba(64, 158, 255, 0.2);
-      box-shadow: 0 4px 20px rgba(64, 158, 255, 0.1);
+      /* 玻璃拟态材质：悬浮在底层神经网络背景之上 */
+      background: rgba(255, 255, 255, 0.8) !important;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+
+      /* 边框精密化 */
+      border: 1px solid rgba(0, 102, 255, 0.1);
+      border-radius: 15px;
       padding: 16px;
 
       .section-header-hot {
         margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(0, 102, 255, 0.08);
 
         .hot-posts-title {
           display: flex;
@@ -733,16 +739,13 @@ onMounted(async () => {
           gap: 6px;
           margin: 0;
           font-size: 16px;
-          font-weight: 700;
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          font-weight: 600;
+          color: #1A2B4B; /* 深海蓝，去掉彩色边框感 */
+          letter-spacing: 0.5px;
 
           .hot-icon {
             font-size: 18px;
-            color: #f5576c;
-            animation: pulse 2s ease infinite;
+            color: #0066FF;
           }
         }
       }
@@ -750,121 +753,99 @@ onMounted(async () => {
       .hot-posts-featured {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 0;
 
         .hot-post-featured-item {
           position: relative;
           display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          padding: 10px;
-          border-radius: 8px;
+          align-items: center;
+          gap: 16px;
+          padding: 14px 0;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          background: rgba(255, 255, 255, 0.8);
-          border: 2px solid transparent;
+          border-bottom: 0.5px solid rgba(0, 102, 255, 0.08);
           overflow: hidden;
 
+          &:last-child {
+            border-bottom: none;
+          }
+
+          /* 交互优化：悬停时蓝色渐变流光（左到右） */
           &::before {
             content: '';
             position: absolute;
+            left: -100%;
             top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--rank-color, #667eea), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(
+              90deg,
+              transparent 0%,
+              rgba(0, 102, 255, 0.08) 50%,
+              transparent 100%
+            );
+            transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 0;
           }
 
           &:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-color: var(--rank-color, #667eea);
-
             &::before {
-              opacity: 1;
+              left: 100%; /* 流光从左到右 */
+            }
+
+            .rank-number {
+              transform: scale(1.1); /* 排名数字略微放大 */
+            }
+
+            .hot-post-featured-title {
+              color: #0066FF;
             }
           }
 
-          &.rank-1 {
-            --rank-color: #f5576c;
-            background: linear-gradient(135deg, rgba(245, 87, 108, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%);
-            border-color: rgba(245, 87, 108, 0.3);
-
-            .hot-post-featured-rank {
-              .rank-badge {
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);
-              }
-            }
-          }
-
-          &.rank-2 {
-            --rank-color: #4facfe;
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%);
-            border-color: rgba(79, 172, 254, 0.3);
-
-            .hot-post-featured-rank {
-              .rank-badge {
-                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
-              }
-            }
-          }
-
-          &.rank-3 {
-            --rank-color: #43e97b;
-            background: linear-gradient(135deg, rgba(67, 233, 123, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%);
-            border-color: rgba(67, 233, 123, 0.3);
-
-            .hot-post-featured-rank {
-              .rank-badge {
-                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-                box-shadow: 0 2px 8px rgba(67, 233, 123, 0.3);
-              }
-            }
-          }
-
-          .hot-post-featured-rank {
-            position: relative;
+          /* 排名数字 - 降噪处理：冷色系渐变 */
+          .rank-number {
             flex-shrink: 0;
             width: 32px;
             height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
+          }
 
-            .rank-number {
-              position: relative;
-              z-index: 2;
-              font-size: 14px;
-              font-weight: 800;
-              color: #fff;
-              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            }
+          /* 排名1-3：深蓝、中蓝、浅蓝 */
+          .rank-1 {
+            background: linear-gradient(135deg, #1A2B4B 0%, #0F172A 100%);
+            box-shadow: 0 2px 8px rgba(26, 43, 75, 0.2);
+          }
 
-            .rank-badge {
-              position: absolute;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
+          .rank-2 {
+            background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%);
+            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
+          }
+
+          .rank-3 {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
           }
 
           .hot-post-featured-content {
             flex: 1;
             min-width: 0;
-            display: flex;
-            align-items: center;
+            position: relative;
+            z-index: 1;
 
             .hot-post-featured-title {
               font-size: 13px;
               font-weight: 600;
-              color: #333;
+              color: #1A2B4B; /* 深海蓝，去掉彩色边框感 */
               line-height: 1.4;
               display: -webkit-box;
               -webkit-line-clamp: 2;
@@ -872,6 +853,8 @@ onMounted(async () => {
               -webkit-box-orient: vertical;
               overflow: hidden;
               text-overflow: ellipsis;
+              transition: color 0.3s ease;
+              letter-spacing: 0.2px;
             }
           }
         }
@@ -880,16 +863,6 @@ onMounted(async () => {
   }
 }
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-}
 
 @media (max-width: 768px) {
   .posts-header {
@@ -911,6 +884,7 @@ onMounted(async () => {
 
     .section-header-hot {
       margin-bottom: 10px;
+      padding-bottom: 10px;
 
       .hot-posts-title {
         font-size: 14px;
@@ -922,19 +896,14 @@ onMounted(async () => {
     }
 
     .hot-posts-featured {
-      gap: 8px;
-
       .hot-post-featured-item {
-        padding: 8px;
-        gap: 8px;
+        padding: 12px 0;
+        gap: 12px;
 
-        .hot-post-featured-rank {
+        .rank-number {
           width: 28px;
           height: 28px;
-
-          .rank-number {
-            font-size: 12px;
-          }
+          font-size: 12px;
         }
 
         .hot-post-featured-content {

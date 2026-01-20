@@ -134,24 +134,30 @@
             </div>
             <div class="empowerment-list">
               <div
-                v-for="post in empowermentPosts"
+                v-for="(post, index) in empowermentPosts"
                 :key="post.id"
                 class="empowerment-item"
                 @click="router.push(`/post/${post.id}`)"
               >
-              <el-tooltip
-                :content="post.title"
-                placement="top"
-                :show-after="500"
-              >
-                <div class="empowerment-title">{{ post.title }}</div>
-              </el-tooltip>
-                <div class="empowerment-meta">
-                  <span class="meta-time">{{ post.time }}</span>
-                  <span class="meta-views">
-                    <el-icon><View /></el-icon>
-                    {{ post.views }}
-                  </span>
+                <!-- 排名数字 - 冷色系渐变 -->
+                <div class="rank-number" :class="`rank-${index + 1}`">
+                  {{ index + 1 }}
+                </div>
+                <div class="empowerment-content">
+                  <el-tooltip
+                    :content="post.title"
+                    placement="top"
+                    :show-after="500"
+                  >
+                    <div class="empowerment-title">{{ post.title }}</div>
+                  </el-tooltip>
+                  <div class="empowerment-meta">
+                    <span class="meta-time">{{ post.time }}</span>
+                    <span class="meta-views">
+                      <el-icon><View /></el-icon>
+                      {{ post.views }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -274,7 +280,7 @@
       </div>
       </section>
 
-      <section class="section-block">
+      <section class="section-block tool-zone-section">
         <div class="section-title-center">
           <h2>AI 百宝箱</h2>
         </div>
@@ -283,7 +289,7 @@
         <div class="tool-zone-carousel-wrapper">
           <el-carousel
             :interval="5000"
-            height="200px"
+            height="300px"
             indicator-position="inside"
             :arrow="'hover'"
             class="tool-zone-carousel"
@@ -296,25 +302,22 @@
           </el-carousel>
         </div>
 
-        <el-row :gutter="20" class="tools-grid">
+        <el-row :gutter="24" class="tools-grid">
           <el-col
-            :xs="12"
+            :xs="6"
             :sm="6"
-            :md="getColSpan(tools.length)"
+            :md="6"
+            :lg="6"
+            :xl="6"
             v-for="tool in tools"
             :key="tool.id || tool.name"
             style="margin-bottom: 20px;"
           >
             <div
               class="tool-card hover-effect"
+              :data-tool-type="getToolType(tool.name)"
+              :style="{ '--tool-category-color': tool.color || '#0066FF' }"
               @click="handleToolClick(tool)"
-              :style="{
-                '--tool-color': tool.color || '#409eff',
-                '--tool-bg': hexToRgba(tool.color || '#409eff', 0.06),
-                '--tool-bg-hover': hexToRgba(tool.color || '#409eff', 0.12),
-                '--tool-border': hexToRgba(tool.color || '#409eff', 0.25),
-                '--tool-shadow': hexToRgba(tool.color || '#409eff', 0.25)
-              }"
             >
               <div class="tool-logo-wrapper">
                 <img
@@ -926,6 +929,24 @@ const getColSpan = (count: number) => {
   return 6 // 最多4个，每个占6列（24/4=6）
 }
 
+// 获取工具类型（用于设置分类色彩）
+const getToolType = (toolName: string): string => {
+  const name = toolName.toLowerCase()
+  if (name.includes('test') || name.includes('测试')) {
+    return 'test' // 测试类：冷调翠青色
+  }
+  if (name.includes('code') || name.includes('代码')) {
+    return 'code' // 代码类：经典科技蓝
+  }
+  if (name.includes('云') || name.includes('cloud') || name.includes('算力')) {
+    return 'cloud' // 云端/算力类：深邃靛蓝色
+  }
+  if (name.includes('dt') || name.includes('纠错') || name.includes('转换') || name.includes('效率')) {
+    return 'efficiency' // 效率/转换类：温润琥珀金
+  }
+  return 'code' // 默认代码类
+}
+
 // 处理工具点击跳转
 const handleToolClick = (tool: { id: number; link?: string }) => {
   // 如果配置了link，使用link跳转（link应该包含toolId参数用于过滤）
@@ -997,7 +1018,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, 'Hiragino Sans GB', Arial, sans-serif;
   overflow-x: hidden;
   overflow-y: auto;
-  color: #000000; /* 改为黑色 */
+  color: rgba(226, 232, 240, 0.9);
   width: 100%;
   box-sizing: border-box;
 
@@ -1018,27 +1039,33 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 .hero-section {
   width: 100%;
   position: relative;
-  min-height: 500px; /* 确保有足够高度，与轮播图高度一致 */
+  min-height: 400px; /* 降低轮播图区域视觉占比 */
   /* 轮播图区域 */
 }
 
 /* 右侧悬浮工具面板 */
 .floating-tools-panel {
   position: absolute;
-  right: 80px; /* 固定右边距，避免遮挡轮播图右箭头 */
+  /* 轮播图宽度85%居中，右箭头在容器内距离右边缘约20px，箭头宽度40px
+     工具面板宽度220px，需要确保不遮挡箭头
+     计算：轮播图右边缘在 (100% - 85%) / 2 = 7.5% 位置（从右算起）
+     箭头右边缘在轮播图右边缘内20px，箭头宽度40px
+     工具面板需要完全在轮播图右边缘之外，加上安全距离 */
+  right: calc(100% / 2 + 20px + 40px + 10px); /* 动态计算：轮播图右边缘 + 箭头位置 + 箭头宽度 + 减少安全距离，向右移动 */
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
 
-  /* 大屏幕时增加右边距，保持与轮播图的视觉平衡 */
+  /* 大屏幕时使用固定右边距，确保不遮挡 */
   @media (min-width: 1920px) {
-    right: 120px;
+    right: 120px; /* 大屏幕固定位置，向右移动以改善视觉平衡 */
   }
 
-  /* 中等屏幕保持固定边距 */
+  /* 中等屏幕使用固定边距 */
   @media (min-width: 1400px) and (max-width: 1919px) {
-    right: 80px;
+    right: 80px; /* 中等屏幕固定位置，向右移动以改善视觉平衡 */
   }
+
   width: 220px; /* 减小宽度 */
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px) saturate(180%);
@@ -1333,88 +1360,36 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   padding-top: 0;
 }
 
-/* 通用毛玻璃卡片 - 带渐变质感的毛玻璃效果 */
+/* 通用毛玻璃卡片 - 通透白蓝磨砂质感（覆盖 base.css 的基础样式） */
 .glass-card {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(230, 240, 255, 0.75) 30%,
-    rgba(240, 230, 255, 0.7) 60%,
-    rgba(255, 255, 255, 0.8) 100%
-  ) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  /* 移除灰色背景，使用通透玻璃拟态 */
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  /* 精密边框：1px 半透明科技蓝 */
+  border: 1px solid rgba(0, 102, 255, 0.15) !important;
   border-radius: 16px;
-  padding: 24px;
-  box-shadow:
-    0 8px 32px 0 rgba(31, 38, 135, 0.12),
-    inset 0 2px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -2px 4px rgba(200, 210, 230, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.5);
-  color: #000000;
+  /* 增加内边距，营造呼吸感 */
+  padding: 28px !important;
+  /* 外发光阴影：极其轻微的蓝色弥散光效 */
+  box-shadow: 0 8px 32px rgba(0, 102, 255, 0.04) !important;
+  color: rgba(51, 65, 85, 0.88);
   transition: all 0.3s ease;
   position: relative;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
 
-  /* 渐变光晕叠加层 - 更明显的效果 */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background:
-      radial-gradient(
-        ellipse at 0% 0%,
-        rgba(100, 150, 255, 0.15) 0%,
-        transparent 50%
-      ),
-      radial-gradient(
-        ellipse at 100% 100%,
-        rgba(180, 120, 255, 0.12) 0%,
-        transparent 50%
-      );
-    pointer-events: none;
-    z-index: 0;
-  }
+  /* 移除所有光晕叠加层，保持极简通透 */
 
-  /* 顶部高光效果，增强立体感 */
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 1),
-      transparent
-    );
-    border-radius: 16px 16px 0 0;
-    z-index: 2;
-  }
-
-  /* 确保内容在光效之上 */
-  > * {
-    position: relative;
-    z-index: 3;
-  }
-
-  /* 悬停时增强透亮效果 */
+  /* 悬停时：上浮 4px + 边框加深 + 蓝色光影增强 */
   &:hover {
-    background: rgba(255, 255, 255, 0.65);
-    border-color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.75) !important;
+    border-color: rgba(0, 102, 255, 0.35) !important;
     box-shadow:
-      0 12px 40px 0 rgba(31, 38, 135, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8),
-      0 0 0 1px rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
+      0 12px 40px rgba(0, 102, 255, 0.08),
+      0 0 0 1px rgba(0, 102, 255, 0.12) inset !important;
+    transform: translateY(-4px);
   }
 }
 
@@ -1438,125 +1413,189 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 .honor-section {
   min-height: 560px !important;
   height: 560px !important; /* 固定高度，预留8个奖项位置 */
-  padding: 0; /* 移除内边距，让标题条占满 */
+  padding: 0 !important; /* 移除内边距，让标题条占满 */
   overflow: hidden; /* 确保圆角正确显示 */
 }
 
-/* 赋能交流区块 */
+/* 赋能交流区块 - 最热帖子排行榜 */
 .empowerment-section {
   min-height: 560px !important;
   height: 560px !important; /* 与荣誉殿堂等高 */
   display: flex;
   flex-direction: column;
-  padding: 0;
+  padding: 0 !important;
   overflow: hidden;
 
+  /* 玻璃拟态材质：悬浮在底层神经网络背景之上 */
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  /* 边框精密化 */
+  border: 1px solid rgba(0, 102, 255, 0.1);
+  border-radius: 15px;
+
   .empowerment-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 14px 20px;
+    /* 背景透明化：与卡片主体融为一体 */
+    background: transparent;
+    padding: 18px 24px;
     margin: 0;
-    border-bottom: none;
-    border-radius: 16px 16px 0 0;
+    border-bottom: 1px solid rgba(0, 102, 255, 0.08);
+    border-radius: 15px 15px 0 0;
     position: relative;
-    overflow: hidden;
-
-    /* 对话气泡暗纹 - 符合交流主题 - 更明显 */
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image:
-        /* 对话气泡图案 - 更明显 */
-        url("data:image/svg+xml,%3Csvg width='80' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 10 Q5 4 12 4 L32 4 Q39 4 39 10 L39 24 Q39 30 32 30 L18 30 L10 38 L10 30 Q5 30 5 24 Z' fill='rgba(255,255,255,0.12)' stroke='rgba(255,255,255,0.2)' stroke-width='1'/%3E%3Cpath d='M45 18 Q45 12 52 12 L68 12 Q75 12 75 18 L75 32 Q75 38 68 38 L58 38 L65 46 L60 38 L52 38 Q45 38 45 32 Z' fill='rgba(255,255,255,0.08)' stroke='rgba(255,255,255,0.15)' stroke-width='1'/%3E%3C/svg%3E"),
-        /* 点阵连接纹理 - 更明显 */
-        url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='8' cy='8' r='3' fill='rgba(255,255,255,0.12)'/%3E%3Ccircle cx='42' cy='42' r='3' fill='rgba(255,255,255,0.12)'/%3E%3Cline x1='8' y1='8' x2='42' y2='42' stroke='rgba(255,255,255,0.08)' stroke-width='1' stroke-dasharray='3,3'/%3E%3C/svg%3E");
-      background-size: 80px 50px, 50px 50px;
-      background-position: 0 0, 25px 0;
-      background-repeat: repeat, repeat;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    /* 右侧斜切装饰 - 更明显 */
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 100px;
-      height: 100%;
-      background: linear-gradient(
-        -65deg,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(255, 255, 255, 0.1) 50%,
-        transparent 100%
-      );
-      pointer-events: none;
-      z-index: 1;
-    }
 
     h3 {
-      position: relative;
-      z-index: 2;
-      color: #ffffff;
-      font-size: 15px;
+      color: #1A2B4B; /* 深海蓝，去掉彩色边框感 */
+      font-size: 16px;
       font-weight: 600;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      letter-spacing: 0.5px;
+
+      :deep(.el-icon) {
+        color: #0066FF;
+      }
     }
 
     .more-btn-pill {
-      position: relative;
-      z-index: 2;
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      color: #ffffff;
+      /* 空心科技蓝线框按钮 */
+      background: transparent;
+      border: 1px solid #0066FF;
+      color: #0066FF;
+      border-radius: 12px; /* 胶囊形 */
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.3s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.3);
-        border-color: rgba(255, 255, 255, 0.5);
+        background: rgba(0, 102, 255, 0.08);
+        border-color: #0066FF;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.15);
       }
     }
   }
 
   .empowerment-list {
     flex: 1;
-    padding: 16px 20px;
+    padding: 20px 24px; /* 增加内边距，营造呼吸感 */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0;
 
     .empowerment-item {
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 0;
+      /* 分割线：0.5px 极浅蓝色实线 */
+      border-bottom: 0.5px solid rgba(0, 102, 255, 0.08);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden; /* 用于渐变流光效果 */
 
       &:last-child {
         border-bottom: none;
       }
 
+      /* 交互优化：悬停时蓝色渐变流光（左到右） */
+      &::before {
+        content: '';
+        position: absolute;
+        left: -100%;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(0, 102, 255, 0.08) 50%,
+          transparent 100%
+        );
+        transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        z-index: 0;
+      }
+
       &:hover {
-        .empowerment-title {
-          color: #667eea;
+        &::before {
+          left: 100%; /* 流光从左到右 */
         }
+
+        .rank-number {
+          transform: scale(1.1); /* 排名数字略微放大 */
+        }
+
+        .empowerment-title {
+          color: #0066FF;
+        }
+      }
+
+      /* 排名数字 - 降噪处理：冷色系渐变 */
+      .rank-number {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        z-index: 1;
+      }
+
+      /* 排名1-3：深蓝、中蓝、浅蓝 */
+      .rank-1 {
+        background: linear-gradient(135deg, #1A2B4B 0%, #0F172A 100%);
+        box-shadow: 0 2px 8px rgba(26, 43, 75, 0.2);
+      }
+
+      .rank-2 {
+        background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%);
+        box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
+      }
+
+      .rank-3 {
+        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+      }
+
+      /* 排名4及以后：浅蓝 */
+      .rank-4,
+      .rank-5,
+      .rank-6,
+      .rank-7 {
+        background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+        box-shadow: 0 2px 6px rgba(96, 165, 250, 0.15);
+      }
+
+      .empowerment-content {
+        flex: 1;
+        position: relative;
+        z-index: 1;
       }
 
       .empowerment-title {
         font-size: 15px;
         font-weight: 600;
-        color: #1a1a2e;
-        line-height: 1.4;
-        margin-bottom: 6px;
+        color: #1A2B4B; /* 深海蓝，去掉彩色边框感 */
+        line-height: 1.5;
+        margin-bottom: 8px;
         display: -webkit-box;
         -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        transition: color 0.2s ease;
-        letter-spacing: 0.3px;
+        transition: color 0.3s ease;
+        letter-spacing: 0.2px;
       }
 
       .empowerment-meta {
@@ -1564,7 +1603,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
         align-items: center;
         gap: 16px;
         font-size: 12px;
-        color: #909399;
+        color: #94A3B8; /* 中性蓝灰色 */
 
         .meta-time {
           display: flex;
@@ -1578,6 +1617,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
           .el-icon {
             font-size: 14px;
+            color: #94A3B8;
           }
         }
       }
@@ -1587,83 +1627,47 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
 /* 顶部标题条 - AI荣誉殿堂 */
 .honor-header-bar {
+  /* 背景透明化：与卡片主体融为一体 */
   background: transparent;
   position: relative;
-  height: 60px; /* 增加固定高度 */
+  height: auto;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* 顶部对齐，以便制造落差 */
-  border-radius: 16px 16px 0 0;
-  overflow: hidden;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(0, 102, 255, 0.08);
+  border-radius: 0;
+  overflow: visible;
 
-  /* 左侧蓝色背景 + 斜切分割（从左上到右下） */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 85%;
-    height: 100%;
-    background: linear-gradient(135deg, #4C85FA 0%, #3a6fd8 100%);
-    /* 斜切效果 - 左上到右下 \ 形状 */
-    clip-path: polygon(0 0, 88% 0, 100% 100%, 0 100%);
-    /* 楼宇暗纹 */
-    background-image:
-      url("data:image/svg+xml,%3Csvg width='300' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 L0 35 L8 35 L8 22 L14 22 L14 35 L22 35 L22 18 L30 18 L30 35 L38 35 L38 12 L42 12 L42 6 L48 6 L48 12 L52 12 L52 35 L62 35 L62 25 L70 25 L70 35 L80 35 L80 15 L86 15 L86 8 L92 8 L92 15 L98 15 L98 35 L108 35 L108 20 L118 20 L118 35 L128 35 L128 14 L134 14 L134 4 L140 4 L140 14 L146 14 L146 35 L156 35 L156 28 L166 28 L166 35 L176 35 L176 18 L184 18 L184 35 L196 35 L196 22 L202 22 L202 10 L208 10 L208 22 L214 22 L214 35 L226 35 L226 26 L236 26 L236 35 L248 35 L248 16 L256 16 L256 35 L268 35 L268 24 L278 24 L278 35 L290 35 L290 20 L300 20 L300 50 Z' fill='rgba(255,255,255,0.18)'/%3E%3C/svg%3E"),
-      linear-gradient(135deg, #4C85FA 0%, #3a6fd8 100%);
-    background-size: 300px 50px, 100% 100%;
-    background-position: 0 100%, 0 0;
-    background-repeat: repeat-x, no-repeat;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  /* 右侧透明区域背景 */
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 30%;
-    height: 100%;
-    background: transparent;
-    pointer-events: none;
-    z-index: 0;
-  }
+  /* 移除所有装饰性伪元素，保持极简 */
 
   /* 标题文字 */
   .header-title {
-    position: relative;
-    z-index: 2;
-    margin: 16px 0 0 24px; /* 定位：保持较高位置 */
-    font-size: 15px;
+    color: #1A2B4B; /* 深海蓝 */
+    font-size: 16px;
     font-weight: 600;
-    color: #ffffff;
-    letter-spacing: 0.5px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.3px;
+    margin: 0;
   }
 
-  /* 标题条内的更多按钮 - 灰色样式（在透明区域） */
+  /* 标题条内的更多按钮 - 空心科技蓝线框 */
   .more-btn-pill {
-    position: relative;
-    z-index: 2;
-    border-radius: 999px;
-    background: rgba(100, 100, 100, 0.1);
-    border: 1px solid rgba(100, 100, 100, 0.4);
-    color: #555555;
+    border-radius: 12px; /* 胶囊形 */
+    background: transparent;
+    border: 1px solid #0066FF;
+    color: #0066FF;
     font-size: 13px;
     padding: 6px 16px;
     height: auto;
     font-weight: 500;
     transition: all 0.3s ease;
-    backdrop-filter: blur(4px);
-    margin: 24px 24px 0 0; /* 定位：下移，制造落差 */
+    margin: 0;
 
     &:hover {
-      background: rgba(100, 100, 100, 0.2);
-      border-color: rgba(100, 100, 100, 0.6);
+      background: rgba(0, 102, 255, 0.08);
+      border-color: #0066FF;
       transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 102, 255, 0.15);
     }
 
     &:active {
@@ -1677,22 +1681,22 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* 改为黑色边框，适应浅色背景 */
-  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 102, 255, 0.08);
+  padding-bottom: 12px;
 
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #000000; /* 黑色，只有 section-title-center 的 h2 是深蓝色 */
+    color: #1A2B4B; /* 深海蓝 */
   }
 
   .header-icon {
-    font-size: 20px;
-    color: #409eff;
+    font-size: 18px;
+    color: #0066FF;
   }
 
   .header-actions {
@@ -1701,25 +1705,23 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     gap: 8px;
   }
 
-  /* 通用胶囊按钮样式 - 适用于所有模块的"更多"按钮 */
+  /* 通用胶囊按钮样式 - 空心科技蓝线框 */
   .more-btn-pill {
-    border-radius: 999px; /* 完全圆角 pill */
-    background: rgba(30, 58, 138, 0.1); /* 深蓝色半透明背景 */
-    border: 1px solid rgba(30, 58, 138, 0.3); /* 深蓝色边框 */
-    color: #1e3a8a; /* 深蓝色文字 */
+    border-radius: 12px; /* 胶囊形 */
+    background: transparent;
+    border: 1px solid #0066FF;
+    color: #0066FF;
     font-size: 13px;
     padding: 6px 16px;
     height: auto;
     font-weight: 500;
     transition: all 0.3s ease;
-    backdrop-filter: blur(4px);
 
     &:hover {
-      background: rgba(30, 58, 138, 0.2);
-      border-color: rgba(30, 58, 138, 0.5);
+      background: rgba(0, 102, 255, 0.08);
+      border-color: #0066FF;
       transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(30, 58, 138, 0.2);
-      color: #1e40af; /* 稍亮的深蓝色 */
+      box-shadow: 0 4px 12px rgba(0, 102, 255, 0.15);
     }
 
     &:active {
@@ -2240,13 +2242,16 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 .section-title-center {
   text-align: center;
   margin-bottom: 15px; /* 减少标题和模块之间的间距 */
+  position: relative;
+  padding-bottom: 10px; /* 为下方渐变横线留出空间，整体更“压线”网格 */
 
   h2 {
     font-size: 28px;
     margin: 0;
-    color: #1e3a8a; /* 深蓝色标题 */
-    font-weight: 700;
-    text-shadow: none; /* 移除阴影，深色背景不需要 */
+    color: #1A2B4B; /* 深色调科技蓝，适配浅色网格背景 */
+    font-weight: 600; /* 稍降低字重，更沉稳 */
+    letter-spacing: 2px; /* 轻微增加字间距，提升精密感 */
+    text-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2262,36 +2267,76 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      opacity: 0.8;
+      opacity: 0.9;
+      /* 极其微弱的淡蓝色外发光，营造“通电”感 */
+      filter: drop-shadow(0 0 2px rgba(0, 102, 255, 0.3));
     }
 
     &::before {
-      /* 左翅膀 SVG - 抽象流线型 */
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 10 Q12 0 22 8 Q15 8 18 12 Q12 10 8 14 Q10 14 12 18 Q5 18 2 10 Z' fill='%231e3a8a'/%3E%3C/svg%3E");
+      /* 左翅膀 SVG - 抽象流线型，确保与背景节点颜色 #0066FF 完全一致 */
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 10 Q12 0 22 8 Q15 8 18 12 Q12 10 8 14 Q10 14 12 18 Q5 18 2 10 Z' fill='%230066FF'/%3E%3C/svg%3E");
+      opacity: 0.9;
     }
 
     &::after {
-      /* 右翅膀 SVG - 翻转 */
+      /* 右翅膀 SVG - 翻转，确保与背景节点颜色 #0066FF 完全一致 */
       transform: scaleX(-1);
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 10 Q12 0 22 8 Q15 8 18 12 Q12 10 8 14 Q10 14 12 18 Q5 18 2 10 Z' fill='%231e3a8a'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 10 Q12 0 22 8 Q15 8 18 12 Q12 10 8 14 Q10 14 12 18 Q5 18 2 10 Z' fill='%230066FF'/%3E%3C/svg%3E");
+      opacity: 0.9;
     }
   }
+
   p {
     margin: 5px 0 0;
     letter-spacing: 4px;
     opacity: 0.7;
     font-size: 12px;
-    color: #000000; /* 黑色 */
+    color: rgba(26, 43, 75, 0.6); /* 与标题主色系相呼应的深蓝灰 */
   }
 }
 
-/* AI工具专区轮播图 */
-.tool-zone-carousel-wrapper {
+/* AI百宝箱区域：背景通透感，让底层神经网络纹理隐约可见 */
+.tool-zone-section {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 32px;
+  margin: 24px 0;
   width: 100%;
-  margin: 30px 0 0 0; /* 底部margin为0，使工具列表紧挨着轮播图 */
+  box-sizing: border-box; /* 确保padding不影响宽度计算 */
+
+  /* 确保轮播图容器可以正确应用85%宽度 */
+  .tool-zone-carousel-wrapper {
+    width: 85% !important;
+    max-width: 85% !important;
+  }
+}
+
+/* AI工具专区轮播图 - Banner 融合：嵌入背景的电子屏幕 */
+.tool-zone-carousel-wrapper {
+  width: 85% !important; /* 宽度调整为85%，使用!important确保生效 */
+  max-width: 85% !important; /* 确保最大宽度也是85% */
+  margin: 30px auto 0 auto; /* 居中显示 */
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  /* 1px 浅蓝色呼吸边框 + 微弱阴影，像嵌入的电子屏幕 */
+  border: 1px solid rgba(0, 102, 255, 0.25);
+  box-shadow: 0 0 15px rgba(0, 102, 255, 0.1);
+  transition: all 0.4s ease;
+  position: relative; /* 确保定位上下文 */
+  box-sizing: border-box; /* 确保边框计算在内 */
+
+  &:hover {
+    border-color: rgba(0, 102, 255, 0.4);
+    box-shadow: 0 0 20px rgba(0, 102, 255, 0.15);
+  }
+
+  /* 确保在中等和大屏幕上保持85%宽度 */
+  @media (min-width: 769px) {
+    width: 85% !important;
+    max-width: 85% !important;
+  }
 }
 
 :deep(.tool-zone-carousel) {
@@ -2303,19 +2348,32 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 
   .el-carousel__arrow {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: #000000; /* 改为黑色 */
+    border: 1px solid rgba(0, 102, 255, 0.25);
+    color: #0066FF;
     width: 40px;
     height: 40px;
     border-radius: 50%;
     transition: all 0.3s ease;
+    z-index: 110 !important; /* 确保箭头在工具面板（z-index: 100）之上 */
 
     &:hover {
-      background: rgba(255, 255, 255, 0.5);
-      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(0, 102, 255, 0.4);
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(0, 102, 255, 0.15);
     }
+  }
+
+  /* 右箭头位置调整，确保不被工具面板遮挡 */
+  .el-carousel__arrow--right {
+    right: 20px !important;
+  }
+
+  /* 左箭头位置 */
+  .el-carousel__arrow--left {
+    left: 20px !important;
   }
 
   .el-carousel__indicators {
@@ -2336,7 +2394,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
       }
 
       &.is-active button {
-        background-color: #fff;
+        background-color: #0066FF; /* 与背景节点颜色一致 */
         width: 24px;
         border-radius: 4px;
       }
@@ -2347,7 +2405,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 .tool-banner-item {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 300px; /* 高度调整为300px */
   border-radius: 16px;
   overflow: hidden;
 
@@ -2411,9 +2469,18 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     box-sizing: border-box;
   }
 
+  .tool-zone-section {
+    padding: 20px 16px !important;
+  }
+
+  .tool-zone-section {
+    padding: 20px 16px !important;
+  }
+
   .tool-zone-carousel-wrapper {
-    margin: 20px 0 0 0; /* 底部margin为0，使工具列表紧挨着轮播图 */
-    width: 100%;
+    margin: 20px 0 0 0;
+    width: 100% !important; /* 小屏幕下占满宽度 */
+    max-width: 100% !important;
   }
 
   /* 荣誉殿堂响应式 */
@@ -2470,7 +2537,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 
   .tool-banner-item {
-    height: 160px;
+    height: 200px; /* 小屏幕下适当降低高度 */
 
     .banner-overlay {
       padding: 20px 20px 45px 20px; /* 底部增加padding，为指示器留出空间 */
@@ -2489,7 +2556,10 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 }
 
 .tools-grid {
-  margin-top: 0; /* 紧挨着轮播图 */
+  margin-top: 32px; /* 增加间距，确保卡片能清晰展示下方的神经网络线条 */
+  /* 注意：不要用 gap 影响 el-row/el-col 栅格宽度计算，否则会从 4 列掉到 3 列 */
+  gap: 0 !important;
+  row-gap: 20px;
 }
 
 .tool-card {
@@ -2501,47 +2571,28 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
+  overflow: visible; /* 改为 visible，确保装饰条和箭头可见 */
 
-  /* 动态背景 - 渐变毛玻璃 */
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), var(--tool-bg));
+  /* 统一材质：高光磨砂玻璃 */
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--tool-border);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 102, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.04);
 
-  /* 光效层 */
+  /* 左侧 3px 装饰条 - 根据工具类型设置分类色彩 */
   &::before {
     content: '';
     position: absolute;
-    top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.4) 0%,
-      rgba(255, 255, 255, 0.1) 100%
-    );
-    z-index: 0;
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  /* 装饰圆 */
-  &::after {
-    content: '';
-    position: absolute;
-    top: -30px;
-    right: -30px;
-    width: 100px;
-    height: 100px;
-    background: var(--tool-color);
-    filter: blur(40px);
-    opacity: 0.1;
-    border-radius: 50%;
-    z-index: 0;
-    transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    /* 默认科技蓝，通过 CSS 变量覆盖 */
+    background: var(--tool-category-color, #0066FF);
+    z-index: 2;
+    transition: width 0.3s ease, opacity 0.3s ease;
   }
 
   > * {
@@ -2549,29 +2600,41 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     z-index: 1;
   }
 
+  /* 悬浮动态：背景变纯白，边框点亮为分类色，右侧显示箭头 */
   &:hover {
-    transform: translateY(-4px) scale(1.01);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), var(--tool-bg-hover));
+    background: #ffffff;
+    border-color: var(--tool-category-color, #0066FF);
     box-shadow:
-      0 12px 30px -8px var(--tool-shadow),
-      0 4px 10px rgba(0, 0, 0, 0.05);
-    border-color: var(--tool-color);
+      0 8px 24px rgba(0, 102, 255, 0.12),
+      0 0 0 1px var(--tool-category-color, #0066FF) inset;
 
-    &::after {
-      opacity: 0.2;
-      transform: scale(1.2);
-    }
-
-    .tool-logo-wrapper {
-      transform: scale(1.05) rotate(-3deg);
-      box-shadow: 0 8px 16px -4px var(--tool-shadow);
+    &::before {
+      width: 4px;
+      opacity: 1;
     }
 
     .tool-action-icon {
       opacity: 1;
       transform: translateX(0);
-      color: var(--tool-color);
+      color: var(--tool-category-color, #0066FF);
     }
+  }
+
+  /* 根据工具名称设置分类色彩 */
+  &[data-tool-type="test"] {
+    --tool-category-color: #10B981; /* 测试类：冷调翠青色 */
+  }
+
+  &[data-tool-type="code"] {
+    --tool-category-color: #3B82F6; /* 代码类：经典科技蓝 */
+  }
+
+  &[data-tool-type="cloud"] {
+    --tool-category-color: #6366F1; /* 云端/算力类：深邃靛蓝色 */
+  }
+
+  &[data-tool-type="efficiency"] {
+    --tool-category-color: #F59E0B; /* 效率/转换类：温润琥珀金 */
   }
 
   .tool-logo-wrapper {
@@ -2579,10 +2642,14 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     width: 52px;
     height: 52px;
     transition: all 0.3s ease;
-    border-radius: 14px;
-    background: #fff;
-    padding: 6px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    /* 图标容器：圆角 10px + 微弱内阴影，增加立体感 */
+    border-radius: 10px;
+    padding: 8px;
+    /* 根据工具类型设置极淡渐变背景 */
+    background: var(--tool-icon-bg, linear-gradient(135deg, rgba(0, 102, 255, 0.08), rgba(0, 102, 255, 0.04)));
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.04),
+      inset 0 1px 2px rgba(255, 255, 255, 0.6); /* 微弱内阴影 */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2591,7 +2658,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
       width: 100%;
       height: 100%;
       object-fit: contain;
-      border-radius: 8px;
+      border-radius: 6px;
     }
 
     .tool-icon-placeholder {
@@ -2601,11 +2668,28 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 22px;
+      font-size: 20px;
       color: #fff;
-      background: var(--tool-color);
-      border-radius: 10px;
+      background: var(--tool-category-color, #0066FF);
+      border-radius: 6px;
     }
+  }
+
+  /* 根据工具类型设置图标背景渐变 */
+  &[data-tool-type="test"] .tool-logo-wrapper {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.06));
+  }
+
+  &[data-tool-type="code"] .tool-logo-wrapper {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.06));
+  }
+
+  &[data-tool-type="cloud"] .tool-logo-wrapper {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.06));
+  }
+
+  &[data-tool-type="efficiency"] .tool-logo-wrapper {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.06));
   }
 
   .tool-info {
@@ -2613,21 +2697,22 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 
     h4 {
       margin: 0;
-      font-size: 16px;
-      font-weight: 700;
-      color: #1a1a1a;
-      letter-spacing: 0.3px;
+      font-size: 15px; /* 字号调小一级 */
+      font-weight: 600;
+      color: #1E293B; /* 深蓝黑 */
+      letter-spacing: 0.2px;
+      line-height: 1.4;
     }
 
     p {
       margin: 0;
-      font-size: 13px;
-      color: #666;
-      line-height: 1.4;
+      font-size: 12px; /* 字号调小一级 */
+      color: #94A3B8; /* 中性蓝灰 */
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
@@ -2637,18 +2722,20 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 
   .tool-action-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(-8px);
     transition: all 0.3s ease;
-    color: #999;
+    color: var(--tool-category-color, #0066FF);
+    flex-shrink: 0;
 
     .el-icon {
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: 600;
     }
   }
 }
@@ -2672,7 +2759,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     padding-left: 8px;
 
     .practice-title {
-      color: #1e3a8a; /* 深蓝色悬停效果 */
+      color: #0066FF; /* 科技蓝悬停效果 */
     }
   }
 
@@ -2685,7 +2772,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   .practice-title {
     font-size: 15px;
     font-weight: 600;
-    color: #000000; /* 黑色 */
+    color: #334155; /* 深灰色 */
     margin: 0;
     line-height: 1.5;
     display: -webkit-box;
@@ -2702,7 +2789,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     align-items: center;
     gap: 12px;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.6); /* 黑色，60% 透明度 */
+    color: #94A3B8; /* 中性蓝灰色 */
   }
 
   .practice-author {
@@ -2754,119 +2841,66 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 /* 通用标题栏样式 */
 .practice-header-bar {
   position: relative;
-  padding: 14px 20px;
+  padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  overflow: hidden;
-  border-radius: 16px 16px 0 0;
+  overflow: visible;
+  border-radius: 0;
+  /* 背景透明化：与卡片主体融为一体 */
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 102, 255, 0.08);
 
-  /* 波浪纹理效果 */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image:
-      /* 波浪纹理 */
-      url("data:image/svg+xml,%3Csvg width='100' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q25 0 50 10 T100 10' fill='none' stroke='rgba(255,255,255,0.15)' stroke-width='1.5'/%3E%3C/svg%3E"),
-      /* 点阵纹理 */
-      radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-    background-size: 100px 20px, 8px 8px;
-    background-position: 0 50%, 0 0;
-    background-repeat: repeat-x, repeat;
-    pointer-events: none;
-    z-index: 1;
-  }
+  /* 移除所有装饰性伪元素，保持极简 */
 
   /* 标题 */
   .header-title {
-    position: relative;
-    z-index: 2;
-    margin: 0;
-    font-size: 15px;
+    color: #1A2B4B; /* 深海蓝 */
+    font-size: 16px;
     font-weight: 600;
-    color: #ffffff;
-    letter-spacing: 0.5px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.3px;
+    margin: 0;
   }
 
-  /* 更多按钮 */
+  /* 更多按钮 - 空心科技蓝线框 */
   .header-more-btn {
-    position: relative;
-    z-index: 2;
-    background: rgba(255, 255, 255, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
-    color: #ffffff !important;
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-size: 12px;
-    transition: all 0.2s ease;
+    background: transparent !important;
+    border: 1px solid #0066FF !important;
+    color: #0066FF !important;
+    border-radius: 12px; /* 胶囊形 */
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.4) !important;
+      background: rgba(0, 102, 255, 0.08) !important;
+      border-color: #0066FF !important;
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 102, 255, 0.15);
     }
   }
 }
 
 /* 培训赋能 - 蓝紫渐变 */
 .training-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 120px;
-    height: 120px;
-    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
+  background: transparent;
 }
 
 /* AI训战 - 粉红渐变 */
 .battle-header {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -30%;
-    left: 10%;
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
+  background: transparent;
 }
 
 /* 用户交流 - 青蓝渐变 */
 .exchange-header {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -40%;
-    right: 5%;
-    width: 110px;
-    height: 110px;
-    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
+  background: transparent;
 }
 
 /* 列表区域 */
 .practice-list {
   flex: 1;
-  padding: 16px 20px;
+  padding: 20px 24px; /* 增加内边距，营造呼吸感 */
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -2874,8 +2908,9 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
 /* 单条帖子 */
 .practice-item {
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 14px 0;
+  /* 分割线：0.5px 极浅蓝色实线 */
+  border-bottom: 0.5px solid rgba(0, 102, 255, 0.08);
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -2885,16 +2920,16 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
   &:hover {
     .practice-title {
-      color: #667eea;
+      color: #0066FF;
     }
   }
 
   .practice-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1a1a2e;
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155; /* 深灰色 */
     line-height: 1.5;
-    margin: 0 0 6px 0;
+    margin: 0 0 8px 0;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
@@ -2907,7 +2942,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     align-items: center;
     gap: 12px;
     font-size: 12px;
-    color: #909399;
+    color: #94A3B8; /* 中性蓝灰色 */
 
     .practice-author {
       &::before {
@@ -3092,19 +3127,40 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     font-size: 14px;
     font-weight: 600;
     padding: 10px 24px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: #fff;
-    border: none;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(0, 242, 255, 0.55);
+    box-shadow: none;
     transition: all 0.3s ease;
     flex-shrink: 0; /* 防止按钮被挤压 */
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-      background: linear-gradient(135deg, #5568d3, #6a3f91);
+      box-shadow:
+        0 0 0 1px rgba(0, 242, 255, 0.14),
+        0 0 18px rgba(0, 242, 255, 0.16);
+      background: rgba(0, 242, 255, 0.06);
     }
   }
+}
+
+/* 亮色主题：文字颜色适配通透玻璃卡片 */
+.page-container {
+  color: rgba(51, 65, 85, 0.88);
+}
+
+.tool-info h4,
+.practice-title,
+.empowerment-title,
+.news-title {
+  color: #334155 !important; /* 深灰色 */
+}
+
+.tool-info p,
+.practice-meta,
+.empowerment-meta,
+.news-date {
+  color: #94A3B8 !important; /* 中性蓝灰色 */
 }
 
 /* 流动光感动画 */

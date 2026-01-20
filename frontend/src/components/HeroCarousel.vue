@@ -1,40 +1,42 @@
 <template>
     <div class="hero-carousel-wrapper">
-      <el-carousel
-        :interval="4000"
-        type="card"
-        height="500px"
-        indicator-position="inside"
-        :arrow="'always'"
-        class="ai-carousel"
-      >
-        <el-carousel-item v-for="item in slides" :key="item.id" class="ai-carousel-item">
+      <div class="hero-carousel-frame">
+        <el-carousel
+          :interval="4500"
+          type="card"
+          height="400px"
+          indicator-position="inside"
+          :arrow="'always'"
+          class="ai-carousel"
+        >
+          <el-carousel-item v-for="item in slides" :key="item.id" class="ai-carousel-item">
 
-          <div class="slide-card" @click="handleSlideClick(item)" :style="{ cursor: item.link ? 'pointer' : 'default' }">
-            <img :src="item.image" :alt="item.title" class="slide-bg" />
+            <div class="slide-card" @click="handleSlideClick(item)" :style="{ cursor: item.link ? 'pointer' : 'default' }">
+              <img :src="item.image" :alt="item.title" class="slide-bg" />
 
-            <div class="slide-mask"></div>
+              <div class="slide-mask"></div>
 
-            <div class="glass-panel" v-if="item.showContent">
-              <div class="panel-content">
-                <h3 class="title">{{ item.title }}</h3>
-                <p class="desc">{{ item.desc }}</p>
+              <div class="glass-panel" v-if="item.showContent">
+                <div class="panel-content">
+                  <h3 class="title">{{ item.title }}</h3>
+                  <p class="desc">{{ item.desc }}</p>
 
-                <el-button
-                  class="gradient-btn"
-                  round
-                  v-if="item.link"
-                  @click.stop="handleSlideClick(item)"
-                >
-                  立即前往
-                  <el-icon class="el-icon--right"><ArrowRight /></el-icon>
-                </el-button>
+                  <el-button
+                    class="tech-ghost-btn"
+                    round
+                    v-if="item.link"
+                    @click.stop="handleSlideClick(item)"
+                  >
+                    立即前往
+                    <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+                  </el-button>
+                </div>
               </div>
             </div>
-          </div>
+          </el-carousel-item>
+        </el-carousel>
+      </div>
 
-        </el-carousel-item>
-      </el-carousel>
     </div>
   </template>
 
@@ -149,12 +151,26 @@ import { getCarousel } from '@/api/home';
     width: 100%;
     max-width: 100%;
     position: relative;
-    overflow: hidden;
     padding: 0; /* 去掉所有padding，与导航栏无缝连接 */
     margin: 0;
-    margin-bottom: -50px; /* 负边距让底部渐消区域与下方内容重叠 */
+    margin-bottom: -24px; /* 减少突兀的视觉占比 */
     box-sizing: border-box;
     z-index: 1; /* 确保在背景上层，但在内容下层 */
+  }
+
+  /* 轮播图外层容器：移除边框，只保留基础样式 */
+  .hero-carousel-frame {
+    width: 100%;
+    margin: 0 auto;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    overflow: hidden; /* 保证圆角裁切 */
+  }
+
+  @media (max-width: 1024px) {
+    .hero-carousel-frame {
+      width: 92%;
+    }
   }
 
   /* 为轮播图容器 */
@@ -191,7 +207,7 @@ import { getCarousel } from '@/api/home';
 
   /* 核心卡片样式 - 一次显示三个图，合适的宽度 */
   :deep(.el-carousel__item) {
-    border-radius: 24px;
+    border-radius: 20px;
     /* 默认状态：稍微透明，带一点模糊，制造景深感 */
     opacity: 0.8;
     filter: blur(0.5px) grayscale(20%);
@@ -222,10 +238,11 @@ import { getCarousel } from '@/api/home';
     width: 100%;
     height: 100%;
     position: relative;
-    border-radius: 24px;
+    border-radius: 20px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     box-sizing: border-box;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 平滑过渡 */
   }
 
   .slide-bg {
@@ -239,7 +256,7 @@ import { getCarousel } from '@/api/home';
   .slide-mask {
     position: absolute;
     inset: 0;
-    background: rgba(12, 12, 20, 0.5); /* 深蓝黑色遮罩 */
+    background: rgba(10, 14, 23, 0.52); /* 深蓝黑遮罩 */
     transition: all 0.6s;
   }
 
@@ -255,12 +272,6 @@ import { getCarousel } from '@/api/home';
     mask-image: none !important;
     -webkit-mask-image: none !important;
 
-    /* 强烈的 3D 霓虹投影 */
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.4), /* 高亮边框 */
-      0 0 30px rgba(64, 158, 255, 0.5),   /* 蓝色光晕 */
-      0 30px 60px rgba(0, 0, 0, 0.6);     /* 底部深投影 */
-
     /* 确保居中显示 */
     left: 50% !important;
     transform: translateX(-50%) !important;
@@ -271,6 +282,29 @@ import { getCarousel } from '@/api/home';
 
     .slide-bg {
       transform: scale(1.03); /* 轻微放大 */
+    }
+
+    /* 激活卡片的边框与阴影：沉稳科技感 */
+    .slide-card {
+      /* 边框：半透明科技蓝，1px，完美贴合圆角 */
+      border: 1px solid rgba(0, 102, 255, 0.2);
+      /* 玻璃质感：边框边缘模糊处理 */
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      /* 浅蓝色复合阴影：移除黑色投影，改用柔和扩散阴影 + 紧贴边框的蓝色微光 */
+      box-shadow:
+        0 20px 50px rgba(0, 102, 255, 0.05), /* 柔和的扩散阴影 */
+        0 0 10px rgba(0, 102, 255, 0.1); /* 紧贴边框的蓝色微光 */
+
+      /* Hover 增强效果：边框变电光蓝，增加发光强度 */
+      &:hover {
+        border-color: rgba(0, 102, 255, 0.8); /* 电光蓝，透明度提升到 0.8 */
+        /* 增加边框外侧发光强度，营造'唤醒'交互反馈 */
+        box-shadow:
+          0 20px 50px rgba(0, 102, 255, 0.08), /* 扩散阴影增强 */
+          0 0 20px rgba(0, 102, 255, 0.25), /* 紧贴边框的蓝色微光增强 */
+          0 0 30px rgba(0, 102, 255, 0.15); /* 额外的外层光晕 */
+      }
     }
 
     /* 显示信息面板 */
@@ -293,21 +327,21 @@ import { getCarousel } from '@/api/home';
     position: absolute;
     bottom: 30px; /* 稍微上移 */
     left: 30px;   /* 稍微右移 */
-    right: auto; 
+    right: auto;
     max-width: 420px; /* 宽度增加 */
-    
-    background: rgba(255, 255, 255, 0.1);
+
+    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
-    
+
     border-radius: 16px; /* 圆角恢复适中 */
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     padding: 24px; /* 内边距增加 */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-    
+
     opacity: 0;
     transform: translateY(20px);
-    transition: all 0.6s ease 0.2s; 
+    transition: all 0.6s ease 0.2s;
   }
 
   .title {
@@ -317,61 +351,43 @@ import { getCarousel } from '@/api/home';
     color: #fff;
     text-shadow: 0 2px 8px rgba(0,0,0,0.6);
   }
-  
+
   .desc {
     margin: 0 0 16px 0;
     font-size: 14px; /* 字体增大 */
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.95);
+    color: rgba(255, 255, 255, 0.72);
     display: -webkit-box;
     -webkit-line-clamp: 3; /* 允许显示更多行 */
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
-  /* 按钮样式 */
-  .gradient-btn {
-    background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
-    border: none;
-    font-size: 14px; /* 字体增大 */
-    font-weight: 600;
-    padding: 10px 24px; /* 尺寸增大 */
-    min-height: 36px;  /* 高度增加 */
-    height: auto;
-    box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
-    transition: transform 0.2s;
-    color: #ffffff !important; 
-    
-    &:hover {
-      transform: scale(1.05);
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      color: #ffffff !important;
-    }
-    
-    :deep(.el-icon) {
-      color: #ffffff !important;
-    }
-  }
 
   /* 导航箭头样式 - 始终显示 */
   :deep(.el-carousel__arrow) {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
+    /* 边框改为与轮播激活卡片一致的科技蓝体系 */
+    border: 1px solid rgba(0, 102, 255, 0.32);
+    color: rgba(255, 255, 255, 0.92);
     width: 48px;
     height: 48px;
     border-radius: 50%;
     opacity: 1 !important; /* 始终显示 */
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.20),
+      0 0 14px rgba(0, 102, 255, 0.25); /* 轻微蓝色外晕，与整体科技蓝呼应 */
     z-index: 10;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.1);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      /* Hover 时改为更亮的电光蓝感，和激活卡片保持统一气质 */
+      background: rgba(0, 102, 255, 0.12);
+      transform: scale(1.06);
+      box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.22),
+        0 0 22px rgba(0, 102, 255, 0.32);
     }
   }
 
@@ -393,7 +409,7 @@ import { getCarousel } from '@/api/home';
       margin: 0 4px;
 
       button {
-        background-color: rgba(255, 255, 255, 0.5);
+        background-color: rgba(255, 255, 255, 0.38);
         width: 8px;
         height: 8px;
         border-radius: 50%;
@@ -402,7 +418,7 @@ import { getCarousel } from '@/api/home';
       }
 
       &.is-active button {
-        background-color: #fff;
+        background-color: rgba(0, 242, 255, 0.95);
         width: 24px;
         border-radius: 4px;
       }
