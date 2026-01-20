@@ -365,29 +365,34 @@ import { getCarousel } from '@/api/home';
 
   /* 导航箭头样式 - 始终显示 */
   :deep(.el-carousel__arrow) {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    /* 边框改为与轮播激活卡片一致的科技蓝体系 */
-    border: 1px solid rgba(0, 102, 255, 0.32);
-    color: rgba(255, 255, 255, 0.92);
+    /* 白色背景，与整体风格保持一致 */
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    /* 白色边框带点蓝色点缀 */
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    /* 蓝色点缀：内边框 */
+    box-shadow:
+      0 0 0 1px rgba(0, 102, 255, 0.15) inset,
+      0 4px 12px rgba(0, 102, 255, 0.08);
+    color: #0066FF; /* 箭头颜色保持科技蓝 */
     width: 48px;
     height: 48px;
     border-radius: 50%;
     opacity: 1 !important; /* 始终显示 */
-    transition: all 0.3s ease;
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.20),
-      0 0 14px rgba(0, 102, 255, 0.25); /* 轻微蓝色外晕，与整体科技蓝呼应 */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10;
 
     &:hover {
-      /* Hover 时改为更亮的电光蓝感，和激活卡片保持统一气质 */
-      background: rgba(0, 102, 255, 0.12);
-      transform: scale(1.06);
+      background: rgba(255, 255, 255, 1);
+      border-color: rgba(255, 255, 255, 1);
+      /* 悬停时增强蓝色点缀 */
       box-shadow:
-        0 6px 16px rgba(0, 0, 0, 0.22),
-        0 0 22px rgba(0, 102, 255, 0.32);
+        0 0 0 1px rgba(0, 102, 255, 0.25) inset,
+        0 6px 20px rgba(0, 102, 255, 0.15),
+        0 0 0 1px rgba(0, 102, 255, 0.2);
+      transform: scale(1.08) translateY(-2px);
+      color: #0066FF;
     }
   }
 
