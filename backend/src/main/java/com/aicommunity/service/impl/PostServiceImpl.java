@@ -4,6 +4,7 @@ import com.aicommunity.common.exception.BusinessException;
 import com.aicommunity.common.ErrorCodeEnum;
 import com.aicommunity.entity.Post;
 import com.aicommunity.entity.PostTag;
+import com.aicommunity.entity.PostTagRelation;
 import com.aicommunity.entity.UserInfo;
 import com.aicommunity.mapper.*;
 import com.aicommunity.service.PostService;

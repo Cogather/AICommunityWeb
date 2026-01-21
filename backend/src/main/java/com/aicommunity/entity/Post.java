@@ -56,7 +56,8 @@ public class Post implements Serializable {
     @ApiModelProperty(value = "外键，指向t_new_zone_type表（用于关联帖子的分类。1：AI优秀实践 2：AI使用达人（团队/个人））3：AI工具专区 4：赋能交流 5：扶摇Agent应用")
     private Integer zoneId;
 
-    @ApiModelProperty(value = "外键，指向t_new_post_label表 场景标签id")
+    @ApiModelProperty(value = "外键，指向t_new_post_label表 场景标签id（已废弃，使用标签关联表t_new_posts_tag_relation）")
+    @Deprecated
     private Integer labelId;
 
     @ApiModelProperty(value = "外键，指向t_new_tool表 工具id")
