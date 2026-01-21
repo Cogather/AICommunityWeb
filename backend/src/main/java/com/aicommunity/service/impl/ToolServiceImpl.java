@@ -47,6 +47,8 @@ public class ToolServiceImpl implements ToolService {
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm");
+    private static final int FRONTEND_AGENT_TOOL_ID = -1;
+    private static final int AGENT_TOOL_ID = 3;
 
     static {
         ISO_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -78,6 +80,11 @@ public class ToolServiceImpl implements ToolService {
     public ToolPostListVO getToolPostList(Integer toolId, String category, String tag,
                                          String department, String keyword, String sortBy,
                                          Integer page, Integer pageSize) {
+
+        if (toolId != null && toolId == FRONTEND_AGENT_TOOL_ID) {
+            toolId = AGENT_TOOL_ID;
+        }
+
         // 参数校验和默认值设置
         if (page == null || page < 1) {
             page = 1;
@@ -114,6 +121,10 @@ public class ToolServiceImpl implements ToolService {
 
     @Override
     public ActivityListVO getActivityList(Integer toolId, String status, Integer page, Integer pageSize) {
+
+        if (toolId != null && toolId == FRONTEND_AGENT_TOOL_ID) {
+            toolId = AGENT_TOOL_ID;
+        }
         // 参数校验和默认值设置
         if (page == null || page < 1) {
             page = 1;
@@ -201,6 +212,10 @@ public class ToolServiceImpl implements ToolService {
 
     @Override
     public TagListVO getTags(Integer toolId, String department) {
+
+        if (toolId != null && toolId == FRONTEND_AGENT_TOOL_ID) {
+            toolId = AGENT_TOOL_ID;
+        }
         List<TagVO> tags = toolPostMapper.selectTagsWithCount(toolId, department);
 
         // 如果没有"全部"标签，添加一个

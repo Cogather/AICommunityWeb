@@ -20,7 +20,7 @@ public class AgentFeaturedPostVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "帖子ID", required = true, example = "1")
-    private Integer id;
+    private String id;
 
     @ApiModelProperty(value = "帖子标题", required = true, example = "扶摇Agent智能编排最佳实践")
     private String title;
@@ -38,7 +38,7 @@ public class AgentFeaturedPostVO implements Serializable {
     private String author;
 
     @ApiModelProperty(value = "作者ID", example = "101")
-    private Integer authorId;
+    private String authorId;
 
     @ApiModelProperty(value = "作者头像", example = "https://example.com/avatars/user101.jpg")
     private String authorAvatar;

@@ -11,7 +11,7 @@
  Target Server Version : 50744 (5.7.44-log)
  File Encoding         : 65001
 
- Date: 14/01/2026 01:45:41
+ Date: 21/01/2026 10:25:04
 */
 
 SET NAMES utf8mb4;
@@ -250,6 +250,7 @@ CREATE TABLE `t_new_home_banner_config`  (
   `banner_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'Banner跳转URL',
   `order` int(11) NOT NULL DEFAULT 0 COMMENT '排序序号',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `show_content` tinyint(1) NULL DEFAULT NULL COMMENT '是否展示 0false 1true',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_order`(`order`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '首页Banner配置表' ROW_FORMAT = DYNAMIC;
@@ -270,7 +271,24 @@ CREATE TABLE `t_new_home_tool`  (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_order`(`order`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工具表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工具表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for t_new_honor_banners
+-- ----------------------------
+DROP TABLE IF EXISTS `t_new_honor_banners`;
+CREATE TABLE `t_new_honor_banners`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID，自增',
+  `image` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'Banner图片URL',
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'Banner标题',
+  `desc` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'Banner描述',
+  `link` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'Banner跳转URL',
+  `order` int(11) NOT NULL DEFAULT 0 COMMENT '排序序号',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `show_content` tinyint(1) NULL DEFAULT NULL COMMENT '是否展示 0false 1true',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_order`(`order`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '荣誉Banner配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_new_honors
@@ -279,6 +297,9 @@ DROP TABLE IF EXISTS `t_new_honors`;
 CREATE TABLE `t_new_honors`  (
   `honor_id` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '荣誉ID',
   `honor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '荣誉名称',
+  `honor_image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '荣誉图片',
+  `honor_desc` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '荣誉描述',
+  `honor_type` tinyint(4) NULL DEFAULT NULL COMMENT '0个人  1团队',
   `status` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '状态',
   `update_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`honor_id`) USING BTREE,
@@ -398,7 +419,7 @@ CREATE TABLE `t_new_posts`  (
   `status` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '状态，0-正常，1-已删除',
   `essence_post` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '0（普通帖子）或1（精华帖）',
   `zone_id` int(11) NULL DEFAULT NULL COMMENT '外键，指向t_new_zone_type表（用于关联帖子的分类。）1：AI优秀实践 2：AI使用达人（团队/个人））3：AI工具专区 4：赋能交流 5：扶摇Agent应用\'',
-  `label_id` int(11) NULL DEFAULT NULL COMMENT '外键，指向t_new_post_label表 场景标签id',
+  `label_id` int(11) NULL DEFAULT NULL COMMENT '外键，指向t_new_post_label表 场景标签id（废弃）',
   `tool_id` int(11) NULL DEFAULT NULL COMMENT '外键，指向t_new_tool表 工具id',
   `views_nums` int(11) NULL DEFAULT 0 COMMENT '帖子浏览量',
   PRIMARY KEY (`post_id`) USING BTREE,
@@ -419,7 +440,19 @@ CREATE TABLE `t_new_posts_tag`  (
   `deleted` tinyint(1) NULL DEFAULT NULL COMMENT '是否删除',
   `user_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for t_new_posts_tag_relation
+-- ----------------------------
+DROP TABLE IF EXISTS `t_new_posts_tag_relation`;
+CREATE TABLE `t_new_posts_tag_relation`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键，序号',
+  `post_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '帖子id',
+  `tag_id` int(11) NULL DEFAULT NULL COMMENT '标签id',
+  `deleted` tinyint(1) NULL DEFAULT NULL COMMENT '是否删除',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '帖子标签关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_new_posts_zone_type
@@ -429,7 +462,7 @@ CREATE TABLE `t_new_posts_zone_type`  (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键，序号',
   `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '帖子分类名称',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_new_tool
@@ -446,6 +479,7 @@ CREATE TABLE `t_new_tool`  (
   `owner` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '责任人 用户表id',
   `order` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `featured` tinyint(1) NULL DEFAULT NULL COMMENT '是否展示',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_tool_id`(`tool_id`) USING BTREE,
   INDEX `idx_order`(`order`) USING BTREE
@@ -516,7 +550,7 @@ CREATE TABLE `t_point_rules`  (
   `activity_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `score_change` int(11) NOT NULL COMMENT '积分变动值，可正可负',
   PRIMARY KEY (`rule_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_point_transactions
@@ -530,7 +564,7 @@ CREATE TABLE `t_point_transactions`  (
   PRIMARY KEY (`transaction_id`) USING BTREE,
   INDEX `user_id`(`user_id`) USING BTREE,
   INDEX `rule_id`(`rule_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4732 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_post_associations
@@ -572,7 +606,7 @@ CREATE TABLE `t_reply_feedback`  (
   `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '反馈类型',
   `created_at` datetime NULL DEFAULT NULL COMMENT '反馈时间',
   PRIMARY KEY (`feedback_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 33 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '反馈表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '反馈表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_repo_info

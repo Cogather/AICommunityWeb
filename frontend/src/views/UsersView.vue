@@ -172,16 +172,31 @@
 
       <div class="view-area">
         <transition-group v-if="currentViewMode !== 'timeline'" name="staggered-list" tag="div" class="card-grid">
-          <div v-for="item in paginatedList" :key="item.id" class="honor-card-3d" :class="item.category">
+          <div v-for="item in paginatedList" :key="item.id" class="honor-card-3d" :class="[item.category, getYearClass(item.year)]">
             <div class="card-content-glass">
               <div class="bg-decoration-circle"></div>
               <div class="bg-decoration-icon"><el-icon><Trophy /></el-icon></div>
               <div class="card-top">
-                <div class="avatar-halo" @click.stop="handleUserClick(item.userName)"><el-avatar :size="50" :src="item.avatar" class="user-avatar" /><div class="halo-ring"></div></div>
+                <div class="avatar-halo" @click.stop="handleUserClick(item.userName)"><el-avatar :size="84" :src="item.avatar" class="user-avatar" /><div class="halo-ring"></div></div>
                 <div class="user-info"><div class="user-name">{{ item.userName }}</div><div class="dept-badge">{{ item.department }}</div></div>
                 <div class="year-ribbon"><span>{{ item.year }}</span></div>
               </div>
-              <div class="award-center"><h3 class="award-name">{{ item.awardName }}</h3><div v-if="item.achievement" class="achievement-text">{{ item.achievement }}</div></div>
+              <div class="award-center">
+                <h3 class="award-name">{{ item.awardName }}</h3>
+                <div v-if="item.achievement" class="achievement-block">
+                  <div class="achievement-text">{{ item.achievement }}</div>
+                  <el-tooltip
+                    v-if="shouldShowAchievementMore(item.achievement)"
+                    :content="item.achievement"
+                    placement="top"
+                    effect="light"
+                    trigger="click"
+                    popper-class="achievement-tooltip"
+                  >
+                    <button class="achievement-more" @click.stop>显示更多</button>
+                  </el-tooltip>
+                </div>
+              </div>
               <div class="card-bottom">
                 <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
                 <button
@@ -225,8 +240,15 @@
               <div v-for="item in block.items" :key="item.id" class="t-item">
                 <div class="t-node"></div>
                 <div class="t-card glass-panel" :class="item.category">
-                  <div class="t-avatar" @click.stop="handleUserClick(item.userName)"><el-avatar :size="40" :src="item.avatar" /></div>
-                  <div class="t-info"><div class="t-title">{{ item.awardName }}</div><div class="t-meta">{{ item.userName }} · {{ item.awardDate }}</div></div>
+                  <div class="t-avatar" @click.stop="handleUserClick(item.userName)"><el-avatar :size="44" :src="item.avatar" /></div>
+                  <div class="t-info">
+                    <div class="t-line">
+                      <span class="t-title">{{ item.awardName }}</span>
+                      <span class="t-user">{{ item.userName }}</span>
+                      <span class="t-dept">{{ item.department }}</span>
+                    </div>
+                    <div class="t-meta">{{ item.awardDate }}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -235,14 +257,14 @@
 
         <div v-if="paginatedList.length === 0 && currentViewMode !== 'timeline'" class="empty-zone"><el-empty description="暂无荣耀记录" :image-size="160" /></div>
         <div v-if="timelineData.length === 0 && currentViewMode === 'timeline'" class="empty-zone"><el-empty description="暂无时光轴记录" :image-size="160" /></div>
-        <div v-if="currentViewMode !== 'timeline' && honorListTotal > 0" class="pagination-bar"><el-pagination background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10, 12, 20, 30, 50]" :page-size="pageSize" :current-page="currentPage" :total="honorListTotal" @size-change="handleSizeChange" @current-change="handleCurrentChange" /></div>
+        <div v-if="currentViewMode !== 'timeline' && honorListTotal > 0" class="pagination-bar"><el-pagination background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[3, 6, 9, 12, 15, 18]" :page-size="pageSize" :current-page="currentPage" :total="honorListTotal" @size-change="handleSizeChange" @current-change="handleCurrentChange" /></div>
       </div>
 
       <div class="ranking-sidebar">
         <div class="leaderboard-panel">
           <div class="panel-header"><div class="header-icon"><el-icon><TrendCharts /></el-icon></div><div class="header-text"><h3>荣耀影响力</h3><span>HALL OF FAME</span></div></div>
           <div class="ranking-list">
-            <div v-for="(user, index) in leaderboardData" :key="user.userName" class="rank-row" :class="getRankClass(index)"><div class="rank-badge"><span v-if="index > 2">{{ index + 1 }}</span><el-icon v-else><Medal /></el-icon></div><el-avatar :size="44" :src="user.avatar" class="rank-avatar" @click.stop="handleUserClick(user.userName)" /><div class="rank-details"><div class="r-name">{{ user.userName }}</div><div class="r-dept">{{ user.department }}</div></div><div class="rank-stat"><div class="stat-row"><span class="num">{{ user.count }}</span><span class="unit">勋章</span></div><div class="stat-row"><FlowerIcon :filled="true" :size="14" color="#f472b6" /><span class="num flowers">{{ user.totalFlowers }}</span></div></div></div>
+            <div v-for="(user, index) in leaderboardData" :key="user.userName" class="rank-row" :class="getRankClass(index)" @click="handleUserClick(user.userName)"><div class="rank-badge"><span v-if="index > 2">{{ index + 1 }}</span><el-icon v-else><Medal /></el-icon></div><el-avatar :size="44" :src="user.avatar" class="rank-avatar" /><div class="rank-details"><div class="r-name">{{ user.userName }}</div><div class="r-dept">{{ user.department }}</div></div><div class="rank-stat"><div class="stat-row"><span class="num">{{ user.count }}</span><span class="unit">勋章</span></div><div class="stat-row"><FlowerIcon :filled="true" :size="14" color="#f472b6" /><span class="num flowers">{{ user.totalFlowers }}</span></div></div></div>
           </div>
         </div>
       </div>
@@ -271,6 +293,175 @@ type HonorFilterType = 'award' | 'department';
 // 使用 API 层定义的 HonorRecord 类型
 type HonorItem = HonorRecord
 
+// 样式调试期间强制使用 Mock 数据
+const FORCE_MOCK_HONOR = true;
+
+const getYearClass = (year?: string) => {
+  if (!year) return '';
+  const normalized = String(year).trim();
+  return normalized ? `year-${normalized}` : '';
+};
+
+const shouldShowAchievementMore = (value?: string) => {
+  if (!value) return false;
+  return value.trim().length > 80;
+};
+
+const mockHonorList: HonorItem[] = [
+  {
+    id: 1,
+    userName: '林星辰',
+    department: '技术部',
+    avatar: 'https://picsum.photos/100/100?random=h1',
+    awardName: '2026年度 AI 技术突破奖',
+    awardDate: '2026-01-01',
+    category: 'innovation',
+    year: '2026',
+    flowers: 128,
+    hasGivenFlower: false,
+    achievement: '本次获奖事迹主要围绕AI推理引擎的性能突破与工程落地展开：在多模态推理链路中完成核心模块重构，显著降低端到端延迟；制定统一的Prompt模板与评测基线，推动研发与业务团队形成可复用的最佳实践；主导跨部门攻关，解决模型在高并发场景下的稳定性与一致性问题，并将多版本回滚机制纳入发布流程；在数据治理层面补齐关键指标埋点，沉淀可观测性体系；推动知识库与检索增强策略落地，提升复杂问题的命中率与回复质量；构建自动化实验与A/B平台，形成可持续优化闭环；组织专题分享与培训，带动团队整体能力提升。以上工作覆盖模型、系统、评测与业务协同，持续产生可量化收益并形成长期资产。',
+    isMine: true
+  },
+  {
+    id: 2,
+    userName: 'Sarah',
+    department: '设计部',
+    avatar: 'https://picsum.photos/100/100?random=h2',
+    awardName: '最佳 AI 辅助设计实践',
+    awardDate: '2026-01-05',
+    category: 'practice',
+    year: '2026',
+    flowers: 96,
+    hasGivenFlower: false,
+    achievement: '围绕AI辅助设计的全流程实践进行了系统化建设：从用户研究到需求拆解，提炼设计提示词的结构化模板并形成可复用规范；搭建设计资产的自动化生成与校验流程，确保品牌一致性与可控性；推动跨团队协作机制，建立“需求-生成-审核-迭代”的闭环；通过多轮试点项目验证，显著降低了设计交付周期；在可用性与可访问性方面引入AI辅助审核，降低返工率；组织内部分享与培训，输出实践文档与组件库指南；协同研发完成设计到前端的自动标注与对齐工具，提升交付效率与质量。相关成果已在多个业务线复用，形成稳定的效率提升与体验增益。'
+  },
+  {
+    id: 3,
+    userName: '张伟',
+    department: '产品部',
+    avatar: 'https://picsum.photos/100/100?random=h3',
+    awardName: 'Copilot 效能提升大师',
+    awardDate: '2026-01-10',
+    category: 'efficiency',
+    year: '2026',
+    flowers: 88,
+    hasGivenFlower: true,
+    achievement: '获奖事迹聚焦于产品体系的AI化升级与效率提升：提出“问题定义-方案生成-验证迭代”的产品共创框架，帮助团队快速对齐目标；主导多个AI应用场景从0到1落地，建立标准化需求模板与指标体系；推动知识库、自动化总结、智能检索等能力在产品全周期应用，显著提升调研与方案产出速度；引入评测与反馈机制，降低模型输出的不确定性；跨部门协调研发、运营与设计，保障关键项目按期上线；沉淀最佳实践手册并形成可复用模块，支撑多条业务线复用。整体使交付效率、用户满意度与数据指标均得到持续提升。'
+  },
+  {
+    id: 4,
+    userName: '李明',
+    department: '运营部',
+    avatar: 'https://picsum.photos/100/100?random=h4',
+    awardName: 'AI 社区贡献之星',
+    awardDate: '2026-01-15',
+    category: 'community',
+    year: '2026',
+    flowers: 72,
+    hasGivenFlower: false
+  },
+  {
+    id: 5,
+    userName: '王芳',
+    department: '研发管理部',
+    avatar: 'https://picsum.photos/100/100?random=h5',
+    awardName: '最佳实践分享奖',
+    awardDate: '2026-01-20',
+    category: 'practice',
+    year: '2026',
+    flowers: 66,
+    hasGivenFlower: false,
+    achievement: '面向研发管理场景持续推进AI落地：建立基于项目全生命周期的指标体系，结合智能分析对关键节点进行预警；推动质量门禁的智能化升级，引入自动化检查与风险识别模型，减少缺陷返工；搭建跨团队协作看板与自动周报机制，提升沟通效率；制定AI实践推广路线图，组织多次工作坊与培训，推动团队形成可复用的工具与流程；在多个项目中推广自动化评测与知识归档，使经验沉淀可追溯、可复用。最终实现研发协作效率与质量显著提升，并形成稳定的治理机制与最佳实践资产。'
+  },
+  {
+    id: 6,
+    userName: '陈刚',
+    department: '平台部',
+    avatar: 'https://picsum.photos/100/100?random=h6',
+    awardName: '创新应用先锋',
+    awardDate: '2026-02-01',
+    category: 'innovation',
+    year: '2026',
+    flowers: 104,
+    hasGivenFlower: true
+  },
+  {
+    id: 7,
+    userName: '刘洋',
+    department: '研发一部',
+    avatar: 'https://picsum.photos/100/100?random=h7',
+    awardName: '技术分享达人',
+    awardDate: '2025-12-18',
+    category: 'community',
+    year: '2025',
+    flowers: 58,
+    hasGivenFlower: false
+  },
+  {
+    id: 8,
+    userName: '赵静',
+    department: '测试部',
+    avatar: 'https://picsum.photos/100/100?random=h8',
+    awardName: '最具影响力奖',
+    awardDate: '2025-12-05',
+    category: 'efficiency',
+    year: '2025',
+    flowers: 91,
+    hasGivenFlower: false
+  },
+  {
+    id: 9,
+    userName: '孙浩',
+    department: '业务线A',
+    avatar: 'https://picsum.photos/100/100?random=h9',
+    awardName: '年度进步奖',
+    awardDate: '2025-11-22',
+    category: 'practice',
+    year: '2025',
+    flowers: 44,
+    hasGivenFlower: false
+  },
+  {
+    id: 10,
+    userName: '周敏',
+    department: '业务线B',
+    avatar: 'https://picsum.photos/100/100?random=h10',
+    awardName: 'AI落地先锋',
+    awardDate: '2025-11-10',
+    category: 'innovation',
+    year: '2025',
+    flowers: 120,
+    hasGivenFlower: true
+  },
+  {
+    id: 11,
+    userName: '蒋宁',
+    department: '安全部',
+    avatar: 'https://picsum.photos/100/100?random=h11',
+    awardName: '智能风控贡献奖',
+    awardDate: '2025-10-30',
+    category: 'practice',
+    year: '2025',
+    flowers: 63,
+    hasGivenFlower: false
+  },
+  {
+    id: 12,
+    userName: '杨晨',
+    department: '架构部',
+    avatar: 'https://picsum.photos/100/100?random=h12',
+    awardName: '架构创新奖',
+    awardDate: '2025-10-12',
+    category: 'innovation',
+    year: '2025',
+    flowers: 77,
+    hasGivenFlower: false
+  },
+];
+
+const mockAwardNames = Array.from(new Set(mockHonorList.map(item => item.awardName))).filter(Boolean);
+const mockDepartmentNames = Array.from(new Set(mockHonorList.map(item => item.department))).filter(Boolean);
+
 // --- 配置 ---
 const router = useRouter();
 const route = useRoute();
@@ -288,11 +479,23 @@ const honorList = ref<HonorItem[]>([])
 const honorListLoading = ref(false)
 const honorListTotal = ref(0) // 🔑 接口返回的总条数
 const honorListTotalPages = ref(0) // 🔑 接口返回的总页数
+const awardNamesFromApi = ref<string[]>([])
+const departmentNamesFromApi = ref<string[]>([])
+const leaderboardFromApi = ref<LeaderboardUser[]>([])
 
 // 加载荣誉列表数据
 const loadHonorList = async () => {
   honorListLoading.value = true
   try {
+    if (FORCE_MOCK_HONOR) {
+      honorList.value = mockHonorList.map((item) => ({
+        ...item,
+        avatar: commonMethods.getAvatarUrl(item.avatar)
+      }))
+      honorListTotal.value = honorList.value.length
+      honorListTotalPages.value = Math.ceil(honorListTotal.value / pageSize.value)
+      return
+    }
     const params = {
       page: currentPage.value,
       pageSize: pageSize.value,
@@ -322,6 +525,11 @@ const loadHonorList = async () => {
 // 加载奖项/部门筛选项
 const loadHonorFilterOptions = async () => {
   try {
+    if (FORCE_MOCK_HONOR) {
+      awardNamesFromApi.value = mockAwardNames
+      departmentNamesFromApi.value = mockDepartmentNames
+      return
+    }
     const [awardsRes, deptsRes] = await Promise.all([getAwardNames(), getDepartments()])
     awardNamesFromApi.value = awardsRes.data.list || []
     departmentNamesFromApi.value = deptsRes.data.list || []
@@ -333,6 +541,10 @@ const loadHonorFilterOptions = async () => {
 // 加载荣耀影响力榜
 const loadLeaderboard = async () => {
   try {
+    if (FORCE_MOCK_HONOR) {
+      leaderboardFromApi.value = []
+      return
+    }
     const params = {
       limit: 10,
       scope: filterScope.value as 'all' | 'mine',
@@ -357,7 +569,7 @@ const searchQuery = ref('');
 const honorFilterType = ref<HonorFilterType>('award');
 const activeSubFilter = ref<string>('全部');
 const currentPage = ref(1);
-const pageSize = ref(12);
+const pageSize = ref(6);
 const currentTimelineUserName = ref<string | null>(null);
 const chipContainerRef = ref<HTMLElement | null>(null);
 const canScrollLeft = ref(false);
@@ -420,9 +632,100 @@ interface TeamAward {
   images: TeamAwardImage[];
 }
 
+const mockTeamAwards: TeamAward[] = [
+  {
+    id: 1,
+    title: '年度最佳AI创新团队',
+    year: '2026',
+    images: [
+      {
+        id: 1,
+        image: 'https://picsum.photos/400/300?random=team1',
+        imageType: 'url',
+        winnerName: 'AI研发中心',
+        teamField: 'AI技术研发',
+        story: '<p>AI研发中心团队成功研发了多项核心AI技术</p>',
+        flowers: 128,
+        hasGivenFlower: false,
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: '年度最佳贡献奖',
+    year: '2026',
+    images: [
+      {
+        id: 2,
+        image: 'https://picsum.photos/400/300?random=team2',
+        imageType: 'url',
+        winnerName: '贡献团队A',
+        teamField: '开源贡献',
+        story: '<p>年度最佳贡献团队</p>',
+        flowers: 88,
+        hasGivenFlower: false,
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: 'AI创新突破奖',
+    year: '2026',
+    images: [
+      {
+        id: 3,
+        image: 'https://picsum.photos/400/300?random=team3',
+        imageType: 'url',
+        winnerName: '创新实验室',
+        teamField: '前沿探索',
+        story: '<p>在AI领域取得重大突破</p>',
+        flowers: 256,
+        hasGivenFlower: true,
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: '效率提升大师',
+    year: '2026',
+    images: [
+      {
+        id: 4,
+        image: 'https://picsum.photos/400/300?random=team4',
+        imageType: 'url',
+        winnerName: '效能工具组',
+        teamField: '研发效能',
+        story: '<p>显著提升了研发效率</p>',
+        flowers: 150,
+        hasGivenFlower: false,
+      }
+    ]
+  },
+  {
+    id: 5,
+    title: '社区贡献奖',
+    year: '2026',
+    images: [
+      {
+        id: 5,
+        image: 'https://picsum.photos/400/300?random=team5',
+        imageType: 'url',
+        winnerName: '社区运营组',
+        teamField: '社区建设',
+        story: '<p>活跃社区氛围</p>',
+        flowers: 300,
+        hasGivenFlower: false,
+      }
+    ]
+  }
+]
+
 // 加载团队奖项数据
 const loadTeamAwards = async (): Promise<TeamAward[]> => {
   try {
+    if (FORCE_MOCK_HONOR) {
+      return mockTeamAwards;
+    }
     // 优先从API获取
     const response = await getTeamAwards()
     if (response && response.data && response.data.list && response.data.list.length > 0) {
@@ -641,7 +944,8 @@ const paginatedList = computed(() => {
 
 const leaderboardFallback = computed(() => {
   const map = new Map<string, LeaderboardUser>();
-  processedList.value.forEach(item => {
+  const sourceList = currentViewMode.value === 'timeline' ? honorList.value : processedList.value;
+  sourceList.forEach(item => {
     if (!map.has(item.userName)) {
       map.set(item.userName, {
         userName: item.userName,
@@ -666,14 +970,14 @@ const allDepartments = computed(() => {
   const list = departmentNamesFromApi.value.length > 0
     ? departmentNamesFromApi.value
     : Array.from(new Set(honorList.value.map(i => i.department))).filter(Boolean) as string[]
-  return ['全部', ...list.filter(i => i !== '全部')]
+  return ['全部', ...list.filter((i: string) => i !== '全部')]
 });
 
 const allAwards = computed(() => {
   const list = awardNamesFromApi.value.length > 0
     ? awardNamesFromApi.value
     : Array.from(new Set(honorList.value.map(i => i.awardName))).filter(Boolean) as string[]
-  return ['全部', ...list.filter(i => i !== '全部')]
+  return ['全部', ...list.filter((i: string) => i !== '全部')]
 });
 const showSecondaryFilter = computed(() => filterScope.value === 'all' && currentViewMode.value === 'grid');
 const activeFilterOptions = computed(() => {
@@ -1581,6 +1885,8 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   box-sizing: border-box;
   z-index: 1; /* 🔑 默认层级 */
   transition: z-index 0s 0.3s; /* 🔑 延迟重置z-index */
+  --year-color: var(--theme-color);
+  --year-grad: var(--bg-grad);
 
   &.innovation {
     --theme-color: #0891b2;
@@ -1608,7 +1914,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
     transition: z-index 0s 0s; /* 🔑 立即提升z-index */
   }
   &:hover .card-content-glass {
-    transform: translateY(-8px) scale(1.02);
+    transform: translateY(-8px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--theme-color);
   }
   &:hover .bg-decoration-icon {
@@ -1622,12 +1928,26 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   }
 }
 
+.honor-card-3d.year-2026 {
+  --year-color: #2563eb;
+  --year-grad: linear-gradient(135deg, #bfdbfe 0%, #3b82f6 60%, #1d4ed8 100%);
+}
+.honor-card-3d.year-2025 {
+  --year-color: #f97316;
+  --year-grad: linear-gradient(135deg, #fed7aa 0%, #fb923c 60%, #ea580c 100%);
+}
+.honor-card-3d.year-2024 {
+  --year-color: #10b981;
+  --year-grad: linear-gradient(135deg, #bbf7d0 0%, #34d399 60%, #059669 100%);
+}
+
 .card-content-glass {
   height: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(14px) saturate(120%);
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid color-mix(in srgb, var(--year-color) 30%, rgba(255, 255, 255, 0.9));
   padding: 24px 16px 16px 16px; /* 🔑 上边距从16px增加到24px */
   display: flex;
   flex-direction: column;
@@ -1636,6 +1956,13 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.card-content-glass > * {
+  position: relative;
+  z-index: 1;
 }
 
 .card-content-glass::before {
@@ -1643,9 +1970,13 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   position: absolute;
   inset: 0;
   border-radius: 18px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.2), inset 0 0 8px rgba(255, 255, 255, 0.4);
   pointer-events: none;
+  z-index: 0;
 }
 
 .card-content-glass::after {
@@ -1659,6 +1990,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   transform: translateX(-40%);
   animation: shimmerSweep 3s linear infinite;
   pointer-events: none;
+  z-index: 0;
 }
 
 @keyframes shimmerSweep {
@@ -1673,7 +2005,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   right: -50px;
   width: 200px;
   height: 200px;
-  background: var(--bg-grad);
+  background: var(--year-grad);
   border-radius: 50%;
   filter: blur(40px);
   opacity: 0.4;
@@ -1690,7 +2022,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   z-index: 0;
   transition: all 0.5s;
   transform-origin: center;
-  color: var(--theme-color);
+  color: var(--year-color);
 
   :deep(svg) {
     width: 100%;
@@ -1699,17 +2031,19 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   }
 }
 
-/* 所有卡片都使用奖杯图标，统一颜色 */
-.honor-card-3d.innovation .bg-decoration-icon { color: #0891b2; }
-.honor-card-3d.efficiency .bg-decoration-icon { color: #7c3aed; }
-.honor-card-3d.practice .bg-decoration-icon { color: #7c3aed; }
-.honor-card-3d.community .bg-decoration-icon { color: #059669; }
+/* 奖杯颜色跟随年份主题色 */
+.honor-card-3d.innovation .bg-decoration-icon,
+.honor-card-3d.efficiency .bg-decoration-icon,
+.honor-card-3d.practice .bg-decoration-icon,
+.honor-card-3d.community .bg-decoration-icon {
+  color: var(--year-color);
+}
 
 .card-top {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px; /* 🔑 从6px增加到14px */
+  gap: 14px;
+  margin-bottom: 22px; /* 顶部信息更突出 */
   z-index: 1;
   flex-shrink: 0;
 }
@@ -1721,15 +2055,15 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 
 .halo-ring {
   position: absolute;
-  inset: -4px;
+  inset: -6px;
   border-radius: 50%;
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed color-mix(in srgb, var(--year-color) 40%, #cbd5e1);
   transition: all 0.8s ease;
 }
 
 .user-avatar {
-  border: 2px solid #fff;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border: 3px solid #fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
   cursor: pointer;
 }
 
@@ -1738,30 +2072,32 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 }
 
 .user-name {
-  font-size: 16px;
+  font-size: 24px;
   font-weight: 900;
   color: #0f172a;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
+  letter-spacing: 0.4px;
 }
 
 .dept-badge {
   display: inline-block;
-  font-size: 12px;
-  padding: 3px 10px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-  color: #334155;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(226, 232, 240, 0.9));
+  color: #0f172a;
   font-weight: 700;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
 }
 
 .year-ribbon {
-  background: var(--theme-color);
+  background: var(--year-color);
   color: #fff;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 8px 0 8px 0;
   font-weight: 800;
-  font-size: 11px;
-  box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
+  font-size: 12px;
+  box-shadow: 2px 2px 8px color-mix(in srgb, var(--year-color) 30%, rgba(0,0,0,0.15));
 }
 
 /* 🔑 方案C核心样式：award-center 使用 flex 布局 */
@@ -1773,42 +2109,69 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   align-items: flex-start;
   text-align: left;
   z-index: 1;
-  padding-top: 2px;
+  padding-top: 14px;
   overflow: hidden;
   min-height: 0; /* 关键：允许 flex 子项收缩 */
 }
 
 .award-name {
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.3;
   color: #020617;
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   font-weight: 900;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  cursor: pointer;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   flex-shrink: 0; /* 不压缩 */
 }
 
-/* 🔑 achievement-text 改为滚动条显示 */
+/* 荣誉事迹 */
+.achievement-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .achievement-text {
-  font-size: 13px;
-  line-height: 1.55;
-  color: #475569;
-  margin-top: 2px;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto; /* 🔑 垂直方向超出显示滚动条 */
-  overflow-x: hidden; /* 🔑 禁止横向滚动 */
-  cursor: default;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
   font-weight: 500;
   width: 100%;
-  padding-right: 4px; /* 给滚动条留出空间 */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
 
-  /* 🔑 强制长文本/链接折行 */
-  word-wrap: break-word;
-  word-break: break-all;
-  overflow-wrap: break-word;
+.achievement-more {
+  align-self: flex-start;
+  border: 1px solid color-mix(in srgb, var(--year-color) 60%, #60a5fa);
+  color: var(--year-color);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.2);
+  }
+}
+
+:deep(.achievement-tooltip) {
+  max-width: 360px;
+  width: 360px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1f2937;
   white-space: pre-wrap;
 
   /* 🔑 美化滚动条 */
@@ -2028,7 +2391,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 .glass-pill {
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.9);
+  border: 1px solid #409eff;
   border-radius: 99px;
   padding: 5px;
   display: flex;
@@ -2113,7 +2476,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   padding: 4px;
   background: rgba(255,255,255,0.8);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  border: 1px solid #409eff;
   width: fit-content;
 }
 
@@ -2161,7 +2524,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
     background: rgba(255, 255, 255, 0.9) !important;
     backdrop-filter: blur(10px);
     box-shadow: none !important;
-    border: 1px solid rgba(203, 213, 225, 0.6);
+    border: 1px solid #409eff;
     transition: all 0.3s;
     height: 32px;
 
@@ -2269,7 +2632,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
     background: rgba(255, 255, 255, 0.85) !important;
     backdrop-filter: blur(10px);
     box-shadow: none !important;
-    border: 1px solid rgba(255,255,255,0.85);
+    border: 1px solid #409eff;
     transition: all 0.3s;
     height: 32px;
 
@@ -2409,6 +2772,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   border-radius: 16px;
   transition: all 0.3s;
   background: transparent;
+  cursor: pointer;
 
   &:hover {
     background: rgba(255,255,255,0.85);
@@ -2436,6 +2800,10 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
     .num { color: #c2410c; font-weight: 900; }
     .r-name { color: #1e293b; font-weight: 900; }
   }
+
+  &:not(.rank-1):not(.rank-2):not(.rank-3) {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+  }
 }
 
 .rank-badge {
@@ -2443,7 +2811,7 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   font-weight: 900;
   font-style: italic;
   text-align: center;
-  font-size: 17px;
+  font-size: 19px;
   color: #64748b;
 }
 
@@ -2461,11 +2829,11 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 .r-name {
   font-weight: 800;
   color: #0f172a;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .r-dept {
-  font-size: 12px;
+  font-size: 14px;
   color: #475569;
   font-weight: 600;
 }
@@ -2487,18 +2855,18 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 .num {
   display: block;
   font-weight: 900;
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1;
 }
 
 .num.flowers {
-  font-size: 15px;
+  font-size: 17px;
   color: #db2777;
   font-weight: 900;
 }
 
 .unit {
-  font-size: 11px;
+  font-size: 13px;
   color: #475569;
   font-weight: 700;
 }
@@ -2634,16 +3002,11 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 18px 20px;
   background: rgba(255,255,255,0.9);
   border-radius: 16px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-  transition: transform 0.3s;
-
-  &:hover {
-    transform: translateX(10px);
-    background: rgba(255,255,255,0.95);
-  }
+  transition: background 0.3s;
 
   &.innovation { border-left: 4px solid #06b6d4; }
   &.efficiency { border-left: 4px solid #8b5cf6; }
@@ -2657,21 +3020,38 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 
 .t-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.t-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .t-title {
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 4px;
-  cursor: pointer;
+  font-weight: 900;
+  color: #0f172a;
+  font-size: 18px;
+}
 
-  &:hover {
-    color: #4f46e5;
-  }
+.t-user {
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.t-dept {
+  font-weight: 700;
+  color: #475569;
+  font-size: 15px;
 }
 
 .t-meta {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
 }
 

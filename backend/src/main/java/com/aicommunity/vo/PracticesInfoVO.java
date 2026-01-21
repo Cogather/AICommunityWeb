@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * AI优秀实践信息VO
@@ -19,12 +20,6 @@ public class PracticesInfoVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "培训赋能列表")
-    private List<PracticeItemVO> training;
-
-    @ApiModelProperty(value = "AI训战列表")
-    private List<PracticeItemVO> trainingBattle;
-
-    @ApiModelProperty(value = "用户交流列表")
-    private List<PracticeItemVO> userExchange;
+    @ApiModelProperty(value = "优秀实践列表")
+    Map<String, List<PracticeItemVO>> practices;
 }

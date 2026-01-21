@@ -1,6 +1,7 @@
 package com.aicommunity.service.impl;
 
 import com.aicommunity.entity.PostTag;
+import com.aicommunity.entity.PostTagRelation;
 import com.aicommunity.mapper.PracticeMapper;
 import com.aicommunity.service.PracticeService;
 import com.aicommunity.vo.*;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -25,6 +27,9 @@ public class PracticeServiceImpl implements PracticeService {
 
     @Autowired
     private PracticeMapper practiceMapper;
+
+    @Autowired
+    private PostTagMapper postTagMapper;
 
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final SimpleDateFormat DISPLAY_DATE_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");
@@ -56,6 +61,16 @@ public class PracticeServiceImpl implements PracticeService {
 
         // 查询帖子列表
         List<PostItemVO> posts = practiceMapper.selectPracticePosts(keyword, tag, department, contributor, sortBy, offset, pageSize);
+        
+        List<PostTagRelation> postTagRelations = postTagMapper.selectPostTagRelation();
+
+        List<String> postIdList = new ArrayList<>();
+        if (!StringUtils.isEmpty(tag)) {
+            postIdList = postTagRelations.stream()
+                .filter(e -> tag.equals(e.getTag()))
+                .map(PostTagRelation::getPostId)
+                .collect(Collectors.toList());
+        }
         
         // 查询总数
         Long total = practiceMapper.countPracticePosts(keyword, tag, department, contributor);

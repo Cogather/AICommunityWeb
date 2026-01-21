@@ -12,20 +12,20 @@
       </div>
       <div class="post-content">
         <div class="post-header">
-          <el-tag type="success" size="small" v-if="showFeaturedTag">精华</el-tag>
+          <el-tag type="success" size="small" class="post-list-tag" v-if="showFeaturedTag">精华</el-tag>
           <h3 class="post-title">{{ post.title }}</h3>
-          <el-tag v-if="_props.showTags && post.tag" :type="getTagType(post.tag)" size="small">
+          <el-tag v-if="_props.showTags && post.tag" :type="getTagType(post.tag)" size="small" class="post-list-tag">
             {{ post.tag }}
           </el-tag>
         </div>
-        <p class="post-description" v-if="post.description">{{ post.description }}</p>
+        <p class="post-description" v-if="post.description" v-html="getSummaryHtml(post.description)"></p>
         <div class="post-tags" v-if="_props.showTags && post.tags && post.tags.length > 0">
-          <el-tag
+            <el-tag
             v-for="tag in post.tags"
             :key="tag"
             :type="getTagType(tag)"
             size="small"
-            class="post-tag"
+              class="post-tag post-list-tag"
           >
             {{ tag }}
           </el-tag>
@@ -34,6 +34,10 @@
           <span class="meta-item">
             <el-icon><User /></el-icon>
             {{ post.author || '匿名用户' }}
+          </span>
+          <span class="meta-item">
+            <span class="meta-label">部门</span>
+            {{ post.department || '—' }}
           </span>
           <span class="meta-item">
             <el-icon><Clock /></el-icon>
@@ -73,20 +77,20 @@
       </div>
       <div class="post-content">
         <div class="post-header">
-          <el-tag v-if="post.featured" type="success" size="small">精华</el-tag>
+          <el-tag v-if="post.featured" type="success" size="small" class="post-list-tag">精华</el-tag>
           <h3 class="post-title">{{ post.title }}</h3>
-          <el-tag v-if="_props.showTags && post.tag" :type="getTagType(post.tag)" size="small">
+          <el-tag v-if="_props.showTags && post.tag" :type="getTagType(post.tag)" size="small" class="post-list-tag">
             {{ post.tag }}
           </el-tag>
         </div>
-        <p class="post-description" v-if="post.description">{{ post.description }}</p>
+        <p class="post-description" v-if="post.description" v-html="getSummaryHtml(post.description)"></p>
         <div class="post-tags" v-if="_props.showTags && post.tags && post.tags.length > 0">
-          <el-tag
+            <el-tag
             v-for="tag in post.tags"
             :key="tag"
             :type="getTagType(tag)"
             size="small"
-            class="post-tag"
+              class="post-tag post-list-tag"
           >
             {{ tag }}
           </el-tag>
@@ -95,6 +99,10 @@
           <span class="meta-item">
             <el-icon><User /></el-icon>
             {{ post.author || '匿名用户' }}
+          </span>
+          <span class="meta-item">
+            <span class="meta-label">部门</span>
+            {{ post.department || '—' }}
           </span>
           <span class="meta-item">
             <el-icon><Clock /></el-icon>
@@ -129,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked'
 import { User, Clock, View, ChatDotRound } from '@element-plus/icons-vue'
 import HeartIcon from './HeartIcon.vue'
 
@@ -137,6 +146,7 @@ interface Post {
   title: string
   description?: string
   author?: string
+  department?: string
   createTime: string | Date
   views: number
   comments?: number
@@ -192,6 +202,19 @@ const getTagType = (tag: string) => {
     '开发指南': 'primary'
   }
   return typeMap[tag] || 'info'
+}
+
+const hasMarkdownImage = (value?: string) => {
+  if (!value) return false
+  const markdownImage = /!\[[^\]]*]\([^)]+\)/i
+  const htmlImage = /<img\s[^>]*src\s*=\s*['"][^'"]+['"][^>]*>/i
+  return markdownImage.test(value) || htmlImage.test(value)
+}
+
+const getSummaryHtml = (value?: string) => {
+  if (!value) return ''
+  if (hasMarkdownImage(value)) return '…'
+  return marked.parseInline(value, { breaks: true })
 }
 
 // 处理帖子点击
@@ -265,7 +288,7 @@ const formatDate = (date: string | Date) => {
         .post-title {
           margin: 0;
           font-size: 18px;
-          font-weight: 600;
+          font-weight: 400; /* 标题不加粗 */
           color: #000;
           flex: 1;
         }
@@ -299,6 +322,15 @@ const formatDate = (date: string | Date) => {
         }
       }
 
+      :deep(.el-tag.post-list-tag) {
+        background-color: #fff !important;
+        border-color: #409eff !important;
+        color: #409eff !important;
+        font-size: 14px;
+        padding: 3px 10px;
+        border-width: 1px;
+      }
+
       .post-meta {
         display: flex;
         align-items: center;
@@ -310,6 +342,10 @@ const formatDate = (date: string | Date) => {
           display: flex;
           align-items: center;
           gap: 4px;
+
+          .meta-label {
+            color: #999;
+          }
 
           .el-icon {
             font-size: 14px;

@@ -133,7 +133,12 @@
                   @click="handleContributorClick(contributor.name)"
                 >
                   <el-avatar :size="40" :src="contributor.avatar" />
-                  <span class="contributor-name">{{ contributor.name }}</span>
+                  <div class="contributor-info">
+                    <div class="contributor-name">{{ contributor.name }}</div>
+                    <div class="contributor-department">
+                      {{ contributor.department || '—' }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -158,6 +163,12 @@ import type { Post } from '../api/types'
 
 const router = useRouter()
 const route = useRoute()
+
+type PostVM = Post & {
+  author: string
+  description: string
+  image: string
+}
 
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>('newest')
@@ -260,10 +271,10 @@ const displayedTags = computed(() => {
 })
 
 // 精华帖（置顶）
-const featuredPosts = ref<Post[]>([])
+const featuredPosts = ref<PostVM[]>([])
 
 // 普通帖子
-const posts = ref<Post[]>([])
+const posts = ref<PostVM[]>([])
 
 // 加载帖子数据
 const loadPosts = async () => {
@@ -291,11 +302,11 @@ const loadPosts = async () => {
 
     posts.value = allPosts.map((post: Post) => ({
       ...post,
-      author: post.author || post.userName || '',
+      author: post.userName || '',
       description: post.summary || '',
       image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
-    }))
+    })) as PostVM[]
 
     totalPosts.value = response.data.total
   } catch (error) {
@@ -330,8 +341,8 @@ const displayedDepartments = computed(() => {
       }
       const dept = deptMap.get(post.department)!
       dept.postCount++
-      if (post.author) {
-        dept.contributors.add(post.author)
+      if (post.userName) {
+        dept.contributors.add(post.userName)
       }
     }
   })
@@ -400,11 +411,6 @@ const loadDepartments = async () => {
     console.error('加载部门排名失败:', error)
   }
 }
-
-// 过滤后的普通帖子（不包含精华帖，精华帖始终显示）
-const filteredNormalPosts = computed(() => {
-  return posts.value
-})
 
 // 用于统计的过滤后帖子（包含精华帖和普通帖子）
 const _filteredPosts = computed(() => {
@@ -686,35 +692,81 @@ onMounted(async () => {
     }
 
     .contributors-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 
-      .contributor-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        cursor: pointer;
-        padding: 8px;
-        border-radius: 8px;
-        transition: all 0.2s;
-        border: 1px solid transparent;
+  .contributor-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
 
-        &:hover {
-          background-color: #f5f5f5;
-        }
+    /* 放大整体点击区域 */
+    padding: 12px 12px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
 
-        &.active {
-          background-color: #e6f4ff;
-          border-color: #409eff;
-        }
-
-        .contributor-name {
-          font-size: 14px;
-          color: #333;
-        }
-      }
+    &:hover {
+      background-color: #f5f5f5;
     }
+
+    &.active {
+      background-color: #e6f4ff;
+      border-color: #409eff;
+    }
+
+    /* 放大头像（Element Plus Avatar） */
+    :deep(.el-avatar) {
+      width: 52px !important;
+      height: 52px !important;
+      flex: 0 0 52px;
+    }
+
+    .contributor-info {
+      /* 关键：同一行显示姓名+部门 */
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+
+      /* 允许右侧文字截断，不把布局撑爆 */
+      min-width: 0;
+      flex: 1;
+    }
+
+    .contributor-name {
+      font-size: 16px;          /* 放大 */
+      font-weight: 700;
+      color: #333;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 50%;
+    }
+
+    .contributor-department {
+      font-size: 14px;          /* 放大 */
+      color: #606266;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      /* 让部门优先被截断，姓名更“稳” */
+      min-width: 0;
+      flex: 1;
+      .contributor-department::before {
+  content: '·';
+  margin: 0 6px 0 0;
+  color: #C0C4CC;
+}
+    }
+  }
+}
+
 
     // 最热帖子区域（置顶显示）- 白蓝色密集神经网络风格
     &.hot-posts-section {

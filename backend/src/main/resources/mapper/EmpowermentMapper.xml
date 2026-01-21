@@ -5,7 +5,7 @@
 
     <!-- 精华帖子结果映射 -->
     <resultMap id="FeaturedPostResultMap" type="com.aicommunity.vo.FeaturedPostVO">
-        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <id column="post_id" property="id" jdbcType="VARCHAR"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
         <result column="description" property="description" jdbcType="VARCHAR"/>
         <result column="cover" property="cover" jdbcType="VARCHAR"/>
@@ -56,7 +56,7 @@
                 WHEN p.author_id REGEXP '^[0-9]+$' THEN CAST(p.author_id AS UNSIGNED)
                 ELSE 0
             END AS author_id,
-            COALESCE(ui.author_avatar, '') AS author_avatar,
+            COALESCE(ui.user_name, '') AS author_avatar,
             COALESCE(p.views_nums, 0) AS views,
             COALESCE((SELECT COUNT(*) FROM t_new_post_comments WHERE post_id = p.post_id AND status = '0'), 0) AS comments,
             COALESCE((SELECT COUNT(*) FROM t_new_post_likes WHERE post_id = p.post_id), 0) AS likes,
@@ -83,7 +83,7 @@
                 WHEN p.author_id REGEXP '^[0-9]+$' THEN CAST(p.author_id AS UNSIGNED)
                 ELSE 0
             END AS author_id,
-            COALESCE(ui.author_avatar, '') AS author_avatar,
+            COALESCE(ui.user_name, '') AS author_avatar,
             COALESCE(p.views_nums, 0) AS views,
             COALESCE((SELECT COUNT(*) FROM t_new_post_comments WHERE post_id = p.post_id AND status = '0'), 0) AS comments,
             COALESCE((SELECT COUNT(*) FROM t_new_post_likes WHERE post_id = p.post_id), 0) AS likes,
@@ -102,7 +102,7 @@
         <if test="tag != null and tag != ''">
           AND EXISTS (
               SELECT 1 FROM t_new_posts_tag pt
-              WHERE pt.label_id = p.label_id
+              WHERE pt.id = p.label_id
                 AND pt.tag = #{tag}
                 AND (pt.deleted IS NULL OR pt.deleted = 0)
           )
@@ -140,7 +140,7 @@
         <if test="tag != null and tag != ''">
           AND EXISTS (
               SELECT 1 FROM t_new_posts_tag pt
-              WHERE pt.label_id = p.label_id
+              WHERE pt.id = p.label_id
                 AND pt.tag = #{tag}
                 AND (pt.deleted IS NULL OR pt.deleted = 0)
           )
@@ -160,7 +160,7 @@
             pt.tag AS name,
             COUNT(DISTINCT p.post_id) AS count
         FROM t_new_posts p
-        INNER JOIN t_new_posts_tag pt ON pt.label_id = p.label_id
+        INNER JOIN t_new_posts_tag pt ON pt.id = p.label_id
         WHERE p.zone_id = 4
           AND p.status = '0'
           AND (pt.deleted IS NULL OR pt.deleted = 0)

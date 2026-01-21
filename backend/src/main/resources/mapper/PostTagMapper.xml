@@ -14,6 +14,18 @@
         <result column="user_id" property="userId" jdbcType="VARCHAR"/>
     </resultMap>
 
+    <resultMap id="PostTagRelationMap" type="com.huawei.tool.entity.PostTagRelation">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="post_id" property="postId" jdbcType="VARCHAR"/>
+        <result column="label_id" property="labelId" jdbcType="INTEGER"/>
+        <result column="tag" property="tag" jdbcType="VARCHAR"/>
+        <result column="color" property="color" jdbcType="VARCHAR"/>
+        <result column="bg" property="bg" jdbcType="VARCHAR"/>
+        <result column="border_color" property="borderColor" jdbcType="VARCHAR"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+    </resultMap>
+
     <select id="selectByLabelId" resultMap="BaseResultMap">
         SELECT 
             id,
@@ -28,6 +40,37 @@
         WHERE label_id = #{labelId}
           AND (deleted IS NULL OR deleted = 0)
         LIMIT 1
+    </select>
+
+    <select id="selectAllLabel" resultMap="BaseResultMap">
+        SELECT
+            id,
+            label_id,
+            tag,
+            color,
+            bg,
+            border_color,
+            deleted,
+            user_id
+        FROM t_new_posts_tag
+        WHERE (deleted IS NULL OR deleted = 0)
+    </select>
+
+    <select id="selectPostTagRelation" resultMap="PostTagRelationMap">
+        SELECT
+            t_new_posts_tag.id,
+            t_new_posts_tag_relation.post_id,
+            t_new_posts_tag.label_id,
+            t_new_posts_tag.tag,
+            t_new_posts_tag.color,
+            t_new_posts_tag.bg,
+            t_new_posts_tag.border_color,
+            t_new_posts_tag.deleted,
+            t_new_posts_tag.user_id
+        FROM t_new_posts_tag_relation
+        LEFT JOIN t_new_posts_tag
+        ON t_new_posts_tag.id = t_new_posts_tag_relation.tag_id
+        WHERE (deleted IS NULL OR deleted = 0)
     </select>
 
 </mapper>

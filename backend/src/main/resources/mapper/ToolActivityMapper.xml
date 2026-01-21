@@ -181,8 +181,8 @@
             CAST(taj.join_user_id AS UNSIGNED) AS user_id,
             COALESCE(ui.chn_name, ui.user_name, taj.join_user_id) AS user_name,
             ui.user_name AS employee_id,
-            COALESCE(ui.department_l1, '') AS department,
-            COALESCE(ui.author_avatar, '') AS avatar,
+            COALESCE(ui.department_l5, ui.department_l4, '') AS department,
+            COALESCE(ui.user_name, '') AS avatar,
             DATE_FORMAT(taj.join_time, '%Y-%m-%dT%H:%i:%sZ') AS join_time
         FROM t_new_tool_activity_join taj
         LEFT JOIN t_user_info ui ON taj.join_user_id = ui.user_id
@@ -248,8 +248,8 @@
             CAST(taj.join_user_id AS UNSIGNED) AS user_id,
             COALESCE(ui.chn_name, ui.user_name, taj.join_user_id) AS user_name,
             ui.user_name AS employee_id,
-            COALESCE(ui.department_l1, '') AS department,
-            COALESCE(ui.author_avatar, '') AS avatar,
+            COALESCE(ui.department_l5, ui.department_l4, '') AS department,
+            COALESCE(ui.user_name, '') AS avatar,
             DATE_FORMAT(taj.join_time, '%Y-%m-%dT%H:%i:%sZ') AS join_time
         FROM t_new_tool_activity_join taj
         LEFT JOIN t_user_info ui ON taj.join_user_id = ui.user_id

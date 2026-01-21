@@ -29,11 +29,7 @@
             `order`,
             create_time
         FROM t_new_tool
-        <where>
-            <if test="featured != null and featured == true">
-                AND featured = 1
-            </if>
-        </where>
+        WHERE featured = 1
         ORDER BY `order` ASC, id ASC
     </select>
 

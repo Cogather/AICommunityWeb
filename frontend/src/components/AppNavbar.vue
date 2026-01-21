@@ -364,17 +364,36 @@ const handleCommand = (command: string) => {
 </script>
 
 <style scoped lang="scss">
-// Glassmorphism for Navbar
+// Glassmorphism for Navbar - 浅蓝色毛玻璃效果
 .navbar {
   position: sticky;
   top: 0;
   z-index: 1000;
   width: 100%;
-  background: rgba(255, 255, 255, 0.7); /* 纯白透明毛玻璃 */
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  /* 仅保留一条极细的浅灰底部分割线，不再使用明显投影 */
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  /* 浅蓝色毛玻璃背景，透明度较低 */
+  background: linear-gradient(
+    135deg,
+    rgba(240, 248, 255, 0.55) 0%,
+    rgba(230, 242, 255, 0.5) 50%,
+    rgba(245, 250, 255, 0.55) 100%
+  );
+  backdrop-filter: blur(34px) saturate(185%);
+  -webkit-backdrop-filter: blur(34px) saturate(185%);
+  /* 叠加一层淡蓝色，让毛玻璃更“冷”一点 */
+  isolation: isolate;
+  /* 浅蓝色底部分割线 */
+  border-bottom: 1px solid rgba(59, 130, 246, 0.12);
+  /* 微弱的蓝色光晕 */
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.06);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(59, 130, 246, 0.06);
+    pointer-events: none;
+    z-index: 0;
+  }
 }
 
 .navbar-container {
@@ -385,6 +404,8 @@ const handleCommand = (command: string) => {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .brand {
@@ -407,13 +428,13 @@ const handleCommand = (command: string) => {
     }
 
     .logo-text {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       color: rgba(15, 23, 42, 0.92);
     }
 
     .logo-subtitle {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
       color: rgba(100, 116, 139, 0.85);
       letter-spacing: 0.5px;
@@ -434,8 +455,8 @@ const handleCommand = (command: string) => {
   padding: 10px 18px;
   color: rgba(51, 65, 85, 0.92);
   text-decoration: none;
-  font-weight: 500;
-  font-size: 16px;
+  font-weight: 400; /* 未选中不加粗 */
+  font-size: 18px; /* 字体整体放大一些 */
   border-radius: 10px;
   transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.22s ease;
   white-space: nowrap;
@@ -449,7 +470,7 @@ const handleCommand = (command: string) => {
 
   &.router-link-active {
     color: rgba(15, 23, 42, 0.92);
-    font-weight: 600;
+    font-weight: 700; /* 选中后再加粗 */
 
     &::after {
       content: '';
@@ -466,7 +487,7 @@ const handleCommand = (command: string) => {
   }
 
   &.users-nav-link {
-    font-weight: 700; /* 加粗字体 */
+    font-weight: 400; /* 未选中不加粗 */
     color: rgba(51, 65, 85, 0.92); /* 和其他导航项一样的颜色 */
 
     &.router-link-active {
@@ -485,7 +506,7 @@ const handleCommand = (command: string) => {
 
   &.admin-link {
     color: rgba(51, 65, 85, 0.92);
-    font-weight: 600;
+    font-weight: 400; /* 未选中不加粗 */
     padding-right: 22px;
 
     &:hover {
@@ -495,6 +516,7 @@ const handleCommand = (command: string) => {
 
     &.router-link-active {
       color: rgba(15, 23, 42, 0.92);
+      font-weight: 700; /* 选中后加粗 */
 
       &::after {
         background-color: rgba(0, 102, 255, 0.95);
@@ -563,7 +585,7 @@ const handleCommand = (command: string) => {
     border: none !important;
     box-shadow: none !important;
     color: rgba(51, 65, 85, 0.92) !important;
-    font-weight: 700 !important;
+    font-weight: 400 !important; /* 未选中不加粗 */
     padding: 8px 16px;
     text-decoration: none;
     background: transparent !important;
@@ -571,7 +593,7 @@ const handleCommand = (command: string) => {
 
     .nav-link-text {
       color: inherit;
-      font-weight: 700;
+      font-weight: inherit;
       pointer-events: none; /* 禁止点击 */
     }
 
@@ -609,6 +631,7 @@ const handleCommand = (command: string) => {
     &.router-link-active {
       color: rgba(15, 23, 42, 0.92) !important;
       background: transparent !important;
+      font-weight: 700 !important; /* 选中后加粗 */
 
       &::after {
         display: none; /* 不显示选中框 */
@@ -921,7 +944,7 @@ const handleCommand = (command: string) => {
 
   .nav-item {
     padding: 6px 12px;
-    font-size: 15px; /* 从 13px 增加到 15px */
+    font-size: 16px;
   }
 }
 
@@ -965,17 +988,17 @@ const handleCommand = (command: string) => {
       }
 
       .logo-text {
-        font-size: 14px;
+        font-size: 15px;
       }
 
       .logo-subtitle {
-        font-size: 10px;
+        font-size: 11px;
       }
     }
   }
 
   .nav-item {
-    font-size: 14px; /* 从 12px 增加到 14px */
+    font-size: 15px;
     padding: 6px 10px;
   }
 

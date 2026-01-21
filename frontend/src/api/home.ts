@@ -305,6 +305,19 @@ export async function getNews(): Promise<ApiResponse<{ list: NewsItem[] }>> {
  * GET https://cogather.coreai.rnd.huawei.com/ailobechartbe/api/news_api/get_catalog_list/:userId
  */
 export async function getAiNews(userId: string): Promise<any> {
+  // 本地接口不通：统一走 mock
+  if (!useRealApi) {
+    await delay(200)
+    return success([
+      {
+        id: 1,
+        title: 'AI 资讯（Mock）',
+        overview: `<p>当前本地环境接口不可用，已自动切换为 Mock 数据。</p><p>userId: <strong>${userId}</strong></p>`,
+        url: '/news',
+      }
+    ])
+  }
+
   // 外部接口直接返回数据，使用 absolute URL
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   return get<any>(`${origin}/ailobechartbe/api/news_api/get_catalog_list/${userId}`)

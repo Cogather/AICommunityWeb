@@ -103,14 +103,14 @@ public class PostServiceImpl implements PostService {
 
         // 构建返回对象
         PostDetailVO vo = new PostDetailVO();
-        vo.setId(Integer.parseInt(postId));
+        vo.setId(postId);
         vo.setTitle(post.getTitle());
         vo.setContent(post.getContent());
         vo.setCover(post.getFrontCover());
         vo.setImage(post.getFrontCover());
         vo.setAuthor(author.getChnName());
         vo.setAuthorName(author.getChnName());
-        vo.setAuthorId(Integer.parseInt(author.getUserId()));
+        vo.setAuthorId(author.getUserId());
         vo.setAuthorAvatar(author.getAuthorAvatar());
         vo.setDepartment(author.getDepartmentL1());
         vo.setZone(getZoneName(post.getZoneId()));

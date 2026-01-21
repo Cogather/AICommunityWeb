@@ -20,7 +20,7 @@ public class PostDetailVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "帖子ID")
-    private Integer id;
+    private String id;
 
     @ApiModelProperty(value = "帖子标题")
     private String title;
@@ -47,7 +47,7 @@ public class PostDetailVO implements Serializable {
     private String authorName;
 
     @ApiModelProperty(value = "作者用户ID")
-    private Integer authorId;
+    private String authorId;
 
     @ApiModelProperty(value = "作者头像URL")
     private String authorAvatar;

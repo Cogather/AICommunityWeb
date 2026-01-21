@@ -37,7 +37,7 @@ export const commonMethods = {
    */
   getAvatarUrl(id: string | undefined | null): string {
     if (!id) return 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-    
+
     // 如果已经是完整 URL，直接返回
     if (String(id).startsWith('http')) {
       return String(id)
@@ -46,7 +46,7 @@ export const commonMethods = {
     // 提取数字部分
     const numericId = String(id).replace(/[^0-9]/g, '')
     if (!numericId) return 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-    
+
     return `https://w3.huawei.com/w3lab/rest/yellowpage/face/${numericId}/120`
   }
 }

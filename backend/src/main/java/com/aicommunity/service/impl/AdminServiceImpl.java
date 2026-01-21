@@ -556,7 +556,7 @@ public class AdminServiceImpl implements AdminService {
         int awardId = 1;
         for (Map.Entry<String, List<Map<String, Object>>> entry : yearMap.entrySet()) {
             TeamAwardVO teamAward = new TeamAwardVO();
-            teamAward.setId(awardId++);
+            teamAward.setId("0");
             teamAward.setYear(entry.getKey());
             teamAward.setTitle("年度最佳团队奖");
             

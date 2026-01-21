@@ -7,6 +7,8 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.List;
 
+import com.aicommunity.entity.HonorBanner;
+
 /**
  * 团队奖项列表VO
  *
@@ -18,6 +20,9 @@ import java.util.List;
 public class TeamAwardListVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "首页荣誉殿堂Banner")
+    private HonorBanner banner;
 
     @ApiModelProperty(value = "团队奖项列表")
     private List<TeamAwardVO> list;

@@ -19,7 +19,7 @@ public class PracticeItemVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "帖子ID")
-    private Integer id;
+    private String id;
 
     @ApiModelProperty(value = "帖子标题")
     private String title;
@@ -29,6 +29,9 @@ public class PracticeItemVO implements Serializable {
 
     @ApiModelProperty(value = "发布时间（相对时间格式）")
     private String time;
+
+    @ApiModelProperty(value = "部门")
+    private String department;
 
     @ApiModelProperty(value = "分类：training/training-battle/user-exchange")
     private String category;

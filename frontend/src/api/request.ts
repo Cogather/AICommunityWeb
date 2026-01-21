@@ -76,7 +76,8 @@ export const AUTO_API_BASE = getApiBaseByEnvironment(currentEnvironment)
 
 // ⬇️ 配置开关 ⬇️
 const AUTO_MODE_ENABLED = true   // true: 自动检测环境, false: 使用手动配置
-const DEBUG_USE_REAL_API = true  // 是否使用真实 API（false 则使用 Mock）
+// 本地环境接口不通时，默认全部走 Mock（如需真实接口，可在 .env.* 配置 VITE_USE_REAL_API=true）
+const DEBUG_USE_REAL_API = false // 是否使用真实 API（false 则使用 Mock）
 const DEBUG_API_URL = DEV_API_BASE  // 手动模式下使用的 API 地址
 // ⬆️ 配置结束 ⬆️
 

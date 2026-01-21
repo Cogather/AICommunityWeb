@@ -49,8 +49,8 @@ public class AgentServiceImpl implements AgentService {
     private ToolService toolService;
 
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    private static final int AGENT_ZONE_ID = 5; // 扶摇Agent应用的zone_id
-    private static final int AGENT_TOOL_ID = -1; // 扶摇Agent应用的tool_id
+    private static final int AGENT_ZONE_ID = 3; // 扶摇Agent应用的zone_id
+    private static final int AGENT_TOOL_ID = 3; // 扶摇Agent应用的tool_id
 
     static {
         ISO_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -58,7 +58,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     public AgentFeaturedPostResponseVO getFeaturedPost() {
-        // 查询扶摇Agent应用的精华帖子（zone_id=5, tool_id=-1, essence_post='1'）
+        // 查询扶摇Agent应用的精华帖子（zone_id=3, tool_id=-3, essence_post='1'）
         Post post = postMapper.selectAgentFeaturedPost(AGENT_ZONE_ID, AGENT_TOOL_ID);
         
         AgentFeaturedPostResponseVO response = new AgentFeaturedPostResponseVO();
@@ -141,7 +141,7 @@ public class AgentServiceImpl implements AgentService {
         AgentFeaturedPostVO vo = new AgentFeaturedPostVO();
         
         // 帖子基本信息
-        vo.setId(Integer.parseInt(post.getPostId()));
+        vo.setId(post.getPostId());
         vo.setTitle(post.getTitle());
         vo.setDescription(extractDescription(post.getContent()));
         vo.setImage(post.getFrontCover());
@@ -158,7 +158,7 @@ public class AgentServiceImpl implements AgentService {
             UserInfo userInfo = userInfoMapper.selectByUserId(post.getAuthorId());
             if (userInfo != null) {
                 vo.setAuthor(userInfo.getChnName() != null ? userInfo.getChnName() : userInfo.getUserName());
-                vo.setAuthorId(Integer.parseInt(userInfo.getUserId()));
+                vo.setAuthorId(userInfo.getUserId());
                 vo.setAuthorAvatar(userInfo.getAuthorAvatar());
             }
         }

@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -81,7 +83,7 @@ public class HomeServiceImpl implements HomeService {
         if (!CollectionUtils.isEmpty(honors)) {
             awards = honors.stream().map(honor -> {
                 HonorAwardVO award = new HonorAwardVO();
-                award.setId(Integer.parseInt(honor.getHonorId()));
+                award.setId(honor.getHonorId());
                 award.setName(honor.getHonorName());
                 award.setDesc(honor.getHonorDesc());
                 award.setImage(honor.getHonorImage());
@@ -159,18 +161,21 @@ public class HomeServiceImpl implements HomeService {
             
             // 关联用户表获取作者信息
             String authorName = "用户" + post.getAuthorId();
+            String authorDept = "";
             if (post.getAuthorId() != null) {
                 try {
                     com.aicommunity.entity.UserInfo userInfo = userInfoMapper.selectByUserId(post.getAuthorId());
                     if (userInfo != null && userInfo.getChnName() != null && !userInfo.getChnName().isEmpty()) {
                         authorName = userInfo.getChnName();
+                        authorDept = userInfo.getDepartmentL5();
                     }
                 } catch (Exception e) {
                     log.warn("查询用户信息失败: userId={}, error={}", post.getAuthorId(), e.getMessage());
                 }
             }
             vo.setAuthor(authorName);
-            
+            vo.setAuthorDept(authorDept);
+
             // 根据label_id查询标签信息
             String tag = "讨论";
             String tagType = "blue";
@@ -219,13 +224,15 @@ public class HomeServiceImpl implements HomeService {
         PracticesInfoVO info = new PracticesInfoVO();
         
         // 查询AI优秀实践帖子（zone_id=1）
-        List<Post> posts = postMapper.selectPracticePosts(limit * 3);
+        List<Post> posts = postMapper.selectPracticePosts();
         
         // 根据label_id分类（需要根据实际业务逻辑调整）
-        // 这里假设label_id对应：1-培训赋能，2-AI训战，3-用户交流
-        List<PracticeItemVO> training = new ArrayList<>();
-        List<PracticeItemVO> trainingBattle = new ArrayList<>();
-        List<PracticeItemVO> userExchange = new ArrayList<>();
+        Map<String, List<PracticeItemVO>> practices = new HashMap<>();
+
+        List<PostTag> postTags = postTagMapper.selectAllLabel();
+        Map<Integer, PostTag> postTagMap = postTags.stream()
+            .collect(Collectors.toMap(PostTag::getId, tag -> tag,
+                (existing, replacement) -> existing));
         
         if (!CollectionUtils.isEmpty(posts)) {
             for (Post post : posts) {
@@ -235,58 +242,54 @@ public class HomeServiceImpl implements HomeService {
                 
                 // 关联用户表获取作者信息
                 String authorName = "用户" + post.getAuthorId();
+                String authorDept = "";
                 if (post.getAuthorId() != null) {
                     try {
                         UserInfo userInfo = userInfoMapper.selectByUserId(post.getAuthorId());
                         if (userInfo != null && userInfo.getChnName() != null && !userInfo.getChnName().isEmpty()) {
                             authorName = userInfo.getChnName();
+                            authorDept = userInfo.getDepartmentL5();
                         }
                     } catch (Exception e) {
                         log.warn("查询用户信息失败: userId={}, error={}", post.getAuthorId(), e.getMessage());
                     }
                 }
                 vo.setAuthor(authorName);
+                vo.setAuthorDept(authorDept);
                 vo.setTime(calculateRelativeTime(post.getCreatedAt()));
                 
                 // 根据label_id分类
                 // 注意：label_id与分类的映射关系需要根据实际业务逻辑确定
                 // 这里假设label_id对应：1-培训赋能，2-AI训战，3-用户交流
+                // 根据label_id分类
                 if (post.getLabelId() != null) {
-                    if (post.getLabelId() == 1) {
-                        vo.setCategory("training");
-                        if (training.size() < limit) {
-                            training.add(vo);
-                        }
-                    } else if (post.getLabelId() == 2) {
-                        vo.setCategory("training-battle");
-                        if (trainingBattle.size() < limit) {
-                            trainingBattle.add(vo);
-                        }
-                    } else if (post.getLabelId() == 3) {
-                        vo.setCategory("user-exchange");
-                        if (userExchange.size() < limit) {
-                            userExchange.add(vo);
-                        }
+                    PostTag postTag = postTagMap.get(post.getLabelId());
+                    List<PracticeItemVO> practiceItemVOList;
+                    if (practices.containsKey(postTag.getTag())) {
+                        practiceItemVOList = practices.get(postTag.getTag());
+                        vo.setCategory(postTag.getTag());
+                        practiceItemVOList.add(vo);
+                    } else {
+                        practiceItemVOList = new ArrayList<>();
+                        vo.setCategory(postTag.getTag());
+                        practiceItemVOList.add(vo);
                     }
+                    practices.put(postTag.getTag(), practiceItemVOList);
                 }
             }
         }
-        
+
+        Map<String, List<PracticeItemVO>> returnPractices = new HashMap<>();
         // 限制每个分类的数量
-        if (training.size() > limit) {
-            training = training.subList(0, limit);
+        for (Map.Entry<String, List<PracticeItemVO>> stringListEntry : practices.entrySet()) {
+            List<PracticeItemVO> value = stringListEntry.getValue();
+            if (value.size() > limit) {
+                value = value.subList(0, limit);
+            }
+            returnPractices.put(stringListEntry.getKey(), value);
         }
-        if (trainingBattle.size() > limit) {
-            trainingBattle = trainingBattle.subList(0, limit);
-        }
-        if (userExchange.size() > limit) {
-            userExchange = userExchange.subList(0, limit);
-        }
-        
-        info.setTraining(training);
-        info.setTrainingBattle(trainingBattle);
-        info.setUserExchange(userExchange);
-        
+        info.setPractices(returnPractices);
+
         return info;
     }
 

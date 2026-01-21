@@ -19,7 +19,7 @@ public class EmpowermentPostVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "帖子ID")
-    private Integer id;
+    private String id;
 
     @ApiModelProperty(value = "帖子标题")
     private String title;
@@ -32,6 +32,9 @@ public class EmpowermentPostVO implements Serializable {
 
     @ApiModelProperty(value = "作者名称")
     private String author;
+
+    @ApiModelProperty(value = "部门")
+    private String department;
 
     @ApiModelProperty(value = "发布时间（相对时间格式）")
     private String time;

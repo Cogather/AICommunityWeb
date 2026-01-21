@@ -3,6 +3,7 @@ package com.aicommunity.service.impl;
 import com.aicommunity.common.PageQuery;
 import com.aicommunity.common.exception.BusinessException;
 import com.aicommunity.entity.Honor;
+import com.aicommunity.entity.HonorBanner;
 import com.aicommunity.entity.HonorFlower;
 import com.aicommunity.mapper.HonorMapper;
 import com.aicommunity.service.HonorService;
@@ -84,7 +85,7 @@ public class HonorServiceImpl implements HonorService {
         // 转换为VO
         List<TeamAwardVO> voList = new ArrayList<>();
         Map<String, List<Map<String, Object>>> groupedByHonorId = teamAwards.stream()
-                .collect(Collectors.groupingBy(item -> (String) item.get("honorId")));
+                .collect(Collectors.groupingBy(item -> (String) item.get("honor_id")));
 
         for (Map.Entry<String, List<Map<String, Object>>> entry : groupedByHonorId.entrySet()) {
             List<Map<String, Object>> details = entry.getValue();
@@ -94,9 +95,9 @@ public class HonorServiceImpl implements HonorService {
 
             Map<String, Object> firstDetail = details.get(0);
             TeamAwardVO awardVO = new TeamAwardVO();
-            awardVO.setId(Integer.parseInt(firstDetail.get("honorId").toString()));
-            awardVO.setTitle((String) firstDetail.get("honorName"));
-            awardVO.setYear((String) firstDetail.get("gainedYear"));
+            awardVO.setId(Integer.parseInt(firstDetail.get("honor_id").toString()));
+            awardVO.setTitle((String) firstDetail.get("honor_name"));
+            awardVO.setYear((String) firstDetail.get("gained_year"));
 
             // 转换图片列表
             List<TeamAwardImageVO> images = details.stream().map(detail -> {
@@ -104,11 +105,11 @@ public class HonorServiceImpl implements HonorService {
                 imageVO.setId((Integer) detail.get("id"));
                 imageVO.setImage((String) detail.get("image"));
                 imageVO.setImageType("url");
-                imageVO.setWinnerName((String) detail.get("teamName"));
+                imageVO.setWinnerName((String) detail.get("team_name"));
                 imageVO.setTeamField((String) detail.get("teamField"));
 
                 // 查询花朵数和是否已送花
-                String honorId = (String) detail.get("honorId");
+                String honorId = (String) detail.get("honor_id");
                 Integer flowers = honorMapper.countFlowersByHonorId(honorId);
                 imageVO.setFlowers(flowers != null ? flowers : 0);
 
@@ -126,8 +127,12 @@ public class HonorServiceImpl implements HonorService {
             voList.add(awardVO);
         }
 
+        HonorBanner honorBanner = honorMapper.selectFirstBanner();
+
+
         TeamAwardListVO result = new TeamAwardListVO();
         result.setList(voList);
+        result.setBanner(honorBanner);
         result.setYears(years != null ? years : new ArrayList<>());
 
         return result;

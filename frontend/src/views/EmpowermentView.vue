@@ -108,8 +108,9 @@ const displayedTags = ref<Array<{ name: string; count: number }>>([])
 const loadFeaturedPosts = async () => {
   try {
     const response = await getFeaturedPosts()
-    featuredPosts.value = response.data.list.map((post: { id: number | string; title: string; image?: string; cover?: string; createTime: string }) => ({
+    featuredPosts.value = response.data.list.map((post: { id: number | string; title: string; summary?: string; description?: string; image?: string; cover?: string; createTime: string }) => ({
       ...post,
+      description: post.summary || post.description || '',
       image: post.image || post.cover || '',
       createTime: formatDate(post.createTime)
     }))
@@ -128,8 +129,9 @@ const loadPosts = async () => {
       page: currentPage.value,
       pageSize: pageSize.value
     })
-    posts.value = response.data.list.map((post: { id: number | string; title: string; image?: string; cover?: string; createTime: string }) => ({
+    posts.value = response.data.list.map((post: { id: number | string; title: string; summary?: string; description?: string; image?: string; cover?: string; createTime: string }) => ({
       ...post,
+      description: post.summary || post.description || '',
       image: post.image || post.cover || '',
       createTime: formatDate(post.createTime)
     }))

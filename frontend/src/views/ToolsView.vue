@@ -6,7 +6,7 @@
         v-for="tool in tools"
         :key="tool.id"
         :class="['tool-card-btn', { 'tool-card-btn-active': selectedToolId === tool.id }]"
-        :style="{ '--tool-color': tool.color || '#409eff' }"
+        :style="{ '--tool-color': '#409eff' }"
         @click="selectTool(tool.id)"
       >
         <span class="tool-card-name">{{ tool.name }}</span>
@@ -568,7 +568,7 @@ const _getTagType = (tag: string) => {
 }
 
 // 处理帖子点击
-const handlePostClick = (post: { id: number }) => {
+const handlePostClick = (post: { id: number | string }) => {
   if (!post || !post.id) {
     console.error('帖子数据无效:', post)
     return
@@ -749,7 +749,7 @@ const handleCurrentChange = (val: number) => {
   .tool-card-name {
     position: relative;
     z-index: 2;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
     color: color-mix(in srgb, var(--tool-color) 70%, #1e293b);
     white-space: nowrap;
@@ -915,7 +915,7 @@ const handleCurrentChange = (val: number) => {
         display: flex;
         align-items: center;
         gap: 20px;
-        font-size: 13px;
+        font-size: 17px;
         color: #999;
 
         .meta-item {
@@ -924,7 +924,7 @@ const handleCurrentChange = (val: number) => {
           gap: 4px;
 
           .el-icon {
-            font-size: 14px;
+  font-size: 16px;
           }
         }
       }

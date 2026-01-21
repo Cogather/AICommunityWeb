@@ -36,6 +36,7 @@
             p.essence_post,
             p.zone_id,
             p.label_id,
+            p.tool_id,
             p.views_nums
         FROM t_new_posts p
         WHERE p.zone_id = 4
@@ -59,12 +60,12 @@
             essence_post,
             zone_id,
             label_id,
+            tool_id,
             views_nums
         FROM t_new_posts
         WHERE zone_id = 1
           AND status = '0'
         ORDER BY created_at DESC
-        LIMIT #{limit}
     </select>
 
     <select id="selectByPostId" resultMap="BaseResultMap">
