@@ -11,6 +11,15 @@ import com.aicommunity.vo.*;
 public interface PostService {
 
     /**
+     * 获取帖子列表
+     *
+     * @param params 查询参数
+     * @param userId 当前用户ID（可选，用于判断用户状态）
+     * @return 帖子列表响应
+     */
+    PostsResponseVO getPosts(PostQueryParamsVO params, String userId);
+
+    /**
      * 获取帖子详情
      *
      * @param postId 帖子ID

@@ -51,10 +51,47 @@ public class PostServiceImpl implements PostService {
     @Autowired
     private ReplyMapper replyMapper;
 
+    @Autowired
+    private PostTagMapper postTagMapper;
+
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     static {
         ISO_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
+    @Override
+    public PostsResponseVO getPosts(PostQueryParamsVO params, String userId) {
+        // 构建查询条件
+        Map<String, Object> queryMap = new HashMap<>();
+        if (params.getToolId() != null) {
+            queryMap.put("toolId", params.getToolId());
+        }
+        if (StringUtils.hasText(params.getZone())) {
+            queryMap.put("zoneId", getZoneId(params.getZone()));
+        }
+        if (StringUtils.hasText(params.getTag())) {
+            queryMap.put("tag", params.getTag());
+        }
+        if (StringUtils.hasText(params.getKeyword())) {
+            queryMap.put("keyword", params.getKeyword());
+        }
+
+        // 计算分页参数
+        int offset = (params.getPage() - 1) * params.getPageSize();
+        queryMap.put("offset", offset);
+        queryMap.put("pageSize", params.getPageSize());
+
+        // TODO: 实现帖子列表查询逻辑
+        // 这里需要调用PostMapper的方法来查询帖子列表
+        // 暂时返回空结果
+        PostsResponseVO response = new PostsResponseVO();
+        response.setList(new ArrayList<>());
+        response.setTotal(0L);
+        response.setPage(params.getPage());
+        response.setPageSize(params.getPageSize());
+
+        return response;
     }
 
     @Override
@@ -168,10 +205,8 @@ public class PostServiceImpl implements PostService {
             throw new BusinessException(ErrorCodeEnum.DATABASE_ERROR.getCode(), "创建帖子失败");
         }
 
-        // 保存标签
-        if (!CollectionUtils.isEmpty(request.getTags())) {
-            // TODO: 保存标签关联关系
-        }
+        // 保存标签关联关系
+        savePostTagRelations(postId, request.getTags());
 
         // 返回帖子详情
         return getPostDetail(postId, userId);
@@ -208,10 +243,8 @@ public class PostServiceImpl implements PostService {
             throw new BusinessException(ErrorCodeEnum.DATABASE_ERROR.getCode(), "更新帖子失败");
         }
 
-        // 更新标签
-        if (!CollectionUtils.isEmpty(request.getTags())) {
-            // TODO: 更新标签关联关系
-        }
+        // 更新标签关联关系
+        savePostTagRelations(postId, request.getTags());
 
         return getPostDetail(postId, userId);
     }
@@ -410,6 +443,44 @@ public class PostServiceImpl implements PostService {
         vo.setSuccess(true);
         vo.setFeatured(request.getFeatured());
         return vo;
+    }
+
+    /**
+     * 保存帖子标签关联关系
+     *
+     * @param postId 帖子ID
+     * @param tagNames 标签名称列表
+     */
+    private void savePostTagRelations(String postId, List<String> tagNames) {
+        if (CollectionUtils.isEmpty(tagNames)) {
+            return;
+        }
+
+        // 先删除现有的标签关联
+        postTagMapper.deleteByPostId(postId);
+
+        // 获取所有标签信息，用于匹配标签名称到标签ID
+        List<PostTag> allTags = postTagMapper.selectAllLabel();
+        Map<String, Integer> tagNameToIdMap = allTags.stream()
+                .filter(tag -> !Boolean.TRUE.equals(tag.getDeleted()))
+                .collect(Collectors.toMap(PostTag::getTag, PostTag::getId, (a, b) -> a));
+
+        // 构建新的标签关联关系
+        List<PostTagRelation> relations = tagNames.stream()
+                .filter(tagName -> tagNameToIdMap.containsKey(tagName))
+                .map(tagName -> {
+                    PostTagRelation relation = new PostTagRelation();
+                    relation.setPostId(postId);
+                    relation.setTagId(tagNameToIdMap.get(tagName));
+                    relation.setDeleted(false);
+                    return relation;
+                })
+                .collect(Collectors.toList());
+
+        // 批量插入标签关联关系
+        if (!relations.isEmpty()) {
+            postTagMapper.batchInsertRelations(relations);
+        }
     }
 
     /**

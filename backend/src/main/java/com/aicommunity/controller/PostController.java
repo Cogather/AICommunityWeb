@@ -29,6 +29,25 @@ public class PostController {
     private PostService postService;
 
     /**
+     * 获取帖子列表
+     *
+     * @param params 查询参数
+     * @param request HTTP请求对象
+     * @return 帖子列表
+     */
+    @GetMapping
+    @ApiOperation(value = "获取帖子列表", notes = "根据条件分页获取帖子列表")
+    public Result<PostsResponseVO> getPosts(
+            @ApiParam(value = "查询参数")
+            PostQueryParamsVO params,
+            HttpServletRequest request) {
+        log.info("获取帖子列表, params={}", params);
+        String userId = getCurrentUserId(request);
+        PostsResponseVO result = postService.getPosts(params, userId);
+        return Result.success(result);
+    }
+
+    /**
      * 获取帖子详情
      *
      * @param id     帖子ID
