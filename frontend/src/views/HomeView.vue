@@ -1364,9 +1364,9 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 .glass-card {
   /* 调整背景材质厚度：降低透明度，增强可读性 */
   background: rgba(255, 255, 255, 0.95) !important;
-  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  /* 保持一致的模糊度 */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
   /* 强化边框对比：更具存在感的科技蓝边框 */
   border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
@@ -1428,9 +1428,9 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   /* 确保继承 glass-card 的视觉加固样式 */
   /* 调整背景材质厚度：降低透明度，增强可读性 */
   background: rgba(255, 255, 255, 0.95) !important;
-  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  /* 保持一致的模糊度 */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
   /* 强化边框对比：更具存在感的科技蓝边框 */
   border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
@@ -1456,7 +1456,7 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 }
 
-/* 赋能交流区块 - 最热帖子排行榜 */
+/* 赋能交流区块 - 最热帖子排行榜（第二个模块：中蓝色） */
 .empowerment-section {
   min-height: 560px !important;
   height: 560px !important; /* 与荣誉殿堂等高 */
@@ -1464,16 +1464,38 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   flex-direction: column;
   padding: 0 !important;
   overflow: hidden;
+  position: relative;
 
-  /* 调整背景材质厚度：降低透明度，增强可读性 */
-  background: rgba(255, 255, 255, 0.95) !important;
-  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  /* 微渐变底色：从白色到浅蓝色 */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(240, 247, 255, 0.5) 100%
+  ) !important;
+  /* 保持一致的模糊度 */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
-  /* 强化边框对比：更具存在感的科技蓝边框 */
-  border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
+  /* 精密化边框逻辑：顶部科技蓝，其他三面淡灰色 */
+  border-top: 1.5px solid #3B82F6 !important;
+  border-right: 1.5px solid #E2E8F0 !important;
+  border-bottom: 1.5px solid #E2E8F0 !important;
+  border-left: 1.5px solid #E2E8F0 !important;
   border-radius: 15px;
+
+  /* 左上角2px蓝色渐变短条（中蓝色，第二个模块） */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
+    border-radius: 0 0 2px 0;
+    z-index: 10;
+    pointer-events: none;
+  }
 
   /* 双边框效果：极细白色内边框，模拟玻璃边缘切角 */
   /* 引入深度阴影：多重投影，更具层次感 */
@@ -1596,37 +1618,43 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
         }
       }
 
-      /* 排名数字 - 降噪处理：冷色系渐变 */
+      /* 排名数字 - 改为蓝色菱形图标（呼应神经网络节点） */
       .rank-number {
         flex-shrink: 0;
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+        width: 20px;
+        height: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: 11px;
         font-weight: 700;
-        color: #ffffff;
+        color: #3B82F6;
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         z-index: 1;
+        /* 菱形形状 */
+        clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.3);
       }
 
-      /* 排名1-3：深蓝、中蓝、浅蓝 */
+      /* 排名1-3：深蓝、中蓝、浅蓝菱形 */
       .rank-1 {
-        background: linear-gradient(135deg, #1A2B4B 0%, #0F172A 100%);
-        box-shadow: 0 2px 8px rgba(26, 43, 75, 0.2);
+        background: rgba(26, 43, 75, 0.15);
+        border-color: rgba(26, 43, 75, 0.4);
+        color: #1A2B4B;
       }
 
       .rank-2 {
-        background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%);
-        box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
+        background: rgba(30, 64, 175, 0.15);
+        border-color: rgba(30, 64, 175, 0.4);
+        color: #1E40AF;
       }
 
       .rank-3 {
-        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        background: rgba(59, 130, 246, 0.15);
+        border-color: rgba(59, 130, 246, 0.4);
+        color: #3B82F6;
       }
 
       /* 排名4及以后：浅蓝 */
@@ -2946,16 +2974,48 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   display: flex;
   flex-direction: column;
   min-height: 380px;
+  position: relative;
 
-  /* 确保继承 glass-card 的视觉加固样式 */
-  /* 调整背景材质厚度：降低透明度，增强可读性 */
-  background: rgba(255, 255, 255, 0.95) !important;
-  /* 增强模糊度：确保背景线条在卡片下方被彻底虚化 */
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  /* 微渐变底色：从白色到浅蓝色 */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(240, 247, 255, 0.5) 100%
+  ) !important;
+  /* 保持一致的模糊度 */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
-  /* 强化边框对比：更具存在感的科技蓝边框 */
-  border: 1.5px solid rgba(0, 102, 255, 0.2) !important;
+  /* 精密化边框逻辑：顶部科技蓝，其他三面淡灰色 */
+  border-top: 1.5px solid #3B82F6 !important;
+  border-right: 1.5px solid #E2E8F0 !important;
+  border-bottom: 1.5px solid #E2E8F0 !important;
+  border-left: 1.5px solid #E2E8F0 !important;
+
+  /* 左上角2px蓝色渐变短条 - 根据模块顺序设置颜色梯度 */
+  /* 默认颜色（第三个模块：浅蓝色） */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(90deg, #60A5FA 0%, #93C5FD 100%);
+    border-radius: 0 0 2px 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* 第四个模块（脚本生成）：更浅蓝色 */
+  &:nth-child(2)::before {
+    background: linear-gradient(90deg, #93C5FD 0%, #BFDBFE 100%);
+  }
+
+  /* 第五个模块（问题处理）：最浅蓝色 */
+  &:nth-child(3)::before {
+    background: linear-gradient(90deg, #BFDBFE 0%, #DBEAFE 100%);
+  }
 
   /* 双边框效果：极细白色内边框，模拟玻璃边缘切角 */
   /* 引入深度阴影：多重投影，更具层次感 */
@@ -2991,6 +3051,8 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   background: transparent;
   border-bottom: 1px solid rgba(0, 102, 255, 0.08);
 
+  /* 左上角装饰条通过父元素的::before实现 */
+
   /* 移除所有装饰性伪元素，保持极简 */
 
   /* 标题 */
@@ -3022,17 +3084,17 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
   }
 }
 
-/* 培训赋能 - 蓝紫渐变 */
+/* 培训赋能 - 第三个模块：浅蓝色 */
 .training-header {
   background: transparent;
 }
 
-/* AI训战 - 粉红渐变 */
+/* 脚本生成 - 第四个模块：更浅蓝色 */
 .battle-header {
   background: transparent;
 }
 
-/* 用户交流 - 青蓝渐变 */
+/* 问题处理 - 第五个模块：最浅蓝色 */
 .exchange-header {
   background: transparent;
 }
@@ -3048,7 +3110,8 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
 
 /* 单条帖子 */
 .practice-item {
-  padding: 14px 0;
+  padding: 14px 0 14px 20px; /* 左侧留出空间给菱形图标 */
+  position: relative;
   /* 分割线：0.5px 极浅蓝色实线 */
   border-bottom: 0.5px solid rgba(0, 102, 255, 0.08);
   cursor: pointer;
@@ -3058,7 +3121,28 @@ const toolZoneBanners = ref<{ title: string; desc: string; image: string }[]>([]
     border-bottom: none;
   }
 
+  /* 列表项前的蓝色菱形图标（呼应神经网络节点） */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: #3B82F6;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    opacity: 0.6;
+    transition: all 0.2s ease;
+  }
+
   &:hover {
+    &::before {
+      opacity: 1;
+      transform: translateY(-50%) scale(1.2);
+      background: #0066FF;
+    }
+
     .practice-title {
       color: #0066FF;
     }
