@@ -5,42 +5,37 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('../views/HomeView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/HomeView.vue')
   },
   {
     path: '/practices',
     name: 'Practices',
-    component: () => import('../views/PracticesView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/PracticesView.vue')
   },
   {
     path: '/users',
     name: 'Users',
-    component: () => import('../views/UsersView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/UsersView.vue')
   },
   {
     path: '/tools',
     name: 'Tools',
-    component: () => import('../views/ToolsView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/ToolsView.vue')
   },
   {
     path: '/agent',
     name: 'Agent',
-    component: () => import('../views/AgentView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/AgentView.vue')
   },
   {
     path: '/empowerment',
     name: 'Empowerment',
-    component: () => import('../views/EmpowermentView.vue').catch(() => import('../views/NotFoundView.vue'))
-  },
-  {
-    path: '/award-rules',
-    name: 'AwardRules',
-    component: () => import('../views/AwardRulesView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/EmpowermentView.vue')
   },
   {
     path: '/news',
     name: 'News',
-    component: () => import('../views/NewsView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/NewsView.vue')
   },
   {
     path: '/post/create',
@@ -55,12 +50,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/activity/create',
     name: 'ActivityCreate',
-    component: () => import('../views/ActivityCreateView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/ActivityCreateView.vue')
   },
   {
     path: '/activity/:id',
     name: 'ActivityDetail',
-    component: () => import('../views/ActivityDetailView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/ActivityDetailView.vue')
   },
   {
     path: '/profile',
@@ -70,12 +65,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/messages',
     name: 'Messages',
-    component: () => import('../views/MessageListView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/MessageListView.vue')
   },
   {
     path: '/admin',
     name: 'Admin',
-    component: () => import('../views/AdminView.vue').catch(() => import('../views/NotFoundView.vue'))
+    component: () => import('../views/AdminView.vue')
   },
   {
     path: '/:pathMatch(.*)*',

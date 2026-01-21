@@ -48,8 +48,8 @@
                 </h3>
               </div>
               <div class="hot-posts-featured">
-                <div 
-                  v-for="(post, index) in topHotPosts" 
+                <div
+                  v-for="(post, index) in topHotPosts"
                   :key="post.id"
                   class="hot-post-featured-item"
                   :class="`rank-${index + 1}`"
@@ -70,10 +70,10 @@
             <div class="sidebar-section">
               <div class="section-header-with-reset">
                 <h3>标签筛选</h3>
-                <el-button 
-                  v-if="selectedTag" 
-                  text 
-                  size="small" 
+                <el-button
+                  v-if="selectedTag"
+                  text
+                  size="small"
                   class="reset-btn"
                   @click="handleResetTag"
                 >
@@ -92,10 +92,10 @@
             <div class="sidebar-section">
               <div class="section-header-with-reset">
                 <h3>部门归类</h3>
-                <el-button 
-                  v-if="selectedDepartment" 
-                  text 
-                  size="small" 
+                <el-button
+                  v-if="selectedDepartment"
+                  text
+                  size="small"
                   class="reset-btn"
                   @click="handleResetDepartment"
                 >
@@ -104,8 +104,8 @@
                 </el-button>
               </div>
               <div class="department-rankings">
-                <div 
-                  v-for="dept in displayedDepartments" 
+                <div
+                  v-for="dept in displayedDepartments"
                   :key="dept.id"
                   class="department-item"
                   :class="{ active: selectedDepartment === dept.name }"
@@ -126,8 +126,8 @@
             <div class="sidebar-section">
               <h3>热门贡献者</h3>
               <div class="contributors-list">
-                <div 
-                  v-for="contributor in topContributors" 
+                <div
+                  v-for="contributor in topContributors"
                   :key="contributor.id"
                   class="contributor-item"
                   :class="{ active: selectedContributor === contributor.name }"
@@ -146,12 +146,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Refresh, Star } from '@element-plus/icons-vue'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
+import {
+  getPracticePosts,
+  getPracticeHotPosts,
+  getPracticeTags,
+  getPracticeDepartments,
+  getPracticeContributors,
+  type Post
+} from '../mock'
 
 const router = useRouter()
 
@@ -169,13 +177,13 @@ const pageSize = ref(15)
 const allTags = computed(() => {
   // 获取所有帖子（包括精华帖和普通帖子）
   const allPosts = [...featuredPosts.value, ...posts.value]
-  
+
   // 根据当前选择的部门过滤帖子
   let filteredPosts = allPosts
   if (selectedDepartment.value) {
     filteredPosts = filteredPosts.filter(post => post.department === selectedDepartment.value)
   }
-  
+
   // 统计每个标签的数量
   const tagCountMap = new Map<string, number>()
   filteredPosts.forEach(post => {
@@ -185,12 +193,12 @@ const allTags = computed(() => {
       })
     }
   })
-  
+
   // 构建标签列表，包含"全部"
   const tags: Array<{ name: string; count: number }> = [
     { name: '全部', count: filteredPosts.length }
   ]
-  
+
   // 添加其他标签
   const tagNames = ['自然语言处理', '计算机视觉', '深度学习', 'AI伦理', '机器学习', '机器人', '数据科学', '生成式AI', 'PyTorch', 'TensorFlow', '项目', 'AI应用', '效率', '自动化', '实践', '已解决', '部署', '活动', 'AI大会']
   tagNames.forEach(tagName => {
@@ -199,7 +207,7 @@ const allTags = computed(() => {
       tags.push({ name: tagName, count })
     }
   })
-  
+
   return tags
 })
 
@@ -209,105 +217,53 @@ const displayedTags = computed(() => {
 })
 
 // 精华帖（置顶）
-const featuredPosts = ref([
-  {
-    id: 1,
-    title: 'AI大会2024',
-    description: '参加活动探索AI的最新趋势和创新。',
-    author: 'David Chen',
-    createTime: '2024年4月10日',
-    views: 1250,
-    comments: 45,
-    likes: 128,
-    tags: ['活动', 'AI大会'],
-    image: 'https://picsum.photos/800/400?random=1',
-    featured: true,
-    department: '产品部'
-  }
-])
+const featuredPosts = ref<Post[]>([])
 
 // 普通帖子
-const posts = ref([
-  {
-    id: 2,
-    title: '构建AI应用指南',
-    description: '学习如何构建实用的AI应用程序，从概念到部署的完整流程。',
-    author: 'Brinit',
-    createTime: '2024年4月',
-    views: 890,
-    comments: 32,
-    likes: 56,
-    tags: ['项目', 'AI应用'],
-    image: 'https://picsum.photos/400/300?random=2',
-    department: '研发部'
-  },
-  {
-    id: 3,
-    title: '通过自动化工作流提高效率',
-    description: '探索如何使用AI工具自动化重复性任务，提升工作效率。',
-    author: 'Iruls',
-    createTime: '60分钟前',
-    views: 650,
-    comments: 18,
-    likes: 42,
-    tags: ['效率', '自动化'],
-    image: 'https://picsum.photos/400/300?random=3',
-    department: '技术部'
-  },
-  {
-    id: 4,
-    title: '在真实项目中实施AI',
-    description: '学习如何将AI技术应用于解决实际问题，包含来自各个行业的示例。',
-    author: 'Emily Zhao',
-    createTime: '2024年4月20日',
-    views: 520,
-    comments: 15,
-    likes: 28,
-    tags: ['实践', 'AI应用'],
-    department: '数据部'
-  },
-  {
-    id: 5,
-    title: '训练机器学习模型的最佳实践',
-    description: '发现有效训练AI模型的关键策略，包括数据准备、模型选择和部署。',
-    author: 'John Smith',
-    createTime: '2024年4月20日',
-    views: 720,
-    comments: 28,
-    likes: 65,
-    tags: ['已解决', '机器学习'],
-    department: '算法部'
-  },
-  {
-    id: 6,
-    title: '[已解决] 部署AI解决方案的挑战',
-    description: '讨论AI部署过程中遇到的常见障碍并分享解决方案。',
-    author: 'Sarah Lee',
-    createTime: '2024年4月19日',
-    views: 450,
-    comments: 12,
-    likes: 19,
-    tags: ['已解决', '部署'],
-    department: '测试部'
+const posts = ref<Post[]>([])
+
+// 加载帖子数据
+const loadPosts = async () => {
+  try {
+    const response = await getPracticePosts({
+      page: 1,
+      pageSize: 100 // 获取足够多的帖子用于前端过滤
+    })
+    featuredPosts.value = response.featuredPosts.map(post => ({
+      ...post,
+      author: post.author || post.authorName || '',
+      description: post.description || post.summary || '',
+      image: post.image || post.cover || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
+    }))
+    posts.value = response.list.map(post => ({
+      ...post,
+      author: post.author || post.authorName || '',
+      description: post.description || post.summary || '',
+      image: post.image || post.cover || '',
+      createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
+    }))
+  } catch (error) {
+    console.error('加载帖子失败:', error)
   }
-])
+}
 
 // 部门排名统计（动态计算）
 const displayedDepartments = computed(() => {
   // 获取所有帖子（包括精华帖和普通帖子）
   const allPosts = [...featuredPosts.value, ...posts.value]
-  
+
   // 根据当前选择的标签过滤帖子
   let filteredPosts = allPosts
   if (selectedTag.value && selectedTag.value !== '全部') {
-    filteredPosts = filteredPosts.filter(post => 
+    filteredPosts = filteredPosts.filter(post =>
       post.tags && post.tags.includes(selectedTag.value!)
     )
   }
-  
+
   // 统计每个部门的发帖数和贡献者
   const deptMap = new Map<string, { postCount: number; contributors: Set<string> }>()
-  
+
   filteredPosts.forEach(post => {
     if (post.department) {
       if (!deptMap.has(post.department)) {
@@ -320,7 +276,7 @@ const displayedDepartments = computed(() => {
       }
     }
   })
-  
+
   // 获取所有部门名称（从所有帖子中提取）
   const allDepts = new Set<string>()
   allPosts.forEach(post => {
@@ -328,7 +284,7 @@ const displayedDepartments = computed(() => {
       allDepts.add(post.department)
     }
   })
-  
+
   // 构建部门列表
   const departments = Array.from(allDepts).map((name, index) => {
     const stats = deptMap.get(name) || { postCount: 0, contributors: new Set() }
@@ -339,19 +295,23 @@ const displayedDepartments = computed(() => {
       contributorCount: stats.contributors.size
     }
   })
-  
+
   // 按发帖数排序
   return departments.sort((a, b) => b.postCount - a.postCount)
 })
 
 // 热门贡献者
-const topContributors = ref([
-  { id: 1, name: '张工程师', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 2, name: '李开发者', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 3, name: '王测试', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 4, name: '赵医生', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  { id: 5, name: '陈架构师', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' }
-])
+const topContributors = ref<Array<{ id: number; name: string; avatar: string; postCount?: number; department?: string }>>([])
+
+// 加载热门贡献者
+const loadContributors = async () => {
+  try {
+    const response = await getPracticeContributors(5)
+    topContributors.value = response.list
+  } catch (error) {
+    console.error('加载热门贡献者失败:', error)
+  }
+}
 
 // 过滤后的普通帖子（不包含精华帖，精华帖始终显示）
 const filteredNormalPosts = computed(() => {
@@ -360,7 +320,7 @@ const filteredNormalPosts = computed(() => {
 
   // 按标签过滤（排除"全部"）
   if (selectedTag.value && selectedTag.value !== '全部') {
-    result = result.filter(post => 
+    result = result.filter(post =>
       post.tags && post.tags.includes(selectedTag.value!)
     )
   }
@@ -378,7 +338,7 @@ const filteredNormalPosts = computed(() => {
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(post => 
+    result = result.filter(post =>
       post.title.toLowerCase().includes(keyword) ||
       post.author.toLowerCase().includes(keyword) ||
       (post.description && post.description.toLowerCase().includes(keyword))
@@ -401,7 +361,7 @@ const filteredNormalPosts = computed(() => {
 })
 
 // 用于统计的过滤后帖子（包含精华帖和普通帖子）
-const filteredPosts = computed(() => {
+const _filteredPosts = computed(() => {
   return [...featuredPosts.value, ...filteredNormalPosts.value]
 })
 
@@ -509,10 +469,22 @@ const handlePostClick = (post: { id: number; [key: string]: unknown }) => {
     console.error('帖子数据无效:', post)
     return
   }
-  router.push(`/post/${post.id}`).catch((err) => {
+  // 传递当前页面路径，用于帖子详情页返回
+  router.push({
+    path: `/post/${post.id}`,
+    query: { from: '/practices' }
+  }).catch((err) => {
     console.error('路由跳转失败:', err)
   })
 }
+
+// 页面加载时获取数据
+onMounted(async () => {
+  await Promise.all([
+    loadPosts(),
+    loadContributors()
+  ])
+})
 </script>
 
 <style scoped lang="scss">

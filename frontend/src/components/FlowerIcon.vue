@@ -7,16 +7,75 @@
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
+    <!-- 花茎 -->
     <path
-      d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm0 2c2.76 0 5 2.24 5 5 0 1.88-1.12 3.53-2.82 4.24L14 14h-4l-.18-.76C8.12 12.53 7 10.88 7 9c0-2.76 2.24-5 5-5z"
-      :fill="filled ? color : 'none'"
-      :stroke="filled ? 'none' : effectiveStrokeColor"
-      stroke-width="1.5"
-      stroke-linejoin="round"
+      d="M12 14v8"
+      :stroke="filled ? '#22c55e' : '#86efac'"
+      stroke-width="2"
+      stroke-linecap="round"
     />
-    <circle cx="9" cy="9" r="1.5" :fill="filled ? '#fff' : color" />
-    <circle cx="15" cy="9" r="1.5" :fill="filled ? '#fff' : color" />
-    <circle cx="12" cy="6" r="1.5" :fill="filled ? '#fff' : color" />
+    <!-- 叶子 -->
+    <path
+      d="M12 18c-2-1-3-2-3-3s1.5-1 3 1"
+      :fill="filled ? '#22c55e' : 'none'"
+      :stroke="filled ? '#22c55e' : '#86efac'"
+      stroke-width="1.5"
+      stroke-linecap="round"
+    />
+    <path
+      d="M12 16c2-1 3-2 3-3s-1.5-1-3 1"
+      :fill="filled ? '#22c55e' : 'none'"
+      :stroke="filled ? '#22c55e' : '#86efac'"
+      stroke-width="1.5"
+      stroke-linecap="round"
+    />
+    <!-- 花瓣 - 5片花瓣呈放射状 -->
+    <ellipse
+      cx="12" cy="6"
+      rx="2.5" ry="4"
+      :fill="filled ? color : 'none'"
+      :stroke="effectiveStrokeColor"
+      stroke-width="1.2"
+    />
+    <ellipse
+      cx="7.5" cy="9"
+      rx="2.5" ry="4"
+      transform="rotate(-72 7.5 9)"
+      :fill="filled ? color : 'none'"
+      :stroke="effectiveStrokeColor"
+      stroke-width="1.2"
+    />
+    <ellipse
+      cx="16.5" cy="9"
+      rx="2.5" ry="4"
+      transform="rotate(72 16.5 9)"
+      :fill="filled ? color : 'none'"
+      :stroke="effectiveStrokeColor"
+      stroke-width="1.2"
+    />
+    <ellipse
+      cx="9" cy="12.5"
+      rx="2.5" ry="4"
+      transform="rotate(-36 9 12.5)"
+      :fill="filled ? color : 'none'"
+      :stroke="effectiveStrokeColor"
+      stroke-width="1.2"
+    />
+    <ellipse
+      cx="15" cy="12.5"
+      rx="2.5" ry="4"
+      transform="rotate(36 15 12.5)"
+      :fill="filled ? color : 'none'"
+      :stroke="effectiveStrokeColor"
+      stroke-width="1.2"
+    />
+    <!-- 花蕊 -->
+    <circle
+      cx="12" cy="10" r="2.5"
+      :fill="filled ? '#fbbf24' : '#fef3c7'"
+      :stroke="filled ? '#f59e0b' : '#fcd34d'"
+      stroke-width="1"
+    />
   </svg>
 </template>
 

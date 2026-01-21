@@ -8,7 +8,7 @@
         :arrow="'always'"
         class="ai-carousel"
       >
-        <el-carousel-item v-for="(item, index) in slides" :key="item.id" class="ai-carousel-item">
+        <el-carousel-item v-for="item in slides" :key="item.id" class="ai-carousel-item">
           
           <div class="slide-card" @click="handleSlideClick(item)" :style="{ cursor: item.link ? 'pointer' : 'default' }">
             <img :src="item.image" :alt="item.title" class="slide-bg" />
@@ -42,6 +42,7 @@
   import { ref, onMounted, onUnmounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { ArrowRight } from '@element-plus/icons-vue';
+  import { getCarousel } from '@/mock';
   
   interface Slide {
     id: number;
@@ -54,66 +55,68 @@
   
   const router = useRouter();
   
-  // 从localStorage加载轮播图配置
-  const loadCarouselSlides = (): Slide[] => {
+  // 默认轮播图数据
+  const defaultSlides: Slide[] = [
+    {
+      id: 1,
+      title: "AI 优秀实践",
+      desc: "探索大模型在企业级应用中的最佳落地场景，驱动业务数智化转型。",
+      image: "https://picsum.photos/1200/600?random=1", 
+      link: "/practice",
+      showContent: true
+    },
+    {
+      id: 2,
+      title: "智能算力引擎",
+      desc: "基于云原生的弹性算力调度，为 AI Agent 提供源源不断的动力。",
+      image: "https://picsum.photos/1200/600?random=2",
+      link: "/compute",
+      showContent: true
+    },
+    {
+      id: 3,
+      title: "多模态创作",
+      desc: "打破感官界限，融合视觉、听觉与文本，重塑数字内容生产流。",
+      image: "https://picsum.photos/1200/600?random=3",
+      link: "/create",
+      showContent: true
+    },
+    {
+      id: 4,
+      title: "未来社区",
+      desc: "连接千万开发者，共享 Prompt 灵感，构建共生共荣的 AI 生态。",
+      image: "https://picsum.photos/1200/600?random=4",
+      link: "/community",
+      showContent: true
+    }
+  ];
+  
+  const slides = ref<Slide[]>(defaultSlides);
+  
+  // 从mock API加载轮播图配置
+  const loadCarouselSlides = async () => {
     try {
-      const saved = localStorage.getItem('admin_carousel_config');
-      if (saved) {
-        const config = JSON.parse(saved);
-        return config.map((item: any) => ({
+      const response = await getCarousel();
+      if (response.list && response.list.length > 0) {
+        slides.value = response.list.map((item: any) => ({
           id: item.id,
           title: item.title || '',
           desc: item.desc || '',
           image: item.image || '',
           link: item.link || '/',
-          showContent: item.showContent || false
-        })).filter((item: Slide) => item.image); // 只显示有图片的
+          showContent: item.showContent !== false
+        })).filter((item: Slide) => item.image);
       }
     } catch (e) {
       console.error('加载轮播图配置失败:', e);
+      // 使用默认数据
+      slides.value = defaultSlides;
     }
-    // 默认数据
-    return [
-      {
-        id: 1,
-        title: "AI 优秀实践",
-        desc: "探索大模型在企业级应用中的最佳落地场景，驱动业务数智化转型。",
-        image: "https://picsum.photos/1200/600?random=1", 
-        link: "/practice",
-        showContent: true
-      },
-      {
-        id: 2,
-        title: "智能算力引擎",
-        desc: "基于云原生的弹性算力调度，为 AI Agent 提供源源不断的动力。",
-        image: "https://picsum.photos/1200/600?random=2",
-        link: "/compute",
-        showContent: true
-      },
-      {
-        id: 3,
-        title: "多模态创作",
-        desc: "打破感官界限，融合视觉、听觉与文本，重塑数字内容生产流。",
-        image: "https://picsum.photos/1200/600?random=3",
-        link: "/create",
-        showContent: true
-      },
-      {
-        id: 4,
-        title: "未来社区",
-        desc: "连接千万开发者，共享 Prompt 灵感，构建共生共荣的 AI 生态。",
-        image: "https://picsum.photos/1200/600?random=4",
-        link: "/community",
-        showContent: true
-      }
-    ];
   };
-  
-  const slides = ref<Slide[]>(loadCarouselSlides());
   
   // 监听配置更新
   const handleConfigUpdate = () => {
-    slides.value = loadCarouselSlides();
+    loadCarouselSlides();
   };
   
   // 处理轮播图点击
@@ -128,6 +131,7 @@
   };
   
   onMounted(() => {
+    loadCarouselSlides();
     window.addEventListener('adminConfigUpdated', handleConfigUpdate);
   });
   

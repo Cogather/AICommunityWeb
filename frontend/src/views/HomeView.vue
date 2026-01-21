@@ -42,24 +42,24 @@
             <!-- 顶部标题条 -->
             <div class="honor-header-bar">
               <h3 class="header-title">AI使用达人·荣誉殿堂</h3>
-              <el-button 
-                text 
-                size="small" 
+              <el-button
+                text
+                size="small"
                 class="more-btn-pill"
                 @click="router.push('/users')"
               >
                 更多
               </el-button>
             </div>
-            
+
             <div class="honor-split-container" style="padding: 20px;">
               <!-- 左边：荣誉殿堂 -->
               <div class="honor-hall">
                 <div class="honor-banner" @click="router.push('/users')" style="cursor: pointer;">
-                  <img 
-                    v-if="honorBannerImage" 
-                    :src="honorBannerImage" 
-                    alt="荣誉殿堂" 
+                  <img
+                    v-if="honorBannerImage"
+                    :src="honorBannerImage"
+                    alt="荣誉殿堂"
                     class="banner-image"
                   />
                   <div v-else class="banner-placeholder">
@@ -74,11 +74,11 @@
                   </div>
                 </div>
                 <div class="awards-grid">
-                  <div 
-                    v-for="award in honorAwards" 
+                  <div
+                    v-for="award in honorAwards"
                     :key="award.id"
                     class="honor-ribbon-btn"
-                    @click="router.push('/award-rules')"
+                    @click="handleAwardClick(award)"
                   >
                     <div class="ribbon-shape">
                       <span class="ribbon-text">{{ award.name }}</span>
@@ -92,13 +92,23 @@
               <div class="ai-users">
                 <div class="users-header">
                   <h4>AI使用达人</h4>
-                  <el-tag effect="dark" round size="small" color="#626aef">TOP</el-tag>
+                  <el-tag effect="dark" round size="small" color="#626aef">最新</el-tag>
                 </div>
-                <div class="users-grid">
-                  <div class="user-card" v-for="i in 6" :key="i">
-                    <el-avatar :size="50" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-                    <span class="user-name">User_{{ 100 + i }}</span>
-                    <span class="user-level">Lv.{{ 10 - i }}</span>
+                <div class="users-grid winners-grid">
+                  <div 
+                    class="winner-card" 
+                    v-for="winner in latestWinners" 
+                    :key="winner.id"
+                    @click="router.push({ path: '/users', query: { keyword: winner.name } })"
+                  >
+                    <el-avatar 
+                      :size="40" 
+                      :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" 
+                    />
+                    <div class="winner-info">
+                      <span class="winner-name">{{ winner.name }}</span>
+                      <span class="winner-award">{{ winner.awardName }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -110,9 +120,9 @@
           <div class="glass-card equal-height-card">
             <div class="card-header">
               <h3>🗣️ 赋能交流</h3>
-              <el-button 
-                text 
-                size="small" 
+              <el-button
+                text
+                size="small"
                 class="more-btn-pill"
                 @click="router.push('/empowerment')"
               >
@@ -120,9 +130,9 @@
               </el-button>
             </div>
             <div class="text-list">
-              <p 
-                v-for="n in 5" 
-                :key="n" 
+              <p
+                v-for="n in 5"
+                :key="n"
                 class="list-row"
                 @click="router.push('/empowerment')"
               >
@@ -147,9 +157,9 @@
           <div class="practice-module">
             <div class="card-header">
               <h3>📚 培训赋能</h3>
-              <el-button 
-                text 
-                size="small" 
+              <el-button
+                text
+                size="small"
                 class="more-btn-pill"
                 @click="router.push('/practices')"
               >
@@ -157,9 +167,9 @@
               </el-button>
             </div>
             <div class="text-list">
-              <div 
-                v-for="practice in practices.training.slice(0, 5)" 
-                :key="practice.id" 
+              <div
+                v-for="practice in practices.training.slice(0, 5)"
+                :key="practice.id"
                 class="list-row"
                 @click="handlePracticeClick(practice)"
               >
@@ -173,17 +183,17 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 分割线 -->
           <div class="practice-divider"></div>
-          
+
           <!-- AI训战 -->
           <div class="practice-module">
             <div class="card-header">
               <h3>⚔️ AI训战</h3>
-              <el-button 
-                text 
-                size="small" 
+              <el-button
+                text
+                size="small"
                 class="more-btn-pill"
                 @click="router.push('/practices')"
               >
@@ -191,9 +201,9 @@
               </el-button>
             </div>
             <div class="text-list">
-              <div 
-                v-for="practice in practices.trainingBattle.slice(0, 5)" 
-                :key="'train-' + practice.id" 
+              <div
+                v-for="practice in practices.trainingBattle.slice(0, 5)"
+                :key="'train-' + practice.id"
                 class="list-row"
                 @click="handlePracticeClick(practice)"
               >
@@ -207,17 +217,17 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 分割线 -->
           <div class="practice-divider"></div>
-          
+
           <!-- 用户交流 -->
           <div class="practice-module">
             <div class="card-header">
               <h3>💬 用户交流</h3>
-              <el-button 
-                text 
-                size="small" 
+              <el-button
+                text
+                size="small"
                 class="more-btn-pill"
                 @click="router.push('/empowerment')"
               >
@@ -225,9 +235,9 @@
               </el-button>
             </div>
             <div class="text-list">
-              <div 
-                v-for="practice in practices.userExchange.slice(0, 5)" 
-                :key="'exchange-' + practice.id" 
+              <div
+                v-for="practice in practices.userExchange.slice(0, 5)"
+                :key="'exchange-' + practice.id"
                 class="list-row"
                 @click="handlePracticeClick(practice)"
               >
@@ -249,7 +259,7 @@
         <div class="section-title-center">
           <h2>AI 工具专区</h2>
         </div>
-        
+
         <!-- AI工具专区轮播图 Banner -->
         <div class="tool-zone-carousel-wrapper">
           <el-carousel
@@ -272,30 +282,30 @@
             </el-carousel-item>
           </el-carousel>
         </div>
-        
+
         <el-row :gutter="20" class="tools-grid">
-          <el-col 
-            :xs="12" 
-            :sm="6" 
+          <el-col
+            :xs="12"
+            :sm="6"
             :md="getColSpan(tools.length)"
-            v-for="tool in tools" 
-            :key="tool.id || tool.name" 
+            v-for="tool in tools"
+            :key="tool.id || tool.name"
             style="margin-bottom: 20px;"
           >
-            <div 
-              class="tool-card glass-card hover-effect" 
+            <div
+              class="tool-card glass-card hover-effect"
               @click="handleToolClick(tool)"
             >
               <div class="tool-logo-wrapper">
-                <img 
-                  v-if="tool.logo" 
-                  :src="tool.logo" 
-                  :alt="tool.name" 
+                <img
+                  v-if="tool.logo"
+                  :src="tool.logo"
+                  :alt="tool.name"
                   class="tool-logo"
                 />
-                <div 
-                  v-else 
-                  class="tool-icon" 
+                <div
+                  v-else
+                  class="tool-icon"
                   :style="{ background: tool.color || '#409eff' }"
                 >
                   {{ tool.name[0] }}
@@ -324,9 +334,9 @@
             同时，AI 在软件工程中的实际落地效果获得更多量化验证...
           </p>
         </div>
-        <el-button 
-          text 
-          size="small" 
+        <el-button
+          text
+          size="small"
           class="more-btn-pill"
           @click="router.push('/news')"
         >
@@ -341,9 +351,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, ChatDotRound, Bell, Trophy, Star } from '@element-plus/icons-vue'
+import { Trophy, Star } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
-import { getHonor, getTools, getToolBanners, getPractices } from '../mock'
+import { getHonor, getTools, getPractices, getNews, getToolBanners, getLatestWinners, type LatestWinner } from '../mock'
 
 const router = useRouter()
 
@@ -359,23 +369,9 @@ const loadHonorConfig = async () => {
       }
     }
   } catch (e) {
-    console.error('从API加载荣誉殿堂配置失败，使用localStorage:', e)
-  }
-  
-  // 降级到localStorage
-  try {
-    const saved = localStorage.getItem('admin_honor_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return {
-        bannerImage: config.bannerImage || '',
-        awards: config.awards || []
-      }
-    }
-  } catch (e) {
     console.error('加载荣誉殿堂配置失败:', e)
   }
-  
+
   // 默认数据
   return {
     bannerImage: 'https://picsum.photos/800/300?random=30',
@@ -388,21 +384,61 @@ const loadHonorConfig = async () => {
   }
 }
 
-const honorConfig = ref({ bannerImage: '', awards: [] })
+const honorConfig = ref({ bannerImage: '', awards: [] as Array<{ id: number; name: string; desc?: string; image?: string; year?: string }> })
 const honorBannerImage = computed(() => honorConfig.value.bannerImage)
 const honorAwards = computed(() => honorConfig.value.awards)
+
+// AI使用达人 - 最新获奖者列表
+const latestWinners = ref<LatestWinner[]>([])
+const loadLatestWinners = async () => {
+  try {
+    const response = await getLatestWinners(9)
+    latestWinners.value = response.list
+  } catch (e) {
+    console.error('加载最新获奖者失败:', e)
+    latestWinners.value = []
+  }
+}
+
+// 处理荣誉殿堂奖项点击 - 跳转到团队荣誉页面
+const handleAwardClick = (award: { id: number; name: string; desc?: string; year?: string }) => {
+  // 从 desc 字段提取年份，如 "2026年度" -> "2026"
+  let year = award.year
+  if (!year && award.desc) {
+    const match = award.desc.match(/(\d{4})/)
+    if (match) {
+      year = match[1]
+    }
+  }
+  // 如果没有年份，使用当前年份
+  if (!year) {
+    year = new Date().getFullYear().toString()
+  }
+
+  // 跳转到 AI使用达人页面，并传递参数
+  router.push({
+    path: '/users',
+    query: {
+      type: 'team',           // 切换到团队荣誉
+      year: year,             // 选中的年份
+      award: award.name       // 选中的奖项名称
+    }
+  })
+}
 
 // 初始化加载所有配置
 onMounted(async () => {
   honorConfig.value = await loadHonorConfig()
+  await loadLatestWinners()
   tools.value = await loadTools()
   toolZoneBanners.value = await loadToolBanners()
   practices.value = await loadPractices()
+  await loadNewsList()
 })
 
 // 监听配置更新
 const handleConfigUpdate = async () => {
-  newsList.value = loadNewsList()
+  await loadNewsList()
   tools.value = await loadTools()
   toolZoneBanners.value = await loadToolBanners()
   honorConfig.value = await loadHonorConfig()
@@ -432,7 +468,7 @@ const loadPractices = async () => {
   } catch (e) {
     console.error('从API加载AI优秀实践失败，使用默认数据:', e)
   }
-  
+
   // 默认数据
   return {
     training: [
@@ -498,43 +534,46 @@ const practices = ref({
   userExchange: []
 } as { training: any[], trainingBattle: any[], userExchange: any[] })
 
-// Mock Data - 从localStorage读取配置，如果没有则使用默认值
-const loadNewsList = () => {
+// 新闻数据 - 从mock API加载
+const newsList = ref<any[]>([])
+
+const loadNewsList = async () => {
   try {
-    const saved = localStorage.getItem('admin_news_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.map((item: any) => ({
+    const response = await getNews()
+    if (response && response.list && response.list.length > 0) {
+      newsList.value = response.list.map((item: any) => ({
         title: item.title,
         date: item.date,
         image: item.image,
         link: item.link || '/news'
       }))
+      return
     }
   } catch (e) {
     console.error('加载头条配置失败:', e)
   }
-  return [
-    { 
-      title: '【大模型专题】多模态模型在医疗影像中的最新应用突破', 
+  // 默认数据
+  newsList.value = [
+    {
+      title: '【大模型专题】多模态模型在医疗影像中的最新应用突破',
       date: '刚刚',
       image: 'https://picsum.photos/300/200?random=20',
       link: '/news'
     },
-    { 
-      title: '【社区活动】2026 AI 开发者大会早鸟票开启预售', 
+    {
+      title: '【社区活动】2026 AI 开发者大会早鸟票开启预售',
       date: '1小时前',
       image: 'https://picsum.photos/300/200?random=21',
       link: '/news'
     },
-    { 
-      title: '【开源动态】轻量级 LLM 本地部署最佳实践指南', 
+    {
+      title: '【开源动态】轻量级 LLM 本地部署最佳实践指南',
       date: '昨天',
       image: 'https://picsum.photos/300/200?random=22',
       link: '/news'
     },
-    { 
-      title: '【深度解析】Agent 自主智能体的未来发展趋势', 
+    {
+      title: '【深度解析】Agent 自主智能体的未来发展趋势',
       date: '昨天',
       image: 'https://picsum.photos/300/200?random=23',
       link: '/news'
@@ -542,13 +581,10 @@ const loadNewsList = () => {
   ]
 }
 
-const newsList = ref(loadNewsList())
 
-
-// AI工具列表配置
+// AI工具列表配置 - 从mock API加载
 const loadTools = async () => {
   try {
-    // 优先从API获取
     const response = await getTools()
     if (response && response.list && response.list.length > 0) {
       return response.list.map((item: any) => ({
@@ -556,104 +592,83 @@ const loadTools = async () => {
         name: item.name,
         desc: item.desc || '',
         logo: item.logo || '',
-        // 如果link已配置，使用配置的link；否则生成默认link（包含toolId参数）
         link: item.link || `/tools?toolId=${item.id}`,
         color: item.color || '#409eff'
       }))
     }
   } catch (e) {
-    console.error('从API加载工具列表失败，使用localStorage:', e)
+    console.error('加载工具列表失败:', e)
   }
-  
-  // 降级到localStorage
-  try {
-    const saved = localStorage.getItem('admin_tools_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.map((item: any, index: number) => ({
-        id: item.id || index + 1,
-        name: item.name,
-        desc: item.desc || '',
-        logo: item.logo || '',
-        // 如果link已配置，使用配置的link；否则生成默认link（包含toolId参数）
-        link: item.link || `/tools?toolId=${item.id || index + 1}`,
-        color: item.color || '#409eff'
-      }))
-    }
-  } catch (e) {
-    console.error('加载工具配置失败:', e)
-  }
-  
+
   // 默认数据
   return [
-    { 
+    {
       id: 1,
-      name: 'TestMate', 
-      desc: '自动化测试助手', 
+      name: 'TestMate',
+      desc: '自动化测试助手',
       logo: 'https://picsum.photos/80/80?random=1',
       link: '/tools/testmate',
-      color: '#36cfc9' 
+      color: '#36cfc9'
     },
-    { 
+    {
       id: 2,
-      name: 'CodeMate', 
-      desc: '智能代码补全', 
+      name: 'CodeMate',
+      desc: '智能代码补全',
       logo: 'https://picsum.photos/80/80?random=2',
       link: '/tools/codemate',
-      color: '#9254de' 
+      color: '#9254de'
     },
-    { 
+    {
       id: 3,
-      name: '云集', 
-      desc: '云端计算集群', 
+      name: '云集',
+      desc: '云端计算集群',
       logo: 'https://picsum.photos/80/80?random=3',
       link: '/tools/yunji',
-      color: '#597ef7' 
+      color: '#597ef7'
     },
-    { 
+    {
       id: 4,
-      name: '云见', 
-      desc: '智能监控平台', 
+      name: '云见',
+      desc: '智能监控平台',
       logo: 'https://picsum.photos/80/80?random=4',
       link: '/tools/yunjian',
-      color: '#ff9c6e' 
+      color: '#ff9c6e'
     },
-    { 
+    {
       id: 5,
-      name: '扶摇', 
-      desc: 'Agent编排引擎', 
+      name: '扶摇',
+      desc: 'Agent编排引擎',
       logo: 'https://picsum.photos/80/80?random=5',
       link: '/tools/fuyao',
-      color: '#4096ff' 
+      color: '#4096ff'
     },
-    { 
+    {
       id: 6,
-      name: '纠错Agent', 
-      desc: '智能代码纠错工具', 
+      name: '纠错Agent',
+      desc: '智能代码纠错工具',
       logo: 'https://picsum.photos/80/80?random=6',
       link: '/tools/correction-agent',
-      color: '#ffc53d' 
+      color: '#ffc53d'
     },
-    { 
+    {
       id: 7,
-      name: 'DT', 
-      desc: '数据转换工具', 
+      name: 'DT',
+      desc: '数据转换工具',
       logo: 'https://picsum.photos/80/80?random=7',
       link: '/tools/dt',
-      color: '#73d13d' 
+      color: '#73d13d'
     },
   ]
 }
 
 const tools = ref([] as any[])
 
-// AI工具专区Banner配置 - 从localStorage读取配置
-const loadToolBanners = () => {
+// AI工具专区Banner配置 - 从mock API加载
+const loadToolBanners = async () => {
   try {
-    const saved = localStorage.getItem('admin_tool_banners_config')
-    if (saved) {
-      const config = JSON.parse(saved)
-      return config.map((item: any) => ({
+    const response = await getToolBanners()
+    if (response && response.list && response.list.length > 0) {
+      return response.list.map((item: any) => ({
         title: item.title || '',
         desc: item.desc || '',
         image: item.image || ''
@@ -662,6 +677,7 @@ const loadToolBanners = () => {
   } catch (e) {
     console.error('加载工具Banner配置失败:', e)
   }
+  // 默认数据
   return [
     {
       title: '最新 AI 工具推荐',
@@ -704,7 +720,7 @@ const handleToolClick = (tool: any) => {
         } else {
           router.push(tool.link)
         }
-      } catch (e) {
+      } catch {
         // 如果link不是完整URL，直接使用并添加toolId参数
         const separator = tool.link.includes('?') ? '&' : '?'
         router.push(`${tool.link}${separator}toolId=${tool.id}`)
@@ -738,7 +754,7 @@ const handleToolPlatformClick = (tool: any) => {
         } else {
           router.push(tool.link)
         }
-      } catch (e) {
+      } catch {
         // 如果link不是完整URL，直接使用并添加toolId参数
         const separator = tool.link.includes('?') ? '&' : '?'
         router.push(`${tool.link}${separator}toolId=${tool.id}`)
@@ -756,13 +772,13 @@ const handleToolPlatformClick = (tool: any) => {
 }
 
 // 处理实践点击
-const handlePracticeClick = (practice: any) => {
+const handlePracticeClick = (_practice: any) => {
   // 跳转到实践详情或列表页
   router.push('/practices')
 }
 
 // 处理头条点击
-const handleNewsClick = (news: any) => {
+const _handleNewsClick = (news: any) => {
   if (news.link) {
     if (news.link.startsWith('http')) {
       window.open(news.link, '_blank')
@@ -780,7 +796,7 @@ const toolZoneBanners = ref(loadToolBanners())
 
 <style scoped lang="scss">
 /* -----------------------
-  1. 全局布局与背景 
+  1. 全局布局与背景
   -----------------------
 */
 .page-container {
@@ -792,7 +808,7 @@ const toolZoneBanners = ref(loadToolBanners())
   color: #000000; /* 改为黑色 */
   width: 100%;
   box-sizing: border-box;
-  
+
   /* 小屏设备：确保占满宽度 */
   @media (max-width: 768px) {
     width: 100%;
@@ -821,12 +837,12 @@ const toolZoneBanners = ref(loadToolBanners())
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
-  
+
   /* 大屏幕时增加右边距，保持与轮播图的视觉平衡 */
   @media (min-width: 1920px) {
     right: 120px;
   }
-  
+
   /* 中等屏幕保持固定边距 */
   @media (min-width: 1400px) and (max-width: 1919px) {
     right: 80px;
@@ -837,35 +853,35 @@ const toolZoneBanners = ref(loadToolBanners())
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.15),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset,
     0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   /* 添加光效背景 */
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: 
+    background:
       radial-gradient(ellipse at top right, rgba(255, 255, 255, 0.15), transparent 60%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
     pointer-events: none;
     border-radius: 20px;
   }
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.18);
     border-color: rgba(255, 255, 255, 0.35);
-    box-shadow: 
+    box-shadow:
       0 12px 48px rgba(0, 0, 0, 0.2),
       0 0 0 1px rgba(255, 255, 255, 0.15) inset,
       0 4px 16px rgba(0, 0, 0, 0.15);
     transform: translateY(-50%) scale(1.02);
   }
-  
+
   @media (max-width: 1400px) {
     display: none; /* 小屏幕隐藏 */
   }
@@ -880,13 +896,13 @@ const toolZoneBanners = ref(loadToolBanners())
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   position: relative;
   z-index: 1;
-  
+
   .el-icon {
     font-size: 18px; /* 减小图标 */
     color: rgba(255, 255, 255, 0.95);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   }
-  
+
   span {
     font-size: 14px; /* 减小字体 */
     font-weight: 700;
@@ -904,23 +920,23 @@ const toolZoneBanners = ref(loadToolBanners())
   overflow-y: auto;
   position: relative;
   z-index: 1;
-  
+
   /* 隐藏滚动条但保持滚动功能 */
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-  
+
   &::-webkit-scrollbar {
     width: 4px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 2px;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.5);
     }
@@ -941,7 +957,7 @@ const toolZoneBanners = ref(loadToolBanners())
   overflow: hidden;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  
+
   /* 左侧彩色指示条 */
   &::before {
     content: '';
@@ -955,7 +971,7 @@ const toolZoneBanners = ref(loadToolBanners())
     transition: transform 0.3s;
     border-radius: 0 2px 2px 0;
   }
-  
+
   /* 光效 */
   &::after {
     content: '';
@@ -966,33 +982,33 @@ const toolZoneBanners = ref(loadToolBanners())
     transition: opacity 0.3s;
     pointer-events: none;
   }
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.5); /* 悬停时更白 */
     border-color: rgba(255, 255, 255, 0.6);
     transform: translateX(3px);
-    box-shadow: 
+    box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.15),
       0 0 0 1px rgba(255, 255, 255, 0.2) inset;
-    
+
     &::before {
       transform: scaleY(1);
     }
-    
+
     &::after {
       opacity: 1;
     }
-    
+
     .tool-icon {
       transform: scale(1.1) rotate(5deg);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
-    
+
     .tool-name {
       color: #1e293b; /* 悬停时保持黑色 */
     }
   }
-  
+
   &:active {
     transform: translateX(2px);
   }
@@ -1012,14 +1028,14 @@ const toolZoneBanners = ref(loadToolBanners())
   transition: all 0.3s;
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  
+
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 10px;
   }
-  
+
   .el-icon {
     font-size: 20px; /* 减小图标字体 */
     color: rgba(255, 255, 255, 0.95);
@@ -1060,14 +1076,14 @@ const toolZoneBanners = ref(loadToolBanners())
   margin: 0 auto;
   padding: 20px;
   padding-top: 0; /* 减少顶部间距，让内容更靠近轮播图 */
-  
+
   /* 小屏设备：占满屏幕宽度，减少内边距 */
   @media (max-width: 768px) {
     max-width: 100%;
     padding: 12px;
     padding-top: 0;
   }
-  
+
   /* 中等屏幕：适中的宽度 */
   @media (min-width: 769px) and (max-width: 1024px) {
     max-width: 100%;
@@ -1082,7 +1098,7 @@ const toolZoneBanners = ref(loadToolBanners())
   margin-bottom: 40px;
   width: 100%;
   box-sizing: border-box;
-  
+
   /* 小屏设备：确保占满宽度 */
   @media (max-width: 768px) {
     width: 100%;
@@ -1094,7 +1110,7 @@ const toolZoneBanners = ref(loadToolBanners())
 /* 确保AI优秀实践和赋能交流同高 */
 .equal-height {
   display: flex;
-  
+
   :deep(.el-col) {
     display: flex;
   }
@@ -1105,7 +1121,7 @@ const toolZoneBanners = ref(loadToolBanners())
   flex-direction: column;
   height: 100%;
   width: 100%; /* 占满父元素宽度 */
-  
+
   .text-list {
     flex: 1;
   }
@@ -1138,7 +1154,7 @@ const toolZoneBanners = ref(loadToolBanners())
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px 0 rgba(31, 38, 135, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 0 0 1px rgba(255, 255, 255, 0.3);
@@ -1148,7 +1164,7 @@ const toolZoneBanners = ref(loadToolBanners())
   width: 100%; /* 占满父元素宽度 */
   box-sizing: border-box; /* 确保 padding 不会超出宽度 */
   overflow: hidden; /* 确保流动光效不溢出 */
-  
+
   /* 流动光感效果 */
   &::before {
     content: '';
@@ -1169,7 +1185,7 @@ const toolZoneBanners = ref(loadToolBanners())
     pointer-events: none;
     z-index: 1;
   }
-  
+
   /* 顶部高光效果，增强立体感 */
   &::after {
     content: '';
@@ -1187,18 +1203,18 @@ const toolZoneBanners = ref(loadToolBanners())
     border-radius: 16px 16px 0 0;
     z-index: 2;
   }
-  
+
   /* 确保内容在光效之上 */
   > * {
     position: relative;
     z-index: 3;
   }
-  
+
   /* 悬停时增强透亮效果 */
   &:hover {
     background: rgba(255, 255, 255, 0.65);
     border-color: rgba(255, 255, 255, 0.7);
-    box-shadow: 
+    box-shadow:
       0 12px 40px 0 rgba(31, 38, 135, 0.25),
       inset 0 1px 0 rgba(255, 255, 255, 0.8),
       0 0 0 1px rgba(255, 255, 255, 0.4);
@@ -1227,7 +1243,7 @@ const toolZoneBanners = ref(loadToolBanners())
   align-items: center;
   border-radius: 16px 16px 0 0; /* 顶部圆角 */
   overflow: hidden;
-  
+
   /* 城市/楼宇线稿纹理 - 使用 SVG 图案 */
   &::before {
     content: '';
@@ -1236,7 +1252,7 @@ const toolZoneBanners = ref(loadToolBanners())
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: 
+    background-image:
       /* 城市轮廓线稿纹理 - 模拟楼宇剪影 */
       url("data:image/svg+xml,%3Csvg width='200' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 60 L10 45 L15 50 L25 35 L35 40 L45 30 L55 35 L65 25 L75 30 L85 20 L95 25 L105 15 L115 20 L125 10 L135 15 L145 5 L155 10 L165 0 L175 5 L185 0 L200 0 L200 60 Z' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='1'/%3E%3C/svg%3E"),
       repeating-linear-gradient(
@@ -1252,7 +1268,7 @@ const toolZoneBanners = ref(loadToolBanners())
     opacity: 0.6;
     pointer-events: none;
   }
-  
+
   /* 标题文字 */
   .header-title {
     position: relative;
@@ -1263,7 +1279,7 @@ const toolZoneBanners = ref(loadToolBanners())
     color: #ffffff; /* 标题条内保持白色，因为背景是蓝色 */
     letter-spacing: 0.3px;
   }
-  
+
   /* 标题条内的更多按钮 - 特殊定位 */
   .more-btn-pill {
     position: relative;
@@ -1278,14 +1294,14 @@ const toolZoneBanners = ref(loadToolBanners())
     font-weight: 500;
     transition: all 0.3s ease;
     backdrop-filter: blur(4px);
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.25);
       border-color: rgba(255, 255, 255, 0.4);
       transform: translateY(-1px);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
-    
+
     &:active {
       transform: translateY(0);
     }
@@ -1314,13 +1330,13 @@ const toolZoneBanners = ref(loadToolBanners())
     font-size: 20px;
     color: #409eff;
   }
-  
+
   .header-actions {
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  
+
   /* 通用胶囊按钮样式 - 适用于所有模块的"更多"按钮 */
   .more-btn-pill {
     border-radius: 999px; /* 完全圆角 pill */
@@ -1333,7 +1349,7 @@ const toolZoneBanners = ref(loadToolBanners())
     font-weight: 500;
     transition: all 0.3s ease;
     backdrop-filter: blur(4px);
-    
+
     &:hover {
       background: rgba(30, 58, 138, 0.2);
       border-color: rgba(30, 58, 138, 0.5);
@@ -1341,12 +1357,12 @@ const toolZoneBanners = ref(loadToolBanners())
       box-shadow: 0 2px 8px rgba(30, 58, 138, 0.2);
       color: #1e40af; /* 稍亮的深蓝色 */
     }
-    
+
     &:active {
       transform: translateY(0);
     }
   }
-  
+
   /* 保留旧的 more-btn 样式以兼容（如果还有使用） */
   .more-btn {
     @extend .more-btn-pill;
@@ -1394,13 +1410,13 @@ const toolZoneBanners = ref(loadToolBanners())
   height: 240px;
   border-radius: 12px;
   overflow: hidden;
-  
+
   .banner-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  
+
   .banner-overlay {
     position: absolute;
     top: 0;
@@ -1416,18 +1432,18 @@ const toolZoneBanners = ref(loadToolBanners())
     align-items: center;
     justify-content: center;
   }
-  
+
   .banner-content {
     text-align: center;
     color: #fff;
-    
+
     h3 {
       margin: 0 0 8px 0;
       font-size: 24px;
       font-weight: 700;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
-    
+
     p {
       margin: 0;
       font-size: 13px;
@@ -1435,7 +1451,7 @@ const toolZoneBanners = ref(loadToolBanners())
       text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
     }
   }
-  
+
   .banner-placeholder {
     width: 100%;
     height: 100%;
@@ -1446,11 +1462,11 @@ const toolZoneBanners = ref(loadToolBanners())
     background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     color: #fff;
     gap: 12px;
-    
+
     .el-icon {
       font-size: 48px;
     }
-    
+
     span {
       font-size: 20px;
       font-weight: 700;
@@ -1472,7 +1488,7 @@ const toolZoneBanners = ref(loadToolBanners())
   opacity: 0.85;
   display: flex;
   justify-content: center;
-  
+
   &:hover {
     transform: translateY(-4px) scale(1.05);
     opacity: 1;
@@ -1565,7 +1581,7 @@ const toolZoneBanners = ref(loadToolBanners())
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
+
   h4 {
     margin: 0;
     font-size: 18px;
@@ -1605,7 +1621,7 @@ const toolZoneBanners = ref(loadToolBanners())
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
+
   h4 {
     margin: 0;
     font-size: 18px;
@@ -1620,6 +1636,66 @@ const toolZoneBanners = ref(loadToolBanners())
   gap: 12px;
 }
 
+/* AI使用达人 - 最新获奖者网格 */
+.winners-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.winner-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .winner-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .winner-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .winner-award {
+    font-size: 10px;
+    color: #6b7280;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.1));
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+}
+
 .user-card {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1631,19 +1707,19 @@ const toolZoneBanners = ref(loadToolBanners())
   gap: 8px;
   transition: all 0.3s;
   cursor: pointer;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
   }
-  
+
   .user-name {
     font-size: 13px;
     font-weight: 600;
     text-align: center;
     color: #000000; /* 黑色 */
   }
-  
+
   .user-level {
     font-size: 11px;
     opacity: 0.7;
@@ -1671,19 +1747,19 @@ const toolZoneBanners = ref(loadToolBanners())
   display: grid;
   grid-template-rows: 1fr 1fr; /* 两行平分高度 */
   height: 180px; /* 整体高度更高 */
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
-  
+
   .news-image-wrapper {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    
+
     .news-image {
       width: 100%;
       height: 100%;
@@ -1691,17 +1767,17 @@ const toolZoneBanners = ref(loadToolBanners())
       transition: transform 0.3s ease;
     }
   }
-  
+
   &:hover .news-image {
     transform: scale(1.05);
   }
-  
+
   .news-content {
     padding: 10px 12px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    
+
     .news-title {
       margin: 0;
       font-size: 13px;
@@ -1716,7 +1792,7 @@ const toolZoneBanners = ref(loadToolBanners())
       line-height: 1.4;
       flex: 1;
     }
-    
+
     .news-date {
       font-size: 11px;
       color: rgba(0, 0, 0, 0.6); /* 黑色，60% 透明度 */
@@ -1758,11 +1834,11 @@ const toolZoneBanners = ref(loadToolBanners())
 :deep(.tool-zone-carousel) {
   width: 100%;
   border-radius: 16px;
-  
+
   .el-carousel__container {
     border-radius: 16px;
   }
-  
+
   .el-carousel__arrow {
     background: rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
@@ -1772,21 +1848,21 @@ const toolZoneBanners = ref(loadToolBanners())
     height: 40px;
     border-radius: 50%;
     transition: all 0.3s ease;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.5);
       transform: scale(1.1);
     }
   }
-  
+
   .el-carousel__indicators {
     bottom: 20px !important; /* 指示器在图片底部 */
     left: 50%;
     transform: translateX(-50%);
-    
+
     .el-carousel__indicator {
       margin: 0 4px;
-      
+
       button {
         background-color: rgba(255, 255, 255, 0.5);
         width: 8px;
@@ -1795,7 +1871,7 @@ const toolZoneBanners = ref(loadToolBanners())
         transition: all 0.3s ease;
         border: none;
       }
-      
+
       &.is-active button {
         background-color: #fff;
         width: 24px;
@@ -1811,18 +1887,18 @@ const toolZoneBanners = ref(loadToolBanners())
   height: 200px;
   border-radius: 16px;
   overflow: hidden;
-  
+
   .banner-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
   }
-  
+
   &:hover .banner-image {
     transform: scale(1.05);
   }
-  
+
   .banner-overlay {
     position: absolute;
     bottom: 0;
@@ -1830,11 +1906,11 @@ const toolZoneBanners = ref(loadToolBanners())
     right: 0;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
     padding: 30px 40px 50px 40px; /* 底部增加padding，为指示器留出空间 */
-    
+
     .banner-text {
       max-width: 1200px;
       margin: 0 auto;
-      
+
       h3 {
         margin: 0 0 8px 0;
         font-size: 24px;
@@ -1842,7 +1918,7 @@ const toolZoneBanners = ref(loadToolBanners())
         color: #000000; /* 改为黑色 */
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
       }
-      
+
       p {
         margin: 0;
         font-size: 15px;
@@ -1859,88 +1935,88 @@ const toolZoneBanners = ref(loadToolBanners())
     width: 100%;
     overflow-x: hidden;
   }
-  
+
   .main-content {
     width: 100%;
     max-width: 100%;
     padding: 12px;
     box-sizing: border-box;
   }
-  
+
   .glass-card {
     width: 100%;
     box-sizing: border-box;
   }
-  
+
   .tool-zone-carousel-wrapper {
     margin: 20px 0 0 0; /* 底部margin为0，使工具列表紧挨着轮播图 */
     width: 100%;
   }
-  
+
   /* 荣誉殿堂响应式 */
   .honor-header-bar {
     padding: 12px 16px;
-    
+
     .header-title {
       font-size: 14px;
     }
-    
+
     .more-btn-pill {
       padding: 5px 12px;
       font-size: 12px;
     }
   }
-  
+
   /* 所有模块的胶囊按钮响应式 */
   .more-btn-pill {
     padding: 5px 12px;
     font-size: 12px;
   }
-  
+
   .honor-split-container {
     flex-direction: column;
     width: 100%;
     padding: 16px !important;
   }
-  
+
   .awards-grid {
     grid-template-columns: 1fr; /* 小屏幕下一行一个 */
   }
-  
+
   .honor-banner {
     height: 180px;
-    
+
     .banner-content h3 {
       font-size: 20px;
     }
   }
-  
+
   /* 社区头条响应式 */
   .news-grid {
     grid-template-columns: 1fr; /* 小屏幕下一行一个 */
   }
-  
+
   .news-card {
     height: 150px; /* 小屏幕下高度 */
   }
-  
+
   :deep(.tool-zone-carousel) {
     .el-carousel__indicators {
       bottom: 15px !important;
     }
   }
-  
+
   .tool-banner-item {
     height: 160px;
-    
+
     .banner-overlay {
       padding: 20px 20px 45px 20px; /* 底部增加padding，为指示器留出空间 */
-      
+
       .banner-text {
         h3 {
           font-size: 20px;
         }
-        
+
         p {
           font-size: 13px;
         }
@@ -1971,7 +2047,7 @@ const toolZoneBanners = ref(loadToolBanners())
     flex-shrink: 0;
     width: 48px;
     height: 48px;
-    
+
     .tool-logo {
       width: 100%;
       height: 100%;
@@ -1979,7 +2055,7 @@ const toolZoneBanners = ref(loadToolBanners())
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
-    
+
     .tool-icon {
       width: 48px;
       height: 48px;
@@ -1997,7 +2073,7 @@ const toolZoneBanners = ref(loadToolBanners())
   .tool-info {
     flex: 1;
     min-width: 0; /* 允许文本截断 */
-    
+
     h4 {
       margin: 0 0 4px;
       font-size: 16px;
@@ -2006,7 +2082,7 @@ const toolZoneBanners = ref(loadToolBanners())
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    
+
     p {
       margin: 0;
       font-size: 12px;
@@ -2029,27 +2105,27 @@ const toolZoneBanners = ref(loadToolBanners())
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
-  
+
   &:last-child {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
   }
-  
+
   &:hover {
     padding-left: 8px;
-    
+
     .practice-title {
       color: #1e3a8a; /* 深蓝色悬停效果 */
     }
   }
-  
+
   .practice-content {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .practice-title {
     font-size: 15px;
     font-weight: 600;
@@ -2064,7 +2140,7 @@ const toolZoneBanners = ref(loadToolBanners())
     text-overflow: ellipsis;
     transition: color 0.3s ease;
   }
-  
+
   .practice-meta {
     display: flex;
     align-items: center;
@@ -2072,21 +2148,21 @@ const toolZoneBanners = ref(loadToolBanners())
     font-size: 12px;
     color: rgba(0, 0, 0, 0.6); /* 黑色，60% 透明度 */
   }
-  
+
   .practice-author {
     display: flex;
     align-items: center;
-    
+
     &::before {
       content: '👤';
       margin-right: 4px;
     }
   }
-  
+
   .practice-time {
     display: flex;
     align-items: center;
-    
+
     &::before {
       content: '🕐';
       margin-right: 4px;
@@ -2097,37 +2173,37 @@ const toolZoneBanners = ref(loadToolBanners())
 /* AI优秀实践 - 统一毛玻璃结构 */
 .practice-unified {
   padding: 24px;
-  
+
   .practice-container {
     display: flex;
     gap: 0;
     width: 100%;
-    
+
     .practice-module {
       flex: 1;
       padding: 0 20px;
       display: flex;
       flex-direction: column;
-      
+
       &:first-child {
         padding-left: 0;
       }
-      
+
       &:last-child {
         padding-right: 0;
       }
-      
+
       .card-header {
         margin-bottom: 20px;
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         padding-bottom: 10px;
       }
-      
+
       .text-list {
         flex: 1;
       }
     }
-    
+
     .practice-divider {
       width: 1px;
       background: repeating-linear-gradient(
@@ -2141,21 +2217,21 @@ const toolZoneBanners = ref(loadToolBanners())
       margin: 0 20px;
     }
   }
-  
+
   /* 响应式 */
   @media (max-width: 768px) {
     .practice-container {
       flex-direction: column;
-      
+
       .practice-module {
         padding: 0;
         margin-bottom: 20px;
-        
+
         &:last-child {
           margin-bottom: 0;
         }
       }
-      
+
       .practice-divider {
         width: 100%;
         height: 1px;
@@ -2186,7 +2262,7 @@ const toolZoneBanners = ref(loadToolBanners())
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
-  
+
   /* 流动光感效果 */
   &::before {
     content: '';
@@ -2207,7 +2283,7 @@ const toolZoneBanners = ref(loadToolBanners())
     pointer-events: none;
     z-index: 1;
   }
-  
+
   /* 顶部高光效果 */
   &::after {
     content: '';
@@ -2229,7 +2305,7 @@ const toolZoneBanners = ref(loadToolBanners())
   &:hover {
     background: rgba(255, 255, 255, 0.65) !important;
     border-color: rgba(255, 255, 255, 0.7) !important;
-    box-shadow: 
+    box-shadow:
       0 12px 40px 0 rgba(31, 38, 135, 0.25),
       inset 0 1px 0 rgba(255, 255, 255, 0.8),
       0 0 0 1px rgba(255, 255, 255, 0.4);

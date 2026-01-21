@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+// computed removed - not used
 
 interface Tag {
   name: string

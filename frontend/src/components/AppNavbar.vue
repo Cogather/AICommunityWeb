@@ -192,7 +192,7 @@ const updateCurrentTeamAwards = () => {
 }
 
 // 监听路由变化，加载团队荣誉数据
-watch(() => route.path, (newPath) => {
+watch(() => route.path, (_newPath) => {
   loadTeamAwardsForMenu()
 }, { immediate: true })
 

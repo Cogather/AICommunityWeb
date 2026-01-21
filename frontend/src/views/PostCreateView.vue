@@ -234,7 +234,38 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, shallowRef } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createPost, updatePost, saveDraft, getRecommendedCovers, getTools, getPostDetail } from '../mock'
+import { createPost, updatePost, getRecommendedCovers, getTools, getPostDetail, saveDraft, getDraft, deleteDraft, getZoneTags } from '../mock'
+
+// localStorage 草稿存储 key
+const DRAFT_STORAGE_KEY = 'post_draft'
+
+// 获取存储的草稿
+const getStoredDraft = (): any => {
+  try {
+    const stored = localStorage.getItem(DRAFT_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
+// 保存草稿到 localStorage
+const setStoredDraft = (draft: any) => {
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
+  } catch (e) {
+    console.error('保存草稿到localStorage失败:', e)
+  }
+}
+
+// 清除存储的草稿
+const clearStoredDraft = () => {
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY)
+  } catch (e) {
+    console.error('清除草稿失败:', e)
+  }
+}
 import type { InputInstance } from 'element-plus'
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
@@ -251,7 +282,7 @@ const route = useRoute()
 const formRef = ref()
 const tagInputRef = ref<InputInstance>()
 const publishing = ref(false)
-const recommending = ref(false)
+const _recommending = ref(false)
 const postLoading = ref(false)
 const tagInputVisible = ref(false)
 const tagInputValue = ref('')
@@ -259,6 +290,9 @@ const lastSaveTime = ref('')
 const editorRef = shallowRef<IDomEditor>()
 const editorMode = 'default'
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+let backendSyncTimer: ReturnType<typeof setInterval> | null = null
+const BACKEND_SYNC_INTERVAL = 3 * 60 * 1000 // 3分钟同步一次到后端
+let lastBackendSyncTime = 0 // 上次同步到后端的时间戳
 
 // 是否为编辑模式
 const isEditMode = computed(() => {
@@ -266,7 +300,7 @@ const isEditMode = computed(() => {
 })
 
 // 是否从编辑页面跳转过来（用于新建帖子）
-const isFromEditPage = computed(() => {
+const _isFromEditPage = computed(() => {
   return route.query.fromEdit === 'true'
 })
 
@@ -331,13 +365,14 @@ const resetFormData = () => {
 // 工具列表（AI工具专区）- 从API加载
 const loadTools = async () => {
   try {
-    const toolsList = await getTools()
-    const tools = toolsList.map((item: any) => ({
+    const response = await getTools()
+    // getTools() 返回 { list: ToolItem[] }，需要使用 response.list
+    const tools = (response.list || []).map((item: any) => ({
       id: item.id,
       name: item.name
     }))
-    // 添加"其他"选项
-    tools.push({ id: -1, name: '其他' })
+    // 添加"其他工具"选项（toolId=0）
+    tools.push({ id: 0, name: '其他工具' })
     return tools
   } catch (e) {
     console.error('加载工具配置失败:', e)
@@ -349,7 +384,7 @@ const loadTools = async () => {
       { id: 5, name: '扶摇' },
       { id: 6, name: '纠错Agent' },
       { id: 7, name: 'DT' },
-      { id: -1, name: '其他' }
+      { id: 0, name: '其他工具' }
     ]
   }
 }
@@ -389,16 +424,37 @@ const handleBack = () => {
   }
 }
 
-// 不同专区的标签
-const zoneTags = {
-  practices: ['自然语言处理', '计算机视觉', '深度学习', 'AI伦理', '机器学习', '机器人', '数据科学', '生成式AI', 'PyTorch', 'TensorFlow'],
-  tools: ['新手', '进阶', '最佳实践', '技巧', '案例', '教程', '优化', '通用'],
-  agent: ['Agent应用', '工作流', '自动化', '智能编排', '案例分享'],
-  empowerment: ['讨论', '提问', '分享', '经验', '工具', '技巧', '案例', '教程', '最佳实践', '问题解决']
-}
-
 // AI工具专区的固定标签（非"其他"工具时只能选择这两个）
 const toolFixedTags = ['操作指导', '优秀使用']
+
+// 从后端获取的专区标签
+const fetchedZoneTags = ref<string[]>([])
+
+// 加载专区标签
+const loadZoneTags = async () => {
+  if (!formData.value.zone) {
+    fetchedZoneTags.value = []
+    return
+  }
+  
+  try {
+    const result = await getZoneTags({
+      zone: formData.value.zone,
+      toolId: formData.value.toolId
+    })
+    fetchedZoneTags.value = result.list.map(t => t.name)
+  } catch (error) {
+    console.error('加载专区标签失败:', error)
+    // 使用默认标签作为降级方案
+    const defaultTags: Record<string, string[]> = {
+      practices: ['自然语言处理', '计算机视觉', '深度学习', 'AI伦理', '机器学习', '机器人', '数据科学', '生成式AI', 'PyTorch', 'TensorFlow'],
+      tools: ['新手', '进阶', '最佳实践', '技巧', '案例', '教程', '优化', '通用'],
+      agent: ['Agent应用', '工作流', '自动化', '智能编排', '案例分享'],
+      empowerment: ['讨论', '提问', '分享', '经验', '工具', '技巧', '案例', '教程', '最佳实践', '问题解决']
+    }
+    fetchedZoneTags.value = defaultTags[formData.value.zone] || []
+  }
+}
 
 // 当前可用的标签
 const availableTags = computed(() => {
@@ -408,16 +464,16 @@ const availableTags = computed(() => {
       // 如果选择了非"其他"工具，只显示固定标签
       return toolFixedTags
     } else if (formData.value.toolId === -1) {
-      // 如果选择了"其他"工具，显示所有工具专区的标签
-      return zoneTags.tools
+      // 如果选择了"其他"工具，显示从后端获取的标签
+      return fetchedZoneTags.value.length > 0 ? fetchedZoneTags.value : ['新手', '进阶', '最佳实践', '技巧', '案例', '教程', '优化', '通用']
     }
     // 如果还没选择工具，不显示标签
     return []
   }
   
-  // 其他专区正常显示标签
+  // 其他专区显示从后端获取的标签
   if (formData.value.zone) {
-    return zoneTags[formData.value.zone as keyof typeof zoneTags] || []
+    return fetchedZoneTags.value
   }
   return []
 })
@@ -502,7 +558,7 @@ const editorConfig: Partial<IEditorConfig> = {
           const imageUrl = URL.createObjectURL(file)
           insertFn(imageUrl, file.name)
           ElMessage.success('图片插入成功')
-        } catch (error) {
+        } catch {
           ElMessage.error('图片上传失败')
         }
       }
@@ -534,7 +590,7 @@ const editorConfig: Partial<IEditorConfig> = {
           const videoUrl = URL.createObjectURL(file)
           insertFn(videoUrl)
           ElMessage.success('视频插入成功')
-        } catch (error) {
+        } catch {
           ElMessage.error('视频上传失败')
         }
       }
@@ -721,11 +777,14 @@ const getTagStyle = (tag: string) => {
 }
 
 // 专区切换
-const handleZoneChange = () => {
+const handleZoneChange = async () => {
   formData.value.toolId = null
   // 保留预设标签，清除自定义标签
   formData.value.tags = formData.value.tags.filter(tag => isPresetTag(tag))
   presetTags.value = []
+  
+  // 加载新专区的标签
+  await loadZoneTags()
   
   // 如果切换到AI工具专区，需要验证工具选择
   if (formData.value.zone === 'tools') {
@@ -740,7 +799,7 @@ const handleZoneChange = () => {
 }
 
 // 工具切换
-const handleToolChange = () => {
+const handleToolChange = async () => {
   // 如果选择了非"其他"工具，只保留固定标签（操作指导、优秀使用）
   if (formData.value.toolId !== null && formData.value.toolId !== -1) {
     formData.value.tags = formData.value.tags.filter(tag => toolFixedTags.includes(tag))
@@ -750,6 +809,10 @@ const handleToolChange = () => {
     formData.value.tags = formData.value.tags.filter(tag => isPresetTag(tag))
     presetTags.value = []
   }
+  
+  // 加载工具对应的标签
+  await loadZoneTags()
+  
   handleAutoSave()
 }
 
@@ -849,7 +912,7 @@ const handleSelectRecommendedCover = (coverUrl: string) => {
   ElMessage.success('已选择推荐封面')
 }
 
-// 自动保存草稿（仅在新建模式下）
+// 自动保存草稿到本地（仅在新建模式下）- 短时间保存
 const handleAutoSave = () => {
   // 编辑模式下不保存草稿
   if (isEditMode.value) {
@@ -864,17 +927,73 @@ const handleAutoSave = () => {
       ...formData.value,
       savedAt: new Date().toISOString()
     }
-    localStorage.setItem('post_draft', JSON.stringify(draft))
+    // 只保存到 localStorage（短时间存储）
+    setStoredDraft(draft)
     lastSaveTime.value = new Date().toLocaleTimeString('zh-CN', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     })
-  }, 2000) // 2秒后自动保存
+  }, 2000) // 2秒后自动保存到本地
 }
 
-// 手动保存草稿（仅在新建模式下）
-const handleSaveDraft = () => {
+// 同步草稿到后端（长时间存储）- 每3分钟执行一次
+const syncDraftToBackend = async () => {
+  // 编辑模式下不同步草稿
+  if (isEditMode.value) {
+    return
+  }
+  
+  // 检查是否有内容需要保存
+  const hasDraftContent = formData.value.title || 
+                          formData.value.summary || 
+                          (formData.value.content && formData.value.content !== '<p><br></p>')
+  
+  if (!hasDraftContent) {
+    return
+  }
+  
+  const now = Date.now()
+  // 如果距离上次同步不足3分钟，跳过
+  if (now - lastBackendSyncTime < BACKEND_SYNC_INTERVAL) {
+    return
+  }
+  
+  const draft = {
+    ...formData.value,
+    savedAt: new Date().toISOString()
+  }
+  
+  try {
+    await saveDraft(draft)
+    lastBackendSyncTime = now
+    console.log('草稿已同步到后端:', new Date().toLocaleTimeString())
+  } catch (e) {
+    console.error('同步草稿到后端失败:', e)
+  }
+}
+
+// 启动后端同步定时器
+const startBackendSyncTimer = () => {
+  if (backendSyncTimer) {
+    clearInterval(backendSyncTimer)
+  }
+  // 每3分钟同步一次到后端
+  backendSyncTimer = setInterval(() => {
+    syncDraftToBackend()
+  }, BACKEND_SYNC_INTERVAL)
+}
+
+// 停止后端同步定时器
+const stopBackendSyncTimer = () => {
+  if (backendSyncTimer) {
+    clearInterval(backendSyncTimer)
+    backendSyncTimer = null
+  }
+}
+
+// 手动保存草稿（仅在新建模式下）- 同时保存到本地和后端
+const handleSaveDraft = async () => {
   // 编辑模式下不保存草稿
   if (isEditMode.value) {
     return
@@ -884,7 +1003,15 @@ const handleSaveDraft = () => {
     ...formData.value,
     savedAt: new Date().toISOString()
   }
-  localStorage.setItem('post_draft', JSON.stringify(draft))
+  // 保存到 localStorage
+  setStoredDraft(draft)
+  // 同时保存到后端
+  try {
+    await saveDraft(draft)
+    lastBackendSyncTime = Date.now()
+  } catch (e) {
+    console.error('保存草稿到后端失败:', e)
+  }
   lastSaveTime.value = new Date().toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -897,6 +1024,8 @@ const handleSaveDraft = () => {
 const handlePublish = async () => {
   if (!formRef.value) return
 
+  let result: any = null
+  
   try {
     // 如果选择了AI工具专区，确保工具已选择
     if (formData.value.zone === 'tools' && (formData.value.toolId === null || formData.value.toolId === undefined)) {
@@ -925,7 +1054,7 @@ const handlePublish = async () => {
       const postId = route.query.id ? Number(route.query.id) : null
       if (postId && route.query.edit === 'true') {
         // 更新帖子
-        await updatePost(postId, {
+        result = await updatePost(postId, {
           title: formData.value.title,
           summary: formData.value.summary,
           content: formData.value.content,
@@ -937,7 +1066,7 @@ const handlePublish = async () => {
         ElMessage.success('帖子更新成功')
       } else {
         // 创建帖子
-        await createPost({
+        result = await createPost({
           title: formData.value.title,
           summary: formData.value.summary,
           content: formData.value.content,
@@ -951,7 +1080,12 @@ const handlePublish = async () => {
 
       // 清除草稿（仅在新建模式下）
       if (!isEditMode.value) {
-        localStorage.removeItem('post_draft')
+        clearStoredDraft()
+        try {
+          await deleteDraft()
+        } catch (e) {
+          console.error('删除后端草稿失败:', e)
+        }
       }
     } catch (error: any) {
       console.error('发布失败:', error)
@@ -962,22 +1096,24 @@ const handlePublish = async () => {
     
     publishing.value = false
     
+    // 获取新创建的帖子ID（编辑模式下使用原ID，新建模式下使用返回的ID）
+    const newPostId = isEditMode.value ? route.query.id : (result as any)?.id
+    
     // 发布成功后询问用户
-    ElMessageBox.confirm(
-      '帖子发布成功！',
-      '提示',
-      {
-        confirmButtonText: '返回上一页',
-        cancelButtonText: '留在当前页',
-        type: 'success',
-        distinguishCancelAndClose: true
-      }
-    ).then(() => {
-      // 用户选择返回上一页
-      if (window.history.length > 1) {
-        router.back()
+    ElMessageBox({
+      title: '提示',
+      message: '帖子发布成功！',
+      type: 'success',
+      showCancelButton: true,
+      confirmButtonText: '查看帖子',
+      cancelButtonText: '返回上一页',
+      distinguishCancelAndClose: true
+    }).then(() => {
+      // 用户选择查看帖子
+      if (newPostId) {
+        router.push(`/post/${newPostId}`)
       } else {
-        // 如果没有历史记录，跳转到对应专区
+        // 如果没有帖子ID，跳转到对应专区
         const routeMap: Record<string, string> = {
           practices: '/practices',
           tools: '/tools',
@@ -987,26 +1123,38 @@ const handlePublish = async () => {
         router.push(routeMap[formData.value.zone] || '/practices')
       }
     }).catch((action) => {
-      // 用户选择留在当前页，清空表单
       if (action === 'cancel') {
-        // 清空表单
-        formData.value = {
-          zone: 'practices',
-          toolId: null,
-          title: '',
-          summary: '',
-          tags: [],
-          cover: '',
-          content: ''
+        // 用户选择返回上一页
+        if (window.history.length > 2) {
+          router.back()
+        } else {
+          // 如果没有足够的历史记录，跳转到对应专区
+          const routeMap: Record<string, string> = {
+            practices: '/practices',
+            tools: '/tools',
+            agent: '/agent',
+            empowerment: '/empowerment'
+          }
+          router.push(routeMap[formData.value.zone] || '/practices')
         }
-        if (editorRef.value) {
-          editorRef.value.setHtml('')
-        }
-        updateWordCount()
-        // 清除表单验证状态
-        if (formRef.value) {
-          formRef.value.clearValidate()
-        }
+      }
+      // 用户关闭对话框，留在当前页，清空表单准备继续发帖
+      formData.value = {
+        zone: 'practices',
+        toolId: null,
+        title: '',
+        summary: '',
+        tags: [],
+        cover: '',
+        content: ''
+      }
+      if (editorRef.value) {
+        editorRef.value.setHtml('')
+      }
+      updateWordCount()
+      // 清除表单验证状态
+      if (formRef.value) {
+        formRef.value.clearValidate()
       }
     })
   } catch (error) {
@@ -1016,21 +1164,63 @@ const handlePublish = async () => {
   }
 }
 
-// 检查并加载草稿
-const checkAndLoadDraft = () => {
-  const draftStr = localStorage.getItem('post_draft')
-  if (draftStr) {
+// 检查并加载草稿（比较后端和本地草稿的时间，使用最新的）
+const checkAndLoadDraft = async () => {
+  let backendDraft: any = null
+  let localDraft: any = null
+  
+  // 1. 尝试从后端获取草稿
+  try {
+    const backendResult = await getDraft()
+    if (backendResult && backendResult.data) {
+      backendDraft = backendResult.data
+    }
+  } catch (error) {
+    console.error('从后端获取草稿失败:', error)
+  }
+  
+  // 2. 从 localStorage 获取草稿
+  localDraft = getStoredDraft()
+  
+  // 3. 比较时间，选择最新的草稿
+  let draftData = null
+  let draftSource = '' // 'backend' | 'local'
+  
+  if (backendDraft && localDraft) {
+    // 两者都有，比较时间
+    const backendTime = new Date(backendDraft.savedAt).getTime()
+    const localTime = new Date(localDraft.savedAt).getTime()
+    if (backendTime >= localTime) {
+      draftData = backendDraft
+      draftSource = 'backend'
+    } else {
+      draftData = localDraft
+      draftSource = 'local'
+    }
+  } else if (backendDraft) {
+    draftData = backendDraft
+    draftSource = 'backend'
+  } else if (localDraft) {
+    draftData = localDraft
+    draftSource = 'local'
+  }
+  
+  if (draftData) {
     try {
-      const draft = JSON.parse(draftStr)
       // 检查草稿是否有内容
-      const hasDraftContent = draft.title || 
-                              draft.summary || 
-                              (draft.content && draft.content !== '<p><br></p>')
+      const hasDraftContent = draftData.title || 
+                              draftData.summary || 
+                              (draftData.content && draftData.content !== '<p><br></p>')
       
       if (hasDraftContent) {
+        // 格式化保存时间用于显示
+        const savedTimeStr = draftData.savedAt 
+          ? new Date(draftData.savedAt).toLocaleString('zh-CN')
+          : '未知时间'
+        
         // 询问用户是否继续编辑草稿
         ElMessageBox.confirm(
-          '检测到您有未完成的草稿，是否继续编辑？',
+          `检测到您有未完成的草稿（保存于 ${savedTimeStr}），是否继续编辑？`,
           '草稿提示',
           {
             confirmButtonText: '继续编辑',
@@ -1040,12 +1230,21 @@ const checkAndLoadDraft = () => {
           }
         ).then(() => {
           // 用户选择继续编辑
-          loadDraft(draft)
-        }).catch((action) => {
+          loadDraft(draftData)
+          // 如果草稿来自本地，启动后立即同步到后端
+          if (draftSource === 'local') {
+            syncDraftToBackend()
+          }
+        }).catch(async (action) => {
           // 用户选择重新开始
           if (action === 'cancel') {
-            // 清除草稿
-            localStorage.removeItem('post_draft')
+            // 清除草稿（后端和本地都清除）
+            clearStoredDraft()
+            try {
+              await deleteDraft()
+            } catch (e) {
+              console.error('删除后端草稿失败:', e)
+            }
             // 清空表单
             formData.value = {
               zone: 'practices',
@@ -1072,7 +1271,7 @@ const checkAndLoadDraft = () => {
     } catch (error) {
       console.error('检查草稿失败:', error)
       // 如果解析失败，清除无效的草稿
-      localStorage.removeItem('post_draft')
+      clearStoredDraft()
     }
   }
 }
@@ -1081,15 +1280,10 @@ const checkAndLoadDraft = () => {
 const loadDraft = (draft?: any) => {
   let draftData = draft
   if (!draftData) {
-    const draftStr = localStorage.getItem('post_draft')
-    if (!draftStr) return
-    
-    try {
-      draftData = JSON.parse(draftStr)
-    } catch (error) {
-      console.error('加载草稿失败:', error)
-      return
-    }
+    // 从 localStorage 读取草稿
+    const storedDraft = getStoredDraft()
+    if (!storedDraft) return
+    draftData = storedDraft
   }
   
   formData.value = { ...draftData }
@@ -1228,6 +1422,8 @@ watch(() => [route.query.edit, route.query.id], ([newEdit, newId], [oldEdit, old
     resetFormData()
     // 重置草稿检查标记
     hasCheckedDraft.value = false
+    // 启动后端同步定时器
+    startBackendSyncTimer()
     // 延迟检查草稿，确保编辑器已创建
     nextTick(() => {
       setTimeout(() => {
@@ -1240,6 +1436,8 @@ watch(() => [route.query.edit, route.query.id], ([newEdit, newId], [oldEdit, old
   }
   // 如果从新建模式切换到编辑模式，清空内容并加载帖子
   else if ((oldEdit !== 'true' || !oldEdit) && newEdit === 'true' && newId) {
+    // 停止后端同步定时器（编辑模式不需要草稿）
+    stopBackendSyncTimer()
     resetFormData()
     nextTick(() => {
       setTimeout(() => {
@@ -1270,6 +1468,9 @@ onMounted(async () => {
     // 新建模式：先清空内容，然后检查草稿
     resetFormData()
     
+    // 启动后端同步定时器（每3分钟同步一次草稿到后端）
+    startBackendSyncTimer()
+    
     // 延迟检查草稿，确保编辑器已创建
     // 注意：如果是从编辑页面跳转过来的（组件复用），watch 会处理草稿检查
     // 这里只处理首次进入新建页面的情况
@@ -1285,9 +1486,27 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  // 清除本地自动保存定时器
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
   }
+  // 停止后端同步定时器
+  stopBackendSyncTimer()
+  
+  // 如果是新建模式且有未保存内容，离开前同步一次到后端
+  if (!isEditMode.value) {
+    const hasDraftContent = formData.value.title || 
+                            formData.value.summary || 
+                            (formData.value.content && formData.value.content !== '<p><br></p>')
+    if (hasDraftContent) {
+      // 异步同步到后端（不等待结果）
+      saveDraft({
+        ...formData.value,
+        savedAt: new Date().toISOString()
+      }).catch(e => console.error('离开前同步草稿失败:', e))
+    }
+  }
+  
   if (editorRef.value) {
     editorRef.value.destroy()
   }

@@ -48,16 +48,38 @@
         <div class="activity-actions">
           <div class="actions-left">
             <el-button
-              :type="isRegistered ? 'success' : 'primary'"
+              v-if="!isRegistered"
+              type="primary"
               size="large"
               @click="handleRegister"
               :loading="registering"
-              :disabled="isRegistered"
               class="register-button"
             >
               <el-icon><UserFilled /></el-icon>
-              {{ isRegistered ? '已报名' : '报名参加' }}
+              报名参加
             </el-button>
+            <div v-else class="registered-actions">
+              <el-button
+                type="success"
+                size="large"
+                disabled
+                class="register-button registered"
+              >
+                <el-icon><Check /></el-icon>
+                已报名
+              </el-button>
+              <el-button
+                type="danger"
+                size="large"
+                plain
+                @click="handleCancelRegister"
+                :loading="canceling"
+                class="cancel-button"
+              >
+                <el-icon><Close /></el-icon>
+                取消报名
+              </el-button>
+            </div>
           </div>
           <div class="actions-right" v-if="isAdmin || isToolOwner">
             <el-button
@@ -86,7 +108,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowLeft, Calendar, UserFilled, Edit, Delete } from '@element-plus/icons-vue'
+import { ArrowLeft, Calendar, UserFilled, Edit, Delete, Check, Close } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getActivityDetail, registerActivity, cancelRegistration, deleteActivity, getCurrentUser, checkToolOwner } from '../mock'
 
@@ -95,6 +117,7 @@ const route = useRoute()
 
 const loading = ref(true)
 const registering = ref(false)
+const canceling = ref(false)
 
 // 管理员状态和工具Owner状态
 const isAdmin = ref(false)
@@ -224,6 +247,37 @@ const handleRegister = async () => {
   } finally {
     registering.value = false
   }
+}
+
+// 取消报名
+const handleCancelRegister = async () => {
+  ElMessageBox.confirm('确定要取消报名吗？', '提示', {
+    confirmButtonText: '确定取消',
+    cancelButtonText: '保持报名',
+    type: 'warning'
+  }).then(async () => {
+    canceling.value = true
+    try {
+      await cancelRegistration(activityData.value.id)
+      isRegistered.value = false
+      ElMessage.success('已取消报名')
+      
+      // 触发活动报名更新事件
+      window.dispatchEvent(new CustomEvent('activityRegistered', {
+        detail: {
+          activityId: activityData.value.id,
+          registered: false
+        }
+      }))
+    } catch (error: any) {
+      console.error('取消报名失败:', error)
+      ElMessage.error(error.message || '取消报名失败，请稍后重试')
+    } finally {
+      canceling.value = false
+    }
+  }).catch(() => {
+    // 用户选择保持报名
+  })
 }
 
 // 编辑活动
@@ -441,10 +495,26 @@ onMounted(async () => {
     gap: 12px;
   }
 
+  .registered-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
   .register-button {
     padding: 16px 48px;
     font-size: 18px;
     font-weight: 600;
+    
+    &.registered {
+      cursor: default;
+    }
+  }
+
+  .cancel-button {
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 500;
   }
 }
 

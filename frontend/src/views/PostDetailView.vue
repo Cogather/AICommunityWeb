@@ -106,21 +106,36 @@
               {{ isCollected ? '已收藏' : '收藏' }}
             </el-button>
           </div>
-          <div class="actions-right" v-if="canEditPost">
+          <div class="actions-right">
+            <!-- 管理员专属：置顶/加精按钮 -->
             <el-button
-              type="warning"
-              :icon="Edit"
-              @click="handleEdit"
+              v-if="isAdmin && supportsFeatured"
+              :type="isPostFeatured ? 'success' : 'primary'"
+              @click="handleToggleFeatured"
+              :loading="settingFeatured"
             >
-              编辑
+              <template #icon>
+                <el-icon><Star /></el-icon>
+              </template>
+              {{ isPostFeatured ? `取消${featuredActionName}` : featuredActionName }}
             </el-button>
-            <el-button
-              type="danger"
-              :icon="Delete"
-              @click="handleDelete"
-            >
-              删除
-            </el-button>
+            <!-- 编辑删除按钮 -->
+            <template v-if="canEditPost">
+              <el-button
+                type="warning"
+                :icon="Edit"
+                @click="handleEdit"
+              >
+                编辑
+              </el-button>
+              <el-button
+                type="danger"
+                :icon="Delete"
+                @click="handleDelete"
+              >
+                删除
+              </el-button>
+            </template>
           </div>
         </div>
       </div>
@@ -154,6 +169,7 @@
           <div
             v-for="comment in comments"
             :key="comment.id"
+            :id="`comment-${comment.id}`"
             class="comment-item"
           >
             <div class="comment-main">
@@ -238,6 +254,7 @@
                   <div
                     v-for="reply in comment.replies"
                     :key="reply.id"
+                    :id="`reply-${reply.id}`"
                     class="reply-item-flat"
                   >
                     <div class="avatar-wrapper-small">
@@ -351,7 +368,8 @@ import {
   createComment,
   likeComment,
   deleteComment,
-  getCurrentUser
+  getCurrentUser,
+  setPostFeatured
 } from '../mock'
 import {
   View,
@@ -369,6 +387,55 @@ import HeartIcon from '../components/HeartIcon.vue'
 const route = useRoute()
 const router = useRouter()
 
+// 导航页面列表（这些是主要的导航入口页面）
+const NAV_PAGES = ['/', '/practices', '/tools', '/agent', '/empowerment', '/users', '/home']
+const BACK_ROUTE_KEY = 'post_detail_back_route'
+
+// 检查路径是否是导航页面
+const isNavPage = (path: string) => {
+  // 精确匹配或前缀匹配（如 /tools?toolId=1）
+  return NAV_PAGES.some(navPath => {
+    if (navPath === '/') {
+      return path === '/' || path === '/home'
+    }
+    return path === navPath || path.startsWith(navPath + '?') || path.startsWith(navPath + '/')
+  })
+}
+
+// 记录来源导航页面
+const saveBackRoute = () => {
+  // 检查 referrer 或使用 document.referrer
+  const fromPath = document.referrer ? new URL(document.referrer).pathname : null
+  
+  // 如果有 from 查询参数，优先使用
+  if (route.query.from && typeof route.query.from === 'string') {
+    sessionStorage.setItem(BACK_ROUTE_KEY, route.query.from)
+    return
+  }
+  
+  // 检查已存储的返回路由是否有效（避免覆盖）
+  const storedRoute = sessionStorage.getItem(BACK_ROUTE_KEY)
+  if (storedRoute && isNavPage(storedRoute)) {
+    // 已有有效的返回路由，不覆盖
+    return
+  }
+  
+  // 尝试从 referrer 获取
+  if (fromPath && isNavPage(fromPath)) {
+    sessionStorage.setItem(BACK_ROUTE_KEY, fromPath)
+  }
+}
+
+// 获取返回路由
+const getBackRoute = (): string => {
+  const stored = sessionStorage.getItem(BACK_ROUTE_KEY)
+  if (stored && isNavPage(stored)) {
+    return stored
+  }
+  // 默认返回到 AI优秀实践
+  return '/practices'
+}
+
 // 帖子数据
 const postData = ref({
   id: 1,
@@ -382,7 +449,11 @@ const postData = ref({
   likes: 56,
   isLiked: false,
   isAuthor: true,
-  tags: ['自然语言处理', '深度学习', '最佳实践']
+  tags: ['自然语言处理', '深度学习', '最佳实践'],
+  zone: '' as string,  // 所属区域：practices、tools、agent、empowerment
+  toolId: null as number | null,  // 工具ID（AI工具专区使用）
+  featured: false,  // 是否精华/置顶
+  isFeatured: false  // 是否精华/置顶（兼容字段）
 })
 
 // 评论相关
@@ -415,7 +486,7 @@ const currentUserId = computed(() => currentUser.value.id)
 const currentUserName = computed(() => currentUser.value.name)
 
 // 判断是否是当前用户
-const isCurrentUser = (userName: string) => {
+const _isCurrentUser = (userName: string) => {
   return userName === currentUser.value.name
 }
 
@@ -435,12 +506,47 @@ const isMyComment = (comment: any) => {
 const isCollected = ref(false)
 
 // 模拟管理员状态（实际应该从用户信息中获取）
-const isAdmin = ref(false)
+const isAdmin = ref(true) // 临时设为 true 以便测试
 
 // 是否可以编辑帖子（作者或管理员）
 const canEditPost = computed(() => {
   return postData.value.isAuthor || isAdmin.value
 })
+
+// 该区域是否支持置顶/加精功能
+const supportsFeatured = computed(() => {
+  const zone = postData.value.zone
+  const toolId = postData.value.toolId
+  
+  // AI优秀实践 - 支持精华
+  if (zone === 'practices') return true
+  
+  // 赋能交流 - 支持精华
+  if (zone === 'empowerment') return true
+  
+  // 扶摇Agent - 支持置顶
+  if (zone === 'agent') return true
+  
+  // AI工具专区 - 只有"其他工具"(toolId=0)支持精华
+  if (zone === 'tools' && toolId === 0) return true
+  
+  return false
+})
+
+// 获取置顶/加精功能的名称
+const featuredActionName = computed(() => {
+  const zone = postData.value.zone
+  if (zone === 'agent') return '置顶'
+  return '加精'
+})
+
+// 当前帖子是否已经置顶/加精
+const isPostFeatured = computed(() => {
+  return postData.value.featured || postData.value.isFeatured
+})
+
+// 置顶/加精操作加载状态
+const settingFeatured = ref(false)
 
 // 标签类型映射
 const getTagType = (tag: string) => {
@@ -473,13 +579,12 @@ const handleAuthorClick = () => {
   })
 }
 
-// 返回上一页
+// 返回上一页（返回到记录的导航页面，避免循环）
 const handleBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/practices')
-  }
+  const backRoute = getBackRoute()
+  // 清除存储的返回路由
+  sessionStorage.removeItem(BACK_ROUTE_KEY)
+  router.push(backRoute)
 }
 
 // 加载帖子详情
@@ -513,7 +618,11 @@ const loadPostDetail = async () => {
       isCollected: post.isCollected || false,
       isAuthor: post.isAuthor || false,
       canEdit: post.canEdit || false,
-      canDelete: post.canDelete || false
+      canDelete: post.canDelete || false,
+      zone: post.zone || '',
+      toolId: post.toolId ?? null,
+      featured: post.featured || false,
+      isFeatured: post.isFeatured || false
     }
     // 检查收藏状态
     isCollected.value = post.isCollected || false
@@ -627,6 +736,48 @@ const handleDelete = () => {
     } catch (error: any) {
       console.error('删除失败:', error)
       ElMessage.error(error.message || '删除失败，请稍后重试')
+    }
+  }).catch(() => {
+    // 用户取消
+  })
+}
+
+// 切换置顶/加精状态
+const handleToggleFeatured = async () => {
+  const actionName = featuredActionName.value
+  const action = isPostFeatured.value ? '取消' + actionName : actionName
+  
+  ElMessageBox.confirm(
+    `确定要${action}这个帖子吗？`,
+    '确认操作',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    settingFeatured.value = true
+    try {
+      const newFeatured = !isPostFeatured.value
+      const result = await setPostFeatured(postData.value.id, newFeatured, postData.value.zone, postData.value.toolId)
+      
+      // 检查是否成功
+      if (!result.success) {
+        // 扶摇Agent已有置顶帖子的情况
+        ElMessage.warning(result.message || `${action}失败`)
+        return
+      }
+      
+      // 更新本地状态
+      postData.value.featured = newFeatured
+      postData.value.isFeatured = newFeatured
+      
+      ElMessage.success(`${action}成功`)
+    } catch (error: any) {
+      console.error(`${action}失败:`, error)
+      ElMessage.error(error.message || `${action}失败，请稍后重试`)
+    } finally {
+      settingFeatured.value = false
     }
   }).catch(() => {
     // 用户取消
@@ -910,8 +1061,31 @@ const handleDeleteReply = (comment: any, reply: any) => {
   })
 }
 
+// 滚动到锚点位置（用于消息中心跳转定位到具体评论/回复）
+const scrollToAnchor = () => {
+  const hash = route.hash
+  if (hash) {
+    // 延迟执行，确保DOM已渲染
+    setTimeout(() => {
+      const element = document.querySelector(hash)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // 添加高亮效果
+        element.classList.add('highlight-anchor')
+        // 3秒后移除高亮
+        setTimeout(() => {
+          element.classList.remove('highlight-anchor')
+        }, 3000)
+      }
+    }, 300)
+  }
+}
+
 // 初始化
 onMounted(async () => {
+  // 记录来源导航页面（用于返回按钮）
+  saveBackRoute()
+  
   try {
     // 获取当前用户信息
     const user = await getCurrentUser()
@@ -929,6 +1103,8 @@ onMounted(async () => {
   if (postData.value.id) {
     await loadComments()
     checkIfCollected() // 检查收藏状态
+    // 滚动到锚点位置（如果有）
+    scrollToAnchor()
   }
 })
 </script>
@@ -1545,6 +1721,23 @@ onMounted(async () => {
 
   .post-actions {
     flex-wrap: wrap;
+  }
+}
+
+/* 消息中心跳转高亮样式 */
+.highlight-anchor {
+  animation: highlightFade 3s ease-out;
+  border-radius: 8px;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: rgba(64, 158, 255, 0.3);
+    box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
   }
 }
 </style>

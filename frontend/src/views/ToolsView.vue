@@ -5,7 +5,7 @@
       <div
         v-for="tool in tools"
         :key="tool.id"
-        :class="{ 'tool-card-btn': true, 'tool-card-btn-active': selectedToolId === tool.id }"
+        :class="['tool-card-btn', { 'tool-card-btn-active': selectedToolId === tool.id }]"
         :style="{ '--tool-color': tool.color || '#409eff' }"
         @click="selectTool(tool.id)"
       >
@@ -14,8 +14,8 @@
 
       <!-- 其他工具按钮 -->
       <div
-        :class="{ 'tool-card-btn': true, 'tool-card-btn-active': selectedToolId === 'other', 'tool-card-btn-other': true }"
-        style="--tool-color: #909399;"
+        :class="['tool-card-btn', 'tool-card-btn-other', { 'tool-card-btn-active': selectedToolId === 'other' }]"
+        style="--tool-color: #8b95a5;"
         @click="selectTool('other')"
       >
         <span class="tool-card-name">其他工具</span>
@@ -65,8 +65,9 @@
             <!-- 帖子列表 -->
             <PostList
               :posts="paginatedPosts"
-              :featured-posts="[]"
-              :show-featured-tag="false"
+              :featured-posts="selectedToolId === 'other' ? featuredPostsArray : []"
+              :show-featured-tag="selectedToolId === 'other'"
+              :show-tags="selectedToolId === 'other'"
               @post-click="handlePostClick"
             />
 
@@ -173,13 +174,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { User, Clock, View, Calendar, Location, More, Refresh, Plus } from '@element-plus/icons-vue'
+import { Refresh, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
 import ActivityCarousel from '../components/ActivityCarousel.vue'
-import { checkToolOwner as checkToolOwnerAPI, getCurrentUser, getActivities, getPosts, type Post } from '../mock'
+import { checkToolOwner as checkToolOwnerAPI, getCurrentUser, getActivities, getPosts, getToolFeaturedPost, type Post } from '../mock'
 
 const router = useRouter()
 const route = useRoute()
@@ -196,6 +197,14 @@ const checkingOwner = ref(false)
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 
+// 精华帖子（仅"其他工具"使用）
+const featuredPost = ref<any>(null)
+
+// 将单个精华帖子转换为数组（供PostList组件使用）
+const featuredPostsArray = computed(() => {
+  return featuredPost.value ? [featuredPost.value] : []
+})
+
 // 分页
 const currentPage = ref(1)
 const pageSize = ref(15)
@@ -206,7 +215,7 @@ const displayedTags = computed(() => {
   const allPosts = currentToolPosts.value
 
   // 根据当前选择的部门过滤帖子
-  let filteredPosts = allPosts
+  const filteredPosts = allPosts
   if (selectedDepartment.value) {
     // 这里需要从帖子数据中获取部门信息，暂时简化处理
     // filteredPosts = filteredPosts.filter(post => post.department === selectedDepartment.value)
@@ -294,7 +303,7 @@ const handleConfigUpdate = async () => {
 onMounted(async () => {
   // 加载工具列表
   tools.value = await loadTools()
-  
+
   // 加载所有活动
   await loadActivities()
   // 监听配置更新
@@ -317,20 +326,22 @@ onMounted(async () => {
       const pathMatch = route.path.match(/\/tools\/([^/?]+)/)
       if (pathMatch) {
         const toolName = pathMatch[1]
-        const matchedTool = tools.value.find((t: any) => {
-          // 尝试匹配工具名称（不区分大小写）
-          const toolNameFromLink = t.name.toLowerCase().replace(/\s+/g, '-')
-          return toolNameFromLink === toolName.toLowerCase() || 
-                 t.name.toLowerCase() === toolName.toLowerCase()
-        })
-        if (matchedTool) {
-          selectedToolId.value = matchedTool.id
-          await checkToolOwner(matchedTool.id)
-        } else {
-          // 如果路径匹配失败，默认选择第一个工具
-          if (tools.value.length > 0 && tools.value[0]) {
-            selectedToolId.value = tools.value[0].id
-            await checkToolOwner(tools.value[0].id)
+        if (toolName) {
+          const matchedTool = tools.value.find((t: any) => {
+            // 尝试匹配工具名称（不区分大小写）
+            const toolNameFromLink = t.name.toLowerCase().replace(/\s+/g, '-')
+            return toolNameFromLink === toolName.toLowerCase() ||
+                   t.name.toLowerCase() === toolName.toLowerCase()
+          })
+          if (matchedTool) {
+            selectedToolId.value = matchedTool.id
+            await checkToolOwner(matchedTool.id)
+          } else {
+            // 如果路径匹配失败，默认选择第一个工具
+            if (tools.value.length > 0 && tools.value[0]) {
+              selectedToolId.value = tools.value[0].id
+              await checkToolOwner(tools.value[0].id)
+            }
           }
         }
       } else {
@@ -364,18 +375,18 @@ onUnmounted(() => {
   window.removeEventListener('adminConfigUpdated', handleConfigUpdate)
 })
 
-// 工具列表 - 从API加载
+// 工具列表 - 从API加载（与首页共用 /api/tools 接口）
 const loadTools = async () => {
   try {
     const { getTools } = await import('../mock')
-    const toolsList = await getTools()
-    return toolsList.map((item: any) => ({
+    const toolsResponse = await getTools()
+    return toolsResponse.list.map((item: any) => ({
       id: item.id,
       name: item.name,
-      desc: item.description || '',
-      logo: item.icon || '',
+      desc: item.desc || '',
+      logo: item.logo || '',
       link: item.link || `/tools?toolId=${item.id}`,
-      color: '#409eff'
+      color: item.color || '#409eff'
     }))
   } catch (e) {
     console.error('加载工具配置失败:', e)
@@ -385,6 +396,7 @@ const loadTools = async () => {
       name: 'TestMate',
       desc: '自动化测试助手',
       logo: 'https://picsum.photos/80/80?random=1',
+      link: '/tools?toolId=1',
       color: '#36cfc9'
     },
     {
@@ -392,6 +404,7 @@ const loadTools = async () => {
       name: 'CodeMate',
       desc: '智能代码补全',
       logo: 'https://picsum.photos/80/80?random=2',
+      link: '/tools?toolId=2',
       color: '#9254de'
     },
     {
@@ -399,6 +412,7 @@ const loadTools = async () => {
       name: '云集',
       desc: '云端计算集群',
       logo: 'https://picsum.photos/80/80?random=3',
+      link: '/tools?toolId=3',
       color: '#597ef7'
     },
     {
@@ -406,6 +420,7 @@ const loadTools = async () => {
       name: '云见',
       desc: '智能监控平台',
       logo: 'https://picsum.photos/80/80?random=4',
+      link: '/tools?toolId=4',
       color: '#ff9c6e'
     },
     {
@@ -413,6 +428,7 @@ const loadTools = async () => {
       name: '扶摇',
       desc: 'Agent编排引擎',
       logo: 'https://picsum.photos/80/80?random=5',
+      link: '/tools?toolId=5',
       color: '#4096ff'
     },
     {
@@ -420,6 +436,7 @@ const loadTools = async () => {
       name: '纠错Agent',
       desc: '智能代码纠错工具',
       logo: 'https://picsum.photos/80/80?random=6',
+      link: '/tools?toolId=6',
       color: '#ffc53d'
     },
     {
@@ -427,6 +444,7 @@ const loadTools = async () => {
       name: 'DT',
       desc: '数据转换工具',
       logo: 'https://picsum.photos/80/80?random=7',
+      link: '/tools?toolId=7',
       color: '#73d13d'
     }
   ]
@@ -441,7 +459,7 @@ const loadPosts = async (toolId?: number) => {
   try {
     const result = await getPosts({
       zone: 'tools',
-      toolId: toolId || undefined,
+      toolId: toolId !== undefined ? toolId : undefined,  // 正确处理 toolId=0 的情况
       page: 1,
       pageSize: 100 // 获取所有帖子
     })
@@ -459,6 +477,27 @@ const loadPosts = async (toolId?: number) => {
     console.error('加载帖子列表失败:', error)
     ElMessage.error(error.message || '加载帖子列表失败')
     allPosts.value = []
+  }
+}
+
+// 加载精华帖子（仅"其他工具"使用）
+const loadFeaturedPost = async () => {
+  try {
+    const response = await getToolFeaturedPost(0)
+    if (response.post) {
+      featuredPost.value = {
+        ...response.post,
+        image: response.post.image || response.post.cover || '',
+        createTime: typeof response.post.createTime === 'string' 
+          ? response.post.createTime 
+          : new Date(response.post.createTime).toLocaleDateString('zh-CN')
+      }
+    } else {
+      featuredPost.value = null
+    }
+  } catch (error) {
+    console.error('加载精华帖子失败:', error)
+    featuredPost.value = null
   }
 }
 
@@ -499,10 +538,13 @@ const selectTool = async (toolId: number | string) => {
     await checkToolOwner(toolId)
     await loadPosts(toolId)
     await loadActivities(toolId)
+    featuredPost.value = null // 普通工具没有精华帖子
   } else {
+    // "其他工具"
     isToolOwner.value = false
     await loadPosts(0)
     await loadActivities(0)
+    await loadFeaturedPost() // 加载精华帖子
   }
 }
 
@@ -519,7 +561,7 @@ const checkToolOwner = async (toolId: number) => {
     // 获取当前用户信息
     const user = await getCurrentUser()
     isAdmin.value = user.roles?.includes('admin') || false
-    
+
     // 检查是否为工具Owner
     const ownerResponse = await checkToolOwnerAPI(toolId)
     isToolOwner.value = ownerResponse.isOwner || false
@@ -573,7 +615,7 @@ const filteredPosts = computed(() => {
 
   // 如果不是"其他"工具，按分类过滤
   if (selectedToolId.value !== 'other') {
-    posts = posts.filter(post => post.category === activePostTab.value)
+    posts = posts.filter(post => (post as any).category === activePostTab.value)
   }
 
   // 按标签过滤（排除"全部"）
@@ -591,7 +633,7 @@ const filteredPosts = computed(() => {
     const keyword = searchKeyword.value.toLowerCase()
     posts = posts.filter(post =>
       post.title.toLowerCase().includes(keyword) ||
-      post.author.toLowerCase().includes(keyword) ||
+      (post.author?.toLowerCase().includes(keyword) ?? false) ||
       (post.description && post.description.toLowerCase().includes(keyword))
     )
   }
@@ -644,7 +686,7 @@ const getTagColorIndex = (tagName: string): number => {
 }
 
 // 获取标签样式
-const getTagStyle = (tagName: string) => {
+const _getTagStyle = (tagName: string) => {
   const colorIndex = getTagColorIndex(tagName)
   const colors = colorPalette[colorIndex] || colorPalette[0]
   const finalColors: { bg: string; border: string; text: string } = (colors || colorPalette[0]) as { bg: string; border: string; text: string }
@@ -663,7 +705,7 @@ const getTagStyle = (tagName: string) => {
 }
 
 // 获取标签类型（保留用于帖子中的标签）
-const getTagType = (tag: string) => {
+const _getTagType = (tag: string) => {
   const typeMap: Record<string, string> = {
     '新手': 'info',
     '进阶': 'warning',
@@ -684,7 +726,11 @@ const handlePostClick = (post: any) => {
     console.error('帖子数据无效:', post)
     return
   }
-  router.push(`/post/${post.id}`).catch((err) => {
+  // 传递当前页面路径，用于帖子详情页返回
+  router.push({
+    path: `/post/${post.id}`,
+    query: { from: route.fullPath }
+  }).catch((err) => {
     console.error('路由跳转失败:', err)
   })
 }
@@ -779,10 +825,14 @@ const handleCurrentChange = (val: number) => {
 .tools-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   justify-content: center;
-  margin-bottom: 24px;
-  padding: 16px 0;
+  margin-bottom: 28px;
+  padding: 20px 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .tool-card-btn {
@@ -790,124 +840,90 @@ const handleCurrentChange = (val: number) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 20px;
-  min-width: 90px;
-  border-radius: 10px;
-  border: none;
+  padding: 12px 24px;
+  min-width: 100px;
+  border-radius: 14px;
   cursor: pointer;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 
-  // 基础背景色（使用工具颜色）
-  background: var(--tool-color, #409eff);
+  // 拟态玻璃背景 - 使用工具主题色渐变
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tool-color) 15%, rgba(255, 255, 255, 0.85)) 0%,
+    color-mix(in srgb, var(--tool-color) 8%, rgba(255, 255, 255, 0.7)) 50%,
+    color-mix(in srgb, var(--tool-color) 12%, rgba(255, 255, 255, 0.75)) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 
-  // 流光扫过效果
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.5),
-      transparent
-    );
-    transition: left 0.6s;
-    z-index: 1;
-  }
+  // 玻璃边框
+  border: 1px solid color-mix(in srgb, var(--tool-color) 20%, rgba(255, 255, 255, 0.5));
 
-  // 彩色流光动画层
-  &::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-      45deg,
-      transparent 30%,
-      rgba(255, 255, 255, 0.4) 50%,
-      transparent 70%
-    );
-    animation: shimmer 3s linear infinite;
-    z-index: 0;
-  }
+  // 拟态阴影 - 凸起效果
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.7),
+    inset 0 -1px 2px color-mix(in srgb, var(--tool-color) 8%, transparent),
+    0 4px 12px color-mix(in srgb, var(--tool-color) 15%, rgba(0, 0, 0, 0.08)),
+    0 1px 3px rgba(0, 0, 0, 0.06);
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
-    filter: brightness(1.1);
-
-    &::before {
-      left: 100%;
-    }
-  }
-
-  &.tool-card-btn-active {
-    background: var(--tool-color, #409eff);
-    animation: gradientFlow 2s ease infinite, pulseGlow 2s ease infinite;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25), 0 0 16px var(--tool-color, rgba(64, 158, 255, 0.4));
-
-    .tool-card-name {
-      color: #fff;
-      font-weight: 700;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-  }
-
+  // 工具名称
   .tool-card-name {
     position: relative;
     z-index: 2;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
-    color: #fff;
+    color: color-mix(in srgb, var(--tool-color) 70%, #1e293b);
     white-space: nowrap;
     transition: all 0.3s ease;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.3px;
   }
 
-  &.tool-card-btn-other {
-    background: #909399;
+  // Hover 效果
+  &:hover {
+    transform: translateY(-3px) scale(1.02);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tool-color) 22%, rgba(255, 255, 255, 0.9)) 0%,
+      color-mix(in srgb, var(--tool-color) 12%, rgba(255, 255, 255, 0.8)) 50%,
+      color-mix(in srgb, var(--tool-color) 18%, rgba(255, 255, 255, 0.85)) 100%
+    );
+    border-color: color-mix(in srgb, var(--tool-color) 35%, rgba(255, 255, 255, 0.6));
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.8),
+      inset 0 -1px 2px color-mix(in srgb, var(--tool-color) 10%, transparent),
+      0 8px 20px color-mix(in srgb, var(--tool-color) 25%, rgba(0, 0, 0, 0.12)),
+      0 2px 6px rgba(0, 0, 0, 0.08);
 
-    &.tool-card-btn-active {
-      background: #909399;
-      animation: gradientFlow 2s ease infinite, pulseGlow 2s ease infinite;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25), 0 0 16px rgba(144, 147, 153, 0.4);
+    .tool-card-name {
+      color: color-mix(in srgb, var(--tool-color) 85%, #000);
     }
   }
-}
 
-@keyframes gradientFlow {
-  0% {
-    filter: brightness(1) saturate(1);
-  }
-  50% {
-    filter: brightness(1.2) saturate(1.3);
-  }
-  100% {
-    filter: brightness(1) saturate(1);
-  }
-}
+  // Active 选中状态
+  &.tool-card-btn-active {
+    transform: translateY(-2px);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tool-color) 30%, rgba(255, 255, 255, 0.95)) 0%,
+      color-mix(in srgb, var(--tool-color) 18%, rgba(255, 255, 255, 0.85)) 50%,
+      color-mix(in srgb, var(--tool-color) 25%, rgba(255, 255, 255, 0.9)) 100%
+    );
+    border-color: color-mix(in srgb, var(--tool-color) 50%, rgba(255, 255, 255, 0.4));
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.9),
+      inset 0 -2px 4px color-mix(in srgb, var(--tool-color) 15%, transparent),
+      0 6px 18px color-mix(in srgb, var(--tool-color) 35%, rgba(0, 0, 0, 0.15)),
+      0 0 0 3px color-mix(in srgb, var(--tool-color) 20%, transparent);
 
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 20px var(--tool-color, rgba(64, 158, 255, 0.4));
-  }
-  50% {
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3), 0 0 30px var(--tool-color, rgba(64, 158, 255, 0.6));
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%) translateY(-100%) rotate(45deg);
-  }
-  100% {
-    transform: translateX(100%) translateY(100%) rotate(45deg);
+    .tool-card-name {
+      color: color-mix(in srgb, var(--tool-color) 90%, #000);
+      font-weight: 700;
+      text-shadow: 
+        0 1px 0 rgba(255, 255, 255, 0.8),
+        0 0 8px color-mix(in srgb, var(--tool-color) 30%, transparent);
+    }
   }
 }
 
@@ -1195,10 +1211,27 @@ const handleCurrentChange = (val: number) => {
   .tools-buttons {
     justify-content: flex-start;
     overflow-x: auto;
-    padding-bottom: 10px;
+    padding: 14px 12px;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
 
-    .tool-btn {
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+    }
+
+    .tool-card-btn {
       flex-shrink: 0;
+      min-width: 80px;
+      padding: 10px 18px;
+
+      .tool-card-name {
+        font-size: 13px;
+      }
     }
   }
 }

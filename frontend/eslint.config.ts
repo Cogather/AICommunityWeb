@@ -18,10 +18,27 @@ export default defineConfigWithVueTs(
     files: ['**/*.{ts,mts,tsx,vue}'],
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**', '**/*.cjs']),
 
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
+
+  // 自定义规则
+  {
+    rules: {
+      // 允许使用 any 类型（降级为警告）
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // 未使用变量以 _ 开头时忽略
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
+      // 禁用废弃过滤器检测（TypeScript 联合类型误报）
+      'vue/no-deprecated-filter': 'off',
+      // 允许单词组件名称
+      'vue/multi-word-component-names': 'off',
+    },
+  },
   
   {
     ...pluginVitest.configs.recommended,
