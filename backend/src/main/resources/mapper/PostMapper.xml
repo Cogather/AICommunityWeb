@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.PostMapper">
+
+    <resultMap id="BaseResultMap" type="com.aicommunity.entity.Post">
+        <id column="post_id" property="postId" jdbcType="VARCHAR"/>
+        <result column="author_id" property="authorId" jdbcType="VARCHAR"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="front_cover" property="frontCover" jdbcType="VARCHAR"/>
+        <result column="content" property="content" jdbcType="LONGVARCHAR"/>
+        <result column="content_type" property="contentType" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+        <result column="url" property="url" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="essence_post" property="essencePost" jdbcType="VARCHAR"/>
+        <result column="zone_id" property="zoneId" jdbcType="INTEGER"/>
+        <result column="label_id" property="labelId" jdbcType="INTEGER"/>
+        <result column="tool_id" property="toolId" jdbcType="INTEGER"/>
+        <result column="views_nums" property="viewsNums" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="selectEmpowermentPosts" resultMap="BaseResultMap">
+        SELECT 
+            p.post_id,
+            p.author_id,
+            p.title,
+            p.front_cover,
+            p.content,
+            p.content_type,
+            p.created_at,
+            p.updated_at,
+            p.url,
+            p.status,
+            p.essence_post,
+            p.zone_id,
+            p.label_id,
+            p.tool_id,
+            p.views_nums
+        FROM t_new_posts p
+        WHERE p.zone_id = 4
+          AND p.status = '0'
+        ORDER BY p.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectPracticePosts" resultMap="BaseResultMap">
+        SELECT 
+            post_id,
+            author_id,
+            title,
+            front_cover,
+            content,
+            content_type,
+            created_at,
+            updated_at,
+            url,
+            status,
+            essence_post,
+            zone_id,
+            label_id,
+            tool_id,
+            views_nums
+        FROM t_new_posts
+        WHERE zone_id = 1
+          AND status = '0'
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByPostId" resultMap="BaseResultMap">
+        SELECT 
+            post_id,
+            author_id,
+            title,
+            front_cover,
+            content,
+            content_type,
+            created_at,
+            updated_at,
+            url,
+            status,
+            essence_post,
+            zone_id,
+            label_id,
+            tool_id,
+            views_nums
+        FROM t_new_posts
+        WHERE post_id = #{postId}
+          AND status = '0'
+    </select>
+
+    <insert id="insertPost" parameterType="com.aicommunity.entity.Post">
+        INSERT INTO t_new_posts (
+            post_id,
+            author_id,
+            title,
+            front_cover,
+            content,
+            content_type,
+            created_at,
+            updated_at,
+            status,
+            essence_post,
+            zone_id,
+            label_id,
+            tool_id,
+            views_nums
+        ) VALUES (
+            #{postId},
+            #{authorId},
+            #{title},
+            #{frontCover},
+            #{content},
+            #{contentType},
+            #{createdAt},
+            #{updatedAt},
+            #{status},
+            #{essencePost},
+            #{zoneId},
+            #{labelId},
+            #{toolId},
+            #{viewsNums}
+        )
+    </insert>
+
+    <update id="updatePost" parameterType="com.aicommunity.entity.Post">
+        UPDATE t_new_posts
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="frontCover != null">front_cover = #{frontCover},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt},</if>
+            <if test="labelId != null">label_id = #{labelId},</if>
+        </set>
+        WHERE post_id = #{postId}
+          AND status = '0'
+    </update>
+
+    <update id="deletePost">
+        UPDATE t_new_posts
+        SET status = '1'
+        WHERE post_id = #{postId}
+    </update>
+
+    <update id="incrementViews">
+        UPDATE t_new_posts
+        SET views_nums = views_nums + 1
+        WHERE post_id = #{postId}
+    </update>
+
+    <select id="countLikes" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM t_new_post_likes
+        WHERE post_id = #{postId}
+    </select>
+
+    <select id="countCollects" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM t_new_post_collected
+        WHERE post_id = #{postId}
+    </select>
+
+    <select id="countComments" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM t_new_post_comments
+        WHERE post_id = #{postId}
+          AND status = '0'
+    </select>
+
+    <select id="selectAgentFeaturedPost" resultMap="BaseResultMap">
+        SELECT 
+            post_id,
+            author_id,
+            title,
+            front_cover,
+            content,
+            content_type,
+            created_at,
+            updated_at,
+            url,
+            status,
+            essence_post,
+            zone_id,
+            label_id,
+            tool_id,
+            views_nums
+        FROM t_new_posts
+        WHERE zone_id = #{zoneId}
+          AND tool_id = #{toolId}
+          AND essence_post = '1'
+          AND status = '0'
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <update id="setAgentFeaturedPost">
+        UPDATE t_new_posts
+        SET essence_post = '1',
+            updated_at = NOW()
+        WHERE post_id = #{postId}
+          AND status = '0'
+    </update>
+
+    <update id="cancelAgentFeaturedPost">
+        UPDATE t_new_posts
+        SET essence_post = '0',
+            updated_at = NOW()
+        WHERE zone_id = #{zoneId}
+          AND tool_id = #{toolId}
+          AND essence_post = '1'
+          AND status = '0'
+    </update>
+
+    <select id="selectFeaturedPostsByZone" resultMap="BaseResultMap">
+        SELECT 
+            post_id,
+            author_id,
+            title,
+            front_cover,
+            content,
+            content_type,
+            created_at,
+            updated_at,
+            url,
+            status,
+            essence_post,
+            zone_id,
+            label_id,
+            tool_id,
+            views_nums
+        FROM t_new_posts
+        WHERE status = '0'
+          AND essence_post = '1'
+          AND zone_id = #{zoneId}
+          <if test="toolId != null">
+              AND tool_id = #{toolId}
+          </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updatePostEssence">
+        UPDATE t_new_posts
+        SET essence_post = #{essencePost},
+            updated_at = NOW()
+        WHERE post_id = #{postId}
+          AND status = '0'
+    </update>
+
+    <!-- 查询工具专区精华帖子（其他工具专有） -->
+    <select id="selectToolFeaturedPost" resultMap="BaseResultMap">
+        SELECT 
+            post_id,
+            author_id,
+            title,
+            front_cover,
+            content,
+            content_type,
+            created_at,
+            updated_at,
+            url,
+            status,
+            essence_post,
+            zone_id,
+            label_id,
+            tool_id,
+            views_nums
+        FROM t_new_posts
+        WHERE zone_id = #{zoneId}
+          AND tool_id = #{toolId}
+          AND essence_post = '1'
+          AND status = '0'
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 取消工具专区精华帖 -->
+    <update id="cancelToolFeaturedPost">
+        UPDATE t_new_posts
+        SET essence_post = '0',
+            updated_at = NOW()
+        WHERE zone_id = #{zoneId}
+          AND tool_id = #{toolId}
+          AND essence_post = '1'
+          AND status = '0'
+    </update>
+
+    <!-- 查询用户发布的帖子列表（分页） -->
+    <select id="selectUserPosts" resultMap="BaseResultMap">
+        SELECT 
+            post_id,
+            author_id,
+            title,
+            front_cover,
+            content,
+            content_type,
+            created_at,
+            updated_at,
+            url,
+            status,
+            essence_post,
+            zone_id,
+            label_id,
+            tool_id,
+            views_nums
+        FROM t_new_posts
+        WHERE author_id = #{userId}
+          AND status = '0'
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计用户发布的帖子总数 -->
+    <select id="countUserPosts" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_new_posts
+        WHERE author_id = #{userId}
+          AND status = '0'
+    </select>
+
+</mapper>

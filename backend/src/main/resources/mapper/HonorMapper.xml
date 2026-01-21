@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.HonorMapper">
+
+    <resultMap id="HonorBannerResultMap" type="com.aicommunity.entity.HonorBanner">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="image" property="image" jdbcType="VARCHAR"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="link" property="link" jdbcType="VARCHAR"/>
+        <result column="desc" property="desc" jdbcType="VARCHAR"/>
+        <result column="order" property="order" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap id="HonorResultMap" type="com.aicommunity.entity.Honor">
+        <id column="honor_id" property="honorId" jdbcType="VARCHAR"/>
+        <result column="honor_name" property="honorName" jdbcType="VARCHAR"/>
+        <result column="honor_image" property="honorImage" jdbcType="VARCHAR"/>
+        <result column="honor_desc" property="honorDesc" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="update_at" property="updateAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap id="UserResultMap" type="com.aicommunity.entity.User">
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="avatar" property="avatar" jdbcType="VARCHAR"/>
+        <result column="department" property="department" jdbcType="VARCHAR"/>
+        <result column="level" property="level" jdbcType="INTEGER"/>
+        <result column="honor_count" property="honorCount" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="selectFirstBanner" resultMap="HonorBannerResultMap">
+        SELECT 
+            id,
+            image,
+            title,
+            link,
+            `desc`,
+            `order`,
+            create_time
+        FROM t_new_honor_banners
+        ORDER BY `order` ASC, id ASC
+        LIMIT 1
+    </select>
+
+    <select id="selectAllHonors" resultMap="HonorResultMap">
+        SELECT 
+            honor_id,
+            honor_name,
+            honor_image,
+            honor_desc,
+            status,
+            update_at
+        FROM t_new_honors
+        WHERE status = '0'
+        WHERE honor_type = 1
+        ORDER BY update_at DESC
+    </select>
+
+    <select id="selectTopUsers" resultMap="UserResultMap">
+        SELECT 
+            hd.honor_user_id AS user_id,
+            '' AS name,
+            '' AS avatar,
+            '' AS department,
+            0 AS level,
+            COUNT(hd.id) AS honor_count
+        FROM t_honors_detail hd
+        WHERE hd.honor_user_id IS NOT NULL
+        GROUP BY hd.honor_user_id
+        ORDER BY honor_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询个人荣誉列表 -->
+    <select id="selectHonorList" resultType="java.util.HashMap">
+        SELECT 
+            hd.id,
+            COALESCE(ui.chn_name, ui.user_name, '') AS name,
+            COALESCE(NULLIF(ui.department_l5, ''), NULLIF(ui.department_l4, ''), NULLIF(ui.department_l3, ''), NULLIF(ui.department_l2, ''), NULLIF(ui.department_l1, ''), '') AS department,
+            '' AS avatar,
+            nh.honor_name AS awardName,
+            CONCAT(hd.gained_year, '-', LPAD(hd.gained_month, 2, '0'), '-01') AS awardDate,
+            CASE 
+                WHEN nh.honor_name LIKE '%创新%' OR nh.honor_name LIKE '%突破%' THEN 'innovation'
+                WHEN nh.honor_name LIKE '%效能%' OR nh.honor_name LIKE '%效率%' THEN 'efficiency'
+                WHEN nh.honor_name LIKE '%实践%' THEN 'practice'
+                WHEN nh.honor_name LIKE '%社区%' OR nh.honor_name LIKE '%贡献%' THEN 'community'
+                ELSE 'innovation'
+            END AS category,
+            hd.gained_year AS year,
+            CASE WHEN hd.honor_user_id = #{params.currentUserId} THEN true ELSE false END AS isMine,
+            COALESCE(flower_count.flowers, 0) AS flowers,
+            CASE WHEN flower_check.id IS NOT NULL THEN true ELSE false END AS hasGivenFlower,
+            hd.story AS achievement
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        LEFT JOIN t_user_info ui ON hd.honor_user_id = ui.user_id
+        LEFT JOIN (
+            SELECT honor_id, COUNT(*) AS flowers
+            FROM t_new_honors_flowers
+            GROUP BY honor_id
+        ) flower_count ON hd.honor_id = flower_count.honor_id
+        LEFT JOIN t_new_honors_flowers flower_check ON hd.honor_id = flower_check.honor_id 
+            AND flower_check.flowers_user_id = #{params.currentUserId}
+        WHERE nh.status = '0'
+            AND hd.honor_type = 0
+            <if test="params.scope != null and params.scope == 'mine'">
+                AND hd.honor_user_id = #{params.currentUserId}
+            </if>
+            <if test="params.filterType != null and params.filterType == 'award' and params.filterValue != null and params.filterValue != ''">
+                AND nh.honor_name = #{params.filterValue}
+            </if>
+            <if test="params.filterType != null and params.filterType == 'department' and params.filterValue != null and params.filterValue != ''">
+                AND (ui.department_l5 = #{params.filterValue} 
+                    OR ui.department_l4 = #{params.filterValue})
+            </if>
+            <if test="params.keyword != null and params.keyword != ''">
+                AND (ui.chn_name LIKE CONCAT('%', #{params.keyword}, '%')
+                    OR ui.user_name LIKE CONCAT('%', #{params.keyword}, '%'))
+            </if>
+            <if test="params.userName != null and params.userName != ''">
+                AND (ui.chn_name = #{params.userName} OR ui.user_name = #{params.userName})
+            </if>
+        ORDER BY hd.gained_year DESC, hd.gained_month DESC, hd.id DESC
+    </select>
+
+    <!-- 统计个人荣誉总数 -->
+    <select id="countHonorList" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        LEFT JOIN t_user_info ui ON hd.honor_user_id = ui.user_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 0
+            <if test="params.scope != null and params.scope == 'mine'">
+                AND hd.honor_user_id = #{params.currentUserId}
+            </if>
+            <if test="params.filterType != null and params.filterType == 'award' and params.filterValue != null and params.filterValue != ''">
+                AND nh.honor_name = #{params.filterValue}
+            </if>
+            <if test="params.filterType != null and params.filterType == 'department' and params.filterValue != null and params.filterValue != ''">
+                AND (ui.department_l5 = #{params.filterValue} 
+                    OR ui.department_l4 = #{params.filterValue})
+            </if>
+            <if test="params.keyword != null and params.keyword != ''">
+                AND (ui.chn_name LIKE CONCAT('%', #{params.keyword}, '%')
+                    OR ui.user_name LIKE CONCAT('%', #{params.keyword}, '%'))
+            </if>
+            <if test="params.userName != null and params.userName != ''">
+                AND (ui.chn_name = #{params.userName} OR ui.user_name = #{params.userName})
+            </if>
+    </select>
+
+    <!-- 查询团队奖项列表 -->
+    <select id="selectTeamAwards" resultType="java.util.HashMap">
+        SELECT 
+            hd.id,
+            hd.honor_id,
+            nh.honor_name,
+            hd.gained_year,
+            hd.team_name,
+            '' AS image,
+            '' AS teamField
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 1
+            <if test="year != null and year != ''">
+                AND hd.gained_year = #{year}
+            </if>
+        ORDER BY hd.gained_year DESC, hd.gained_month DESC, hd.id DESC
+    </select>
+
+    <!-- 查询团队奖项的年份列表 -->
+    <select id="selectTeamAwardYears" resultType="java.lang.String">
+        SELECT DISTINCT gained_year
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 1
+        ORDER BY gained_year DESC
+    </select>
+
+    <!-- 查询荣誉影响力排行榜 -->
+    <select id="selectLeaderboard" resultType="java.util.HashMap">
+        SELECT 
+            COALESCE(ui.chn_name, ui.user_name, '') AS name,
+            COALESCE(ui.department_l5, ui.department_l4, ui.department_l3, '') AS department,
+            ui.user_name AS avatar,
+            COUNT(DISTINCT hd.id) AS count,
+            COALESCE(SUM(flower_count.flowers), 0) AS totalFlowers
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        LEFT JOIN t_user_info ui ON hd.honor_user_id = ui.user_id
+        LEFT JOIN (
+            SELECT honor_id, COUNT(*) AS flowers
+            FROM t_new_honors_flowers
+            GROUP BY honor_id
+        ) flower_count ON hd.honor_id = flower_count.honor_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 0
+            AND hd.honor_user_id IS NOT NULL
+            <if test="params.scope != null and params.scope == 'mine'">
+                AND hd.honor_user_id = #{params.currentUserId}
+            </if>
+            <if test="params.filterType != null and params.filterType == 'award' and params.filterValue != null and params.filterValue != ''">
+                AND nh.honor_name = #{params.filterValue}
+            </if>
+            <if test="params.filterType != null and params.filterType == 'department' and params.filterValue != null and params.filterValue != ''">
+                AND (ui.department_l5 = #{params.filterValue} 
+                    OR ui.department_l4 = #{params.filterValue})
+            </if>
+        GROUP BY hd.honor_user_id, ui.chn_name, ui.user_name, ui.department_l5, ui.department_l4
+        ORDER BY count DESC, totalFlowers DESC
+        LIMIT #{params.limit}
+    </select>
+
+    <!-- 查询用户是否已给荣誉送花 -->
+    <select id="selectFlowerByHonorIdAndUserId" resultType="com.aicommunity.entity.HonorFlower">
+        SELECT 
+            id,
+            honor_id AS honorId,
+            flowers_user_id AS flowersUserId
+        FROM t_new_honors_flowers
+        WHERE honor_id = #{honorId}
+            AND flowers_user_id = #{flowersUserId}
+        LIMIT 1
+    </select>
+
+    <!-- 插入送花记录 -->
+    <insert id="insertFlower" parameterType="com.aicommunity.entity.HonorFlower">
+        INSERT INTO t_new_honors_flowers (honor_id, flowers_user_id)
+        VALUES (#{honorId}, #{flowersUserId})
+    </insert>
+
+    <!-- 统计荣誉的花朵数 -->
+    <select id="countFlowersByHonorId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM t_new_honors_flowers
+        WHERE honor_id = #{honorId}
+    </select>
+
+    <!-- 查询所有奖项名称列表 -->
+    <select id="selectAwardNames" resultType="java.lang.String">
+        SELECT DISTINCT honor_name
+        FROM t_new_honors
+        WHERE status = '0'
+        ORDER BY honor_name ASC
+    </select>
+
+    <!-- 查询所有部门列表 -->
+    <select id="selectDepartments" resultType="java.lang.String">
+        SELECT DISTINCT department
+        FROM (
+            SELECT department_l1 AS department FROM t_user_info WHERE department_l1 IS NOT NULL AND department_l1 != ''
+            UNION
+            SELECT department_l2 AS department FROM t_user_info WHERE department_l2 IS NOT NULL AND department_l2 != ''
+            UNION
+            SELECT department_l3 AS department FROM t_user_info WHERE department_l3 IS NOT NULL AND department_l3 != ''
+        ) AS dept
+        WHERE department IS NOT NULL AND department != ''
+        ORDER BY department ASC
+    </select>
+
+    <!-- 查询用户荣誉时光轴数据 -->
+    <select id="selectTimeline" resultType="java.util.HashMap">
+        SELECT 
+            hd.id,
+            COALESCE(ui.chn_name, ui.user_name, '') AS name,
+            ui.user_name AS avatar,
+            nh.honor_name AS awardName,
+            CONCAT(hd.gained_year, '-', LPAD(hd.gained_month, 2, '0'), '-01') AS awardDate,
+            CASE 
+                WHEN nh.honor_name LIKE '%创新%' OR nh.honor_name LIKE '%突破%' THEN 'innovation'
+                WHEN nh.honor_name LIKE '%效能%' OR nh.honor_name LIKE '%效率%' THEN 'efficiency'
+                WHEN nh.honor_name LIKE '%实践%' THEN 'practice'
+                WHEN nh.honor_name LIKE '%社区%' OR nh.honor_name LIKE '%贡献%' THEN 'community'
+                ELSE 'innovation'
+            END AS category
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        LEFT JOIN t_user_info ui ON hd.honor_user_id = ui.user_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 0
+            <if test="params.userName != null and params.userName != ''">
+                AND (ui.chn_name = #{params.userName} OR ui.user_name = #{params.userName})
+            </if>
+        ORDER BY hd.gained_year DESC, hd.gained_month DESC, hd.id DESC
+    </select>
+
+    <!-- 查询用户信息（用于时光轴） -->
+    <select id="selectUserInfoByName" resultType="java.util.HashMap">
+        SELECT 
+            user_id AS userId,
+            COALESCE(chn_name, user_name) AS name,
+            user_name AS avatar,
+            COALESCE(department_l5, department_l4, department_l3, '') AS department
+        FROM t_user_info
+        WHERE (chn_name = #{userName} OR user_name = #{userName})
+        LIMIT 1
+    </select>
+
+    <!-- 统计用户累计花朵数 -->
+    <select id="countUserTotalFlowers" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(flower_count.flowers), 0)
+        FROM t_new_honors_detail hd
+        LEFT JOIN (
+            SELECT honor_id, COUNT(*) AS flowers
+            FROM t_new_honors_flowers
+            GROUP BY honor_id
+        ) flower_count ON hd.honor_id = flower_count.honor_id
+        WHERE hd.honor_user_id = #{userId}
+            AND hd.honor_type = 0
+    </select>
+
+    <!-- 根据detail id查询honor_id -->
+    <select id="selectHonorIdByDetailId" resultType="java.lang.String">
+        SELECT honor_id
+        FROM t_new_honors_detail
+        WHERE id = #{detailId}
+        LIMIT 1
+    </select>
+
+    <!-- 查询最新获奖者列表（用于首页AI使用达人展示） -->
+    <select id="selectLatestWinners" resultType="java.util.HashMap">
+        SELECT 
+            hd.id,
+            COALESCE(ui.chn_name, ui.user_name, '') AS name,
+            COALESCE(ui.user_name, '') AS avatar,
+            nh.honor_name AS awardName
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        LEFT JOIN t_user_info ui ON hd.honor_user_id = ui.user_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 0
+            AND hd.honor_user_id IS NOT NULL
+        ORDER BY hd.gained_year DESC, hd.gained_month DESC, hd.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 更新荣誉Banner配置 -->
+    <update id="updateBanner" parameterType="com.aicommunity.entity.HonorBanner">
+        UPDATE t_new_honor_banners
+        SET image = #{image},
+            title = #{title},
+            link = #{link},
+            `desc` = #{desc},
+            `order` = #{order}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 插入荣誉Banner配置 -->
+    <insert id="insertBanner" parameterType="com.aicommunity.entity.HonorBanner" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_new_honor_banners (
+            image,
+            title,
+            link,
+            `desc`,
+            `order`,
+            create_time
+        ) VALUES (
+            #{image},
+            #{title},
+            #{link},
+            #{desc},
+            #{order},
+            #{createTime}
+        )
+    </insert>
+
+    <!-- 查询所有荣誉奖项（包含ID和名称） -->
+    <select id="selectAllHonorsWithId" resultMap="HonorResultMap">
+        SELECT 
+            honor_id,
+            honor_name,
+            honor_image,
+            honor_desc,
+            status,
+            update_at
+        FROM t_new_honors
+        WHERE status = '0'
+        ORDER BY update_at DESC
+    </select>
+
+    <!-- 插入荣誉奖项 -->
+    <insert id="insertHonor" parameterType="com.aicommunity.entity.Honor">
+        INSERT INTO t_new_honors (
+            honor_id,
+            honor_name,
+            honor_image,
+            honor_desc,
+            status,
+            update_at
+        ) VALUES (
+            #{honorId},
+            #{honorName},
+            #{honorImage},
+            #{honorDesc},
+            #{status},
+            #{updateAt}
+        )
+    </insert>
+
+    <!-- 更新荣誉奖项 -->
+    <update id="updateHonor" parameterType="com.aicommunity.entity.Honor">
+        UPDATE t_new_honors
+        SET honor_name = #{honorName},
+            honor_image = #{honorImage},
+            honor_desc = #{honorDesc},
+            status = #{status},
+            update_at = #{updateAt}
+        WHERE honor_id = #{honorId}
+    </update>
+
+    <!-- 删除荣誉奖项 -->
+    <update id="deleteHonor">
+        UPDATE t_new_honors
+        SET status = '1',
+            update_at = NOW()
+        WHERE honor_id = #{honorId}
+    </update>
+
+    <!-- 查询获奖者列表（个人奖项） -->
+    <select id="selectWinners" resultType="java.util.HashMap">
+        SELECT 
+            hd.id,
+            COALESCE(ui.chn_name, ui.user_name, '') AS name,
+            CONCAT(hd.gained_year, '-', LPAD(hd.gained_month, 2, '0')) AS awardTime,
+            nh.honor_name AS awardName
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        LEFT JOIN t_user_info ui ON hd.honor_user_id = ui.user_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 0
+            AND hd.honor_user_id IS NOT NULL
+        ORDER BY hd.gained_year DESC, hd.gained_month DESC, hd.id DESC
+    </select>
+
+    <!-- 插入获奖者记录 -->
+    <insert id="insertHonorDetail" parameterType="com.aicommunity.entity.NewHonorDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_new_honors_detail (
+            honor_id,
+            gained_year,
+            gained_month,
+            honor_user_id,
+            members_json,
+            story,
+            honor_type,
+            team_name
+        ) VALUES (
+            #{honorId},
+            #{gainedYear},
+            #{gainedMonth},
+            #{honorUserId},
+            #{membersJson},
+            #{story},
+            #{honorType},
+            #{teamName}
+        )
+    </insert>
+
+    <!-- 删除获奖者记录 -->
+    <delete id="deleteHonorDetail">
+        DELETE FROM t_new_honors_detail
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 检查指定奖项是否有获奖者 -->
+    <select id="countWinnersByHonorId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM t_new_honors_detail
+        WHERE honor_id = #{honorId}
+            AND honor_type = 0
+            AND honor_user_id IS NOT NULL
+    </select>
+
+    <!-- 查询推荐获奖者（根据积分） -->
+    <select id="selectRecommendedWinners" resultType="java.util.HashMap">
+        SELECT 
+            ui.user_id AS userId,
+            COALESCE(ui.chn_name, ui.user_name, '') AS name,
+            ui.user_name AS employeeId,
+            COALESCE(ui.user_name, '') AS avatar,
+            COALESCE(ui.department_l5, ui.department_l4, ui.department_l3, '') AS department,
+            COALESCE(up.total_points, 0) AS points,
+            COALESCE(post_count.posts, 0) AS postsCount,
+            COALESCE(comment_count.comments, 0) AS commentsCount,
+            COALESCE(activity_count.activities, 0) AS activitiesCount,
+            COALESCE(like_count.likes, 0) AS likesReceived,
+            COALESCE(favorite_count.favorites, 0) AS favoritesReceived,
+            CASE WHEN hd.id IS NOT NULL THEN true ELSE false END AS hasAwarded,
+            hd.id AS honorId
+        FROM t_user_info ui
+        LEFT JOIN t_user_points up ON ui.user_id = up.user_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) AS posts
+            FROM t_new_posts
+            WHERE status = '0'
+            GROUP BY author_id
+        ) post_count ON ui.user_id = post_count.author_id
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS comments
+            FROM t_new_post_comments
+            WHERE status = '0'
+            GROUP BY user_id
+        ) comment_count ON ui.user_id = comment_count.user_id
+        LEFT JOIN (
+            SELECT join_user_id, COUNT(*) AS activities
+            FROM t_new_tool_activity_join
+            WHERE canceled = 0
+            GROUP BY join_user_id
+        ) activity_count ON ui.user_id = activity_count.join_user_id
+        LEFT JOIN (
+            SELECT p.author_id, COUNT(*) AS likes
+            FROM t_new_posts p
+            INNER JOIN t_new_post_likes pl ON p.post_id = pl.post_id
+            WHERE p.status = '0'
+            GROUP BY p.author_id
+        ) like_count ON ui.user_id = like_count.author_id
+        LEFT JOIN (
+            SELECT p.author_id, COUNT(*) AS favorites
+            FROM t_new_posts p
+            INNER JOIN t_new_post_collected pc ON p.post_id = pc.post_id
+            WHERE p.status = '0'
+            GROUP BY p.author_id
+        ) favorite_count ON ui.user_id = favorite_count.author_id
+        LEFT JOIN t_new_honors_detail hd ON ui.user_id = hd.honor_user_id 
+            AND hd.honor_type = 0
+            AND CONCAT(hd.gained_year, '-', LPAD(hd.gained_month, 2, '0')) = #{month}
+        WHERE ui.status = '0'
+        ORDER BY points DESC, postsCount DESC, commentsCount DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询团队奖项列表（所有年份） -->
+    <select id="selectAllTeamAwards" resultType="java.util.HashMap">
+        SELECT 
+            hd.id,
+            hd.honor_id,
+            hd.gained_year AS year,
+            hd.team_name AS winnerName,
+            hd.story,
+            '' AS teamField,
+            '' AS image
+        FROM t_new_honors_detail hd
+        INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
+        WHERE nh.status = '0'
+            AND hd.honor_type = 1
+        ORDER BY hd.gained_year DESC, hd.gained_month DESC, hd.id DESC
+    </select>
+
+</mapper>

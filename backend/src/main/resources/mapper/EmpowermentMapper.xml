@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.EmpowermentMapper">
+
+    <!-- 精华帖子结果映射 -->
+    <resultMap id="FeaturedPostResultMap" type="com.aicommunity.vo.FeaturedPostVO">
+        <id column="post_id" property="id" jdbcType="VARCHAR"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="cover" property="cover" jdbcType="VARCHAR"/>
+        <result column="image" property="image" jdbcType="VARCHAR"/>
+        <result column="author" property="author" jdbcType="VARCHAR"/>
+        <result column="author_id" property="authorId" jdbcType="INTEGER"/>
+        <result column="author_avatar" property="authorAvatar" jdbcType="VARCHAR"/>
+        <result column="views" property="views" jdbcType="INTEGER"/>
+        <result column="comments" property="comments" jdbcType="INTEGER"/>
+        <result column="likes" property="likes" jdbcType="INTEGER"/>
+        <result column="featured" property="featured" jdbcType="BOOLEAN"/>
+        <result column="create_time" property="createTime" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 普通帖子结果映射 -->
+    <resultMap id="EmpowermentPostItemResultMap" type="com.aicommunity.vo.EmpowermentPostItemVO">
+        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="cover" property="cover" jdbcType="VARCHAR"/>
+        <result column="image" property="image" jdbcType="VARCHAR"/>
+        <result column="author" property="author" jdbcType="VARCHAR"/>
+        <result column="author_id" property="authorId" jdbcType="INTEGER"/>
+        <result column="author_avatar" property="authorAvatar" jdbcType="VARCHAR"/>
+        <result column="views" property="views" jdbcType="INTEGER"/>
+        <result column="comments" property="comments" jdbcType="INTEGER"/>
+        <result column="likes" property="likes" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="VARCHAR"/>
+        <result column="update_time" property="updateTime" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 标签统计结果映射 -->
+    <resultMap id="TagStatResultMap" type="com.aicommunity.vo.TagStatVO">
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="count" property="count" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!-- 查询赋能交流精华帖子列表 -->
+    <select id="selectFeaturedPosts" resultMap="FeaturedPostResultMap">
+        SELECT 
+            CAST(p.post_id AS UNSIGNED) AS id,
+            p.title,
+            SUBSTRING(p.content, 1, 200) AS description,
+            p.front_cover AS cover,
+            p.front_cover AS image,
+            COALESCE(ui.chn_name, p.author_id) AS author,
+            CASE 
+                WHEN p.author_id REGEXP '^[0-9]+$' THEN CAST(p.author_id AS UNSIGNED)
+                ELSE 0
+            END AS author_id,
+            COALESCE(ui.user_name, '') AS author_avatar,
+            COALESCE(p.views_nums, 0) AS views,
+            COALESCE((SELECT COUNT(*) FROM t_new_post_comments WHERE post_id = p.post_id AND status = '0'), 0) AS comments,
+            COALESCE((SELECT COUNT(*) FROM t_new_post_likes WHERE post_id = p.post_id), 0) AS likes,
+            TRUE AS featured,
+            DATE_FORMAT(p.created_at, '%Y-%m-%dT%H:%i:%sZ') AS create_time
+        FROM t_new_posts p
+        LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
+        WHERE p.zone_id = 4
+          AND p.essence_post = '1'
+          AND p.status = '0'
+        ORDER BY p.created_at DESC
+    </select>
+
+    <!-- 查询赋能交流普通帖子列表 -->
+    <select id="selectEmpowermentPosts" resultMap="EmpowermentPostItemResultMap">
+        SELECT 
+            CAST(p.post_id AS UNSIGNED) AS id,
+            p.title,
+            SUBSTRING(p.content, 1, 200) AS description,
+            p.front_cover AS cover,
+            p.front_cover AS image,
+            COALESCE(ui.chn_name, p.author_id) AS author,
+            CASE 
+                WHEN p.author_id REGEXP '^[0-9]+$' THEN CAST(p.author_id AS UNSIGNED)
+                ELSE 0
+            END AS author_id,
+            COALESCE(ui.user_name, '') AS author_avatar,
+            COALESCE(p.views_nums, 0) AS views,
+            COALESCE((SELECT COUNT(*) FROM t_new_post_comments WHERE post_id = p.post_id AND status = '0'), 0) AS comments,
+            COALESCE((SELECT COUNT(*) FROM t_new_post_likes WHERE post_id = p.post_id), 0) AS likes,
+            DATE_FORMAT(p.created_at, '%Y-%m-%dT%H:%i:%sZ') AS create_time,
+            DATE_FORMAT(p.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS update_time
+        FROM t_new_posts p
+        LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
+        WHERE p.zone_id = 4
+          AND p.essence_post = '0'
+          AND p.status = '0'
+        <if test="keyword != null and keyword != ''">
+          AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+               OR p.content LIKE CONCAT('%', #{keyword}, '%')
+               OR ui.chn_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="tag != null and tag != ''">
+          AND EXISTS (
+              SELECT 1 FROM t_new_posts_tag pt
+              WHERE pt.id = p.label_id
+                AND pt.tag = #{tag}
+                AND (pt.deleted IS NULL OR pt.deleted = 0)
+          )
+        </if>
+        <choose>
+            <when test="sortBy == 'hot'">
+                ORDER BY p.views_nums DESC, p.created_at DESC
+            </when>
+            <when test="sortBy == 'comments'">
+                ORDER BY (SELECT COUNT(*) FROM t_new_post_comments WHERE post_id = p.post_id AND status = '0') DESC, p.created_at DESC
+            </when>
+            <when test="sortBy == 'likes'">
+                ORDER BY (SELECT COUNT(*) FROM t_new_post_likes WHERE post_id = p.post_id) DESC, p.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY p.created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计赋能交流普通帖子总数 -->
+    <select id="countEmpowermentPosts" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT p.post_id)
+        FROM t_new_posts p
+        LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
+        WHERE p.zone_id = 4
+          AND p.essence_post = '0'
+          AND p.status = '0'
+        <if test="keyword != null and keyword != ''">
+          AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+               OR p.content LIKE CONCAT('%', #{keyword}, '%')
+               OR ui.chn_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="tag != null and tag != ''">
+          AND EXISTS (
+              SELECT 1 FROM t_new_posts_tag pt
+              WHERE pt.id = p.label_id
+                AND pt.tag = #{tag}
+                AND (pt.deleted IS NULL OR pt.deleted = 0)
+          )
+        </if>
+    </select>
+
+    <!-- 查询标签统计信息 -->
+    <select id="selectTagStats" resultMap="TagStatResultMap">
+        SELECT 
+            '全部' AS name,
+            COUNT(DISTINCT p.post_id) AS count
+        FROM t_new_posts p
+        WHERE p.zone_id = 4
+          AND p.status = '0'
+        UNION ALL
+        SELECT 
+            pt.tag AS name,
+            COUNT(DISTINCT p.post_id) AS count
+        FROM t_new_posts p
+        INNER JOIN t_new_posts_tag pt ON pt.id = p.label_id
+        WHERE p.zone_id = 4
+          AND p.status = '0'
+          AND (pt.deleted IS NULL OR pt.deleted = 0)
+        GROUP BY pt.tag
+        HAVING count > 0
+        ORDER BY count DESC, name ASC
+    </select>
+
+    <!-- 设置帖子为精华帖 -->
+    <update id="setFeaturedPost">
+        UPDATE t_new_posts
+        SET essence_post = '1',
+            updated_at = NOW()
+        WHERE post_id = #{postId}
+          AND zone_id = 4
+          AND status = '0'
+    </update>
+
+    <!-- 取消帖子精华状态 -->
+    <update id="cancelFeaturedPost">
+        UPDATE t_new_posts
+        SET essence_post = '0',
+            updated_at = NOW()
+        WHERE post_id = #{postId}
+          AND zone_id = 4
+          AND status = '0'
+    </update>
+
+    <!-- 根据帖子ID查询帖子信息 -->
+    <select id="selectByPostId" resultType="com.aicommunity.entity.Post">
+        SELECT 
+            post_id AS postId,
+            author_id AS authorId,
+            title,
+            front_cover AS frontCover,
+            content,
+            content_type AS contentType,
+            created_at AS createdAt,
+            updated_at AS updatedAt,
+            url,
+            status,
+            essence_post AS essencePost,
+            zone_id AS zoneId,
+            label_id AS labelId,
+            tool_id AS toolId,
+            views_nums AS viewsNums
+        FROM t_new_posts
+        WHERE post_id = #{postId}
+          AND status = '0'
+    </select>
+
+</mapper>
