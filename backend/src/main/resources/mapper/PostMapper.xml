@@ -131,7 +131,6 @@
             <if test="frontCover != null">front_cover = #{frontCover},</if>
             <if test="content != null">content = #{content},</if>
             <if test="updatedAt != null">updated_at = #{updatedAt},</if>
-            <if test="labelId != null">label_id = #{labelId},</if>
         </set>
         WHERE post_id = #{postId}
           AND status = '0'

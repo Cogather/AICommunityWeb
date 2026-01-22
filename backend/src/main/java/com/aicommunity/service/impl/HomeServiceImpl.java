@@ -176,36 +176,35 @@ public class HomeServiceImpl implements HomeService {
             vo.setAuthor(authorName);
             vo.setAuthorDept(authorDept);
 
-            // 根据label_id查询标签信息
+            // 根据关联表查询标签信息（取第一个标签）
             String tag = "讨论";
             String tagType = "blue";
-            if (post.getLabelId() != null) {
-                try {
-                    com.aicommunity.entity.PostTag postTag = postTagMapper.selectByLabelId(post.getLabelId());
-                    if (postTag != null) {
-                        tag = postTag.getTag() != null ? postTag.getTag() : "讨论";
-                        // 根据color字段确定tagType，如果没有color则使用默认值
-                        if (postTag.getColor() != null && !postTag.getColor().isEmpty()) {
-                            // 将颜色值映射到tagType（blue/green/orange/red/purple）
-                            String color = postTag.getColor().toLowerCase();
-                            if (color.contains("blue") || color.startsWith("#36") || color.startsWith("#409")) {
-                                tagType = "blue";
-                            } else if (color.contains("green") || color.startsWith("#73") || color.startsWith("#52")) {
-                                tagType = "green";
-                            } else if (color.contains("orange") || color.startsWith("#ff") || color.startsWith("#fa")) {
-                                tagType = "orange";
-                            } else if (color.contains("red") || color.startsWith("#f5")) {
-                                tagType = "red";
-                            } else if (color.contains("purple") || color.startsWith("#92") || color.startsWith("#76")) {
-                                tagType = "purple";
-                            } else {
-                                tagType = "blue";
-                            }
+            try {
+                List<com.aicommunity.entity.PostTag> postTags = postTagMapper.selectTagsByPostId(post.getPostId());
+                if (!CollectionUtils.isEmpty(postTags)) {
+                    com.aicommunity.entity.PostTag postTag = postTags.get(0);
+                    tag = postTag.getTag() != null ? postTag.getTag() : "讨论";
+                    // 根据color字段确定tagType，如果没有color则使用默认值
+                    if (postTag.getColor() != null && !postTag.getColor().isEmpty()) {
+                        // 将颜色值映射到tagType（blue/green/orange/red/purple）
+                        String color = postTag.getColor().toLowerCase();
+                        if (color.contains("blue") || color.startsWith("#36") || color.startsWith("#409")) {
+                            tagType = "blue";
+                        } else if (color.contains("green") || color.startsWith("#73") || color.startsWith("#52")) {
+                            tagType = "green";
+                        } else if (color.contains("orange") || color.startsWith("#ff") || color.startsWith("#fa")) {
+                            tagType = "orange";
+                        } else if (color.contains("red") || color.startsWith("#f5")) {
+                            tagType = "red";
+                        } else if (color.contains("purple") || color.startsWith("#92") || color.startsWith("#76")) {
+                            tagType = "purple";
+                        } else {
+                            tagType = "blue";
                         }
                     }
-                } catch (Exception e) {
-                    log.warn("查询标签信息失败: labelId={}, error={}", post.getLabelId(), e.getMessage());
                 }
+            } catch (Exception e) {
+                log.warn("查询标签信息失败: postId={}, error={}", post.getPostId(), e.getMessage());
             }
             vo.setTag(tag);
             vo.setTagType(tagType);
@@ -229,11 +228,6 @@ public class HomeServiceImpl implements HomeService {
         // 根据label_id分类（需要根据实际业务逻辑调整）
         Map<String, List<PracticeItemVO>> practices = new HashMap<>();
 
-        List<PostTag> postTags = postTagMapper.selectAllLabel();
-        Map<Integer, PostTag> postTagMap = postTags.stream()
-            .collect(Collectors.toMap(PostTag::getId, tag -> tag,
-                (existing, replacement) -> existing));
-        
         if (!CollectionUtils.isEmpty(posts)) {
             for (Post post : posts) {
                 PracticeItemVO vo = new PracticeItemVO();
@@ -258,15 +252,15 @@ public class HomeServiceImpl implements HomeService {
                 vo.setAuthorDept(authorDept);
                 vo.setTime(calculateRelativeTime(post.getCreatedAt()));
                 
-                // 根据label_id分类
-                // 注意：label_id与分类的映射关系需要根据实际业务逻辑确定
-                // 这里假设label_id对应：1-培训赋能，2-AI训战，3-用户交流
-                // 根据label_id分类
-                if (post.getLabelId() != null) {
-                    PostTag postTag = postTagMap.get(post.getLabelId());
-                    List<PracticeItemVO> practiceItemVOList;
-                    if (practices.containsKey(postTag.getTag())) {
-                        practiceItemVOList = practices.get(postTag.getTag());
+                // 根据关联表查询标签，按标签分类
+                try {
+                    List<PostTag> postTags = postTagMapper.selectTagsByPostId(post.getPostId());
+                    if (!CollectionUtils.isEmpty(postTags)) {
+                        // 一个帖子可能有多个标签，按第一个标签分类
+                        PostTag postTag = postTags.get(0);
+                        List<PracticeItemVO> practiceItemVOList;
+                        if (practices.containsKey(postTag.getTag())) {
+                            practiceItemVOList = practices.get(postTag.getTag());
                         vo.setCategory(postTag.getTag());
                         practiceItemVOList.add(vo);
                     } else {
@@ -275,6 +269,30 @@ public class HomeServiceImpl implements HomeService {
                         practiceItemVOList.add(vo);
                     }
                     practices.put(postTag.getTag(), practiceItemVOList);
+                    } else {
+                        // 如果没有标签，使用默认分类
+                        List<PracticeItemVO> practiceItemVOList;
+                        if (practices.containsKey("其他")) {
+                            practiceItemVOList = practices.get("其他");
+                        } else {
+                            practiceItemVOList = new ArrayList<>();
+                        }
+                        vo.setCategory("其他");
+                        practiceItemVOList.add(vo);
+                        practices.put("其他", practiceItemVOList);
+                    }
+                } catch (Exception e) {
+                    log.warn("查询标签信息失败: postId={}, error={}", post.getPostId(), e.getMessage());
+                    // 如果查询失败，使用默认分类
+                    List<PracticeItemVO> practiceItemVOList;
+                    if (practices.containsKey("其他")) {
+                        practiceItemVOList = practices.get("其他");
+                    } else {
+                        practiceItemVOList = new ArrayList<>();
+                    }
+                    vo.setCategory("其他");
+                    practiceItemVOList.add(vo);
+                    practices.put("其他", practiceItemVOList);
                 }
             }
         }

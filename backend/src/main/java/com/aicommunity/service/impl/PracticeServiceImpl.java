@@ -1,8 +1,8 @@
 package com.aicommunity.service.impl;
 
 import com.aicommunity.entity.PostTag;
-import com.aicommunity.entity.PostTagRelation;
 import com.aicommunity.mapper.PracticeMapper;
+import com.aicommunity.mapper.PostTagMapper;
 import com.aicommunity.service.PracticeService;
 import com.aicommunity.vo.*;
 import lombok.extern.slf4j.Slf4j;
@@ -59,18 +59,8 @@ public class PracticeServiceImpl implements PracticeService {
         // 计算偏移量
         Integer offset = (page - 1) * pageSize;
 
-        // 查询帖子列表
+        // 查询帖子列表（标签筛选已在SQL中处理）
         List<PostItemVO> posts = practiceMapper.selectPracticePosts(keyword, tag, department, contributor, sortBy, offset, pageSize);
-        
-        List<PostTagRelation> postTagRelations = postTagMapper.selectPostTagRelation();
-
-        List<String> postIdList = new ArrayList<>();
-        if (!StringUtils.isEmpty(tag)) {
-            postIdList = postTagRelations.stream()
-                .filter(e -> tag.equals(e.getTag()))
-                .map(PostTagRelation::getPostId)
-                .collect(Collectors.toList());
-        }
         
         // 查询总数
         Long total = practiceMapper.countPracticePosts(keyword, tag, department, contributor);

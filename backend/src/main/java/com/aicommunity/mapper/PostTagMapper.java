@@ -18,7 +18,7 @@ import java.util.List;
 public interface PostTagMapper {
 
     /**
-     * 根据label_id查询标签信息
+     * 根据label_id查询标签信息（保留用于兼容）
      *
      * @param labelId 标签ID
      * @return 标签信息
@@ -26,11 +26,49 @@ public interface PostTagMapper {
     PostTag selectByLabelId(@Param("labelId") Integer labelId);
     
     /**
-    * 根据label_id查询标签信息
-    *
-    * @return 标签信息
-    */
-   List<PostTag> selectAllLabel();
+     * 查询所有标签信息
+     *
+     * @return 标签信息列表
+     */
+    List<PostTag> selectAllLabel();
 
-   List<PostTagRelation> selectPostTagRelation();
+    /**
+     * 查询所有帖子标签关联关系
+     *
+     * @return 帖子标签关联关系列表
+     */
+    List<PostTagRelation> selectPostTagRelation();
+
+    /**
+     * 根据帖子ID查询标签列表（通过关联表）
+     *
+     * @param postId 帖子ID
+     * @return 标签列表
+     */
+    List<PostTag> selectTagsByPostId(@Param("postId") String postId);
+
+    /**
+     * 插入帖子标签关联关系
+     *
+     * @param postId 帖子ID
+     * @param tagId  标签ID
+     * @return 影响行数
+     */
+    int insertPostTagRelation(@Param("postId") String postId, @Param("tagId") Integer tagId);
+
+    /**
+     * 删除帖子标签关联关系（逻辑删除）
+     *
+     * @param postId 帖子ID
+     * @return 影响行数
+     */
+    int deletePostTagRelationByPostId(@Param("postId") String postId);
+
+    /**
+     * 根据标签名称查询标签ID
+     *
+     * @param tagName 标签名称
+     * @return 标签ID，如果不存在返回null
+     */
+    Integer selectTagIdByName(@Param("tagName") String tagName);
 }

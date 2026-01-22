@@ -67,8 +67,12 @@
                 ELSE COALESCE(t.title, '其他工具')
             END AS tool_name,
             CASE 
-                WHEN p.label_id IS NULL THEN 'guide'
-                ELSE 'excellent'
+                WHEN EXISTS (
+                    SELECT 1 FROM t_new_posts_tag_relation ptr
+                    WHERE ptr.post_id = p.post_id
+                      AND (ptr.deleted IS NULL OR ptr.deleted = 0)
+                ) THEN 'excellent'
+                ELSE 'guide'
             END AS category,
             COALESCE(p.views_nums, 0) AS views,
             COALESCE((SELECT COUNT(*) FROM t_new_post_likes WHERE post_id = p.post_id), 0) AS likes,
@@ -101,10 +105,18 @@
         <if test="category != null and category != ''">
             <choose>
                 <when test="category == 'guide'">
-                    AND (p.label_id IS NULL OR p.label_id = 0)
+                    AND NOT EXISTS (
+                        SELECT 1 FROM t_new_posts_tag_relation ptr
+                        WHERE ptr.post_id = p.post_id
+                          AND (ptr.deleted IS NULL OR ptr.deleted = 0)
+                    )
                 </when>
                 <when test="category == 'excellent'">
-                    AND p.label_id IS NOT NULL AND p.label_id != 0
+                    AND EXISTS (
+                        SELECT 1 FROM t_new_posts_tag_relation ptr
+                        WHERE ptr.post_id = p.post_id
+                          AND (ptr.deleted IS NULL OR ptr.deleted = 0)
+                    )
                 </when>
             </choose>
         </if>
@@ -115,9 +127,11 @@
         </if>
         <if test="tag != null and tag != ''">
             AND EXISTS (
-                SELECT 1 FROM t_new_posts_tag pt
-                WHERE pt.id = p.label_id
+                SELECT 1 FROM t_new_posts_tag_relation ptr
+                INNER JOIN t_new_posts_tag pt ON pt.id = ptr.tag_id
+                WHERE ptr.post_id = p.post_id
                   AND pt.tag = #{tag}
+                  AND (ptr.deleted IS NULL OR ptr.deleted = 0)
                   AND (pt.deleted IS NULL OR pt.deleted = 0)
             )
         </if>
@@ -180,9 +194,11 @@
         </if>
         <if test="tag != null and tag != ''">
             AND EXISTS (
-                SELECT 1 FROM t_new_posts_tag pt
-                WHERE pt.id = p.label_id
+                SELECT 1 FROM t_new_posts_tag_relation ptr
+                INNER JOIN t_new_posts_tag pt ON pt.id = ptr.tag_id
+                WHERE ptr.post_id = p.post_id
                   AND pt.tag = #{tag}
+                  AND (ptr.deleted IS NULL OR ptr.deleted = 0)
                   AND (pt.deleted IS NULL OR pt.deleted = 0)
             )
         </if>
@@ -197,9 +213,12 @@
             pt.tag AS name,
             COUNT(DISTINCT p.post_id) AS count
         FROM t_new_posts p
-        INNER JOIN t_new_posts_tag pt ON pt.id = p.label_id AND (pt.deleted IS NULL OR pt.deleted = 0)
+        INNER JOIN t_new_posts_tag_relation ptr ON ptr.post_id = p.post_id
+        INNER JOIN t_new_posts_tag pt ON pt.id = ptr.tag_id
         LEFT JOIN t_user_info ui ON p.author_id = ui.user_id
         WHERE p.status = '0'
+          AND (ptr.deleted IS NULL OR ptr.deleted = 0)
+          AND (pt.deleted IS NULL OR pt.deleted = 0)
         <if test="toolId != null">
             <choose>
                 <when test="toolId == 3">
@@ -250,9 +269,11 @@
         </if>
         <if test="tag != null and tag != ''">
             AND EXISTS (
-                SELECT 1 FROM t_new_posts_tag pt
-                WHERE pt.label_id = p.label_id
+                SELECT 1 FROM t_new_posts_tag_relation ptr
+                INNER JOIN t_new_posts_tag pt ON pt.id = ptr.tag_id
+                WHERE ptr.post_id = p.post_id
                   AND pt.tag = #{tag}
+                  AND (ptr.deleted IS NULL OR ptr.deleted = 0)
                   AND (pt.deleted IS NULL OR pt.deleted = 0)
             )
         </if>
@@ -261,7 +282,7 @@
         ORDER BY post_count DESC
     </select>
 
-    <!-- 根据帖子ID查询标签列表 -->
+    <!-- 根据帖子ID查询标签列表（通过关联表） -->
     <select id="selectTagsByPostId" resultMap="PostTagResultMap">
         SELECT 
             pt.id,
@@ -273,8 +294,9 @@
             pt.deleted,
             pt.user_id
         FROM t_new_posts_tag pt
-        INNER JOIN t_new_posts p ON pt.label_id = p.label_id
-        WHERE p.post_id = #{postId}
+        INNER JOIN t_new_posts_tag_relation ptr ON pt.id = ptr.tag_id
+        WHERE ptr.post_id = #{postId}
+          AND (ptr.deleted IS NULL OR ptr.deleted = 0)
           AND (pt.deleted IS NULL OR pt.deleted = 0)
     </select>
 

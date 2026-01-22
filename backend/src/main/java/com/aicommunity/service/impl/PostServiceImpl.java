@@ -49,6 +49,9 @@ public class PostServiceImpl implements PostService {
     private UserInfoMapper userInfoMapper;
 
     @Autowired
+    private PostTagMapper postTagMapper;
+
+    @Autowired
     private ReplyMapper replyMapper;
 
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -168,9 +171,9 @@ public class PostServiceImpl implements PostService {
             throw new BusinessException(ErrorCodeEnum.DATABASE_ERROR.getCode(), "创建帖子失败");
         }
 
-        // 保存标签
+        // 保存标签关联关系
         if (!CollectionUtils.isEmpty(request.getTags())) {
-            // TODO: 保存标签关联关系
+            savePostTagRelations(postId, request.getTags());
         }
 
         // 返回帖子详情
@@ -208,9 +211,14 @@ public class PostServiceImpl implements PostService {
             throw new BusinessException(ErrorCodeEnum.DATABASE_ERROR.getCode(), "更新帖子失败");
         }
 
-        // 更新标签
-        if (!CollectionUtils.isEmpty(request.getTags())) {
-            // TODO: 更新标签关联关系
+        // 更新标签关联关系
+        if (request.getTags() != null) {
+            // 先删除旧的关联关系（逻辑删除）
+            postTagMapper.deletePostTagRelationByPostId(postId);
+            // 插入新的关联关系
+            if (!CollectionUtils.isEmpty(request.getTags())) {
+                savePostTagRelations(postId, request.getTags());
+            }
         }
 
         return getPostDetail(postId, userId);
@@ -410,6 +418,31 @@ public class PostServiceImpl implements PostService {
         vo.setSuccess(true);
         vo.setFeatured(request.getFeatured());
         return vo;
+    }
+
+    /**
+     * 保存帖子标签关联关系
+     *
+     * @param postId 帖子ID
+     * @param tags   标签名称列表
+     */
+    private void savePostTagRelations(String postId, List<String> tags) {
+        if (CollectionUtils.isEmpty(tags)) {
+            return;
+        }
+
+        for (String tagName : tags) {
+            if (StringUtils.hasText(tagName)) {
+                // 根据标签名称查询标签ID
+                Integer tagId = postTagMapper.selectTagIdByName(tagName);
+                if (tagId != null) {
+                    // 插入关联关系
+                    postTagMapper.insertPostTagRelation(postId, tagId);
+                } else {
+                    log.warn("标签不存在: {}, 帖子ID: {}", tagName, postId);
+                }
+            }
+        }
     }
 
     /**

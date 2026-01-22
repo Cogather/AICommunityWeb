@@ -13,9 +13,12 @@
             pt.tag AS tag_name,
             COUNT(DISTINCT p.post_id) AS tag_count
         FROM t_new_posts_tag pt
-        LEFT JOIN t_new_posts p ON pt.id = p.label_id
+        INNER JOIN t_new_posts_tag_relation ptr ON pt.id = ptr.tag_id
+        INNER JOIN t_new_posts p ON ptr.post_id = p.post_id
         WHERE p.zone_id = #{zoneId}
           AND p.status = '0'
+          AND (ptr.deleted IS NULL OR ptr.deleted = 0)
+          AND (pt.deleted IS NULL OR pt.deleted = 0)
           <if test="toolId != null">
               AND p.tool_id = #{toolId}
           </if>
