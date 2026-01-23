@@ -160,23 +160,25 @@ import TagFilter from '../components/TagFilter.vue'
 // API 层 - 支持 Mock/Real API 自动切换
 import { getPosts, getContributors, getHotPosts, getTags, getDepartments } from '../api/practices'
 import type { Post } from '../api/types'
+import commonMethods from '@/utils/common'
 
 const router = useRouter()
 const route = useRoute()
 
-type PostVM = Post & {
-  author: string
-  description: string
-  image: string
+const extractAvatarId = (avatar: string | number | undefined): string => {
+  if (!avatar) return ''
+  const str = String(avatar)
+  // 匹配末尾的数字部分
+  const match = str.match(/(\d+)$/)
+  return match ? match[1] : str
 }
-
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments' | 'likes'>('newest')
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 const selectedContributor = ref<string | null>(null)
 
-// 首页“AI优秀实践”三个入口实际按标签筛选（但底层数据可能来自 category 字段）
+// 首页"AI优秀实践"三个入口实际按标签筛选（但底层数据可能来自 category 字段）
 const specialTagToCategory: Record<string, string> = {
   代码生成: 'training',
   脚本生成: 'training-battle',
@@ -188,9 +190,17 @@ const currentPage = ref(1)
 const pageSize = ref(15)
 const totalPosts = ref(0)
 
-// 所有标签（包含"全部"选项）
-const allTags = computed(() => {
-  // 获取所有帖子（包括精华帖和普通帖子）
+// 标签列表及统计（右侧标签筛选）- 完全由接口返回
+const tagsFromApi = ref<Array<{ name: string; count: number }>>([])
+
+// 显示的标签 - 完全使用接口返回的数据
+const displayedTags = computed(() => {
+  // 完全使用后端返回的标签数据，不再硬编码任何标签
+  if (tagsFromApi.value.length > 0) {
+    return tagsFromApi.value
+  }
+
+  // 兜底：如果接口没有返回数据，从本地帖子中统计
   const allPosts = [...featuredPosts.value, ...posts.value]
 
   // 根据当前选择的部门过滤帖子
@@ -209,72 +219,22 @@ const allTags = computed(() => {
     }
   })
 
-  // 构建标签列表，包含"全部"
-  const tags: Array<{ name: string; count: number }> = [
-    { name: '全部', count: filteredPosts.length }
-  ]
+  // 构建标签列表（不再添加固定的"全部"标签）
+  const tags: Array<{ name: string; count: number }> = []
 
-  // 添加其他标签（包含首页“代码生成 / 脚本生成 / 问题处理”）
-  // 这里的列表仅作为兜底，实际应优先使用 API 返回的 tags
-  const tagNames = [
-    '代码生成',
-    '脚本生成',
-    '问题处理'
-  ]
-
-  tagNames.forEach(tagName => {
-    const category = specialTagToCategory[tagName]
-    const count = category ? filteredPosts.filter(p => p.category === category).length : (tagCountMap.get(tagName) || 0)
-    if (count > 0 || !selectedDepartment.value) {
-      tags.push({ name: tagName, count })
-    }
-  })
-
-  // 如果没有从 posts 中统计到其他标签，且没有 API 数据，这里不再硬编码大量标签，
-  // 而是依赖 posts 中的实际 tags 统计
   tagCountMap.forEach((count, name) => {
-    if (!tagNames.includes(name) && name !== '全部') {
-       tags.push({ name, count })
-    }
+    tags.push({ name, count })
   })
 
-  return tags
-})
-
-// 显示的标签（根据部门过滤后）
-const displayedTags = computed(() => {
-  // 优先使用后端 tags 统计（并补齐首页三个入口“标签”）
-  if (tagsFromApi.value.length > 0) {
-    const all = [...featuredPosts.value, ...posts.value]
-    const basePosts = selectedDepartment.value ? all.filter(p => p.department === selectedDepartment.value) : all
-
-    const specials = ['代码生成', '脚本生成', '问题处理'].map((name) => {
-      const category = specialTagToCategory[name]
-      const count = category ? basePosts.filter(p => p.category === category).length : 0
-      return { name, count }
-    })
-
-    const apiTags = tagsFromApi.value.filter(t => t.name !== '全部')
-
-    // 合并并去重（优先 specials，再 api tags）
-    const merged = [
-      { name: '全部', count: basePosts.length },
-      ...specials,
-      ...apiTags,
-    ]
-
-    const seen = new Set<string>()
-    return merged.filter(t => (seen.has(t.name) ? false : (seen.add(t.name), true)))
-  }
-
-  return allTags.value
+  // 按数量排序
+  return tags.sort((a, b) => b.count - a.count)
 })
 
 // 精华帖（置顶）
-const featuredPosts = ref<PostVM[]>([])
+const featuredPosts = ref<Post[]>([])
 
 // 普通帖子
-const posts = ref<PostVM[]>([])
+const posts = ref<Post[]>([])
 
 // 加载帖子数据
 const loadPosts = async () => {
@@ -283,7 +243,7 @@ const loadPosts = async () => {
       page: currentPage.value,
       pageSize: pageSize.value,
       keyword: searchKeyword.value || undefined,
-      tag: selectedTag.value && selectedTag.value !== '全部' ? selectedTag.value : undefined,
+      tag: selectedTag.value || undefined,
       department: selectedDepartment.value || undefined,
       contributor: selectedContributor.value || undefined,
       sortBy: sortBy.value
@@ -302,11 +262,11 @@ const loadPosts = async () => {
 
     posts.value = allPosts.map((post: Post) => ({
       ...post,
-      author: post.userName || '',
+      author: post.author || post.userName || '',
       description: post.summary || '',
       image: post.cover || '',
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleDateString('zh-CN')
-    })) as PostVM[]
+    }))
 
     totalPosts.value = response.data.total
   } catch (error) {
@@ -324,7 +284,7 @@ const displayedDepartments = computed(() => {
 
   // 根据当前选择的标签过滤帖子
   let filteredPosts = allPosts
-  if (selectedTag.value && selectedTag.value !== '全部') {
+  if (selectedTag.value) {
     const category = specialTagToCategory[selectedTag.value]
     filteredPosts = category
       ? filteredPosts.filter(p => p.category === category)
@@ -341,8 +301,8 @@ const displayedDepartments = computed(() => {
       }
       const dept = deptMap.get(post.department)!
       dept.postCount++
-      if (post.userName) {
-        dept.contributors.add(post.userName)
+      if (post.author) {
+        dept.contributors.add(post.author)
       }
     }
   })
@@ -366,7 +326,11 @@ const topContributors = ref<Array<{ id: number; name: string; avatar?: string; p
 const loadContributors = async () => {
   try {
     const response = await getContributors(5)
-    topContributors.value = response.data.list
+    // 处理 avatar
+    topContributors.value = response.data.list.map((contributor: { id: number; name: string; avatar?: string; postCount?: number; department?: string }) => ({
+      ...contributor,
+      avatar: commonMethods.getAvatarUrl(extractAvatarId(contributor.avatar))
+    }))
   } catch (error) {
     console.error('加载热门贡献者失败:', error)
   }
@@ -383,8 +347,7 @@ const loadHotPosts = async () => {
   }
 }
 
-// 标签列表及统计（右侧标签筛选）
-const tagsFromApi = ref<Array<{ name: string; count: number }>>([])
+// 加载标签列表
 const loadTags = async () => {
   try {
     const response = await getTags(selectedDepartment.value || undefined)
@@ -398,19 +361,23 @@ const loadTags = async () => {
 const departmentsFromApi = ref<Array<{ id: number; name: string; postCount: number; contributorCount: number }>>([])
 const loadDepartments = async () => {
   try {
-    // 注意：这三个“标签”底层可能对应 category（非 tags），后端 /practices/departments 可能不支持
-    // 仅在普通标签时把 tag 透传给后端；否则用后端默认排行榜
+    // 如果选中的标签在特殊标签映射中，则不传 tag 参数
     const tagParam =
-      selectedTag.value && selectedTag.value !== '全部' && !specialTagToCategory[selectedTag.value]
+      selectedTag.value && !specialTagToCategory[selectedTag.value]
         ? selectedTag.value
         : undefined
 
     const response = await getDepartments(tagParam)
-    departmentsFromApi.value = (response.data.list || []).map((d, idx) => ({ id: idx + 1, ...d }))
+    departmentsFromApi.value = (response.data.list || []).map((d: { name: string; postCount: number; contributorCount: number }, idx: number) => ({ id: idx + 1, ...d }))
   } catch (error) {
     console.error('加载部门排名失败:', error)
   }
 }
+
+// 过滤后的普通帖子（不包含精华帖，精华帖始终显示）
+const filteredNormalPosts = computed(() => {
+  return posts.value
+})
 
 // 用于统计的过滤后帖子（包含精华帖和普通帖子）
 const _filteredPosts = computed(() => {
@@ -471,11 +438,7 @@ const handlePostCreate = () => {
 
 // 处理标签点击
 const handleTagClick = (tagName: string) => {
-  if (tagName === '全部') {
-    // 点击"全部"时清除标签过滤
-    selectedTag.value = null
-    router.replace({ query: { ...route.query, tag: undefined } })
-  } else if (selectedTag.value === tagName) {
+  if (selectedTag.value === tagName) {
     // 再次点击已选中的标签时清除
     selectedTag.value = null
     router.replace({ query: { ...route.query, tag: undefined } })
@@ -755,7 +718,7 @@ onMounted(async () => {
       overflow: hidden;
       text-overflow: ellipsis;
 
-      /* 让部门优先被截断，姓名更“稳” */
+      /* 让部门优先被截断，姓名更"稳" */
       min-width: 0;
       flex: 1;
       .contributor-department::before {
@@ -872,20 +835,20 @@ onMounted(async () => {
             z-index: 1;
           }
 
-          /* 排名1-3：深蓝、中蓝、浅蓝 */
+          /* 排名1-3：深红、中红、浅红 */
           .rank-1 {
-            background: linear-gradient(135deg, #1A2B4B 0%, #0F172A 100%);
-            box-shadow: 0 2px 8px rgba(26, 43, 75, 0.2);
+            background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
           }
 
           .rank-2 {
-            background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%);
-            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
           }
 
           .rank-3 {
-            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+            background: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+            box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
           }
 
           .hot-post-featured-content {

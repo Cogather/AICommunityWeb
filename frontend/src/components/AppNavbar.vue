@@ -6,60 +6,76 @@
           <img src="@/assets/image/logo.svg" alt="Logo" class="logo-icon" />
           <div class="logo-content">
             <span class="logo-text">云核AI使能社区</span>
-            <span class="logo-subtitle">云核心网产品线AI转型使能</span>
+            <span class="logo-subtitle">聚焦AI辅助研发，使能PDU全面落地</span>
           </div>
         </RouterLink>
       </div>
-      <nav class="nav-menu">
-        <RouterLink :to="ROUTES.HOME" class="nav-item">首页</RouterLink>
-        <RouterLink :to="ROUTES.PRACTICES" class="nav-item">AI优秀实践</RouterLink>
-        <RouterLink :to="ROUTES.TOOLS" class="nav-item">AI百宝箱</RouterLink>
-        <RouterLink :to="ROUTES.AGENT" class="nav-item">扶摇Agent应用</RouterLink>
-        <RouterLink :to="ROUTES.EMPOWERMENT" class="nav-item">AI使能站</RouterLink>
-        <el-dropdown
-          trigger="hover"
-          placement="bottom"
-          @command="handleUsersMenuCommand"
-          class="users-dropdown"
+      <div class="nav-menu-wrapper">
+        <el-button
+          v-if="showScrollLeft"
+          class="nav-scroll-btn nav-scroll-left"
+          text
+          circle
+          @click="scrollNav('left')"
         >
-          <span class="nav-item users-nav-link" :class="{ 'router-link-active': isUsersPage }">
-            <span class="nav-link-text">AI荣誉殿堂</span>
-            <span class="dropdown-arrow">▼</span>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu class="users-dropdown-menu">
-              <!-- 个人风采和团队荣誉切换 -->
-              <div class="dropdown-section">
-                <el-dropdown-item
-                  command="awardType:individual"
-                  :class="{ active: currentAwardType === 'individual' }"
-                >
-                  <el-icon><UserFilled /></el-icon>
-                  <span>个人风采</span>
-                </el-dropdown-item>
-                <el-dropdown-item
-                  command="awardType:team"
-                  :class="{ active: currentAwardType === 'team' }"
-                >
-                  <el-icon><Trophy /></el-icon>
-                  <span>团队荣誉</span>
-                </el-dropdown-item>
-              </div>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <RouterLink :to="ROUTES.NEWS" class="nav-item">AI情报局</RouterLink>
-        <RouterLink v-if="isAdmin" :to="ROUTES.ADMIN" class="nav-item admin-link">管理</RouterLink>
-      </nav>
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <nav ref="navMenuRef" class="nav-menu" @scroll="handleNavScroll">
+          <RouterLink :to="ROUTES.HOME" class="nav-item">首页</RouterLink>
+          <RouterLink :to="ROUTES.PRACTICES" class="nav-item">AI优秀实践</RouterLink>
+          <RouterLink :to="ROUTES.TOOLS" class="nav-item">AI百宝箱</RouterLink>
+          <RouterLink :to="ROUTES.AGENT" class="nav-item">扶摇Agent应用</RouterLink>
+          <RouterLink :to="ROUTES.EMPOWERMENT" class="nav-item">AI使能站</RouterLink>
+          <el-dropdown
+            trigger="hover"
+            placement="bottom"
+            @command="handleUsersMenuCommand"
+            class="users-dropdown"
+          >
+            <span class="nav-item users-nav-link" :class="{ 'router-link-active': isUsersPage }">
+              <span class="nav-link-text">AI荣誉殿堂</span>
+              <span class="dropdown-arrow">▼</span>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu class="users-dropdown-menu">
+                <div class="dropdown-section">
+                  <el-dropdown-item
+                    command="awardType:individual"
+                    :class="{ active: currentAwardType === 'individual' }"
+                  >
+                    <el-icon><UserFilled /></el-icon>
+                    <span>个人风采</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    command="awardType:team"
+                    :class="{ active: currentAwardType === 'team' }"
+                  >
+                    <el-icon><Trophy /></el-icon>
+                    <span>团队荣誉</span>
+                  </el-dropdown-item>
+                </div>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <RouterLink :to="ROUTES.NEWS" class="nav-item">AI情报局</RouterLink>
+          <RouterLink v-if="isAdmin" :to="ROUTES.ADMIN" class="nav-item admin-link">管理</RouterLink>
+        </nav>
+        <el-button
+          v-if="showScrollRight"
+          class="nav-scroll-btn nav-scroll-right"
+          text
+          circle
+          @click="scrollNav('right')"
+        >
+          <el-icon><ArrowRight /></el-icon>
+        </el-button>
+      </div>
       <div class="nav-actions">
-        <!-- 未登录状态 -->
         <template v-if="!isLoggedIn">
           <el-button text class="login-btn" @click="handleLogin">登录</el-button>
           <el-button type="primary" class="join-btn">加入社区</el-button>
         </template>
-        <!-- 已登录状态 -->
         <template v-else>
-          <!-- 消息提示 -->
           <el-badge :value="unreadMessageCount" :hidden="unreadMessageCount === 0" :max="99">
             <el-button text class="message-btn" @click="handleMessageClick">
               <el-icon :size="20"><Bell /></el-icon>
@@ -75,13 +91,11 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu class="user-dropdown-menu">
-                <!-- 用户信息概览 -->
                 <div class="user-info-section">
                    <div class="user-info-name">{{ userInfo.name }}</div>
                    <div class="user-info-id">{{ userInfo.userId }}</div>
                 </div>
 
-                <!-- 积分显示区域 -->
                 <div class="points-section">
                   <div class="points-header">
                     <el-icon class="points-icon"><Trophy /></el-icon>
@@ -91,7 +105,6 @@
                   <div class="points-hint">积分高的用户可获得AI使用达人奖项</div>
                 </div>
 
-                <!-- 积分规则 -->
                 <div class="points-rules-section">
                   <div class="rules-title">积分规则</div>
                   <div class="rules-list">
@@ -152,6 +165,8 @@ import {
   User,
   SwitchButton,
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   Trophy,
   Document,
   ChatDotRound,
@@ -163,18 +178,50 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getUnreadMessageCount } from '../utils/message'
-import loginService from '../utils/loginService' // Import loginService
-// API 层 - 支持 Mock/Real API 自动切换
+import loginService from '../utils/loginService'
 import { getTeamAwards } from '../api/honor'
 import { ROUTES } from '../router/paths'
+import commonMethods from '@/utils/common'
 
 const router = useRouter()
 const route = useRoute()
 
+// 导航栏滚动相关
+const navMenuRef = ref<HTMLElement | null>(null)
+const showScrollLeft = ref(false)
+const showScrollRight = ref(false)
+
+// 检查是否需要显示滚动按钮
+const checkScrollButtons = () => {
+  if (!navMenuRef.value) return
+  const { scrollLeft, scrollWidth, clientWidth } = navMenuRef.value
+  showScrollLeft.value = scrollLeft > 0
+  showScrollRight.value = scrollLeft < scrollWidth - clientWidth - 1
+}
+
+// 处理导航栏滚动
+const handleNavScroll = () => {
+  checkScrollButtons()
+}
+
+// 滚动导航栏
+const scrollNav = (direction: 'left' | 'right') => {
+  if (!navMenuRef.value) return
+  const scrollAmount = 200
+  const currentScroll = navMenuRef.value.scrollLeft
+  const newScroll = direction === 'left'
+    ? currentScroll - scrollAmount
+    : currentScroll + scrollAmount
+  navMenuRef.value.scrollTo({
+    left: newScroll,
+    behavior: 'smooth'
+  })
+}
+
 // 判断是否在AI使用达人页面
 const isUsersPage = computed(() => route.path === ROUTES.USERS)
 
-// 团队荣誉相关状态（用于下拉菜单）
+// 团队荣誉相关状态
 const currentAwardType = ref<'individual' | 'team'>('individual')
 const teamAwardYears = ref<string[]>([])
 const selectedYear = ref<string>('')
@@ -182,7 +229,7 @@ const currentTeamAwards = ref<Array<{ id: number; title: string; year: number | 
 
 const activeTeamAwardIndex = ref<number>(0)
 
-// 加载团队荣誉数据（用于下拉菜单）
+// 加载团队荣誉数据
 const loadTeamAwardsForMenu = async () => {
   try {
     const response = await getTeamAwards()
@@ -200,27 +247,22 @@ const loadTeamAwardsForMenu = async () => {
   }
 }
 
-// 更新当前年份的奖项列表（通过事件从UsersView获取）
 const updateCurrentTeamAwards = () => {
   // 通过事件从UsersView获取，这里只负责显示
 }
 
-// 监听路由变化，加载团队荣誉数据
+// 监听路由变化
 watch(() => route.path, (_newPath) => {
   loadTeamAwardsForMenu()
 }, { immediate: true })
-
-// 处理AI使用达人链接点击（已移除，因为现在RouterLink和dropdown分开）
 
 // 处理下拉菜单命令
 const handleUsersMenuCommand = (command: string) => {
   const [type, value] = command.split(':')
   if (type === 'awardType') {
     currentAwardType.value = value as 'individual' | 'team'
-    // 点击下拉菜单项时，跳转到用户页面并发送事件
     if (route.path !== ROUTES.USERS) {
       router.push(ROUTES.USERS).then(() => {
-        // 等待页面加载完成后再发送事件
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
         }, 150)
@@ -228,8 +270,6 @@ const handleUsersMenuCommand = (command: string) => {
         console.error('AppNavbar: 路由跳转失败', err)
       })
     } else {
-      // 如果已经在用户页面，直接发送事件
-      // 使用nextTick确保组件已更新
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('awardTypeChange', { detail: { type: value } }))
       }, 50)
@@ -270,13 +310,11 @@ const isLoggedIn = computed(() => {
   return !!loginService.userInfo
 })
 
-import commonMethods from '@/utils/common'
-
 // 用户信息
 const userInfo = computed(() => {
   const user = loginService.userInfo || {}
   return {
-    name: user.chnName || user.userName || '用户', // 优先显示中文名
+    name: user.chnName || user.userName || '用户',
     userName: user.userName || '',
     userId: user.userId || '',
     avatar: commonMethods.getAvatarUrl(user.avatar || user.userId),
@@ -289,17 +327,14 @@ const isAdmin = computed(() => {
   return userInfo.value.role === 'admin'
 })
 
-// 用户积分（实际应该从 store 或 API 获取）
-// 这里使用模拟数据，实际应该从后端获取
+// 用户积分
 const userPoints = computed(() => {
-  // 模拟计算积分：发帖数*15 + 评论数*1 + 被点赞数*3 + 被收藏数*5 + 参加活动数*10
-  // 实际应该从API获取
   const mockData = {
-    postsCount: 12,      // 发帖数
-    commentsCount: 45,   // 评论数
-    likesReceived: 128,   // 帖子被点赞数
-    favoritesReceived: 8,  // 帖子被收藏数
-    activitiesCount: 5    // 参加活动数
+    postsCount: 12,
+    commentsCount: 45,
+    likesReceived: 128,
+    favoritesReceived: 8,
+    activitiesCount: 5
   }
   return mockData.postsCount * 15 +
          mockData.commentsCount * 1 +
@@ -308,25 +343,19 @@ const userPoints = computed(() => {
          mockData.activitiesCount * 10
 })
 
-// 当前用户ID
 const currentUserId = computed(() => userInfo.value.userId)
-
-// 未读消息数量
 const unreadMessageCount = ref(0)
 
-// 加载未读消息数量
 const loadUnreadCount = () => {
   if (isLoggedIn.value) {
     unreadMessageCount.value = getUnreadMessageCount(currentUserId.value)
   }
 }
 
-// 处理消息点击
 const handleMessageClick = () => {
   router.push(ROUTES.MESSAGES)
 }
 
-// 监听消息更新事件
 const handleMessageUpdate = (event: CustomEvent) => {
   if (event.detail.userId === currentUserId.value) {
     loadUnreadCount()
@@ -336,18 +365,21 @@ const handleMessageUpdate = (event: CustomEvent) => {
 onMounted(() => {
   loadUnreadCount()
   window.addEventListener('messageUpdated', handleMessageUpdate as EventListener)
+  setTimeout(() => {
+    checkScrollButtons()
+    window.addEventListener('resize', checkScrollButtons)
+  }, 100)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('messageUpdated', handleMessageUpdate as EventListener)
+  window.removeEventListener('resize', checkScrollButtons)
 })
 
-// 处理登录
 const handleLogin = () => {
   loginService.login()
 }
 
-// 处理用户下拉菜单命令
 const handleCommand = (command: string) => {
   switch (command) {
     case 'profile':
@@ -364,13 +396,12 @@ const handleCommand = (command: string) => {
 </script>
 
 <style scoped lang="scss">
-// Glassmorphism for Navbar - 浅蓝色毛玻璃效果
+// Glassmorphism for Navbar
 .navbar {
   position: sticky;
   top: 0;
   z-index: 1000;
   width: 100%;
-  /* 浅蓝色毛玻璃背景，透明度较低 */
   background: linear-gradient(
     135deg,
     rgba(240, 248, 255, 0.55) 0%,
@@ -379,11 +410,8 @@ const handleCommand = (command: string) => {
   );
   backdrop-filter: blur(34px) saturate(185%);
   -webkit-backdrop-filter: blur(34px) saturate(185%);
-  /* 叠加一层淡蓝色，让毛玻璃更“冷”一点 */
   isolation: isolate;
-  /* 浅蓝色底部分割线 */
   border-bottom: 1px solid rgba(59, 130, 246, 0.12);
-  /* 微弱的蓝色光晕 */
   box-shadow: 0 1px 3px rgba(59, 130, 246, 0.06);
 
   &::before {
@@ -399,7 +427,7 @@ const handleCommand = (command: string) => {
 .navbar-container {
   max-width: 100%;
   margin: 0 auto;
-  padding: 16px 44px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -442,21 +470,76 @@ const handleCommand = (command: string) => {
   }
 }
 
+.nav-menu-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
 .nav-menu {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
-  justify-content: center;
-  flex-wrap: wrap;
+  /* * 关键修复：从 center 改为 flex-start
+   * 解决当内容溢出时，左侧"首页"被挤出可视区域的问题
+   */
+  justify-content: flex-start;
+  justify-content: safe center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-left: 20px;
+  padding-right: 20px;
+  scroll-padding-left: 20px;
+  scroll-padding-right: 20px;
+  margin-left: 0;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-item:first-child {
+    margin-left: 0;
+  }
+}
+
+.nav-scroll-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 102, 255, 0.2);
+  color: #0066ff;
+  transition: all 0.2s ease;
+  z-index: 5;
+  position: relative;
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: #0066ff;
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .nav-item {
   padding: 10px 18px;
   color: rgba(51, 65, 85, 0.92);
   text-decoration: none;
-  font-weight: 400; /* 未选中不加粗 */
-  font-size: 18px; /* 字体整体放大一些 */
+  font-weight: 400;
+  font-size: 20px;
   border-radius: 10px;
   transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.22s ease;
   white-space: nowrap;
@@ -470,7 +553,7 @@ const handleCommand = (command: string) => {
 
   &.router-link-active {
     color: rgba(15, 23, 42, 0.92);
-    font-weight: 700; /* 选中后再加粗 */
+    font-weight: 700;
 
     &::after {
       content: '';
@@ -487,26 +570,26 @@ const handleCommand = (command: string) => {
   }
 
   &.users-nav-link {
-    font-weight: 400; /* 未选中不加粗 */
-    color: rgba(51, 65, 85, 0.92); /* 和其他导航项一样的颜色 */
+    font-weight: 400;
+    color: rgba(51, 65, 85, 0.92);
 
     &.router-link-active {
-      font-weight: 700; /* 选中时也保持加粗，不显示下划线 */
-      color: rgba(15, 23, 42, 0.92); /* 选中时的颜色 */
+      font-weight: 700;
+      color: rgba(15, 23, 42, 0.92);
 
       &::after {
-        display: none; /* 不显示选中框 */
+        display: none;
       }
     }
 
     &:hover {
-      color: #0066ff; /* 悬停时的颜色 */
+      color: #0066ff;
     }
   }
 
   &.admin-link {
     color: rgba(51, 65, 85, 0.92);
-    font-weight: 400; /* 未选中不加粗 */
+    font-weight: 400;
     padding-right: 22px;
 
     &:hover {
@@ -516,7 +599,7 @@ const handleCommand = (command: string) => {
 
     &.router-link-active {
       color: rgba(15, 23, 42, 0.92);
-      font-weight: 700; /* 选中后加粗 */
+      font-weight: 700;
 
       &::after {
         background-color: rgba(0, 102, 255, 0.95);
@@ -537,35 +620,6 @@ const handleCommand = (command: string) => {
       opacity: 0.9;
     }
   }
-
-  &.dropdown-trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    position: relative;
-
-    .nav-link-inner {
-      text-decoration: none;
-      color: inherit;
-      display: inline-block;
-    }
-
-    .dropdown-arrow {
-      font-size: 10px;
-      color: #666;
-      transition: transform 0.3s ease;
-      margin-left: 4px;
-      display: inline-block;
-      line-height: 1;
-      cursor: pointer;
-      pointer-events: auto;
-    }
-
-    &:hover .dropdown-arrow {
-      transform: rotate(180deg);
-      color: #1e40af;
-    }
-  }
 }
 
 .users-dropdown {
@@ -579,22 +633,22 @@ const handleCommand = (command: string) => {
     display: inline-flex;
     align-items: center;
     gap: 0;
-    cursor: default !important; /* 不是pointer，表示不可点击 */
+    cursor: default !important;
     position: relative;
     outline: none !important;
     border: none !important;
     box-shadow: none !important;
     color: rgba(51, 65, 85, 0.92) !important;
-    font-weight: 400 !important; /* 未选中不加粗 */
+    font-weight: 400 !important;
     padding: 8px 16px;
     text-decoration: none;
     background: transparent !important;
-    user-select: none; /* 禁止选中文字 */
+    user-select: none;
 
     .nav-link-text {
       color: inherit;
       font-weight: inherit;
-      pointer-events: none; /* 禁止点击 */
+      pointer-events: none;
     }
 
     .dropdown-arrow {
@@ -604,13 +658,13 @@ const handleCommand = (command: string) => {
       display: inline-block;
       line-height: 1;
       margin-left: 2px;
-      pointer-events: none; /* 禁止点击 */
+      pointer-events: none;
     }
 
     &:hover {
       color: #0066ff !important;
       background: transparent !important;
-      cursor: default !important; /* 悬停时也是default */
+      cursor: default !important;
 
       .dropdown-arrow {
         transform: rotate(180deg);
@@ -631,10 +685,10 @@ const handleCommand = (command: string) => {
     &.router-link-active {
       color: rgba(15, 23, 42, 0.92) !important;
       background: transparent !important;
-      font-weight: 700 !important; /* 选中后加粗 */
+      font-weight: 700 !important;
 
       &::after {
-        display: none; /* 不显示选中框 */
+        display: none;
       }
     }
   }
@@ -718,7 +772,6 @@ const handleCommand = (command: string) => {
   }
 }
 
-/* 未读消息气泡：更精致圆形 + 微弱呼吸动画 */
 :deep(.el-badge__content) {
   border-radius: 999px !important;
   min-width: 18px;
@@ -940,6 +993,10 @@ const handleCommand = (command: string) => {
 
   .nav-menu {
     gap: 4px;
+    padding-left: 20px;
+    padding-right: 20px;
+    scroll-padding-left: 20px;
+    scroll-padding-right: 20px;
   }
 
   .nav-item {
@@ -957,8 +1014,13 @@ const handleCommand = (command: string) => {
 
   .nav-menu {
     width: 100%;
+    /* 移动端同样保持 flex-start */
     justify-content: flex-start;
     overflow-x: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+    scroll-padding-left: 20px;
+    scroll-padding-right: 20px;
     padding-bottom: 8px;
 
     &::-webkit-scrollbar {
@@ -1004,9 +1066,8 @@ const handleCommand = (command: string) => {
 
   .join-btn,
   .login-btn {
-    font-size: 15px; /* 从 13px 增加到 15px */
+    font-size: 15px;
     padding: 8px 16px;
   }
 }
 </style>
-

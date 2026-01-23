@@ -5,24 +5,17 @@
       <el-tag
         v-for="tag in tags"
         :key="tag.name"
-        :class="['tag-item', { 
-          'tag-item-active': tag.name === '全部' 
-            ? (selectedTag === null || selectedTag === '全部')
-            : selectedTag === tag.name 
-        }]"
+        :class="['tag-item', { 'tag-item-active': selectedTag === tag.name }]"
         :style="getTagStyle(tag.name)"
         @click="handleTagClick(tag.name)"
       >
-        <span v-if="tag.name === '全部'">{{ tag.name }} ({{ tag.count }})</span>
-        <span v-else>#{{ tag.name }} ({{ tag.count }})</span>
+        <span>#{{ tag.name }} ({{ tag.count }})</span>
       </el-tag>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// computed removed - not used
-
 interface Tag {
   name: string
   count: number
@@ -49,10 +42,7 @@ const tagBlue = '#2563eb'
 
 // 获取标签颜色样式
 const getTagStyle = (tagName: string) => {
-  const isActive =
-    tagName === '全部'
-      ? props.selectedTag === null || props.selectedTag === '全部'
-      : props.selectedTag === tagName
+  const isActive = props.selectedTag === tagName
 
   return {
     // 统一：白底、蓝字、蓝边框
@@ -125,4 +115,3 @@ const handleTagClick = (tagName: string) => {
   }
 }
 </style>
-

@@ -1,7 +1,6 @@
 <template>
   <div class="honor-wall-container">
     <div class="hud-dashboard">
-
       <div v-show="awardType === 'individual'" class="fade-in-content">
         <div class="hud-top-row">
           <div class="view-switcher glass-pill">
@@ -29,53 +28,97 @@
 
         <transition name="fade-slide">
           <div v-if="showSecondaryFilter" class="secondary-filter-bar">
-            <div class="filter-type-switcher">
-              <div
-                class="filter-type-tab"
-                :class="{ active: honorFilterType === 'award' }"
-                @click="honorFilterType = 'award'; activeSubFilter = '全部'; chipSearchQuery = ''"
-              >
-                <el-icon><Star /></el-icon>
-                <span>按奖项名称</span>
+            <div class="filter-dropdowns-row">
+              <div class="filter-select-group">
+                <!-- ✅ 奖项下拉：内置搜索 -->
+                <el-select
+                  v-model="selectedAwardFilter"
+                  placeholder="按奖项筛选"
+                  clearable
+                  class="filter-select award-select"
+                  popper-class="filter-select-dropdown"
+                  @change="handleAwardFilterChange"
+                  @visible-change="onAwardDropdownVisible"
+                >
+                  <template #prefix>
+                    <el-icon><Star /></el-icon>
+                  </template>
+
+                  <!-- 🔑 下拉内部搜索框（不会关闭弹层） -->
+                  <template #header>
+                    <!-- ✅ 不要 preventDefault，否则 input 无法获得焦点、无法输入 -->
+                    <div class="dropdown-search" @mousedown.stop @click.stop>
+                      <el-input
+                      v-model="awardOptionQuery"
+                      size="small"
+                      clearable
+                      placeholder="搜索奖项…"
+                      :prefix-icon="Search"
+                      @keydown.stop
+                      />
+                    </div>
+                  </template>
+
+                  <el-option
+                    v-for="item in filteredAwardsForSelect"
+                    :key="item"
+                    :label="item"
+                    :value="item"
+                  />
+                </el-select>
+
+                <!-- ✅ 部门下拉：内置搜索 -->
+                <el-select
+                  v-model="selectedDeptFilter"
+                  placeholder="按部门筛选"
+                  clearable
+                  class="filter-select dept-select"
+                  popper-class="filter-select-dropdown"
+                  @change="handleDeptFilterChange"
+                  @visible-change="onDeptDropdownVisible"
+                >
+                  <template #prefix>
+                    <el-icon><OfficeBuilding /></el-icon>
+                  </template>
+
+                  <template #header>
+  <div class="dropdown-search" @mousedown.stop @click.stop>
+    <el-input
+      v-model="deptOptionQuery"
+      size="small"
+      clearable
+      placeholder="搜索部门…"
+      :prefix-icon="Search"
+      @keydown.stop
+    />
+  </div>
+</template>
+
+
+                  <el-option
+                    v-for="item in filteredDepartmentsForSelect"
+                    :key="item"
+                    :label="item"
+                    :value="item"
+                  />
+                </el-select>
               </div>
-              <div
-                class="filter-type-tab"
-                :class="{ active: honorFilterType === 'department' }"
-                @click="honorFilterType = 'department'; activeSubFilter = '全部'; chipSearchQuery = ''"
-              >
-                <el-icon><OfficeBuilding /></el-icon>
-                <span>按获奖者部门</span>
-              </div>
-              <div v-if="currentViewMode === 'grid'" class="search-wrapper">
+
+              <div v-if="currentViewMode === 'grid'" class="search-wrapper-right">
                 <el-input
                   v-model="searchQuery"
                   placeholder="搜索荣誉获得者..."
                   class="crystal-input"
                   prefix-icon="Search"
+                  clearable
                 />
               </div>
-            </div>
-            <div class="chip-scroll-wrapper">
-              <el-input
-                v-model="chipSearchQuery"
-                placeholder="搜索筛选项..."
-                class="chip-search-input"
-                clearable
-                :prefix-icon="Search"
-              />
-              <el-button class="scroll-btn scroll-btn-left" :disabled="!canScrollLeft" @click="scrollChips('left')" circle size="small"><el-icon><ArrowLeft /></el-icon></el-button>
-              <div ref="chipContainerRef" class="chip-container" @scroll="handleChipScroll">
-                <div v-for="item in activeFilterOptions" :key="item" class="gem-chip" :class="{ active: activeSubFilter === item }" @click="activeSubFilter = item">{{ item }}</div>
-                <div v-if="activeFilterOptions.length === 0 && chipSearchQuery" class="chip-empty-hint">未找到匹配的筛选项</div>
-              </div>
-              <el-button class="scroll-btn scroll-btn-right" :disabled="!canScrollRight" @click="scrollChips('right')" circle size="small"><el-icon><ArrowRight /></el-icon></el-button>
             </div>
           </div>
         </transition>
       </div>
 
       <div v-show="awardType === 'team'" class="team-award-container fade-in-content">
-
         <div class="luminous-timeline-wrapper">
           <div class="luminous-line"></div>
           <div class="years-track">
@@ -110,7 +153,11 @@
 
         <!-- 多图网格展示（一行三个） -->
         <transition name="zoom-fade" mode="out-in">
-          <div v-if="currentTeamAward && currentTeamAward.images && currentTeamAward.images.length > 0" :key="currentTeamAward.id" class="team-award-images-grid">
+          <div
+            v-if="currentTeamAward && currentTeamAward.images && currentTeamAward.images.length > 0"
+            :key="currentTeamAward.id"
+            class="team-award-images-grid"
+          >
             <div
               v-for="img in currentTeamAward.images"
               :key="img.id"
@@ -119,13 +166,12 @@
             >
               <div class="image-card-wrapper" @click="toggleTeamExpand(img.id)">
                 <img :src="img.image" :alt="img.winnerName" class="award-image" />
-                <!-- 展开指示器 -->
                 <div class="expand-indicator">
                   <el-icon :class="{ 'is-rotated': expandedTeamId === img.id }">
                     <ArrowDown />
                   </el-icon>
                 </div>
-                <!-- 右下角拟态七彩玻璃信息框 -->
+
                 <div class="team-info-glass-box">
                   <div class="glass-rainbow-border"></div>
                   <div class="glass-content">
@@ -149,7 +195,7 @@
                   </div>
                 </div>
               </div>
-              <!-- 下拉抽屉：获奖事迹 -->
+
               <transition name="drawer-slide">
                 <div v-if="expandedTeamId === img.id" class="team-story-drawer">
                   <div class="drawer-header">
@@ -161,6 +207,7 @@
               </transition>
             </div>
           </div>
+
           <div v-else-if="currentTeamAward" class="empty-images">
             <el-empty description="该奖项暂无图片" />
           </div>
@@ -169,22 +216,38 @@
     </div>
 
     <div v-if="awardType === 'individual'" class="cyber-layout fade-in-content">
-
       <div class="view-area">
         <transition-group v-if="currentViewMode !== 'timeline'" name="staggered-list" tag="div" class="card-grid">
-          <div v-for="item in paginatedList" :key="item.id" class="honor-card-3d" :class="[item.category, getYearClass(item.year)]">
+          <div
+            v-for="item in paginatedList"
+            :key="item.id"
+            class="honor-card-3d"
+            :class="[item.category, getYearClass(item.year)]"
+          >
             <div class="card-content-glass">
               <div class="bg-decoration-circle"></div>
               <div class="bg-decoration-icon"><el-icon><Trophy /></el-icon></div>
+
               <div class="card-top">
-                <div class="avatar-halo" @click.stop="handleUserClick(item.userName)"><el-avatar :size="84" :src="item.avatar" class="user-avatar" /><div class="halo-ring"></div></div>
-                <div class="user-info"><div class="user-name">{{ item.userName }}</div><div class="dept-badge">{{ item.department }}</div></div>
+                <div class="avatar-halo" @click.stop="handleUserClick(item.name)">
+                  <el-avatar :size="84" :src="item.avatar" class="user-avatar" />
+                  <div class="halo-ring"></div>
+                </div>
+
+                <div class="user-info">
+                  <div class="user-name">{{ item.name }}</div>
+                  <div class="dept-badge">{{ item.department }}</div>
+                </div>
+
                 <div class="year-ribbon"><span>{{ item.year }}</span></div>
               </div>
+
               <div class="award-center">
                 <h3 class="award-name">{{ item.awardName }}</h3>
+
                 <div v-if="item.achievement" class="achievement-block">
                   <div class="achievement-text">{{ item.achievement }}</div>
+
                   <el-tooltip
                     v-if="shouldShowAchievementMore(item.achievement)"
                     :content="item.achievement"
@@ -197,6 +260,7 @@
                   </el-tooltip>
                 </div>
               </div>
+
               <div class="card-bottom">
                 <span class="date-text">获奖时间：{{ formatAwardDate(item.awardDate) }}</span>
                 <button
@@ -204,16 +268,16 @@
                   :class="{ 'is-given': item.hasGivenFlower }"
                   @click.stop="handleGiveFlower(item)"
                 >
-                    <span class="flower-icon-container">
-                      <FlowerIcon
-                        :filled="item.hasGivenFlower"
-                        :size="16"
-                        :color="item.hasGivenFlower ? '#ec4899' : '#94a3b8'"
-                        :strokeColor="item.hasGivenFlower ? '#be185d' : '#64748b'"
-                        class="flower-icon-anim"
-                      />
-                      <span v-if="!item.hasGivenFlower" class="flower-particles"></span>
-                    </span>
+                  <span class="flower-icon-container">
+                    <FlowerIcon
+                      :filled="item.hasGivenFlower"
+                      :size="16"
+                      :color="item.hasGivenFlower ? '#ec4899' : '#94a3b8'"
+                      :strokeColor="item.hasGivenFlower ? '#be185d' : '#64748b'"
+                      class="flower-icon-anim"
+                    />
+                    <span v-if="!item.hasGivenFlower" class="flower-particles"></span>
+                  </span>
                   <span class="flower-label">{{ item.hasGivenFlower ? '已送' : '送花' }}</span>
                   <span class="flower-num">{{ item.flowers || 0 }}</span>
                 </button>
@@ -222,29 +286,45 @@
           </div>
         </transition-group>
 
+        <!-- ✅ Timeline：统一字段为 name -->
         <div v-else class="timeline-container">
           <div v-if="currentTimelineUser" class="timeline-user-header glass-panel">
             <el-avatar :size="60" :src="currentTimelineUser.avatar" />
             <div class="timeline-user-info">
-              <h3 class="timeline-user-name">{{ currentTimelineUser.userName }}</h3>
+              <h3 class="timeline-user-name">{{ currentTimelineUser.name }}</h3>
               <div class="timeline-user-stats">
-                <span class="timeline-stat-item"><FlowerIcon :filled="true" :size="18" color="#f472b6" /><span class="stat-value">{{ currentTimelineUser.totalFlowers }}</span><span class="stat-label">总花朵数</span></span>
+                <span class="timeline-stat-item">
+                  <FlowerIcon :filled="true" :size="18" color="#f472b6" />
+                  <span class="stat-value">{{ currentTimelineUser.totalFlowers }}</span>
+                  <span class="stat-label">总花朵数</span>
+                </span>
               </div>
             </div>
-            <el-button text size="small" class="back-to-all-timeline" @click="currentTimelineUserName = null; router.replace({ path: '/users', query: { view: 'timeline' } })"><el-icon><ArrowLeft /></el-icon> 返回全部时光轴</el-button>
+            <el-button
+              text
+              size="small"
+              class="back-to-all-timeline"
+              @click="currentTimelineUserName = null; router.replace({ path: '/users', query: { view: 'timeline' } })"
+            >
+              <el-icon><ArrowLeft /></el-icon> 返回全部时光轴
+            </el-button>
           </div>
+
           <div class="timeline-line"></div>
+
           <div v-for="block in timelineData" :key="block.year" class="timeline-group">
             <div class="year-header"><span class="year-text">{{ block.year }}</span></div>
             <div class="timeline-items">
               <div v-for="item in block.items" :key="item.id" class="t-item">
                 <div class="t-node"></div>
                 <div class="t-card glass-panel" :class="item.category">
-                  <div class="t-avatar" @click.stop="handleUserClick(item.userName)"><el-avatar :size="44" :src="item.avatar" /></div>
+                  <div class="t-avatar" @click.stop="handleUserClick(item.name)">
+                    <el-avatar :size="44" :src="item.avatar" />
+                  </div>
                   <div class="t-info">
                     <div class="t-line">
                       <span class="t-title">{{ item.awardName }}</span>
-                      <span class="t-user">{{ item.userName }}</span>
+                      <span class="t-user">{{ item.name }}</span>
                       <span class="t-dept">{{ item.department }}</span>
                     </div>
                     <div class="t-meta">{{ item.awardDate }}</div>
@@ -255,16 +335,65 @@
           </div>
         </div>
 
-        <div v-if="paginatedList.length === 0 && currentViewMode !== 'timeline'" class="empty-zone"><el-empty description="暂无荣耀记录" :image-size="160" /></div>
-        <div v-if="timelineData.length === 0 && currentViewMode === 'timeline'" class="empty-zone"><el-empty description="暂无时光轴记录" :image-size="160" /></div>
-        <div v-if="currentViewMode !== 'timeline' && honorListTotal > 0" class="pagination-bar"><el-pagination background layout="total, sizes, prev, pager, next, jumper" :page-sizes="[3, 6, 9, 12, 15, 18]" :page-size="pageSize" :current-page="currentPage" :total="honorListTotal" @size-change="handleSizeChange" @current-change="handleCurrentChange" /></div>
+        <div v-if="paginatedList.length === 0 && currentViewMode !== 'timeline'" class="empty-zone">
+          <el-empty description="暂无荣耀记录" :image-size="160" />
+        </div>
+        <div v-if="timelineData.length === 0 && currentViewMode === 'timeline'" class="empty-zone">
+          <el-empty description="暂无时光轴记录" :image-size="160" />
+        </div>
+
+        <div v-if="currentViewMode !== 'timeline' && honorListTotal > 0" class="pagination-bar">
+          <el-pagination
+            background
+            layout="total, sizes, prev, pager, next, jumper"
+            :page-sizes="[3, 6, 9, 12, 15, 18]"
+            :page-size="pageSize"
+            :current-page="currentPage"
+            :total="honorListTotal"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
       </div>
 
       <div class="ranking-sidebar">
         <div class="leaderboard-panel">
-          <div class="panel-header"><div class="header-icon"><el-icon><TrendCharts /></el-icon></div><div class="header-text"><h3>荣耀影响力</h3><span>HALL OF FAME</span></div></div>
+          <div class="panel-header">
+            <div class="header-icon"><el-icon><TrendCharts /></el-icon></div>
+            <div class="header-text">
+              <h3>荣耀影响力</h3>
+              <span>HALL OF FAME</span>
+            </div>
+          </div>
+
           <div class="ranking-list">
-            <div v-for="(user, index) in leaderboardData" :key="user.userName" class="rank-row" :class="getRankClass(index)" @click="handleUserClick(user.userName)"><div class="rank-badge"><span v-if="index > 2">{{ index + 1 }}</span><el-icon v-else><Medal /></el-icon></div><el-avatar :size="44" :src="user.avatar" class="rank-avatar" /><div class="rank-details"><div class="r-name">{{ user.userName }}</div><div class="r-dept">{{ user.department }}</div></div><div class="rank-stat"><div class="stat-row"><span class="num">{{ user.count }}</span><span class="unit">勋章</span></div><div class="stat-row"><FlowerIcon :filled="true" :size="14" color="#f472b6" /><span class="num flowers">{{ user.totalFlowers }}</span></div></div></div>
+            <!-- ✅ 榜单字段统一为 name -->
+            <div
+              v-for="(user, index) in leaderboardData"
+              :key="user.name"
+              class="rank-row"
+              :class="getRankClass(index)"
+              @click="handleUserClick(user.name)"
+            >
+              <div class="rank-badge">
+                <span v-if="index > 2">{{ index + 1 }}</span>
+                <el-icon v-else><Medal /></el-icon>
+              </div>
+              <el-avatar :size="44" :src="user.avatar" class="rank-avatar" />
+              <div class="rank-details">
+                <div class="r-name">{{ user.name }}</div>
+                <div class="r-dept">{{ user.department }}</div>
+              </div>
+              <div class="rank-stat">
+                <div class="stat-row">
+                  <span class="num">{{ user.count }}</span><span class="unit">勋章</span>
+                </div>
+                <div class="stat-row">
+                  <FlowerIcon :filled="true" :size="14" color="#f472b6" />
+                  <span class="num flowers">{{ user.totalFlowers }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -273,7 +402,6 @@
 </template>
 
 <script setup lang="ts">
-// 保持你原有的所有 import 和逻辑
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
@@ -282,19 +410,40 @@ import {
   Star, ArrowLeft, ArrowRight, ArrowDown, Search
 } from '@element-plus/icons-vue';
 import FlowerIcon from '../components/FlowerIcon.vue';
-// API 层 - 支持 Mock/Real API 自动切换
 import { getTeamAwards, giveFlower, getHonorList, getLeaderboard, getAwardNames, getDepartments } from '../api/honor'
-import type { HonorRecord, LeaderboardUser } from '../api/types'
+import type { HonorRecord } from '../api/types'
+import commonMethods from '@/utils/common'
 
 // --- 类型定义 ---
 type ViewMode = 'grid' | 'timeline';
 type HonorFilterType = 'award' | 'department';
 
-// 使用 API 层定义的 HonorRecord 类型
-type HonorItem = HonorRecord
+// ✅ 接口字段名为 name（不是 userName）
+type HonorItem = HonorRecord & {
+  name: string;
+  department: string;
+  avatar: string | number;
+  awardName: string;
+  awardDate: string;
+  category: string;
+  year: string;
+  flowers?: number;
+  hasGivenFlower?: boolean;
+  achievement?: string;
+  isMine?: boolean;
+};
+
+// ✅ 榜单也统一使用 name
+type LeaderboardUserLocal = {
+  name: string;
+  department: string;
+  avatar: string;
+  count: number;
+  totalFlowers: number;
+};
 
 // 样式调试期间强制使用 Mock 数据
-const FORCE_MOCK_HONOR = true;
+const FORCE_MOCK_HONOR = false;
 
 const getYearClass = (year?: string) => {
   if (!year) return '';
@@ -307,10 +456,11 @@ const shouldShowAchievementMore = (value?: string) => {
   return value.trim().length > 80;
 };
 
+// ✅ mock 字段改为 name
 const mockHonorList: HonorItem[] = [
   {
     id: 1,
-    userName: '林星辰',
+    name: '林星辰',
     department: '技术部',
     avatar: 'https://picsum.photos/100/100?random=h1',
     awardName: '2026年度 AI 技术突破奖',
@@ -324,7 +474,7 @@ const mockHonorList: HonorItem[] = [
   },
   {
     id: 2,
-    userName: 'Sarah',
+    name: 'Sarah',
     department: '设计部',
     avatar: 'https://picsum.photos/100/100?random=h2',
     awardName: '最佳 AI 辅助设计实践',
@@ -333,11 +483,11 @@ const mockHonorList: HonorItem[] = [
     year: '2026',
     flowers: 96,
     hasGivenFlower: false,
-    achievement: '围绕AI辅助设计的全流程实践进行了系统化建设：从用户研究到需求拆解，提炼设计提示词的结构化模板并形成可复用规范；搭建设计资产的自动化生成与校验流程，确保品牌一致性与可控性；推动跨团队协作机制，建立“需求-生成-审核-迭代”的闭环；通过多轮试点项目验证，显著降低了设计交付周期；在可用性与可访问性方面引入AI辅助审核，降低返工率；组织内部分享与培训，输出实践文档与组件库指南；协同研发完成设计到前端的自动标注与对齐工具，提升交付效率与质量。相关成果已在多个业务线复用，形成稳定的效率提升与体验增益。'
+    achievement: '围绕AI辅助设计的全流程实践进行了系统化建设：从用户研究到需求拆解，提炼设计提示词的结构化模板并形成可复用规范；搭建设计资产的自动化生成与校验流程，确保品牌一致性与可控性；推动跨团队协作机制，建立"需求-生成-审核-迭代"的闭环；通过多轮试点项目验证，显著降低了设计交付周期；在可用性与可访问性方面引入AI辅助审核，降低返工率；组织内部分享与培训，输出实践文档与组件库指南；协同研发完成设计到前端的自动标注与对齐工具，提升交付效率与质量。相关成果已在多个业务线复用，形成稳定的效率提升与体验增益。'
   },
   {
     id: 3,
-    userName: '张伟',
+    name: '张伟',
     department: '产品部',
     avatar: 'https://picsum.photos/100/100?random=h3',
     awardName: 'Copilot 效能提升大师',
@@ -346,117 +496,17 @@ const mockHonorList: HonorItem[] = [
     year: '2026',
     flowers: 88,
     hasGivenFlower: true,
-    achievement: '获奖事迹聚焦于产品体系的AI化升级与效率提升：提出“问题定义-方案生成-验证迭代”的产品共创框架，帮助团队快速对齐目标；主导多个AI应用场景从0到1落地，建立标准化需求模板与指标体系；推动知识库、自动化总结、智能检索等能力在产品全周期应用，显著提升调研与方案产出速度；引入评测与反馈机制，降低模型输出的不确定性；跨部门协调研发、运营与设计，保障关键项目按期上线；沉淀最佳实践手册并形成可复用模块，支撑多条业务线复用。整体使交付效率、用户满意度与数据指标均得到持续提升。'
+    achievement: '获奖事迹聚焦于产品体系的AI化升级与效率提升：提出"问题定义-方案生成-验证迭代"的产品共创框架，帮助团队快速对齐目标；主导多个AI应用场景从0到1落地，建立标准化需求模板与指标体系；推动知识库、自动化总结、智能检索等能力在产品全周期应用，显著提升调研与方案产出速度；引入评测与反馈机制，降低模型输出的不确定性；跨部门协调研发、运营与设计，保障关键项目按期上线；沉淀最佳实践手册并形成可复用模块，支撑多条业务线复用。整体使交付效率、用户满意度与数据指标均得到持续提升。'
   },
-  {
-    id: 4,
-    userName: '李明',
-    department: '运营部',
-    avatar: 'https://picsum.photos/100/100?random=h4',
-    awardName: 'AI 社区贡献之星',
-    awardDate: '2026-01-15',
-    category: 'community',
-    year: '2026',
-    flowers: 72,
-    hasGivenFlower: false
-  },
-  {
-    id: 5,
-    userName: '王芳',
-    department: '研发管理部',
-    avatar: 'https://picsum.photos/100/100?random=h5',
-    awardName: '最佳实践分享奖',
-    awardDate: '2026-01-20',
-    category: 'practice',
-    year: '2026',
-    flowers: 66,
-    hasGivenFlower: false,
-    achievement: '面向研发管理场景持续推进AI落地：建立基于项目全生命周期的指标体系，结合智能分析对关键节点进行预警；推动质量门禁的智能化升级，引入自动化检查与风险识别模型，减少缺陷返工；搭建跨团队协作看板与自动周报机制，提升沟通效率；制定AI实践推广路线图，组织多次工作坊与培训，推动团队形成可复用的工具与流程；在多个项目中推广自动化评测与知识归档，使经验沉淀可追溯、可复用。最终实现研发协作效率与质量显著提升，并形成稳定的治理机制与最佳实践资产。'
-  },
-  {
-    id: 6,
-    userName: '陈刚',
-    department: '平台部',
-    avatar: 'https://picsum.photos/100/100?random=h6',
-    awardName: '创新应用先锋',
-    awardDate: '2026-02-01',
-    category: 'innovation',
-    year: '2026',
-    flowers: 104,
-    hasGivenFlower: true
-  },
-  {
-    id: 7,
-    userName: '刘洋',
-    department: '研发一部',
-    avatar: 'https://picsum.photos/100/100?random=h7',
-    awardName: '技术分享达人',
-    awardDate: '2025-12-18',
-    category: 'community',
-    year: '2025',
-    flowers: 58,
-    hasGivenFlower: false
-  },
-  {
-    id: 8,
-    userName: '赵静',
-    department: '测试部',
-    avatar: 'https://picsum.photos/100/100?random=h8',
-    awardName: '最具影响力奖',
-    awardDate: '2025-12-05',
-    category: 'efficiency',
-    year: '2025',
-    flowers: 91,
-    hasGivenFlower: false
-  },
-  {
-    id: 9,
-    userName: '孙浩',
-    department: '业务线A',
-    avatar: 'https://picsum.photos/100/100?random=h9',
-    awardName: '年度进步奖',
-    awardDate: '2025-11-22',
-    category: 'practice',
-    year: '2025',
-    flowers: 44,
-    hasGivenFlower: false
-  },
-  {
-    id: 10,
-    userName: '周敏',
-    department: '业务线B',
-    avatar: 'https://picsum.photos/100/100?random=h10',
-    awardName: 'AI落地先锋',
-    awardDate: '2025-11-10',
-    category: 'innovation',
-    year: '2025',
-    flowers: 120,
-    hasGivenFlower: true
-  },
-  {
-    id: 11,
-    userName: '蒋宁',
-    department: '安全部',
-    avatar: 'https://picsum.photos/100/100?random=h11',
-    awardName: '智能风控贡献奖',
-    awardDate: '2025-10-30',
-    category: 'practice',
-    year: '2025',
-    flowers: 63,
-    hasGivenFlower: false
-  },
-  {
-    id: 12,
-    userName: '杨晨',
-    department: '架构部',
-    avatar: 'https://picsum.photos/100/100?random=h12',
-    awardName: '架构创新奖',
-    awardDate: '2025-10-12',
-    category: 'innovation',
-    year: '2025',
-    flowers: 77,
-    hasGivenFlower: false
-  },
+  { id: 4, name: '李明', department: '运营部', avatar: 'https://picsum.photos/100/100?random=h4', awardName: 'AI 社区贡献之星', awardDate: '2026-01-15', category: 'community', year: '2026', flowers: 72, hasGivenFlower: false },
+  { id: 5, name: '王芳', department: '研发管理部', avatar: 'https://picsum.photos/100/100?random=h5', awardName: '最佳实践分享奖', awardDate: '2026-01-20', category: 'practice', year: '2026', flowers: 66, hasGivenFlower: false, achievement: '面向研发管理场景持续推进AI落地：建立基于项目全生命周期的指标体系，结合智能分析对关键节点进行预警；推动质量门禁的智能化升级，引入自动化检查与风险识别模型，减少缺陷返工；搭建跨团队协作看板与自动周报机制，提升沟通效率；制定AI实践推广路线图，组织多次工作坊与培训，推动团队形成可复用的工具与流程；在多个项目中推广自动化评测与知识归档，使经验沉淀可追溯、可复用。最终实现研发协作效率与质量显著提升，并形成稳定的治理机制与最佳实践资产。' },
+  { id: 6, name: '陈刚', department: '平台部', avatar: 'https://picsum.photos/100/100?random=h6', awardName: '创新应用先锋', awardDate: '2026-02-01', category: 'innovation', year: '2026', flowers: 104, hasGivenFlower: true },
+  { id: 7, name: '刘洋', department: '研发一部', avatar: 'https://picsum.photos/100/100?random=h7', awardName: '技术分享达人', awardDate: '2025-12-18', category: 'community', year: '2025', flowers: 58, hasGivenFlower: false },
+  { id: 8, name: '赵静', department: '测试部', avatar: 'https://picsum.photos/100/100?random=h8', awardName: '最具影响力奖', awardDate: '2025-12-05', category: 'efficiency', year: '2025', flowers: 91, hasGivenFlower: false },
+  { id: 9, name: '孙浩', department: '业务线A', avatar: 'https://picsum.photos/100/100?random=h9', awardName: '年度进步奖', awardDate: '2025-11-22', category: 'practice', year: '2025', flowers: 44, hasGivenFlower: false },
+  { id: 10, name: '周敏', department: '业务线B', avatar: 'https://picsum.photos/100/100?random=h10', awardName: 'AI落地先锋', awardDate: '2025-11-10', category: 'innovation', year: '2025', flowers: 120, hasGivenFlower: true },
+  { id: 11, name: '蒋宁', department: '安全部', avatar: 'https://picsum.photos/100/100?random=h11', awardName: '智能风控贡献奖', awardDate: '2025-10-30', category: 'practice', year: '2025', flowers: 63, hasGivenFlower: false },
+  { id: 12, name: '杨晨', department: '架构部', avatar: 'https://picsum.photos/100/100?random=h12', awardName: '架构创新奖', awardDate: '2025-10-12', category: 'innovation', year: '2025', flowers: 77, hasGivenFlower: false },
 ];
 
 const mockAwardNames = Array.from(new Set(mockHonorList.map(item => item.awardName))).filter(Boolean);
@@ -472,30 +522,79 @@ const viewModes = [
 ];
 const availableViewModes = computed(() => filterScope.value === 'mine' ? [viewModes[0]] : viewModes);
 
-import commonMethods from '@/utils/common'
+const extractAvatarId = (avatar: string | number | undefined): string => {
+  if (!avatar) return ''
+  const str = String(avatar)
+  const match = str.match(/(\d+)$/)
+  return match ? match[1] : str
+};
 
-// --- 荣誉数据（通过 api/honor.ts 获取；内部支持 mock/real 切换）---
+// --- 荣誉数据 ---
 const honorList = ref<HonorItem[]>([])
 const honorListLoading = ref(false)
-const honorListTotal = ref(0) // 🔑 接口返回的总条数
-const honorListTotalPages = ref(0) // 🔑 接口返回的总页数
+const honorListTotal = ref(0)
+const honorListTotalPages = ref(0)
+
+// 下拉筛选项
 const awardNamesFromApi = ref<string[]>([])
 const departmentNamesFromApi = ref<string[]>([])
-const leaderboardFromApi = ref<LeaderboardUser[]>([])
 
-// 加载荣誉列表数据
+// 榜单（如果你后端返回字段也是 name，建议保持一致；这里用 any 兜底避免类型卡死）
+const leaderboardFromApi = ref<any[]>([])
+
+// --- 下拉内搜索（新增） ---
+const awardOptionQuery = ref('');
+const deptOptionQuery = ref('');
+
+const normalize = (s: string) => s.trim().toLowerCase();
+
+const onAwardDropdownVisible = (visible: boolean) => {
+  if (visible) awardOptionQuery.value = '';
+};
+const onDeptDropdownVisible = (visible: boolean) => {
+  if (visible) deptOptionQuery.value = '';
+};
+
+// --- 状态 ---
+const awardType = ref<'individual' | 'team'>(
+  (route.query.type as string) === 'team' ? 'team' : 'individual'
+);
+const currentViewMode = ref<ViewMode>('grid');
+const filterScope = ref<'all' | 'mine'>('all');
+const searchQuery = ref('');
+const honorFilterType = ref<HonorFilterType>('award');
+const activeSubFilter = ref<string>('全部');
+const currentPage = ref(1);
+const pageSize = ref(6);
+const currentTimelineUserName = ref<string | null>(null);
+const chipContainerRef = ref<HTMLElement | null>(null);
+const canScrollLeft = ref(false);
+const canScrollRight = ref(false);
+const chipSearchQuery = ref('');
+
+// 下拉筛选框状态
+const selectedAwardFilter = ref<string>('');
+const selectedDeptFilter = ref<string>('');
+
+// 团队奖状态
+const selectedYear = ref<string>((route.query.year as string) || '2026');
+const activeTeamAwardIndex = ref<number>(0);
+const expandedTeamId = ref<number | null>(null);
+
+// --- 加载荣誉列表 ---
 const loadHonorList = async () => {
   honorListLoading.value = true
   try {
     if (FORCE_MOCK_HONOR) {
       honorList.value = mockHonorList.map((item) => ({
         ...item,
-        avatar: commonMethods.getAvatarUrl(item.avatar)
+        avatar: commonMethods.getAvatarUrl(item.avatar as any)
       }))
       honorListTotal.value = honorList.value.length
       honorListTotalPages.value = Math.ceil(honorListTotal.value / pageSize.value)
       return
     }
+
     const params = {
       page: currentPage.value,
       pageSize: pageSize.value,
@@ -504,14 +603,15 @@ const loadHonorList = async () => {
       filterValue: activeSubFilter.value !== '全部' ? activeSubFilter.value : undefined,
       keyword: searchQuery.value || undefined,
       view: currentViewMode.value as 'grid' | 'timeline',
-      userName: currentTimelineUserName.value || undefined
+      userName: currentTimelineUserName.value || undefined // 保持原参数名（后端若用 name，可改为 name）
     }
+
     const response = await getHonorList(params)
-    honorList.value = response.data.list.map((item: HonorItem) => ({
+
+    honorList.value = (response.data.list || []).map((item: HonorItem) => ({
       ...item,
-      avatar: commonMethods.getAvatarUrl(item.avatar)
+      avatar: commonMethods.getAvatarUrl(extractAvatarId(item.avatar))
     }))
-    // 🔑 保存接口返回的分页信息
     honorListTotal.value = response.data.total || 0
     honorListTotalPages.value = response.data.totalPages || 0
   } catch (error) {
@@ -520,9 +620,9 @@ const loadHonorList = async () => {
   } finally {
     honorListLoading.value = false
   }
-}
+};
 
-// 加载奖项/部门筛选项
+// 加载筛选项
 const loadHonorFilterOptions = async () => {
   try {
     if (FORCE_MOCK_HONOR) {
@@ -536,9 +636,9 @@ const loadHonorFilterOptions = async () => {
   } catch (e) {
     console.error('加载荣誉筛选项失败:', e)
   }
-}
+};
 
-// 加载荣耀影响力榜
+// 加载榜单
 const loadLeaderboard = async () => {
   try {
     if (FORCE_MOCK_HONOR) {
@@ -552,79 +652,27 @@ const loadLeaderboard = async () => {
       filterValue: activeSubFilter.value !== '全部' ? activeSubFilter.value : undefined,
     }
     const res = await getLeaderboard(params)
-    leaderboardFromApi.value = (res.data.list || []).map((user: LeaderboardUser) => ({
+
+    leaderboardFromApi.value = (res.data.list || []).map((user: any) => ({
       ...user,
-      avatar: commonMethods.getAvatarUrl(user.avatar)
+      avatar: commonMethods.getAvatarUrl(extractAvatarId(user.avatar))
     }))
   } catch (e) {
     console.error('加载荣耀影响力榜失败:', e)
   }
-}
-
-// --- 状态 ---
-const awardType = ref<'individual' | 'team'>('individual'); // 默认展示个人风采
-const currentViewMode = ref<ViewMode>('grid');
-const filterScope = ref<'all' | 'mine'>('all');
-const searchQuery = ref('');
-const honorFilterType = ref<HonorFilterType>('award');
-const activeSubFilter = ref<string>('全部');
-const currentPage = ref(1);
-const pageSize = ref(6);
-const currentTimelineUserName = ref<string | null>(null);
-const chipContainerRef = ref<HTMLElement | null>(null);
-const canScrollLeft = ref(false);
-const canScrollRight = ref(false);
-const chipSearchQuery = ref(''); // 🔑 筛选项搜索关键词
-
-// 团队奖状态
-const selectedYear = ref<string>('2026'); // 默认选中最新
-const activeTeamAwardIndex = ref<number>(0);
-const expandedTeamId = ref<number | null>(null); // 当前展开的团队ID
-
-// 切换团队获奖事迹展开/收起
-const toggleTeamExpand = (teamId: number) => {
-  if (expandedTeamId.value === teamId) {
-    expandedTeamId.value = null;
-  } else {
-    expandedTeamId.value = teamId;
-  }
 };
 
-const handleYearChange = (year: string) => {
-  selectedYear.value = year;
-  activeTeamAwardIndex.value = 0;
-  notifyNavbarUpdate();
-};
-
-// 处理团队荣誉送花
-const handleGiveFlowerToTeam = async (img: TeamAwardImage) => {
-  if (img.hasGivenFlower) {
-    ElMessage.warning('已送过花')
-    return
-  }
-  try {
-    const response = await giveFlower(img.id, 'team')
-    img.flowers = response.data.flowers
-    img.hasGivenFlower = response.data.hasGivenFlower
-    ElMessage.success('送花成功！')
-  } catch (error: unknown) {
-    console.error('送花失败:', error)
-    ElMessage.error((error as Error).message || '送花失败')
-  }
-};
-
-// 团队奖数据（通过 api/honor.ts 获取；内部支持 mock/real 切换）
+// 团队奖数据（保持原样）
 interface TeamAwardImage {
   id: number;
   image: string;
   imageType: 'url' | 'upload';
-  winnerName: string; // 团队名称
-  teamField?: string; // 团队领域
-  story?: string; // 获奖事迹（HTML富文本）
-  flowers?: number; // 花朵数
-  hasGivenFlower?: boolean; // 是否已送花
+  winnerName: string;
+  teamField?: string;
+  story?: string;
+  flowers?: number;
+  hasGivenFlower?: boolean;
 }
-
 interface TeamAward {
   id: number;
   title: string;
@@ -632,103 +680,10 @@ interface TeamAward {
   images: TeamAwardImage[];
 }
 
-const mockTeamAwards: TeamAward[] = [
-  {
-    id: 1,
-    title: '年度最佳AI创新团队',
-    year: '2026',
-    images: [
-      {
-        id: 1,
-        image: 'https://picsum.photos/400/300?random=team1',
-        imageType: 'url',
-        winnerName: 'AI研发中心',
-        teamField: 'AI技术研发',
-        story: '<p>AI研发中心团队成功研发了多项核心AI技术</p>',
-        flowers: 128,
-        hasGivenFlower: false,
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: '年度最佳贡献奖',
-    year: '2026',
-    images: [
-      {
-        id: 2,
-        image: 'https://picsum.photos/400/300?random=team2',
-        imageType: 'url',
-        winnerName: '贡献团队A',
-        teamField: '开源贡献',
-        story: '<p>年度最佳贡献团队</p>',
-        flowers: 88,
-        hasGivenFlower: false,
-      }
-    ]
-  },
-  {
-    id: 3,
-    title: 'AI创新突破奖',
-    year: '2026',
-    images: [
-      {
-        id: 3,
-        image: 'https://picsum.photos/400/300?random=team3',
-        imageType: 'url',
-        winnerName: '创新实验室',
-        teamField: '前沿探索',
-        story: '<p>在AI领域取得重大突破</p>',
-        flowers: 256,
-        hasGivenFlower: true,
-      }
-    ]
-  },
-  {
-    id: 4,
-    title: '效率提升大师',
-    year: '2026',
-    images: [
-      {
-        id: 4,
-        image: 'https://picsum.photos/400/300?random=team4',
-        imageType: 'url',
-        winnerName: '效能工具组',
-        teamField: '研发效能',
-        story: '<p>显著提升了研发效率</p>',
-        flowers: 150,
-        hasGivenFlower: false,
-      }
-    ]
-  },
-  {
-    id: 5,
-    title: '社区贡献奖',
-    year: '2026',
-    images: [
-      {
-        id: 5,
-        image: 'https://picsum.photos/400/300?random=team5',
-        imageType: 'url',
-        winnerName: '社区运营组',
-        teamField: '社区建设',
-        story: '<p>活跃社区氛围</p>',
-        flowers: 300,
-        hasGivenFlower: false,
-      }
-    ]
-  }
-]
-
-// 加载团队奖项数据
 const loadTeamAwards = async (): Promise<TeamAward[]> => {
   try {
-    if (FORCE_MOCK_HONOR) {
-      return mockTeamAwards;
-    }
-    // 优先从API获取
     const response = await getTeamAwards()
-    if (response && response.data && response.data.list && response.data.list.length > 0) {
+    if (response?.data?.list?.length > 0) {
       return response.data.list.map((item: TeamAward) => ({
         id: item.id,
         title: item.title,
@@ -747,27 +702,21 @@ const loadTeamAwards = async (): Promise<TeamAward[]> => {
   } catch (e) {
     console.error('加载团队奖项失败:', e);
   }
-
-  // 不在页面里写死 mock：mock/real 由 api/honor.ts 内部统一切换
   return [];
 };
 
 const teamAwards = ref<TeamAward[]>([]);
 
-// 监听配置更新
 const handleConfigUpdate = async () => {
   teamAwards.value = await loadTeamAwards();
-  // 如果当前选中的年份没有奖项了，切换到最新年份
   const firstYear = teamAwardYears.value[0];
   if (currentTeamAwards.value.length === 0 && teamAwardYears.value.length > 0 && firstYear) {
     selectedYear.value = firstYear;
   }
   activeTeamAwardIndex.value = 0;
-  // 通知导航栏更新
   notifyNavbarUpdate();
 };
 
-// 通知导航栏更新团队荣誉数据
 const notifyNavbarUpdate = () => {
   window.dispatchEvent(new CustomEvent('teamAwardsUpdate', {
     detail: {
@@ -780,7 +729,7 @@ const notifyNavbarUpdate = () => {
   }));
 };
 
-// 事件处理函数
+// 事件处理
 const handleAwardTypeChange = ((e: CustomEvent) => {
   if (e.detail?.type) {
     const newType = e.detail.type as 'individual' | 'team'
@@ -808,86 +757,135 @@ const handleStorageChange = (e: StorageEvent) => {
   }
 };
 
-// 窗口大小变化时的处理（保留以防后续需要）
-const handleResize = () => {
-  // CSS flex 布局已自动处理滚动条
+const handleResize = () => {};
+
+// 团队展开
+const toggleTeamExpand = (teamId: number) => {
+  expandedTeamId.value = expandedTeamId.value === teamId ? null : teamId;
 };
 
-// 监听筛选条件变化，重新加载荣誉列表
+const handleYearChange = (year: string) => {
+  selectedYear.value = year;
+  activeTeamAwardIndex.value = 0;
+  notifyNavbarUpdate();
+};
+
+const handleGiveFlowerToTeam = async (img: TeamAwardImage) => {
+  if (img.hasGivenFlower) {
+    ElMessage.warning('已送过花')
+    return
+  }
+  try {
+    const response = await giveFlower(img.id, 'team')
+    img.flowers = response.data.flowers
+    img.hasGivenFlower = response.data.hasGivenFlower
+    ElMessage.success('送花成功！')
+  } catch (error: unknown) {
+    console.error('送花失败:', error)
+    ElMessage.error((error as Error).message || '送花失败')
+  }
+};
+
+// 🔑 处理奖项筛选变化
+const handleAwardFilterChange = (value?: string | null) => {
+  const v = (value || '').trim();
+
+  if (v) {
+    // 选择了奖项：切到 award
+    honorFilterType.value = 'award';
+    activeSubFilter.value = v;
+    selectedDeptFilter.value = '';
+  } else {
+    // ✅ 清空奖项：如果部门仍有值，就回退到部门筛选；否则回到“全部”
+    selectedAwardFilter.value = '';
+    const dept = (selectedDeptFilter.value || '').trim();
+    if (dept) {
+      honorFilterType.value = 'department';
+      activeSubFilter.value = dept;
+    } else {
+      activeSubFilter.value = '全部';
+    }
+  }
+
+  currentPage.value = 1;
+};
+
+// 🔑 处理部门筛选变化
+const handleDeptFilterChange = (value?: string | null) => {
+  const v = (value || '').trim();
+
+  if (v) {
+    // 选择了部门：切到 department
+    honorFilterType.value = 'department';
+    activeSubFilter.value = v;
+    selectedAwardFilter.value = '';
+  } else {
+    // ✅ 清空部门：如果奖项仍有值，就回退到奖项筛选；否则回到“全部”
+    selectedDeptFilter.value = '';
+    const award = (selectedAwardFilter.value || '').trim();
+    if (award) {
+      honorFilterType.value = 'award';
+      activeSubFilter.value = award;
+    } else {
+      activeSubFilter.value = '全部';
+    }
+  }
+
+  currentPage.value = 1;
+};
+// 监听筛选条件变化
 watch(
   [filterScope, honorFilterType, activeSubFilter, searchQuery, currentViewMode, currentTimelineUserName, currentPage],
   () => {
     loadHonorList()
-    // 榜单也跟随筛选条件更新（后端支持则用后端数据；否则降级本地计算）
     loadLeaderboard()
   }
-)
+);
 
-// 🔑 单独监听pageSize变化，重置到第一页并重新加载
+// pageSize
 watch(pageSize, () => {
-  if (currentPage.value !== 1) {
-    currentPage.value = 1 // 这会触发上面的watch
-  } else {
-    loadHonorList() // currentPage已经是1，手动调用
-  }
-})
+  if (currentPage.value !== 1) currentPage.value = 1
+  else loadHonorList()
+});
 
 onMounted(async () => {
-  // 先设置事件监听器（确保能接收到导航栏发送的事件）
   window.addEventListener('awardTypeChange', handleAwardTypeChange);
   window.addEventListener('teamAwardYearChange', handleTeamAwardYearChange);
   window.addEventListener('teamAwardIndexChange', handleTeamAwardIndexChange);
   window.addEventListener('adminConfigUpdated', handleConfigUpdate);
-  // 初始化时也监听storage事件（跨标签页同步）
   window.addEventListener('storage', handleStorageChange);
-  // 监听窗口大小变化
   window.addEventListener('resize', handleResize);
 
-  // 初始化加载团队奖项
   teamAwards.value = await loadTeamAwards();
 
-  // 默认选中最新的年份
-  if (teamAwardYears.value.length > 0) {
-    selectedYear.value = teamAwardYears.value[0]!;
-  }
+  if (teamAwardYears.value.length > 0) selectedYear.value = teamAwardYears.value[0]!;
 
-  // 初始化加载荣誉列表
   await loadHonorList();
-
-  // 初始化加载筛选项/榜单
   await loadHonorFilterOptions();
   await loadLeaderboard();
 
-  // 通知导航栏当前状态
   notifyNavbarUpdate();
 
-  // 检查URL参数中是否有指定跳转到团队荣誉的参数
   const urlType = route.query.type as string
   const urlYear = route.query.year as string
   const urlAward = route.query.award as string
 
   if (urlType === 'team') {
-    // 切换到团队荣誉视图
     awardType.value = 'team'
 
-    // 如果指定了年份，切换到对应年份
     if (urlYear && teamAwardYears.value.includes(urlYear)) {
       selectedYear.value = urlYear
     }
 
-    // 如果指定了奖项名称，查找并选中对应奖项
     if (urlAward) {
       const awardIndex = currentTeamAwards.value.findIndex(
         a => a.title === urlAward || a.title.includes(urlAward)
       )
-      if (awardIndex !== -1) {
-        activeTeamAwardIndex.value = awardIndex
-      }
+      if (awardIndex !== -1) activeTeamAwardIndex.value = awardIndex
     }
 
     notifyNavbarUpdate()
   }
-  // 默认使用初始值 'individual'
 });
 
 onBeforeUnmount(() => {
@@ -900,13 +898,11 @@ onBeforeUnmount(() => {
 });
 
 const teamAwardYears = computed(() => {
-  // 保持由近到远 (倒序)
-  return Array.from(new Set(teamAwards.value.map(a => String(a.year || new Date().getFullYear())))).sort((a, b) => Number(b) - Number(a));
+  return Array.from(new Set(teamAwards.value.map(a => String(a.year || new Date().getFullYear()))))
+    .sort((a, b) => Number(b) - Number(a));
 });
 
-const currentTeamAwards = computed(() => {
-  return teamAwards.value.filter(a => String(a.year || '') === selectedYear.value);
-});
+const currentTeamAwards = computed(() => teamAwards.value.filter(a => String(a.year || '') === selectedYear.value));
 
 const currentTeamAward = computed(() => {
   if (currentTeamAwards.value.length > 0 && activeTeamAwardIndex.value < currentTeamAwards.value.length) {
@@ -915,19 +911,20 @@ const currentTeamAward = computed(() => {
   return null;
 });
 
-// 监听状态变化，通知导航栏
+// 通知导航栏
 watch([awardType, selectedYear, activeTeamAwardIndex, currentTeamAwards], () => {
   notifyNavbarUpdate();
 }, { deep: true });
 
-// --- Computed Logic (保持原有逻辑) ---
+// --- Computed Logic ---
 const processedList = computed(() => {
   let result = honorList.value;
+
   if (currentViewMode.value === 'timeline' && currentTimelineUserName.value) {
-    result = result.filter(item => item.userName === currentTimelineUserName.value);
+    result = result.filter(item => item.name === currentTimelineUserName.value);
   } else {
     if (filterScope.value === 'mine') result = result.filter(item => item.isMine);
-    if (searchQuery.value) result = result.filter(item => item.userName.includes(searchQuery.value));
+    if (searchQuery.value) result = result.filter(item => item.name.includes(searchQuery.value));
     if (currentViewMode.value === 'grid' && activeSubFilter.value !== '全部') {
       if (honorFilterType.value === 'award') result = result.filter(item => item.awardName === activeSubFilter.value);
       else if (honorFilterType.value === 'department') result = result.filter(item => item.department === activeSubFilter.value);
@@ -937,34 +934,49 @@ const processedList = computed(() => {
 });
 
 const paginatedList = computed(() => {
-  // 🔑 后端已经做了分页，前端直接使用返回的列表
   if (currentViewMode.value === 'timeline') return processedList.value;
-  return honorList.value;
+  return honorList.value; // 后端已分页
 });
 
-const leaderboardFallback = computed(() => {
-  const map = new Map<string, LeaderboardUser>();
+const leaderboardFallback = computed<LeaderboardUserLocal[]>(() => {
+  const map = new Map<string, LeaderboardUserLocal>();
   const sourceList = currentViewMode.value === 'timeline' ? honorList.value : processedList.value;
+
   sourceList.forEach(item => {
-    if (!map.has(item.userName)) {
-      map.set(item.userName, {
-        userName: item.userName,
+    if (!map.has(item.name)) {
+      map.set(item.name, {
+        name: item.name,
         department: item.department,
-        avatar: item.avatar,
+        avatar: String(item.avatar || ''),
         count: 0,
         totalFlowers: 0
       });
     }
-    const user = map.get(item.userName);
+    const user = map.get(item.name);
     if (user) {
       user.count++;
       user.totalFlowers += item.flowers || 0;
     }
   });
-  return Array.from(map.values()).sort((a, b) => b.count - a.count || b.totalFlowers - a.totalFlowers).slice(0, 10);
+
+  return Array.from(map.values())
+    .sort((a, b) => b.count - a.count || b.totalFlowers - a.totalFlowers)
+    .slice(0, 10);
 });
 
-const leaderboardData = computed(() => (leaderboardFromApi.value.length > 0 ? leaderboardFromApi.value : leaderboardFallback.value));
+const leaderboardData = computed<LeaderboardUserLocal[]>(() => {
+  if (leaderboardFromApi.value.length > 0) {
+    // 兼容后端字段可能为 name 或 userName：优先 name
+    return leaderboardFromApi.value.map((u: any) => ({
+      name: u.name ?? u.userName ?? '',
+      department: u.department ?? '',
+      avatar: u.avatar ?? '',
+      count: Number(u.count ?? 0),
+      totalFlowers: Number(u.totalFlowers ?? 0),
+    })).filter((u: any) => !!u.name);
+  }
+  return leaderboardFallback.value;
+});
 
 const allDepartments = computed(() => {
   const list = departmentNamesFromApi.value.length > 0
@@ -979,11 +991,42 @@ const allAwards = computed(() => {
     : Array.from(new Set(honorList.value.map(i => i.awardName))).filter(Boolean) as string[]
   return ['全部', ...list.filter((i: string) => i !== '全部')]
 });
+
+// 下拉选项（不含全部）
+const allAwardsForSelect = computed(() => {
+  const list = awardNamesFromApi.value.length > 0
+    ? awardNamesFromApi.value
+    : Array.from(new Set(honorList.value.map(i => i.awardName))).filter(Boolean) as string[]
+  return list.filter((i: string) => i !== '全部')
+});
+
+const allDepartmentsForSelect = computed(() => {
+  const list = departmentNamesFromApi.value.length > 0
+    ? departmentNamesFromApi.value
+    : Array.from(new Set(honorList.value.map(i => i.department))).filter(Boolean) as string[]
+  return list.filter((i: string) => i !== '全部')
+});
+
+// ✅ 下拉内部搜索过滤
+const filteredAwardsForSelect = computed(() => {
+  const q = normalize(awardOptionQuery.value);
+  const list = allAwardsForSelect.value || [];
+  if (!q) return list;
+  return list.filter(i => normalize(i).includes(q));
+});
+
+const filteredDepartmentsForSelect = computed(() => {
+  const q = normalize(deptOptionQuery.value);
+  const list = allDepartmentsForSelect.value || [];
+  if (!q) return list;
+  return list.filter(i => normalize(i).includes(q));
+});
+
 const showSecondaryFilter = computed(() => filterScope.value === 'all' && currentViewMode.value === 'grid');
+
 const activeFilterOptions = computed(() => {
   if (currentViewMode.value === 'grid') {
     const options = honorFilterType.value === 'award' ? allAwards.value : allDepartments.value;
-    // 🔑 根据搜索关键词过滤
     if (chipSearchQuery.value) {
       const keyword = chipSearchQuery.value.toLowerCase();
       return options.filter(item => item.toLowerCase().includes(keyword));
@@ -998,9 +1041,7 @@ const timelineData = computed(() => {
   const sorted = [...processedList.value].sort((a, b) => new Date(b.awardDate).getTime() - new Date(a.awardDate).getTime());
   sorted.forEach(item => {
     const year = item.year;
-    if (!groups[year]) {
-      groups[year] = [];
-    }
+    if (!groups[year]) groups[year] = [];
     groups[year].push(item);
   });
   return Object.keys(groups).sort((a, b) => Number(b) - Number(a)).map(year => {
@@ -1011,37 +1052,67 @@ const timelineData = computed(() => {
 
 const currentTimelineUser = computed(() => {
   if (currentViewMode.value !== 'timeline' || !currentTimelineUserName.value) return null;
-  const userItems = honorList.value.filter(item => item.userName === currentTimelineUserName.value);
+  const userItems = honorList.value.filter(item => item.name === currentTimelineUserName.value);
   const firstItem = userItems[0];
   if (!firstItem) return null;
   return {
-    userName: firstItem.userName,
-    avatar: firstItem.avatar,
+    name: firstItem.name,
+    avatar: String(firstItem.avatar || ''),
     department: firstItem.department,
     totalFlowers: userItems.reduce((s, i) => s + (i.flowers || 0), 0)
   };
 });
 
-// --- Actions (保持原有逻辑) ---
-const updateScrollButtons = () => { if (chipContainerRef.value) { canScrollLeft.value = chipContainerRef.value.scrollLeft > 0; canScrollRight.value = chipContainerRef.value.scrollLeft < chipContainerRef.value.scrollWidth - chipContainerRef.value.clientWidth - 1; } };
-const scrollChips = (dir: 'left' | 'right') => { if (chipContainerRef.value) chipContainerRef.value.scrollTo({ left: chipContainerRef.value.scrollLeft + (dir === 'left' ? -200 : 200), behavior: 'smooth' }); };
+// --- Actions ---
+const updateScrollButtons = () => {
+  if (!chipContainerRef.value) return;
+  canScrollLeft.value = chipContainerRef.value.scrollLeft > 0;
+  canScrollRight.value = chipContainerRef.value.scrollLeft < chipContainerRef.value.scrollWidth - chipContainerRef.value.clientWidth - 1;
+};
+const scrollChips = (dir: 'left' | 'right') => {
+  if (!chipContainerRef.value) return;
+  chipContainerRef.value.scrollTo({ left: chipContainerRef.value.scrollLeft + (dir === 'left' ? -200 : 200), behavior: 'smooth' });
+};
 const handleChipScroll = () => updateScrollButtons();
+
 watch([activeFilterOptions, honorFilterType], () => nextTick(() => setTimeout(updateScrollButtons, 100)));
-// 🔑 搜索关键词变化时，重置滚动位置到最左边
 watch(chipSearchQuery, () => {
   nextTick(() => {
-    if (chipContainerRef.value) {
-      chipContainerRef.value.scrollLeft = 0;
-    }
+    if (chipContainerRef.value) chipContainerRef.value.scrollLeft = 0;
     setTimeout(updateScrollButtons, 100);
   });
 });
 onMounted(() => nextTick(() => setTimeout(updateScrollButtons, 200)));
 
 const getRankClass = (idx: number) => ['rank-1', 'rank-2', 'rank-3'][idx] || 'rank-normal';
-const switchMode = (mode: string) => { currentViewMode.value = mode as ViewMode; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; searchQuery.value = ''; chipSearchQuery.value = ''; router.replace({ path: '/users' }); };
-const handleUserClick = (userName: string) => { if (currentViewMode.value === 'grid') router.push({ path: '/users', query: { view: 'timeline', user: userName } }); else { currentTimelineUserName.value = userName; router.replace({ path: '/users', query: { view: 'timeline', user: userName } }); } };
-const formatAwardDate = (d: string) => { const dt = new Date(d); return `${dt.getFullYear()}年${String(dt.getMonth()+1).padStart(2,'0')}月`; };
+
+const switchMode = (mode: string) => {
+  currentViewMode.value = mode as ViewMode;
+  activeSubFilter.value = '全部';
+  currentTimelineUserName.value = null;
+  searchQuery.value = '';
+  chipSearchQuery.value = '';
+  selectedAwardFilter.value = '';
+  selectedDeptFilter.value = '';
+  awardOptionQuery.value = '';
+  deptOptionQuery.value = '';
+  router.replace({ path: '/users' });
+};
+
+const handleUserClick = (name: string) => {
+  if (currentViewMode.value === 'grid') {
+    router.push({ path: '/users', query: { view: 'timeline', user: name } });
+  } else {
+    currentTimelineUserName.value = name;
+    router.replace({ path: '/users', query: { view: 'timeline', user: name } });
+  }
+};
+
+const formatAwardDate = (d: string) => {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}年${String(dt.getMonth() + 1).padStart(2, '0')}月`;
+};
+
 const handleGiveFlower = async (item: HonorItem) => {
   if (item.hasGivenFlower) {
     ElMessage.warning('已送过花')
@@ -1056,22 +1127,42 @@ const handleGiveFlower = async (item: HonorItem) => {
     console.error('送花失败:', error)
     ElMessage.error((error as Error).message || '送花失败')
   }
-}
-const handleSizeChange = (val: number) => {
-  pageSize.value = val;
-  // 🔑 pageSize 变化会触发 watch，自动重置页码并加载数据
 };
+
+const handleSizeChange = (val: number) => { pageSize.value = val; };
 const handleCurrentChange = (val: number) => {
   currentPage.value = val;
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // 🔑 currentPage 变化会触发 watch，自动加载数据
 };
 
-watch(filterScope, (v) => { if (v === 'mine') { currentViewMode.value = 'grid'; activeSubFilter.value = '全部'; currentTimelineUserName.value = null; chipSearchQuery.value = ''; } });
-watch(() => route.query.view, (v) => { if (v === 'timeline') { currentViewMode.value = 'timeline'; filterScope.value = 'all'; currentTimelineUserName.value = (route.query.user as string) || null; } else { currentViewMode.value = 'grid'; currentTimelineUserName.value = null; } }, { immediate: true });
-watch(() => route.query.user, (v) => { if (currentViewMode.value === 'timeline') currentTimelineUserName.value = (v as string) || null; });
+watch(filterScope, (v) => {
+  if (v === 'mine') {
+    currentViewMode.value = 'grid';
+    activeSubFilter.value = '全部';
+    currentTimelineUserName.value = null;
+    chipSearchQuery.value = '';
+    selectedAwardFilter.value = '';
+    selectedDeptFilter.value = '';
+    awardOptionQuery.value = '';
+    deptOptionQuery.value = '';
+  }
+});
 
-// 监听从首页跳转过来的团队荣誉参数
+watch(() => route.query.view, (v) => {
+  if (v === 'timeline') {
+    currentViewMode.value = 'timeline';
+    filterScope.value = 'all';
+    currentTimelineUserName.value = (route.query.user as string) || null;
+  } else {
+    currentViewMode.value = 'grid';
+    currentTimelineUserName.value = null;
+  }
+}, { immediate: true });
+
+watch(() => route.query.user, (v) => {
+  if (currentViewMode.value === 'timeline') currentTimelineUserName.value = (v as string) || null;
+});
+
 watch(() => [route.query.type, route.query.year, route.query.award], ([newType, newYear, newAward]) => {
   if (newType === 'team') {
     awardType.value = 'team'
@@ -1079,12 +1170,10 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
     const urlYear = newYear as string
     const urlAward = newAward as string
 
-    // 切换年份
     if (urlYear && teamAwardYears.value.includes(urlYear)) {
       selectedYear.value = urlYear
     }
 
-    // 查找并选中对应奖项
     nextTick(() => {
       if (urlAward) {
         const awardIndex = currentTeamAwards.value.findIndex(
@@ -1100,8 +1189,85 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 });
 </script>
 
+<!-- ✅ 全局样式（popper 在 body，必须非 scoped） -->
 <style lang="scss">
-/* 全局样式 */
+.achievement-tooltip {
+  max-width: 360px !important;
+  width: 360px !important;
+  font-size: 13px !important;
+  line-height: 1.7 !important;
+  color: #1f2937 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+
+  .el-tooltip__content {
+    max-width: 360px !important;
+    padding: 12px 16px !important;
+  }
+}
+
+
+.filter-select-dropdown .el-select-dropdown__header {
+  padding: 0 !important;
+}
+
+/* ✅ 下拉：对齐选中高亮 + 内置搜索框（sticky header） */
+.filter-select-dropdown {
+  border-radius: 12px !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  overflow: hidden !important;
+
+  .el-scrollbar__view {
+    padding: 8px 10px;
+    box-sizing: border-box;
+  }
+
+  .dropdown-search {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 8px 10px 6px 10px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.10);
+
+    .el-input__wrapper {
+      border-radius: 5px !important;
+    }
+  }
+
+  .el-select-dropdown__item {
+    height: 36px;
+    line-height: 36px;
+    padding: 0 12px;
+    padding-right: 28px; /* 给勾选留空间，避免错位 */
+    border-radius: 10px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+
+    font-size: 13px;
+    color: #334155;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .el-select-dropdown__item.hover,
+  .el-select-dropdown__item.is-hovering {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .el-select-dropdown__item.selected,
+  .el-select-dropdown__item.is-selected {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+    color: #6366f1;
+    font-weight: 600;
+  }
+
+  .el-select-dropdown__wrap {
+    max-height: 320px;
+  }
+}
 </style>
 
 <style scoped lang="scss">
@@ -2166,34 +2332,6 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   }
 }
 
-:deep(.achievement-tooltip) {
-  max-width: 360px;
-  width: 360px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #1f2937;
-  white-space: pre-wrap;
-
-  /* 🔑 美化滚动条 */
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.4);
-    border-radius: 4px;
-
-    &:hover {
-      background: rgba(148, 163, 184, 0.6);
-    }
-  }
-}
-
 .card-bottom {
   border-top: 1px solid rgba(0,0,0,0.08);
   padding-top: 8px;
@@ -2469,182 +2607,44 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
   box-sizing: border-box;
 }
 
-.filter-type-switcher {
+/* 🔑 新增：下拉筛选框行布局 */
+.filter-dropdowns-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px;
-  background: rgba(255,255,255,0.8);
-  border-radius: 12px;
-  border: 1px solid #409eff;
-  width: fit-content;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
 }
 
-.filter-type-tab {
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  transition: all 0.3s;
-  color: #64748b;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.8);
-    color: #4f46e5;
-  }
-
-  &.active {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-  }
-}
-
-.chip-scroll-wrapper {
+.filter-select-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  position: relative;
-  width: 100%; /* 🔑 占满父容器宽度 */
-  max-width: 100%; /* 🔑 不超出父容器 */
-  overflow: hidden; /* 🔑 隐藏超出部分 */
+  gap: 12px;
 }
 
-/* 🔑 筛选项搜索框样式 */
-.chip-search-input {
-  width: 160px;
-  flex-shrink: 0;
+/* 🔑 新增：下拉筛选框样式 */
+.filter-select {
+  width: 200px;
 
   :deep(.el-input__wrapper) {
-    border-radius: 10px;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.9) !important;
     backdrop-filter: blur(10px);
     box-shadow: none !important;
-    border: 1px solid #409eff;
+    border: 1px solid rgba(99, 102, 241, 0.2);
     transition: all 0.3s;
-    height: 32px;
+    height: 40px;
+    padding: 0 12px;
 
     &:hover {
       background: rgba(255, 255, 255, 0.95) !important;
-      border-color: rgba(99, 102, 241, 0.3);
+      border-color: rgba(99, 102, 241, 0.4);
     }
 
     &.is-focus {
       background: rgba(255, 255, 255, 0.98) !important;
       border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
-    }
-  }
-
-  :deep(.el-input__inner) {
-    color: #1e293b;
-    font-weight: 500;
-    font-size: 12px;
-
-    &::placeholder {
-      color: #94a3b8;
-    }
-  }
-
-  :deep(.el-input__prefix) {
-    .el-icon {
-      font-size: 14px;
-      color: #94a3b8;
-    }
-  }
-
-  :deep(.el-input__suffix) {
-    .el-icon {
-      font-size: 14px;
-      color: #94a3b8;
-      cursor: pointer;
-
-      &:hover {
-        color: #6366f1;
-      }
-    }
-  }
-}
-
-.scroll-btn {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(10px);
-  color: #475569 !important;
-  transition: all 0.3s;
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.95) !important;
-    color: #4f46e5 !important;
-    transform: scale(1.05);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .el-icon {
-    font-size: 16px;
-  }
-}
-
-.chip-container {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 4px;
-  flex: 1;
-  min-width: 0; /* 🔑 关键：允许flex子项收缩 */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* 🔑 筛选项空状态提示 */
-.chip-empty-hint {
-  white-space: nowrap;
-  font-size: 13px;
-  color: #94a3b8;
-  padding: 6px 16px;
-}
-
-.search-wrapper {
-  margin-left: 8px;
-}
-
-.crystal-input {
-  width: 200px;
-
-  :deep(.el-input__wrapper) {
-    border-radius: 99px;
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(10px);
-    box-shadow: none !important;
-    border: 1px solid #409eff;
-    transition: all 0.3s;
-    height: 32px;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.95) !important;
-      border-color: rgba(99, 102, 241, 0.3);
-    }
-
-    &.is-focus {
-      background: rgba(255, 255, 255, 0.95) !important;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
     }
   }
 
@@ -2660,34 +2660,80 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
 
   :deep(.el-input__prefix) {
     .el-icon {
+      font-size: 16px;
+      color: #6366f1;
+    }
+  }
+
+  :deep(.el-input__suffix) {
+    .el-icon {
       font-size: 14px;
       color: #94a3b8;
     }
   }
+
+  :deep(.el-select__caret) {
+    color: #94a3b8;
+    transition: transform 0.3s;
+  }
 }
 
-.gem-chip {
-  padding: 6px 16px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.8);
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-  transition: all 0.3s;
+/* 🔑 搜索框右对齐样式 */
+.search-wrapper-right {
+  margin-left: auto;
+}
 
-  &:hover {
-    background: rgba(255,255,255,0.9);
-    transform: translateY(-2px);
+.crystal-input {
+  width: 220px;
+
+  :deep(.el-input__wrapper) {
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: none !important;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    transition: all 0.3s;
+    height: 40px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.95) !important;
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    &.is-focus {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+    }
   }
 
-  &.active {
-    background: rgba(255,255,255,0.95);
-    color: #4f46e5;
-    border: 1px solid #c7d2fe;
-    font-weight: 700;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+  :deep(.el-input__inner) {
+    color: #1e293b;
+    font-weight: 500;
+    font-size: 13px;
+
+    &::placeholder {
+      color: #94a3b8;
+    }
+  }
+
+  :deep(.el-input__prefix) {
+    .el-icon {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+  }
+
+  :deep(.el-input__suffix) {
+    .el-icon {
+      font-size: 14px;
+      color: #94a3b8;
+      cursor: pointer;
+
+      &:hover {
+        color: #6366f1;
+      }
+    }
   }
 }
 
@@ -3097,6 +3143,25 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
     padding: 10px;
     margin: -10px;
   }
+
+  .filter-dropdowns-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filter-select-group {
+    flex-wrap: wrap;
+  }
+
+  .search-wrapper-right {
+    margin-left: 0;
+    width: 100%;
+
+    .crystal-input {
+      width: 100%;
+    }
+  }
 }
 
 @media (max-width: 600px) {
@@ -3104,6 +3169,10 @@ watch(() => [route.query.type, route.query.year, route.query.award], ([newType, 
     grid-template-columns: 1fr; /* 手机端一行一个 */
     padding: 10px;
     margin: -10px;
+  }
+
+  .filter-select {
+    width: 100%;
   }
 }
 </style>

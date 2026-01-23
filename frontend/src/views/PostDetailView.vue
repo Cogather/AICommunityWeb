@@ -20,7 +20,7 @@
           <div class="post-title-section">
             <h1 class="post-title">{{ postData.title }}</h1>
           </div>
-          
+
           <div class="post-info">
             <div class="author-info">
               <div class="avatar-wrapper">
@@ -60,7 +60,7 @@
 
         <!-- 帖子内容 -->
         <div class="post-content">
-          <div class="content-html" v-html="postData.content"></div>
+          <div class="content-html" v-html="renderedContent"></div>
         </div>
 
         <!-- 帖子标签 -->
@@ -375,6 +375,8 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import HeartIcon from '../components/HeartIcon.vue'
+import commonMethods from '@/utils/common'
+import { marked } from 'marked'
 
 // 路由
 const route = useRoute()
@@ -383,6 +385,14 @@ const router = useRouter()
 // 导航页面列表（这些是主要的导航入口页面）
 const NAV_PAGES = ['/', '/practices', '/tools', '/agent', '/empowerment', '/users', '/home']
 const BACK_ROUTE_KEY = 'post_detail_back_route'
+
+const extractAvatarId = (avatar: string | number | undefined): string => {
+  if (!avatar) return ''
+  const str = String(avatar)
+  // 匹配末尾的数字部分
+  const match = str.match(/(\d+)$/)
+  return match ? match[1] : str
+}
 
 // 检查路径是否是导航页面
 const isNavPage = (path: string) => {
@@ -399,20 +409,20 @@ const isNavPage = (path: string) => {
 const saveBackRoute = () => {
   // 检查 referrer 或使用 document.referrer
   const fromPath = document.referrer ? new URL(document.referrer).pathname : null
-  
+
   // 如果有 from 查询参数，优先使用
   if (route.query.from && typeof route.query.from === 'string') {
     sessionStorage.setItem(BACK_ROUTE_KEY, route.query.from)
     return
   }
-  
+
   // 检查已存储的返回路由是否有效（避免覆盖）
   const storedRoute = sessionStorage.getItem(BACK_ROUTE_KEY)
   if (storedRoute && isNavPage(storedRoute)) {
     // 已有有效的返回路由，不覆盖
     return
   }
-  
+
   // 尝试从 referrer 获取
   if (fromPath && isNavPage(fromPath)) {
     sessionStorage.setItem(BACK_ROUTE_KEY, fromPath)
@@ -490,6 +500,19 @@ const commentCount = computed(() => {
   return total
 })
 
+const renderedContent = computed(() => {
+  const content = postData.value.content || ''
+  if (!content) return ''
+
+  try {
+    // 使用 marked 将 Markdown 转换为 HTML
+    const result = marked.parse(String(content), { breaks: true })
+    return typeof result === 'string' ? result : content
+  } catch (e) {
+    console.error('Markdown parsing failed', e)
+    return content
+  }
+})
 // 当前用户信息（实际应该从登录状态获取）
 const currentUser = ref<{ userId: string; userName: string; avatar: string }>({
   userId: '1', // 当前用户ID
@@ -533,19 +556,19 @@ const canEditPost = computed(() => {
 const supportsFeatured = computed(() => {
   const zone = postData.value.zone
   const toolId = postData.value.toolId
-  
+
   // AI优秀实践 - 支持精华
   if (zone === 'practices') return true
-  
+
   // 赋能交流 - 支持精华
   if (zone === 'empowerment') return true
-  
+
   // 扶摇Agent - 支持置顶
   if (zone === 'agent') return true
-  
+
   // AI工具专区 - 只有"其他工具"(toolId=0)支持精华
   if (zone === 'tools' && toolId === 0) return true
-  
+
   return false
 })
 
@@ -602,9 +625,8 @@ const loadPostDetail = async () => {
     return
   }
 
-  // 确保 postId 是字符串或数字
   const finalPostId = Array.isArray(postId) ? postId[0] : postId
-  
+
   loading.value = true
   try {
     const response = await getPostDetail(finalPostId)
@@ -615,7 +637,8 @@ const loadPostDetail = async () => {
       content: post.content || '',
       cover: post.cover || '',
       userName: post.userName || post.author || '',
-      authorAvatar: post.authorAvatar || '',
+      // 处理作者头像
+      authorAvatar: commonMethods.getAvatarUrl(extractAvatarId(post.authorAvatar)),
       createTime: typeof post.createTime === 'string' ? post.createTime : new Date(post.createTime).toLocaleString('zh-CN'),
       views: post.views,
       likes: post.likes,
@@ -631,7 +654,6 @@ const loadPostDetail = async () => {
       isFeatured: post.featured || false,
       userId: post.userId || ''
     }
-    // 检查收藏状态
     isCollected.value = post.isCollected || false
   } catch (error: unknown) {
     console.error('加载帖子详情失败:', error)
@@ -648,14 +670,19 @@ const loadComments = async () => {
     const response = await getComments(
       postData.value.id,
       1,
-      100 // 获取所有评论
+      100
     )
-    // 为每个评论添加前端需要的属性
+    // 为每个评论添加前端需要的属性，并处理头像
     comments.value = response.data.list.map(comment => ({
       ...comment,
+      userAvatar: commonMethods.getAvatarUrl(extractAvatarId(comment.userAvatar)),
       showReplyInput: false,
       replyText: '',
-      replies: comment.replies || []
+      // 处理回复的头像
+      replies: (comment.replies || []).map(reply => ({
+        ...reply,
+        userAvatar: commonMethods.getAvatarUrl(extractAvatarId(reply.userAvatar))
+      }))
     }))
   } catch (error: unknown) {
     console.error('加载评论失败:', error)
@@ -667,7 +694,7 @@ const loadComments = async () => {
 // 点赞帖子
 const handleLike = async () => {
   if (liking.value) return
-  
+
   liking.value = true
   try {
     const action = postData.value.isLiked ? 'unlike' : 'like'
@@ -701,7 +728,7 @@ const handleCollect = async () => {
     const response = await collectPost(postData.value.id, action)
     isCollected.value = response.data.collected
     ElMessage.success(response.data.collected ? '收藏成功' : '已取消收藏')
-    
+
     // 触发收藏更新事件（用于更新个人中心的收藏数量）
     window.dispatchEvent(new CustomEvent('favoritesUpdated', {
       detail: { postId: postData.value.id, collected: response.data.collected }
@@ -754,7 +781,7 @@ const handleDelete = () => {
 const handleToggleFeatured = async () => {
   const actionName = featuredActionName.value
   const action = isPostFeatured.value ? '取消' + actionName : actionName
-  
+
   ElMessageBox.confirm(
     `确定要${action}这个帖子吗？`,
     '确认操作',
@@ -768,17 +795,17 @@ const handleToggleFeatured = async () => {
     try {
       const newFeatured = !isPostFeatured.value
       const result = await setFeaturedPost(postData.value.id, newFeatured, postData.value.zone, postData.value.toolId ?? undefined)
-      
+
       // 检查是否成功
       if (!result.data.success) {
         ElMessage.warning(`${action}失败`)
         return
       }
-      
+
       // 更新本地状态
       postData.value.featured = result.data.featured
       postData.value.isFeatured = result.data.featured
-      
+
       ElMessage.success(`${action}成功`)
     } catch (error: unknown) {
       console.error(`${action}失败:`, error)
@@ -804,16 +831,19 @@ const handleSubmitComment = async () => {
       content: newComment.value
     })
     const comment = response.data
-    // 添加前端需要的属性
     comments.value.unshift({
       ...comment,
+      // 处理新评论的头像
+      userAvatar: commonMethods.getAvatarUrl(extractAvatarId(comment.userAvatar)),
       showReplyInput: false,
       replyText: '',
-      replies: comment.replies || []
+      replies: (comment.replies || []).map(reply => ({
+        ...reply,
+        userAvatar: commonMethods.getAvatarUrl(extractAvatarId(reply.userAvatar))
+      }))
     })
     newComment.value = ''
     ElMessage.success('评论发表成功')
-    // 重新加载评论以获取最新数量
     await loadComments()
   } catch (error: unknown) {
     console.error('发表评论失败:', error)
@@ -875,7 +905,7 @@ const handleSubmitReplyToReply = async (comment: ExtendedCommentItem, targetRepl
       replyToId: targetReply.id,
       replyToUserId: targetReply.userId
     })
-    
+
     // 使用后端返回的数据
     const newReply = response.data
     // 补充前端字段
@@ -883,16 +913,18 @@ const handleSubmitReplyToReply = async (comment: ExtendedCommentItem, targetRepl
       ...newReply,
       userId: newReply.userId || currentUserId.value,
       userName: newReply.userName || currentUserName.value,
-      replyTo: targetReply.userName, // 确保显示 "回复 xxx"
+      // 处理回复头像
+      userAvatar: commonMethods.getAvatarUrl(extractAvatarId(newReply.userAvatar)),
+      replyTo: targetReply.userName,
       replyToId: targetReply.id,
       showReplyInput: false,
       replyText: ''
     }
-    
+
     if (!comment.replies) {
       comment.replies = []
     }
-    
+
     // 找到目标回复的位置，在其后插入
     const targetIndex = comment.replies.findIndex((r) => r.id === targetReply.id)
     if (targetIndex !== -1) {
@@ -900,7 +932,7 @@ const handleSubmitReplyToReply = async (comment: ExtendedCommentItem, targetRepl
     } else {
       comment.replies.push(formattedReply)
     }
-    
+
     targetReply.replyText = ''
     targetReply.showReplyInput = false
     ElMessage.success('回复发表成功')
@@ -933,7 +965,7 @@ const handleSubmitReply = async (comment: ExtendedCommentItem) => {
       content,
       replyToUserId: comment.userId
     })
-    
+
     // 使用后端返回的数据
     const replyData = response.data
     // 补充前端字段
@@ -941,19 +973,21 @@ const handleSubmitReply = async (comment: ExtendedCommentItem) => {
       ...replyData,
       userId: replyData.userId || currentUserId.value,
       userName: replyData.userName || currentUserName.value,
+      // 处理回复头像
+      userAvatar: commonMethods.getAvatarUrl(extractAvatarId(replyData.userAvatar)),
       replyTo: comment.userName,
       replyToId: comment.id,
       showReplyInput: false,
       replyText: ''
     }
-    
+
     if (!comment.replies) {
       comment.replies = []
     }
     comment.replies.push(reply)
     comment.replyText = ''
     comment.showReplyInput = false
-    
+
     ElMessage.success('回复发表成功')
   } catch (error) {
     console.error('发表回复失败:', error)
@@ -975,7 +1009,7 @@ const handleReplyLike = async (reply: { isLiked?: boolean; likes?: number }) => 
   try {
     // 这里应该调用API点赞回复
     // await likeReply(reply.id)
-    
+
     reply.isLiked = !reply.isLiked
     reply.likes = (reply.likes || 0) + (reply.isLiked ? 1 : -1)
   } catch (error) {
@@ -1002,7 +1036,7 @@ const handleDeleteComment = (comment: ExtendedCommentItem) => {
   const confirmMessage = totalReplies > 0
     ? `确定要删除这条评论吗？删除后该评论下的 ${totalReplies} 条回复也会一并删除，且无法恢复。`
     : '确定要删除这条评论吗？删除后无法恢复。'
-  
+
   ElMessageBox.confirm(
     confirmMessage,
     '确认删除',
@@ -1017,7 +1051,7 @@ const handleDeleteComment = (comment: ExtendedCommentItem) => {
     try {
       await deleteComment(comment.id)
       // 注意：后端应该自动删除该评论下的所有回复（包括嵌套回复）
-      
+
       // 从评论列表中移除该评论（包括其所有回复）
       // 由于是扁平化结构，删除评论时会自动删除其下的所有回复
       const index = comments.value.findIndex(c => c.id === comment.id)
@@ -1057,10 +1091,10 @@ const handleDeleteReply = (comment: ExtendedCommentItem, reply: ExtendedCommentI
       // 这里应该调用API删除回复
       // await deleteReply(reply.id)
       // 注意：只删除该条回复，不会删除其他回复
-      
+
       // 模拟API调用
       await new Promise(resolve => setTimeout(resolve, 300))
-      
+
       // 从评论的 replies 数组中删除该条回复（扁平化结构，只删除单条回复）
       if (comment.replies && Array.isArray(comment.replies)) {
         const index = comment.replies.findIndex((r) => r.id === reply.id)
@@ -1121,28 +1155,26 @@ const formatDate = (date: string | Date | undefined) => {
 
 // 初始化
 onMounted(async () => {
-  // 记录来源导航页面（用于返回按钮）
   saveBackRoute()
-  
+
   try {
-    // 获取当前用户信息
     const response = await getCurrentUser()
     const user = response.data
     currentUser.value = {
       userId: user.userId,
       userName: user.userName,
-      avatar: user.avatar
+      // 处理当前用户头像
+      avatar: commonMethods.getAvatarUrl(extractAvatarId(user.avatar))
     }
     isAdmin.value = user.roles?.includes('admin') || false
   } catch (error) {
     console.warn('获取当前用户信息失败:', error)
   }
-  
+
   await loadPostDetail()
   if (postData.value.id) {
     await loadComments()
-    checkIfCollected() // 检查收藏状态
-    // 滚动到锚点位置（如果有）
+    checkIfCollected()
     scrollToAnchor()
   }
 })
@@ -1167,11 +1199,11 @@ onMounted(async () => {
 
 .back-button-wrapper {
   margin-bottom: 20px;
-  
+
   .back-button {
     font-size: 14px;
     color: #666;
-    
+
     &:hover {
       color: #409eff;
     }
@@ -1239,7 +1271,7 @@ onMounted(async () => {
         .author-avatar-clickable {
           cursor: pointer;
           transition: all 0.2s;
-          
+
           &:hover {
             box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
           }
@@ -1271,11 +1303,11 @@ onMounted(async () => {
           font-size: 16px;
           font-weight: 500;
           color: #333;
-          
+
           &.author-name-clickable {
             cursor: pointer;
             transition: color 0.2s;
-            
+
             &:hover {
               color: #409eff;
             }
@@ -1555,24 +1587,24 @@ onMounted(async () => {
 
             .replies-list {
             margin-top: 16px;
-            
+
             .reply-item-flat {
               display: flex;
               gap: 12px;
               margin-bottom: 16px;
               padding-left: 24px; // 统一缩进
               position: relative;
-              
+
               &:last-child {
                 margin-bottom: 0;
               }
-              
+
               .avatar-wrapper-small {
                 position: relative;
                 display: inline-block;
                 flex-shrink: 0;
               }
-              
+
               .reply-content {
                 flex: 1;
                 background: rgba(250, 250, 250, 0.8);
@@ -1580,12 +1612,12 @@ onMounted(async () => {
                 border-radius: 8px;
                 border: 1px solid rgba(0, 0, 0, 0.08);
                 transition: all 0.2s;
-                
+
                 &:hover {
                   background: rgba(255, 255, 255, 0.95);
                   border-color: rgba(64, 158, 255, 0.2);
                 }
-                
+
                 .reply-header {
                   display: flex;
                   align-items: center;
@@ -1593,12 +1625,12 @@ onMounted(async () => {
                   margin-bottom: 8px;
                   font-size: 13px;
                   flex-wrap: wrap;
-                  
+
                   .reply-author {
                     font-weight: 500;
                     color: #333;
                   }
-                  
+
                   .author-tag-inline {
                     font-size: 11px;
                     padding: 2px 8px;
@@ -1606,29 +1638,29 @@ onMounted(async () => {
                     border-radius: 4px;
                     margin-left: 4px;
                   }
-                  
+
                   .reply-to {
                     color: #909399;
                     font-size: 12px;
-                    
+
                     .reply-to-name {
                       color: #409eff;
                       cursor: pointer;
                       font-weight: 500;
-                      
+
                       &:hover {
                         text-decoration: underline;
                       }
                     }
                   }
-                  
+
                   .reply-time {
                     color: #909399;
                     font-size: 12px;
                     margin-left: auto;
                   }
                 }
-                
+
                 .reply-text {
                   font-size: 13px;
                   line-height: 1.7;
@@ -1637,13 +1669,13 @@ onMounted(async () => {
                   white-space: pre-wrap;
                   word-break: break-word;
                 }
-                
+
                 .reply-actions {
                   display: flex;
                   gap: 12px;
                   margin-bottom: 0;
                 }
-                
+
                 .reply-input {
                   margin-top: 12px;
                   padding: 12px;
@@ -1651,7 +1683,7 @@ onMounted(async () => {
                   border-radius: 6px;
                   border: 1px solid #e4e7ed;
                   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                  
+
                   .reply-actions {
                     display: flex;
                     justify-content: flex-end;
@@ -1784,4 +1816,3 @@ onMounted(async () => {
   }
 }
 </style>
-

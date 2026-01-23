@@ -1,34 +1,57 @@
 <template>
   <div class="tools-view">
-    <!-- 工具按钮组 -->
-    <div class="tools-buttons">
+    <div class="tools-big-buttons-grid">
       <div
         v-for="tool in tools"
         :key="tool.id"
-        :class="['tool-card-btn', { 'tool-card-btn-active': selectedToolId === tool.id }]"
-        :style="{ '--tool-color': '#409eff' }"
+        class="tool-big-button"
+        :class="{ 'tool-big-button-active': selectedToolId === tool.id }"
+        :data-tool-type="getToolType(tool.name)"
+        :style="{ '--tool-category-color': tool.color || '#0066FF' }"
         @click="selectTool(tool.id)"
       >
-        <span class="tool-card-name">{{ tool.name }}</span>
+        <div class="tool-bg-layer"></div>
+
+        <div class="tool-button-icon">
+          <div class="icon-bg-layer"></div>
+
+          <img
+            v-if="tool.logo"
+            :src="tool.logo"
+            :alt="tool.name"
+            class="tool-logo"
+          />
+          <div
+            v-else
+            class="tool-icon-placeholder"
+          >
+            {{ tool.name[0] }}
+          </div>
+        </div>
+        <div class="tool-button-content">
+          <h4 class="tool-button-name">{{ tool.name }}</h4>
+        </div>
       </div>
 
-      <!-- 其他工具按钮 -->
       <div
-        :class="['tool-card-btn', 'tool-card-btn-other', { 'tool-card-btn-active': selectedToolId === 'other' }]"
-        style="--tool-color: #8b95a5;"
+        class="tool-big-button tool-big-button-no-icon"
+        :class="{ 'tool-big-button-active': selectedToolId === 'other' }"
+        data-tool-type="other"
+        style="--tool-category-color: #6366F1;"
         @click="selectTool('other')"
       >
-        <span class="tool-card-name">其他工具</span>
+        <div class="tool-bg-layer"></div>
+
+        <div class="tool-button-content">
+          <h4 class="tool-button-name">其他</h4>
+        </div>
       </div>
     </div>
 
-    <!-- 内容区域 -->
     <div class="content-area" v-if="selectedToolId">
       <el-row :gutter="24">
-        <!-- 左侧：帖子列表 -->
-        <el-col :xs="24" :md="18">
+        <el-col :xs="24" :md="selectedToolId === 'other' ? 18 : 24">
           <div class="posts-section">
-            <!-- 其他工具：搜索框和排序 -->
             <div v-if="selectedToolId === 'other'">
               <PostHeader
                 :default-sort="sortBy as 'newest' | 'hot' | 'comments' | 'likes'"
@@ -38,7 +61,6 @@
               />
             </div>
 
-            <!-- 普通工具：帖子分类标签 -->
             <div v-else class="post-tabs-header">
               <div class="post-tabs">
                 <el-tag
@@ -62,7 +84,6 @@
               </div>
             </div>
 
-            <!-- 帖子列表 -->
             <PostList
               :posts="paginatedPosts"
               :featured-posts="selectedToolId === 'other' ? featuredPostsArray : []"
@@ -71,7 +92,6 @@
               @post-click="handlePostClick"
             />
 
-            <!-- 分页 -->
             <div class="pagination-wrapper">
               <el-pagination
                 v-model:current-page="currentPage"
@@ -86,11 +106,8 @@
           </div>
         </el-col>
 
-        <!-- 右侧：赋能/培训活动宣传 或 其他工具的标签/部门分类 -->
-        <el-col :xs="24" :md="6">
-          <!-- 其他工具：标签和部门分类 -->
-          <div v-if="selectedToolId === 'other'" class="sidebar-section">
-            <!-- 标签筛选 -->
+        <el-col v-if="selectedToolId === 'other'" :xs="24" :md="6">
+          <div class="sidebar-section">
             <div class="sidebar-block">
               <TagFilter
                 :tags="displayedTags"
@@ -100,7 +117,6 @@
               />
             </div>
 
-            <!-- 部门归类 -->
             <div class="sidebar-block">
               <div class="section-header-with-reset">
                 <h3 class="sidebar-title">部门归类</h3>
@@ -134,25 +150,14 @@
               </div>
             </div>
           </div>
-
-          <!-- 普通工具：活动宣传 -->
-          <div v-else class="activities-section">
-            <ActivityCarousel
-              :activities="currentToolActivities"
-              title="近期活动与培训"
-              @activity-click="handleActivityClick"
-            />
-          </div>
         </el-col>
       </el-row>
     </div>
 
-    <!-- 未选择工具时的提示 -->
     <div v-else class="empty-tool-selection">
       <el-empty description="请选择一个工具查看相关内容" />
     </div>
 
-    <!-- 发布活动悬浮按钮（工具owner和管理员可见） -->
     <el-tooltip
       v-if="(isToolOwner || isAdmin) && selectedToolId && selectedToolId !== 'other' && typeof selectedToolId === 'number'"
       content="发布活动"
@@ -180,9 +185,7 @@ import { ElMessage } from 'element-plus'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
-import ActivityCarousel from '../components/ActivityCarousel.vue'
-// API 层 - 支持 Mock/Real API 自动切换
-import { getTools, checkOwnerPermission, getToolPosts, getToolActivities, getFeaturedPost, getToolTags, getToolDepartments } from '../api/tools'
+import { getTools, checkOwnerPermission, getToolPosts, getFeaturedPost, getToolTags, getToolDepartments } from '../api/tools'
 import { getCurrentUser } from '../api/user'
 import type { Post } from '../api/types'
 
@@ -194,17 +197,15 @@ const selectedToolId = ref<number | string | null>(null)
 
 // 工具Owner权限检查
 const isToolOwner = ref(false)
-const isAdmin = ref(false) // 是否为管理员
+const isAdmin = ref(false)
 const checkingOwner = ref(false)
 
 // 标签和部门选择
 const selectedTag = ref<string | null>(null)
 const selectedDepartment = ref<string | null>(null)
 
-// 精华帖子（仅"其他工具"使用）
+// 精华帖子
 const featuredPost = ref<Post | null>(null)
-
-// 将单个精华帖子转换为数组（供PostList组件使用）
 const featuredPostsArray = computed(() => {
   return featuredPost.value ? [featuredPost.value] : []
 })
@@ -213,7 +214,7 @@ const featuredPostsArray = computed(() => {
 const currentPage = ref(1)
 const pageSize = ref(15)
 
-// 其他工具（toolId=0）的标签/部门统计（走真实接口，支持 mock/real 切换）
+// 其他工具统计
 const toolTags = ref<Array<{ name: string; count: number }>>([])
 const toolDepartments = ref<Array<{ id: number; name: string; postCount: number; contributorCount: number }>>([])
 
@@ -236,41 +237,30 @@ interface ToolInfo {
 
 const tools = ref<ToolInfo[]>([])
 
-// 监听配置更新
 const handleConfigUpdate = async () => {
   tools.value = await loadTools()
 }
 
-// 页面加载时检查路由参数
 onMounted(async () => {
-  // 加载工具列表
   tools.value = await loadTools()
-
-  // 加载所有活动
-  await loadActivities()
-  // 监听配置更新
   window.addEventListener('adminConfigUpdated', handleConfigUpdate)
 
-  // 检查路由参数（优先从query参数获取toolId）
   const toolId = route.query.toolId
   if (toolId) {
     const id = Number(toolId)
     if (!isNaN(id) && tools.value.some((t) => t.id === id)) {
       selectedToolId.value = id
-      // 检查是否为工具Owner
       await checkToolOwner(id)
     } else if (toolId === 'other') {
       selectedToolId.value = 'other'
       isToolOwner.value = false
     }
   } else {
-    // 如果没有toolId参数，尝试从路径中匹配工具名称
       const pathMatch = route.path.match(/\/tools\/([^/?]+)/)
       if (pathMatch) {
         const toolName = pathMatch[1]
         if (toolName) {
           const matchedTool = tools.value.find((t) => {
-            // 尝试匹配工具名称（不区分大小写）
             const toolNameFromLink = t.name.toLowerCase().replace(/\s+/g, '-')
             return toolNameFromLink === toolName.toLowerCase() ||
                    t.name.toLowerCase() === toolName.toLowerCase()
@@ -279,7 +269,6 @@ onMounted(async () => {
             selectedToolId.value = matchedTool.id
             await checkToolOwner(matchedTool.id)
           } else {
-            // 如果路径匹配失败，默认选择第一个工具
             if (tools.value.length > 0 && tools.value[0]) {
               selectedToolId.value = tools.value[0].id
               await checkToolOwner(tools.value[0].id)
@@ -287,40 +276,33 @@ onMounted(async () => {
           }
         }
       } else {
-        // 如果没有toolId参数和路径匹配，默认选择第一个工具
         if (tools.value.length > 0 && tools.value[0]) {
           selectedToolId.value = tools.value[0].id
-          // 检查是否为工具Owner
           await checkToolOwner(tools.value[0].id)
         }
       }
     }
 })
 
-// 监听selectedToolId变化，自动检查权限并加载数据
 watch(selectedToolId, async (newToolId) => {
   if (typeof newToolId === 'number') {
     await checkToolOwner(newToolId)
     await loadPosts(newToolId)
-    await loadActivities(newToolId)
     featuredPost.value = null
   } else {
     isToolOwner.value = false
     await loadOtherToolStats()
-    await loadPosts(0) // 加载"其他工具"的帖子
-    await loadActivities(0)
+    await loadPosts(0)
     await loadFeaturedPost()
   }
 })
 
-// 当前激活的帖子分类
 const activePostTab = ref<'guide' | 'excellent'>('guide')
 
 onUnmounted(() => {
   window.removeEventListener('adminConfigUpdated', handleConfigUpdate)
 })
 
-// 工具列表 - GET /api/tools（api/tools.ts 内部支持 mock/real 切换）
 const loadTools = async () => {
   const toolsResponse = await getTools()
   return (toolsResponse.data?.list || []).map((item: { id: number; name: string; desc?: string; logo?: string; link?: string; color?: string }) => ({
@@ -333,14 +315,11 @@ const loadTools = async () => {
   }))
 }
 
-// 扩展 Post 类型，添加本地使用的字段
 type LocalPost = Post & { author?: string; description?: string; image?: string; tag?: string; category?: 'guide' | 'excellent' }
 
-// 当前列表（后端分页）
 const postList = ref<LocalPost[]>([])
 const totalPosts = ref(0)
 
-// 加载帖子列表（真实接口：GET /api/tools/posts）
 const loadPosts = async (toolId?: number) => {
   try {
     const isOther = toolId === 0 || selectedToolId.value === 'other'
@@ -356,7 +335,6 @@ const loadPosts = async (toolId?: number) => {
     })
     totalPosts.value = response.data.total || 0
 
-    // 字段映射
     postList.value = (response.data.list || []).map((post: Post): LocalPost => ({
       ...post,
       author: post.userName || (post as unknown as { author?: string }).author || '',
@@ -374,7 +352,6 @@ const loadPosts = async (toolId?: number) => {
   }
 }
 
-// 加载精华帖子（仅"其他工具"使用）
 const loadFeaturedPost = async () => {
   try {
     const response = await getFeaturedPost(0)
@@ -395,39 +372,6 @@ const loadFeaturedPost = async () => {
   }
 }
 
-// 活动数据
-const allActivities = ref<Array<{ id: number; toolId: number; type: 'activity' | 'training' | 'workshop'; title: string; desc: string; date: string; location: string; image: string }>>([])
-
-// 加载活动列表
-const loadActivities = async (toolId?: number) => {
-  try {
-    // 其他工具没有活动区块
-    if (toolId === 0 || selectedToolId.value === 'other') {
-      allActivities.value = []
-      return
-    }
-    const response = await getToolActivities({
-      toolId: toolId,
-      page: 1,
-      pageSize: 100 // 获取所有活动
-    })
-    allActivities.value = response.data.list.map((a) => ({
-      id: a.id,
-      toolId: a.toolId ?? 0,
-      type: (a.type || 'activity') as 'activity' | 'training' | 'workshop',
-      title: a.title,
-      desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
-      date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
-      location: '',
-      image: a.cover || ''
-    }))
-  } catch (error) {
-    console.error('加载活动列表失败:', error)
-    allActivities.value = []
-  }
-}
-
-// 加载“其他工具”的标签/部门统计
 const loadOtherToolStats = async () => {
   if (selectedToolId.value !== 'other') return
   try {
@@ -445,44 +389,51 @@ const loadOtherToolStats = async () => {
   }
 }
 
-// 选择工具
+const getToolType = (toolName: string): string => {
+  const name = toolName.toLowerCase()
+  if (name.includes('test') || name.includes('测试')) {
+    return 'test'
+  }
+  if (name.includes('code') || name.includes('代码')) {
+    return 'code'
+  }
+  if (name.includes('云') || name.includes('cloud') || name.includes('算力')) {
+    return 'cloud'
+  }
+  if (name.includes('dt') || name.includes('纠错') || name.includes('转换') || name.includes('效率')) {
+    return 'efficiency'
+  }
+  return 'code'
+}
+
 const selectTool = async (toolId: number | string) => {
   selectedToolId.value = toolId
-  activePostTab.value = 'guide' // 重置为操作指导
+  activePostTab.value = 'guide'
   currentPage.value = 1
 
-  // 检查是否为工具Owner（仅对普通工具检查，不包括"其他工具"）
   if (typeof toolId === 'number') {
     await checkToolOwner(toolId)
     await loadPosts(toolId)
-    await loadActivities(toolId)
-    featuredPost.value = null // 普通工具没有精华帖子
+    featuredPost.value = null
   } else {
-    // "其他工具"
     isToolOwner.value = false
     await loadOtherToolStats()
     await loadPosts(0)
-    await loadActivities(0)
-    await loadFeaturedPost() // 加载精华帖子
+    await loadFeaturedPost()
   }
 }
 
-// 检查是否为工具Owner或管理员
 const checkToolOwner = async (toolId: number) => {
   if (toolId <= 0) {
     isToolOwner.value = false
     isAdmin.value = false
     return
   }
-
   checkingOwner.value = true
   try {
-    // 获取当前用户信息
     const userResponse = await getCurrentUser()
     const user = userResponse.data
     isAdmin.value = user.roles?.includes('admin') || false
-
-    // 检查是否为工具Owner
     const ownerResponse = await checkOwnerPermission(toolId)
     isToolOwner.value = ownerResponse.data.isOwner || false
   } catch (error: unknown) {
@@ -494,164 +445,71 @@ const checkToolOwner = async (toolId: number) => {
   }
 }
 
-// 发布活动
 const handlePublishActivity = () => {
   if (!selectedToolId.value || typeof selectedToolId.value !== 'number') {
     ElMessage.warning('请先选择一个工具')
     return
   }
-
   router.push(`/activity/create?toolId=${selectedToolId.value}`)
 }
 
-// 后端分页返回的帖子列表
 const paginatedPosts = computed(() => postList.value)
 
-// 当前工具的活动
-const currentToolActivities = computed(() => {
-  return allActivities.value
-})
-
-// 颜色池 - 为不同标签提供不同颜色
-const colorPalette = [
-  { bg: 'rgba(64, 158, 255, 0.15)', border: '#409eff', text: '#409eff' },      // 蓝色
-  { bg: 'rgba(103, 194, 58, 0.15)', border: '#67c23a', text: '#67c23a' },      // 绿色
-  { bg: 'rgba(230, 162, 60, 0.15)', border: '#e6a23c', text: '#e6a23c' },      // 橙色
-  { bg: 'rgba(245, 108, 108, 0.15)', border: '#f56c6c', text: '#f56c6c' },    // 红色
-  { bg: 'rgba(144, 147, 153, 0.15)', border: '#909399', text: '#909399' },    // 灰色
-  { bg: 'rgba(156, 39, 176, 0.15)', border: '#9c27b0', text: '#9c27b0' },      // 紫色
-  { bg: 'rgba(0, 188, 212, 0.15)', border: '#00bcd4', text: '#00bcd4' },       // 青色
-  { bg: 'rgba(255, 152, 0, 0.15)', border: '#ff9800', text: '#ff9800' },       // 深橙色
-]
-
-// 根据标签名称生成哈希值，用于分配颜色
-const getTagColorIndex = (tagName: string): number => {
-  let hash = 0
-  for (let i = 0; i < tagName.length; i++) {
-    hash = tagName.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return Math.abs(hash) % colorPalette.length
-}
-
-// 获取标签样式
-const _getTagStyle = (tagName: string) => {
-  const colorIndex = getTagColorIndex(tagName)
-  const colors = colorPalette[colorIndex] || colorPalette[0]
-  const finalColors: { bg: string; border: string; text: string } = (colors || colorPalette[0]) as { bg: string; border: string; text: string }
-  const isActive = selectedTag.value === tagName
-
-  return {
-    '--tag-bg': isActive ? finalColors.bg.replace('0.15', '0.25') : finalColors.bg,
-    '--tag-border': finalColors.border,
-    '--tag-color': finalColors.text,
-    backgroundColor: isActive ? finalColors.bg.replace('0.15', '0.25') : finalColors.bg,
-    borderColor: finalColors.border,
-    color: finalColors.text,
-    borderWidth: '1px',
-    borderStyle: 'solid'
-  }
-}
-
-// 获取标签类型（保留用于帖子中的标签）
-const _getTagType = (tag: string) => {
-  const typeMap: Record<string, string> = {
-    '新手': 'info',
-    '进阶': 'warning',
-    '最佳实践': 'success',
-    '技巧': 'primary',
-    '案例': 'success',
-    '入门': 'info',
-    '优化': 'warning',
-    '通用': 'info'
-  }
-  return typeMap[tag] || 'info'
-}
-
-// 处理帖子点击
-const handlePostClick = (post: { id: number | string }) => {
-  if (!post || !post.id) {
-    console.error('帖子数据无效:', post)
-    return
-  }
-  // 传递当前页面路径，用于帖子详情页返回
-  router.push({
-    path: `/post/${post.id}`,
-    query: { from: route.fullPath }
-  }).catch((err) => {
-    console.error('路由跳转失败:', err)
-  })
-}
-
-// 搜索关键词和排序
 const searchKeyword = ref('')
 const sortBy = ref<'newest' | 'hot' | 'comments'>('newest')
 
-// 处理标签切换
 const handleTabChange = (tab: 'guide' | 'excellent') => {
   activePostTab.value = tab
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
   if (typeof selectedToolId.value === 'number') {
     loadPosts(selectedToolId.value)
   }
 }
 
-// 处理搜索
 const handleSearch = (keyword: string) => {
   searchKeyword.value = keyword
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
   if (selectedToolId.value === 'other') {
     loadPosts(0)
   }
 }
 
-// 处理排序
 const handleSort = (sort: 'newest' | 'hot' | 'comments' | 'likes') => {
   sortBy.value = sort as 'newest' | 'hot' | 'comments'
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
   if (selectedToolId.value === 'other') {
     loadPosts(0)
   }
 }
 
-// 处理活动点击
-const handleActivityClick = (activity: { id: number }) => {
-  // 跳转到活动详情页
-  router.push(`/activity/${activity.id}`)
-}
-
-// 处理标签点击
 const handleTagClick = (tagName: string) => {
   if (tagName === '全部') {
-    // 点击"全部"时清除标签过滤
     selectedTag.value = null
   } else if (selectedTag.value === tagName) {
-    // 再次点击已选中的标签时清除
     selectedTag.value = null
   } else {
     selectedTag.value = tagName
   }
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
   if (selectedToolId.value === 'other') {
     loadOtherToolStats()
     loadPosts(0)
   }
 }
 
-// 处理部门点击
 const handleDepartmentClick = (departmentName: string) => {
   if (selectedDepartment.value === departmentName) {
     selectedDepartment.value = null
   } else {
     selectedDepartment.value = departmentName
   }
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
   if (selectedToolId.value === 'other') {
     loadOtherToolStats()
     loadPosts(0)
   }
 }
 
-// 重置部门过滤
 const handleResetDepartment = () => {
   selectedDepartment.value = null
   currentPage.value = 1
@@ -661,15 +519,13 @@ const handleResetDepartment = () => {
   }
 }
 
-// 处理发帖
 const handlePostCreate = () => {
   router.push(ROUTES.POST_CREATE)
 }
 
-// 处理分页大小变化
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
   if (selectedToolId.value === 'other') {
     loadPosts(0)
   } else if (typeof selectedToolId.value === 'number') {
@@ -677,16 +533,24 @@ const handleSizeChange = (val: number) => {
   }
 }
 
-// 处理当前页变化
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
-  // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
   if (selectedToolId.value === 'other') {
     loadPosts(0)
   } else if (typeof selectedToolId.value === 'number') {
     loadPosts(selectedToolId.value)
   }
+}
+
+const handlePostClick = (post: { id: number | string }) => {
+  if (!post || !post.id) return
+  router.push({
+    path: `/post/${post.id}`,
+    query: { from: route.fullPath }
+  }).catch((err) => {
+    console.error('路由跳转失败:', err)
+  })
 }
 </script>
 
@@ -699,110 +563,179 @@ const handleCurrentChange = (val: number) => {
   color: #000;
 }
 
-/* 工具按钮组 */
-.tools-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  justify-content: center;
+/* 核心修改：使用 Grid 布局，但不再固定列数。
+  使用 minmax(210px, 1fr) 确保每个按钮最小宽度一致，且自动填充行。
+  210px 足够容纳图标(48)+间距(12)+文字，同时比原来的宽度窄。
+*/
+.tools-big-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
   margin-bottom: 28px;
-  padding: 20px 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
-  backdrop-filter: blur(12px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-.tool-card-btn {
-  position: relative;
+.tool-big-button {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  min-width: 100px;
+  gap: 12px;
+
+  /* Grid布局下，宽度由 grid-template-columns 控制，这里只需占满轨道 */
+  width: 100%;
+  padding: 10px 14px;
+  height: 80px;
   border-radius: 14px;
   cursor: pointer;
+
+  /* 更深的背景色 */
+  background: rgba(255, 255, 255, 1);
+  /* 明显的边框 */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  /* 阴影 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+
+  position: relative;
   overflow: hidden;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
+  z-index: 1;
 
-  // 拟态玻璃背景 - 使用工具主题色渐变
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--tool-color) 15%, rgba(255, 255, 255, 0.85)) 0%,
-    color-mix(in srgb, var(--tool-color) 8%, rgba(255, 255, 255, 0.7)) 50%,
-    color-mix(in srgb, var(--tool-color) 12%, rgba(255, 255, 255, 0.75)) 100%
-  );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  // 玻璃边框
-  border: 1px solid color-mix(in srgb, var(--tool-color) 20%, rgba(255, 255, 255, 0.5));
-
-  // 拟态阴影 - 凸起效果
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.7),
-    inset 0 -1px 2px color-mix(in srgb, var(--tool-color) 8%, transparent),
-    0 4px 12px color-mix(in srgb, var(--tool-color) 15%, rgba(0, 0, 0, 0.08)),
-    0 1px 3px rgba(0, 0, 0, 0.06);
-
-  // 工具名称
-  .tool-card-name {
-    position: relative;
-    z-index: 2;
-    font-size: 18px;
-    font-weight: 600;
-    color: color-mix(in srgb, var(--tool-color) 70%, #1e293b);
-    white-space: nowrap;
-    transition: all 0.3s ease;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-    letter-spacing: 0.3px;
+  /* 无图标按钮样式 */
+  &.tool-big-button-no-icon {
+    padding: 10px 14px;
+    height: 80px;
+    gap: 0;
+    justify-content: center;
   }
 
-  // Hover 效果
+  /* 背景染色层 */
+  .tool-bg-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--tool-category-color);
+    opacity: 0.05;
+    transition: opacity 0.25s ease;
+  }
+
   &:hover {
-    transform: translateY(-3px) scale(1.02);
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--tool-color) 22%, rgba(255, 255, 255, 0.9)) 0%,
-      color-mix(in srgb, var(--tool-color) 12%, rgba(255, 255, 255, 0.8)) 50%,
-      color-mix(in srgb, var(--tool-color) 18%, rgba(255, 255, 255, 0.85)) 100%
-    );
-    border-color: color-mix(in srgb, var(--tool-color) 35%, rgba(255, 255, 255, 0.6));
-    box-shadow:
-      inset 0 1px 2px rgba(255, 255, 255, 0.8),
-      inset 0 -1px 2px color-mix(in srgb, var(--tool-color) 10%, transparent),
-      0 8px 20px color-mix(in srgb, var(--tool-color) 25%, rgba(0, 0, 0, 0.12)),
-      0 2px 6px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 
-    .tool-card-name {
-      color: color-mix(in srgb, var(--tool-color) 85%, #000);
+    .tool-bg-layer {
+      opacity: 0.1;
+    }
+
+    .tool-button-icon {
+      transform: scale(1.05);
+
+      .icon-bg-layer {
+        opacity: 0.9;
+      }
+
+      .tool-logo {
+        filter: brightness(0) invert(1);
+      }
+
+      .tool-icon-placeholder {
+        color: #fff;
+      }
+    }
+
+    .tool-button-name {
+      color: var(--tool-category-color);
     }
   }
 
-  // Active 选中状态
-  &.tool-card-btn-active {
-    transform: translateY(-2px);
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--tool-color) 30%, rgba(255, 255, 255, 0.95)) 0%,
-      color-mix(in srgb, var(--tool-color) 18%, rgba(255, 255, 255, 0.85)) 50%,
-      color-mix(in srgb, var(--tool-color) 25%, rgba(255, 255, 255, 0.9)) 100%
-    );
-    border-color: color-mix(in srgb, var(--tool-color) 50%, rgba(255, 255, 255, 0.4));
-    box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.9),
-      inset 0 -2px 4px color-mix(in srgb, var(--tool-color) 15%, transparent),
-      0 6px 18px color-mix(in srgb, var(--tool-color) 35%, rgba(0, 0, 0, 0.15)),
-      0 0 0 3px color-mix(in srgb, var(--tool-color) 20%, transparent);
+  &.tool-big-button-active {
+    background: rgba(255, 255, 255, 1);
+    border-color: var(--tool-category-color);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 
-    .tool-card-name {
-      color: color-mix(in srgb, var(--tool-color) 90%, #000);
+    .tool-bg-layer {
+      opacity: 0.1;
+    }
+
+    .tool-button-name {
+      color: var(--tool-category-color);
       font-weight: 700;
-      text-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.8),
-        0 0 8px color-mix(in srgb, var(--tool-color) 30%, transparent);
     }
   }
+
+  .tool-button-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s ease;
+
+    .icon-bg-layer {
+      position: absolute;
+      inset: 0;
+      background: var(--tool-category-color);
+      opacity: 0.18;
+      transition: opacity 0.25s ease;
+      z-index: 0;
+    }
+
+    .tool-logo {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      border-radius: 6px;
+      z-index: 1;
+      transition: filter 0.25s;
+    }
+
+    .tool-icon-placeholder {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--tool-category-color);
+      background: transparent;
+      border-radius: 6px;
+      z-index: 1;
+      transition: color 0.25s;
+    }
+  }
+
+  .tool-button-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    .tool-button-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1E293B;
+      transition: color 0.25s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  /* 无图标按钮的内容样式 */
+  &.tool-big-button-no-icon .tool-button-content {
+    flex: none;
+    justify-content: center;
+  }
+
+  &[data-tool-type="test"] { --tool-category-color: #10B981; }
+  &[data-tool-type="code"] { --tool-category-color: #3B82F6; }
+  &[data-tool-type="cloud"] { --tool-category-color: #6366F1; }
+  &[data-tool-type="efficiency"] { --tool-category-color: #F59E0B; }
+  &[data-tool-type="other"] { --tool-category-color: #6366F1; }
 }
 
 /* 内容区域 */
@@ -924,7 +857,7 @@ const handleCurrentChange = (val: number) => {
           gap: 4px;
 
           .el-icon {
-  font-size: 16px;
+            font-size: 16px;
           }
         }
       }
@@ -936,8 +869,6 @@ const handleCurrentChange = (val: number) => {
   padding: 60px 20px;
   text-align: center;
 }
-
-/* ActivityCarousel 组件已有自己的样式，不需要额外定义 */
 
 .empty-tool-selection {
   padding: 100px 20px;
@@ -993,36 +924,6 @@ const handleCurrentChange = (val: number) => {
     &:hover {
       color: #409eff;
     }
-  }
-}
-
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-
-  .tag-item {
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
-
-    &:hover {
-      transform: translateY(-2px);
-      opacity: 0.8;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &.tag-item-active {
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-  }
-
-  // 使用全局样式覆盖 Element Plus 标签样式
-  :deep(.el-tag.tag-item) {
-    background-color: var(--tag-bg, transparent) !important;
-    border-color: var(--tag-border, currentColor) !important;
-    color: var(--tag-color, inherit) !important;
   }
 }
 
@@ -1086,30 +987,20 @@ const handleCurrentChange = (val: number) => {
     }
   }
 
-  .tools-buttons {
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding: 14px 12px;
+  /* 在移动端也可以保持 auto-fill 逻辑，或者如果需要可以强制更小尺寸 */
+  .tools-big-buttons-grid {
     gap: 10px;
-    -webkit-overflow-scrolling: touch;
+  }
 
-    &::-webkit-scrollbar {
-      height: 4px;
-    }
+  .tool-big-button {
+    padding: 10px 14px;
+    height: auto;
+    min-height: 70px;
 
-    &::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.15);
-      border-radius: 4px;
-    }
-
-    .tool-card-btn {
-      flex-shrink: 0;
-      min-width: 80px;
-      padding: 10px 18px;
-
-      .tool-card-name {
-        font-size: 13px;
-      }
+    &.tool-big-button-no-icon {
+      padding: 10px 14px;
+      min-height: 70px;
+      height: auto;
     }
   }
 }
@@ -1117,15 +1008,15 @@ const handleCurrentChange = (val: number) => {
 /* 发布活动悬浮按钮 */
 .activity-fab {
   position: fixed;
-  right: 0; /* 默认只显示一半，所以从右边0开始 */
-  bottom: 148px; /* 发帖按钮在72px，按钮高度60px，间距16px，所以是72+60+16=148px */
-  z-index: 1301; /* 比发帖按钮稍高，确保在上层 */
+  right: 0;
+  bottom: 148px;
+  z-index: 1301;
   box-shadow: 0 20px 50px rgba(103, 194, 58, 0.55), 0 0 0 8px rgba(103, 194, 58, 0.16);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   padding: 0 26px;
   height: 60px;
-  border-radius: 999px 0 0 999px; /* 左边圆角，右边直角 */
+  border-radius: 999px 0 0 999px;
   background: linear-gradient(135deg, #85ce61 0%, #67c23a 50%, #5daf34 100%);
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -1133,7 +1024,7 @@ const handleCurrentChange = (val: number) => {
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(6px);
-  transform: translateX(calc(100% - 60px)); /* 默认只显示60px（图标+部分文字） */
+  transform: translateX(calc(100% - 60px));
   overflow: hidden;
   white-space: nowrap;
 
@@ -1157,13 +1048,13 @@ const handleCurrentChange = (val: number) => {
   &__label {
     font-size: 16px;
     letter-spacing: 0.6px;
-    opacity: 0; /* 默认隐藏文字 */
+    opacity: 0;
     transition: opacity 0.3s ease;
   }
 
   &:hover {
-    transform: translateX(0); /* 悬浮时完全显示 */
-    border-radius: 999px; /* 悬浮时恢复完整圆角 */
+    transform: translateX(0);
+    border-radius: 999px;
     box-shadow: 0 24px 58px rgba(103, 194, 58, 0.65), 0 0 0 10px rgba(103, 194, 58, 0.18);
 
     &::after {
@@ -1172,7 +1063,7 @@ const handleCurrentChange = (val: number) => {
     }
 
     .activity-fab__label {
-      opacity: 1; /* 悬浮时显示文字 */
+      opacity: 1;
     }
   }
 }
@@ -1180,10 +1071,10 @@ const handleCurrentChange = (val: number) => {
 @media (max-width: 768px) {
   .activity-fab {
     right: 0;
-    bottom: 124px; /* 移动端发帖按钮在48px，按钮高度52px，间距24px，所以是48+52+24=124px */
+    bottom: 124px;
     height: 52px;
     padding: 0 18px;
-    transform: translateX(calc(100% - 52px)); /* 移动端默认显示52px */
+    transform: translateX(calc(100% - 52px));
 
     &__label {
       font-size: 15px;

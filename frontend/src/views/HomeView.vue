@@ -1,7 +1,9 @@
 <template>
   <div class="page-container">
+
     <section class="hero-section">
       <HeroCarousel />
+
       <div class="floating-tools-panel">
         <div class="tools-panel-header">
           <el-icon><Trophy /></el-icon>
@@ -27,12 +29,12 @@
     </section>
 
     <main class="main-content">
+
       <section class="section-block ai-dynamic-section">
         <div class="section-title-center">
           <h2>AI 动态</h2>
         </div>
 
-        <!-- 用 gap 替代 el-row gutter（避免负 margin 导致宽度与下方模块不对齐） -->
         <el-row :gutter="0" class="section-row ai-dynamic-row">
           <el-col :xs="24" :md="16">
             <div class="glass-card honor-section">
@@ -49,60 +51,31 @@
               </div>
 
               <div class="honor-content-container">
-                <div class="winners-three-columns">
-                  <div class="winners-column">
-                    <div
-                      v-for="winner in latestWinners.slice(0, 6)"
-                      :key="winner.id"
-                      class="winner-card-item"
-                      @click="router.push({ path: '/users', query: { view: 'timeline', user: winner.name } })"
-                    >
-                      <el-avatar
-                        :size="44"
-                        :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
-                        class="winner-avatar"
-                      />
-                      <div class="winner-info">
-                        <span class="winner-name">{{ winner.name }}</span>
-                        <span class="winner-award">{{ winner.awardName }}</span>
-                      </div>
+                <div class="winners-award-columns">
+                  <div
+                    v-for="(winners, awardName) in winnersByAward"
+                    :key="awardName"
+                    class="award-column"
+                  >
+                    <div class="award-column-header">
+                      <h4 class="award-name">{{ awardName }}</h4>
                     </div>
-                  </div>
-
-                  <div class="winners-column">
-                    <div
-                      v-for="winner in latestWinners.slice(6, 12)"
-                      :key="winner.id"
-                      class="winner-card-item"
-                      @click="router.push({ path: '/users', query: { view: 'timeline', user: winner.name } })"
-                    >
-                      <el-avatar
-                        :size="44"
-                        :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
-                        class="winner-avatar"
-                      />
-                      <div class="winner-info">
-                        <span class="winner-name">{{ winner.name }}</span>
-                        <span class="winner-award">{{ winner.awardName }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="winners-column">
-                    <div
-                      v-for="winner in latestWinners.slice(12, 18)"
-                      :key="winner.id"
-                      class="winner-card-item"
-                      @click="router.push({ path: '/users', query: { view: 'timeline', user: winner.name } })"
-                    >
-                      <el-avatar
-                        :size="44"
-                        :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
-                        class="winner-avatar"
-                      />
-                      <div class="winner-info">
-                        <span class="winner-name">{{ winner.name }}</span>
-                        <span class="winner-award">{{ winner.awardName }}</span>
+                    <div class="award-winners-list">
+                      <div
+                        v-for="winner in winners"
+                        :key="winner.id"
+                        class="winner-card-item"
+                        @click="router.push({ path: '/users', query: { view: 'timeline', user: winner.name } })"
+                      >
+                        <el-avatar
+                          :size="44"
+                          :src="winner.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
+                          class="winner-avatar"
+                        />
+                        <div class="winner-info">
+                          <span class="winner-name">{{ winner.name }}</span>
+                          <span class="winner-department">{{ winner.department || '未知部门' }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -126,7 +99,7 @@
               </div>
               <div class="empowerment-list">
                 <div
-                  v-for="(post, index) in empowermentPosts"
+                  v-for="(post, index) in empowermentPosts.slice(0, 5)"
                   :key="post.id"
                   class="empowerment-item"
                   @click="router.push(`/post/${post.id}`)"
@@ -162,9 +135,9 @@
           <h2>AI 优秀实践</h2>
         </div>
 
-        <div class="practice-combined-card glass-card">
-          <div class="practice-three-columns">
-            <div class="practice-column">
+        <el-row :gutter="24" class="practice-cards-row">
+          <el-col :xs="24" :md="8">
+            <div class="practice-card glass-card">
               <div class="practice-column-header">
                 <h3 class="column-title">💻 代码生成</h3>
                 <el-button
@@ -187,13 +160,14 @@
                   <div class="practice-meta">
                     <span class="practice-author">{{ practice.author }}</span>
                     <span class="practice-department">{{ practice.department }}</span>
-                    <span class="practice-time">{{ practice.time }}</span>
                   </div>
                 </div>
               </div>
             </div>
+          </el-col>
 
-            <div class="practice-column">
+          <el-col :xs="24" :md="8">
+            <div class="practice-card glass-card">
               <div class="practice-column-header">
                 <h3 class="column-title">📜 脚本生成</h3>
                 <el-button
@@ -216,13 +190,14 @@
                   <div class="practice-meta">
                     <span class="practice-author">{{ practice.author }}</span>
                     <span class="practice-department">{{ practice.department }}</span>
-                    <span class="practice-time">{{ practice.time }}</span>
                   </div>
                 </div>
               </div>
             </div>
+          </el-col>
 
-            <div class="practice-column">
+          <el-col :xs="24" :md="8">
+            <div class="practice-card glass-card">
               <div class="practice-column-header">
                 <h3 class="column-title">🔧 问题处理</h3>
                 <el-button
@@ -245,13 +220,12 @@
                   <div class="practice-meta">
                     <span class="practice-author">{{ practice.author }}</span>
                     <span class="practice-department">{{ practice.department }}</span>
-                    <span class="practice-time">{{ practice.time }}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </el-col>
+        </el-row>
       </section>
 
       <section class="section-block tool-zone-section">
@@ -268,7 +242,11 @@
             :style="{ '--tool-category-color': tool.color || '#0066FF' }"
             @click="handleToolClick(tool)"
           >
+            <div class="tool-bg-layer"></div>
+
             <div class="tool-button-icon">
+              <div class="icon-bg-layer"></div>
+
               <img
                 v-if="tool.logo"
                 :src="tool.logo"
@@ -318,21 +296,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { marked } from 'marked'
 import { Trophy, Star, View, ArrowRight } from '@element-plus/icons-vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
-import { getHonor, getToolPlatform, getTools, getPractices, getToolBanners, getLatestWinners, getEmpowerment, getNews, getAiNews } from '../api/home'
+import { getToolPlatform, getTools, getPractices, getLatestWinners, getEmpowerment, getAiNews } from '../api/home'
 import loginService from '../utils/loginService'
-import { addCommunity, getManager } from '../api/user'
+import { getManager } from '../api/user'
 import type { LatestWinner } from '../api/types'
 import { ROUTES } from '../router/paths'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import commonMethods from '@/utils/common'
 
 const router = useRouter()
-const route = useRoute()
 
 // 用户相关状态
 const isMember = ref(false)
@@ -399,22 +375,48 @@ const handleToolPlatformClick = (tool: { id: number; platformUrl?: string }) => 
 }
 
 // 荣誉殿堂
-const latestWinners = ref<LatestWinner[]>([])
+const latestWinners = ref<(LatestWinner & { department?: string })[]>([])
+
+// 按奖项分组获奖者，最多显示3列
+const winnersByAward = computed(() => {
+  const grouped: Record<string, (LatestWinner & { department?: string })[]> = {}
+  latestWinners.value.forEach(winner => {
+    const awardName = winner.awardName || '其他奖项'
+    if (!grouped[awardName]) {
+      grouped[awardName] = []
+    }
+    grouped[awardName].push(winner)
+  })
+  const entries = Object.entries(grouped).slice(0, 3)
+  return Object.fromEntries(entries)
+})
+
 const loadLatestWinners = async () => {
   try {
     const response = await getLatestWinners(18)
     if (response.data?.list && response.data.list.length > 0) {
-      latestWinners.value = response.data.list.map((winner: LatestWinner) => ({
+      latestWinners.value = response.data.list.map((winner: LatestWinner & { department?: string }) => ({
         ...winner,
-        avatar: commonMethods.getAvatarUrl(winner.avatar || winner.userId || winner.id)
+        avatar: commonMethods.getAvatarUrl(winner.avatar || String(winner.id)),
+        department: (winner as any).department || undefined,
+        awardName: winner.awardName || '其他奖项'
       }))
     } else {
-      const mockList = []
+      const awardNames = ['AI创新先锋', '效率提升达人', '最佳实践奖']
+      const departments = ['研发一部', '产品部', '测试部']
+      const mockList: Array<{
+        id: number
+        name: string
+        awardName: string
+        department: string
+        avatar: string
+      }> = []
       for(let i=1; i<=18; i++) {
          mockList.push({
             id: i,
             name: `示例用户${i}`,
-            awardName: ['AI创新先锋', '效率提升达人', '最佳实践奖'][i % 3],
+            awardName: awardNames[i % 3] || '其他奖项',
+            department: departments[i % 3] || '未知部门',
             avatar: ''
          })
       }
@@ -436,7 +438,7 @@ const empowermentPosts = ref<EmpowermentItem[]>([])
 
 const loadEmpowermentPosts = async () => {
   try {
-    const response = await getEmpowerment(7)
+    const response = await getEmpowerment(5)
     if (response && response.data && response.data.list) {
       empowermentPosts.value = response.data.list.map((item: any) => ({
         id: item.id,
@@ -453,7 +455,6 @@ const loadEmpowermentPosts = async () => {
       { id: 3, title: '关于AI辅助编程的一些疑问', department: '测试部', views: 189 },
       { id: 4, title: 'Prompt工程最佳实践经验总结', department: '研发二部', views: 412 },
       { id: 5, title: '推荐几个好用的AI工具', department: '设计部', views: 167 },
-      { id: 6, title: 'AI助力团队协作效率提升分享', department: '运营部', views: 203 },
     ]
   }
 }
@@ -645,42 +646,39 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   min-height: 100vh;
   position: relative;
   font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, 'Hiragino Sans GB', Arial, sans-serif;
-  overflow-x: hidden;
-  overflow-y: auto;
   color: rgba(226, 232, 240, 0.9);
-  width: 100%;
-  box-sizing: border-box;
 
-  @media (max-width: 768px) {
-    width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
+  /* 关键修改：允许全屏宽度，禁止横向滚动条 */
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
+/* 关键修改：Hero Section 独立样式 */
+.hero-section {
+  width: 100%;
+  position: relative;
+  /* 适配 HeroCarousel 的高度 (340px) + padding */
+  min-height: 380px;
+  padding-bottom: 0;
+  /* 可选：加一个背景色或渐变，避免加载时透出白色 */
+  background: transparent;
+  z-index: 10;
+}
+
+/* 主内容区域：保持原有的居中限制 */
 .main-content {
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  padding: 20px;
-  padding-top: 0;
+  padding: 0 20px 40px 20px; /* 上padding取消，由margin控制间距 */
+  position: relative;
+  z-index: 5;
 
   @media (max-width: 768px) {
     max-width: 100%;
     padding: 12px;
-    padding-top: 0;
   }
-  @media (min-width: 769px) and (max-width: 1024px) {
-    max-width: 100%;
-    padding: 16px;
-    padding-top: 0;
-  }
-}
-
-.hero-section {
-  width: 100%;
-  position: relative;
-  min-height: 400px;
 }
 
 /* 间距控制 */
@@ -695,17 +693,6 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
     margin-left: 0;
     margin-right: 0;
   }
-}
-
-.section-block:first-of-type {
-  margin-top: 60px;
-  padding-top: 0;
-  position: relative;
-  z-index: 10;
-}
-.section-row:first-of-type {
-  margin-top: 0;
-  padding-top: 0;
 }
 
 /* -----------------------
@@ -743,7 +730,7 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
 }
 
 /* -----------------------
-   3. AI动态区域 (修复布局)
+   3. AI动态区域
    -----------------------
 */
 .ai-dynamic-section {
@@ -755,7 +742,6 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
     box-sizing: border-box;
   }
 
-  /* 使用 flex 布局替代 el-row 的栅格系统，避免 gap + 百分比宽度超出 */
   .ai-dynamic-row {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -766,12 +752,10 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
       min-width: 0;
       flex-shrink: 0;
     }
-    /* 左侧荣誉殿堂占 2/3 宽度减去 gap 的一半 */
     > .el-col:first-child {
       flex: 0 0 calc(66.666% - 12px);
       max-width: calc(66.666% - 12px);
     }
-    /* 右侧使能站占 1/3 宽度减去 gap 的一半 */
     > .el-col:last-child {
       flex: 0 0 calc(33.333% - 12px);
       max-width: calc(33.333% - 12px);
@@ -793,7 +777,7 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   }
 }
 
-/* ================== AI荣誉殿堂 (新版全宽三列布局) ================== */
+/* ================== AI荣誉殿堂 ================== */
 .honor-section {
   min-height: 480px !important;
   height: 480px !important;
@@ -816,28 +800,20 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   border-bottom: 1px solid rgba(0, 102, 255, 0.08);
   overflow: visible;
 
-  /* 蓝色背景装饰 */
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 85%;
-    height: 100%;
+    top: 0; left: 0; width: 85%; height: 100%;
     background: linear-gradient(135deg, #4C85FA 0%, #3a6fd8 100%);
     clip-path: polygon(0 0, 88% 0, 100% 100%, 0 100%);
     pointer-events: none;
     z-index: 1;
   }
 
-  /* 恢复楼宇暗纹 SVG */
   &::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 85%;
-    height: 100%;
+    top: 0; left: 0; width: 85%; height: 100%;
     background-image:
       url("data:image/svg+xml,%3Csvg width='300' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 L0 35 L8 35 L8 22 L14 22 L14 35 L22 35 L22 18 L30 18 L30 35 L38 35 L38 12 L42 12 L42 6 L48 6 L48 12 L52 12 L52 35 L62 35 L62 25 L70 25 L70 35 L80 35 L80 15 L86 15 L86 8 L92 8 L92 15 L98 15 L98 35 L108 35 L108 20 L118 20 L118 35 L128 35 L128 14 L134 14 L134 4 L140 4 L140 14 L146 14 L146 35 L156 35 L156 28 L166 28 L166 35 L176 35 L176 18 L184 18 L184 35 L196 35 L196 22 L202 22 L202 10 L208 10 L208 22 L214 22 L214 35 L226 35 L226 26 L236 26 L236 35 L248 35 L248 16 L256 16 L256 35 L268 35 L268 24 L278 24 L278 35 L290 35 L290 20 L300 20 L300 50 Z' fill='rgba(255,255,255,0.18)'/%3E%3C/svg%3E"),
       linear-gradient(to right, transparent 0%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 100%);
@@ -887,7 +863,7 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   min-height: 0;
 }
 
-.winners-three-columns {
+.winners-award-columns {
   display: flex;
   width: 100%;
   height: 100%;
@@ -895,42 +871,67 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   gap: 0;
 }
 
-.winners-column {
+.award-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+
+  &:not(:last-child) {
+    border-right: 1px dashed rgba(148, 163, 184, 0.5);
+  }
+}
+
+.award-column-header {
+  flex-shrink: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 102, 255, 0.1);
+  background: rgba(248, 250, 252, 0.6);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .award-name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: #B45309;
+    background: linear-gradient(135deg, rgba(254, 243, 199, 0.8), rgba(253, 230, 138, 0.6));
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    text-align: center;
+    letter-spacing: 0.5px;
+    display: inline-block;
+  }
+}
+
+.award-winners-list {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* 减小左右内边距，让内容更靠近左侧 */
-  padding: 0 8px;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-  justify-content: flex-start;
-
-  &:not(:last-child) {
-    border-right: 1px dashed rgba(0, 102, 255, 0.2);
-  }
+  padding: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* 获奖者卡片项 */
 .winner-card-item {
   display: flex;
   align-items: center;
-  /* 调整 gap，控制内部元素紧凑度 */
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 12px;
+  padding: 5px 5px;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
   flex-shrink: 0;
   flex: 0 0 auto;
-
-  /* 添加半透明背景和阴影，让按钮分开 */
   background: rgba(255, 255, 255, 0.5);
   box-shadow: 0 2px 5px rgba(0, 102, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.5);
-
-  /* 确保占满整行 */
   width: 100%;
   box-sizing: border-box;
 
@@ -940,12 +941,8 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
     transform: translateX(2px);
     box-shadow: 0 4px 8px rgba(0, 102, 255, 0.1);
 
-    .winner-avatar {
-      transform: scale(1.08);
-    }
-    .winner-name {
-      color: #0066FF;
-    }
+    .winner-avatar { transform: scale(1.08); }
+    .winner-name { color: #0066FF; }
   }
 }
 
@@ -960,50 +957,34 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
 .winner-info {
   flex: 1;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  white-space: nowrap;
-
-  /* 让内容更饱满地分布（可选：如果希望左右撑开，可用 space-between） */
-  /* justify-content: space-between; */
 }
 
 .winner-name {
   font-size: 15px;
   font-weight: 600;
   color: #1e293b;
-  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.winner-award {
-  font-size: 15px;
-  font-weight: 500;
-  color: #B45309;
-  background: linear-gradient(135deg, rgba(254, 243, 199, 0.8), rgba(253, 230, 138, 0.6));
-  padding: 2px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  text-overflow: ellipsis;
+.winner-department {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748B;
+  white-space: nowrap;
   overflow: hidden;
-  max-width: 140px;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {
-  .winners-three-columns {
-    flex-direction: column;
-    height: auto;
-    gap: 16px;
-  }
-  .winners-column {
-    padding: 0;
-    border-right: none !important;
-    gap: 10px;
-  }
-  .honor-section {
-    height: auto !important;
-    min-height: 500px !important;
-  }
+  .winners-award-columns { flex-direction: column; height: auto; gap: 16px; }
+  .award-column { border-right: none !important; border-bottom: 1px dashed rgba(148, 163, 184, 0.5); &:last-child { border-bottom: none; } }
+  .honor-section { height: auto !important; min-height: 500px !important; }
 }
 
 /* ================== AI使能站 ================== */
@@ -1019,18 +1000,12 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   flex-shrink: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(240, 247, 255, 0.5) 100%) !important;
   border-top: 1.5px solid #3B82F6 !important;
-  border-right: 1.5px solid #E2E8F0 !important;
-  border-bottom: 1.5px solid #E2E8F0 !important;
-  border-left: 1.5px solid #E2E8F0 !important;
   border-radius: 15px;
 
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 60px;
-    height: 4px;
+    top: 0; left: 0; width: 60px; height: 4px;
     background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
     border-radius: 0 0 2px 0;
     z-index: 10;
@@ -1076,31 +1051,30 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   .empowerment-list {
     flex: 1;
     padding: 20px 24px;
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 0;
 
     .empowerment-item {
+      flex: 1;
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 14px 0;
+      padding: 0;
       border-bottom: 0.5px solid rgba(0, 102, 255, 0.08);
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
+      min-height: 0;
 
       &:last-child { border-bottom: none; }
 
       &::before {
         content: '';
         position: absolute;
-        left: -100%;
-        top: 0;
-        bottom: 0;
-        width: 100%;
+        left: -100%; top: 0; bottom: 0; width: 100%;
         background: linear-gradient(90deg, transparent 0%, rgba(0, 102, 255, 0.08) 50%, transparent 100%);
         transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         pointer-events: none;
@@ -1115,17 +1089,11 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
 
       .rank-number {
         flex-shrink: 0;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 700;
-        color: #3B82F6;
+        width: 20px; height: 20px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 700; color: #3B82F6;
         transition: transform 0.3s ease;
-        position: relative;
-        z-index: 1;
+        position: relative; z-index: 1;
         clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
         background: rgba(59, 130, 246, 0.1);
         border: 1px solid rgba(59, 130, 246, 0.3);
@@ -1134,58 +1102,33 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
       .rank-2 { background: rgba(30, 64, 175, 0.15); border-color: rgba(30, 64, 175, 0.4); color: #1E40AF; }
       .rank-3 { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #3B82F6; }
 
-      .empowerment-content {
-        flex: 1;
-        position: relative;
-        z-index: 1;
-      }
+      .empowerment-content { flex: 1; position: relative; z-index: 1; }
       .empowerment-title {
-        font-size: 16px;
-        font-weight: 400; /* 不加粗 */
-        color: #1A2B4B;
-        margin-bottom: 8px;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        transition: color 0.3s ease;
+        font-size: 16px; font-weight: 400; color: #1A2B4B; margin-bottom: 8px;
+        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
       }
       .empowerment-meta {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        font-size: 13px; /* 13号字 */
-        color: #94A3B8;
-        .meta-department {
-          display: flex;
-          align-items: center;
-          &::before {
-            content: '🏢';
-            margin-right: 4px;
-            font-size: 12px;
-          }
-        }
-        .meta-views {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
+        display: flex; align-items: center; gap: 16px;
+        font-size: 13px; color: #94A3B8;
+        .meta-department { display: flex; align-items: center; &::before { content: '🏢'; margin-right: 4px; font-size: 12px; } }
+        .meta-views { display: flex; align-items: center; gap: 4px; }
       }
     }
   }
 }
 
 /* -----------------------
-   4. 右侧悬浮工具面板 (变窄，只显示logo和名称)
+   4. 右侧悬浮工具面板
    -----------------------
 */
 .floating-tools-panel {
   position: absolute;
-  right: calc(100% / 2 + 20px + 40px + 10px);
+  /* 计算位置：居中线的右侧偏移，往左移动避免挡住箭头按钮 */
+  right: calc(50% - 800px + 180px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
-  width: 120px; /* 变窄：从180px改为120px */
+  width: 120px;
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -1195,8 +1138,8 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-  @media (min-width: 1920px) { right: 120px; }
-  @media (min-width: 1400px) and (max-width: 1919px) { right: 80px; }
+  /* 响应式调整 */
+  @media (max-width: 1700px) { right: 180px; }
   @media (max-width: 1400px) { display: none; }
 
   &:hover {
@@ -1205,10 +1148,7 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   }
 
   .tools-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
     padding: 8px 10px;
     background: rgba(255, 255, 255, 0.08);
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
@@ -1217,170 +1157,114 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   }
 
   .tools-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 6px;
-    max-height: 320px;
-    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px; padding: 6px;
+    max-height: 320px; overflow-y: auto;
     &::-webkit-scrollbar { width: 3px; }
     &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 2px; }
   }
 
   .tool-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    border-radius: 8px;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s;
+    display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px;
+    cursor: pointer; background: rgba(255, 255, 255, 0.35); border: 1px solid rgba(255, 255, 255, 0.4);
+    position: relative; overflow: hidden; backdrop-filter: blur(10px); transition: all 0.3s;
 
     &::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 0; bottom: 0; width: 2px;
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
       background: var(--tool-color, rgba(255, 255, 255, 0.8));
-      transform: scaleY(0);
-      transition: transform 0.3s;
+      transform: scaleY(0); transition: transform 0.3s;
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.5);
-      transform: translateX(2px);
+      background: rgba(255, 255, 255, 0.5); transform: translateX(2px);
       &::before { transform: scaleY(1); }
       .tool-icon { transform: scale(1.1); }
     }
 
     .tool-icon {
-      width: 24px; height: 24px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.4);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: all 0.3s;
+      width: 24px; height: 24px; border-radius: 6px; background: rgba(255, 255, 255, 0.4);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.3s;
       img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
       .emoji-logo { font-size: 14px; }
     }
 
     .tool-name {
-      font-size: 11px;
-      font-weight: 600;
-      color: #1e293b;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      flex: 1;
-      min-width: 0;
+      font-size: 11px; font-weight: 600; color: #1e293b;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
     }
   }
 }
 
 /* -----------------------
-   5. AI优秀实践 (减少padding)
+   5. AI优秀实践
    -----------------------
 */
-.practice-combined-card {
-  padding: 0 !important;
-  overflow: hidden;
+.practice-cards-row {
+  width: 100%;
+  margin: 0;
+}
+
+.practice-card {
+  display: flex;
+  flex-direction: column;
   height: 480px;
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1.5px solid rgba(0, 102, 255, 0.15) !important;
-  border-radius: 16px;
-}
+  overflow: hidden;
+  padding: 0 !important;
 
-.practice-three-columns {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  height: 100%;
-  @media (max-width: 992px) { grid-template-columns: repeat(2, 1fr); height: auto; }
-  @media (max-width: 768px) { grid-template-columns: 1fr; height: auto; }
-}
-
-.practice-column {
-  display: flex; flex-direction: column; height: 100%; position: relative;
-  &:not(:last-child) { border-right: 1px dashed #D1D5DB; }
-  @media (max-width: 992px) {
-    &:nth-child(2) { border-right: none; }
-    &:nth-child(3) { border-right: none; border-top: 1px dashed #D1D5DB; }
-  }
   @media (max-width: 768px) {
-    &:not(:last-child) { border-right: none; border-bottom: 1px dashed #D1D5DB; }
+    height: auto;
+    min-height: 400px;
+    margin-bottom: 24px;
   }
 }
 
 .practice-column-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(0, 102, 255, 0.08);
-  background: rgba(248, 250, 252, 0.5);
-  position: relative;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; border-bottom: 1px solid rgba(0, 102, 255, 0.08);
+  background: rgba(248, 250, 252, 0.5); position: relative;
 
-  /* 小蓝线装饰 */
   &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 50px;
-    height: 3px;
+    content: ''; position: absolute; top: 0; left: 0; width: 50px; height: 3px;
     background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
-    border-radius: 0 0 2px 0;
-    z-index: 10;
-    pointer-events: none;
+    border-radius: 0 0 2px 0; z-index: 10; pointer-events: none;
   }
 
   .column-title { font-size: 15px; font-weight: 600; color: #1A2B4B; margin: 0; }
-
   .more-btn-pill {
-    border-radius: 12px;
-    background: transparent;
-    border: 1px solid #0066FF;
-    color: #0066FF;
-    font-size: 13px;
-    padding: 6px 16px;
-    height: auto;
-    font-weight: 500;
-    margin: 0;
-    transition: all 0.3s ease;
-    &:hover {
-      background: rgba(0, 102, 255, 0.08);
-      border-color: #0066FF;
-      transform: translateY(-1px);
-    }
+    border-radius: 12px; background: transparent; border: 1px solid #0066FF; color: #0066FF;
+    font-size: 13px; padding: 6px 16px; height: auto; font-weight: 500; margin: 0; transition: all 0.3s ease;
+    &:hover { background: rgba(0, 102, 255, 0.08); border-color: #0066FF; transform: translateY(-1px); }
   }
 }
 
 .practice-column-list {
   flex: 1;
-  padding: 4px 12px; /* 减少 padding: 从 8px 16px 改为 4px 12px */
+  padding: 4px 12px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 102, 255, 0.2);
+    border-radius: 2px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 102, 255, 0.3);
+  }
 }
 
 .practice-item {
-  padding: 6px 0 6px 12px; /* 大幅减少 padding: 从 10px 0 10px 16px 改为 6px 0 6px 12px */
-  position: relative;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0;
+  padding: 6px 0 6px 12px; position: relative; border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer; transition: all 0.2s ease; flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0;
 
   &:last-child { border-bottom: none; }
   &::before {
     content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-    width: 4px; height: 4px; background: #3B82F6; /* 稍微缩小标记 */
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    width: 4px; height: 4px; background: #3B82F6; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     opacity: 0.6; transition: all 0.2s ease;
   }
   &:hover {
@@ -1389,26 +1273,18 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
     .practice-title { color: #0066FF; }
   }
   .practice-title {
-    font-size: 15px;
-    font-weight: 400; /* 不加粗 */
-    color: #334155;
-    margin: 0 0 2px 0; /* 减少底部间距 */
+    font-size: 15px; font-weight: 400; color: #334155; margin: 0 0 2px 0;
     display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
   }
   .practice-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px; /* 13号字 */
-    color: #94A3B8;
+    display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94A3B8;
     .practice-author::before { content: '👤'; margin-right: 2px; font-size: 10px; }
     .practice-department::before { content: '🏢'; margin-right: 2px; font-size: 10px; }
-    .practice-time::before { content: '🕐'; margin-right: 2px; font-size: 10px; }
   }
 }
 
 /* -----------------------
-   6. AI工具专区 (统一padding)
+   6. AI工具专区（已修改：去掉背景，调整按钮样式）
    -----------------------
 */
 .section-title-center {
@@ -1426,89 +1302,183 @@ onUnmounted(() => window.removeEventListener('adminConfigUpdated', handleConfigU
   }
 }
 
+/* 去掉背景 */
 .tool-zone-section {
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 24px 0 !important; /* 只保留上下padding，与其他模块对齐 */
+  background: transparent;
+  padding: 0 22px 0 0 !important;
   margin: 24px 0;
   width: 100%;
-
-  .section-title-center {
-    padding: 0 24px; /* 标题区域单独加padding */
-  }
 }
 
 .tools-big-buttons-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 24px;
-  padding: 0 24px; /* 工具网格单独加padding */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+
   @media (max-width: 1200px) { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  @media (max-width: 560px) { grid-template-columns: 1fr; gap: 12px; }
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 560px) { grid-template-columns: 1fr; gap: 10px; }
 }
 
+/* 工具按钮样式 */
 .tool-big-button {
-  display: flex; align-items: center; gap: 20px;
-  padding: 28px 32px;
-  height: 150px;
-  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  height: 130px;
+  border-radius: 14px;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px);
-  border: 2px solid rgba(0, 102, 255, 0.15);
-  box-shadow: 0 4px 20px rgba(0, 102, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  position: relative; overflow: hidden;
-  transition: all 0.35s;
 
-  &::before {
-    content: ''; position: absolute; left: 0; top: 16px; bottom: 16px; width: 4px;
-    border-radius: 0 4px 4px 0;
-    background: var(--tool-category-color, #0066FF);
-    transition: all 0.3s ease;
+  /* 更深的背景色 */
+  background: rgba(255, 255, 255, 1);
+
+  /* 明显的边框 */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+
+  /* 阴影 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  z-index: 1;
+
+  /* 背景染色层 */
+  .tool-bg-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--tool-category-color);
+    opacity: 0.05;
+    transition: opacity 0.25s ease;
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.98);
-    border-color: var(--tool-category-color, #0066FF);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 102, 255, 0.15);
-    &::before { width: 5px; top: 12px; bottom: 12px; }
-    .tool-button-icon { transform: scale(1.08); }
-    .tool-button-arrow { opacity: 1; transform: translateX(0); color: var(--tool-category-color, #0066FF); }
-    .tool-button-name { color: var(--tool-category-color, #0066FF); }
+    transform: translateY(-3px);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+    .tool-bg-layer {
+      opacity: 0.1;
+    }
+
+    .tool-button-icon {
+      transform: scale(1.05);
+
+      .icon-bg-layer {
+        opacity: 0.9;
+      }
+
+      .tool-logo {
+        filter: brightness(0) invert(1);
+      }
+
+      .tool-icon-placeholder {
+        color: #fff;
+      }
+    }
+
+    .tool-button-arrow {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--tool-category-color);
+    }
+
+    .tool-button-name {
+      color: var(--tool-category-color);
+    }
   }
 
   .tool-button-icon {
-    flex-shrink: 0; width: 64px; height: 64px; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 102, 255, 0.05));
-    border: 1px solid rgba(0, 102, 255, 0.1);
-    transition: all 0.3s;
-    .tool-logo { width: 44px; height: 44px; object-fit: contain; border-radius: 10px; }
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s ease;
+
+    .icon-bg-layer {
+      position: absolute;
+      inset: 0;
+      background: var(--tool-category-color);
+      opacity: 0.18;
+      transition: opacity 0.25s ease;
+      z-index: 0;
+    }
+
+    .tool-logo {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      border-radius: 6px;
+      z-index: 1;
+      transition: filter 0.25s;
+    }
+
     .tool-icon-placeholder {
-      width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 22px; color: #fff;
-      background: var(--tool-category-color, #0066FF); border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--tool-category-color);
+      background: transparent;
+      border-radius: 6px;
+      z-index: 1;
+      transition: color 0.25s;
     }
   }
 
   .tool-button-content {
-    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;
-    .tool-button-name { font-size: 18px; font-weight: 700; color: #1E293B; }
-    .tool-button-desc { font-size: 14px; color: #64748B; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; -webkit-box-orient: vertical; }
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .tool-button-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1E293B;
+      transition: color 0.25s;
+    }
+
+    .tool-button-desc {
+      font-size: 13px;
+      color: #64748B;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      line-height: 1.5;
+    }
   }
 
   .tool-button-arrow {
-    flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-    opacity: 0; transform: translateX(-8px); transition: all 0.3s; color: #94A3B8;
-    .el-icon { font-size: 20px; font-weight: 600; }
-  }
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: all 0.25s ease;
+    color: #94A3B8;
 
-  &[data-tool-type="test"] { --tool-category-color: #10B981; }
-  &[data-tool-type="code"] { --tool-category-color: #3B82F6; }
-  &[data-tool-type="cloud"] { --tool-category-color: #6366F1; }
-  &[data-tool-type="efficiency"] { --tool-category-color: #F59E0B; }
+    .el-icon {
+      font-size: 16px;
+    }
+  }
 }
 
 /* -----------------------

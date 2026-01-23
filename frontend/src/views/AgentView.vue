@@ -82,7 +82,7 @@
         </div>
       </el-col>
 
-      <!-- 右侧：标签选择和活动预告 -->
+      <!-- 右侧：标签选择 -->
       <el-col :xs="24" :md="6">
         <!-- 标签选择 -->
         <div class="tags-section">
@@ -91,15 +91,6 @@
             :selected-tag="selectedTag"
             title="标签筛选"
             @tag-click="handleTagClick"
-          />
-        </div>
-
-        <!-- 活动轮播 -->
-        <div class="activities-section">
-          <ActivityCarousel
-            :activities="activities"
-            title="近期活动与培训"
-            @activity-click="handleActivityClick"
           />
         </div>
       </el-col>
@@ -132,9 +123,8 @@ import { ROUTES } from '../router/paths'
 import PostHeader from '../components/PostHeader.vue'
 import PostList from '../components/PostList.vue'
 import TagFilter from '../components/TagFilter.vue'
-import ActivityCarousel from '../components/ActivityCarousel.vue'
 // API 层 - 支持 Mock/Real API 自动切换
-import { getFeaturedPost, getTags, checkOwnerPermission, getPosts, getActivities } from '../api/agent'
+import { getFeaturedPost, getTags, checkOwnerPermission, getPosts } from '../api/agent'
 import { getCurrentUser } from '../api/user'
 
 const router = useRouter()
@@ -212,32 +202,6 @@ const loadTags = async () => {
       { name: '案例分享', count: 0 },
       { name: '开发指南', count: 0 }
     ]
-  }
-}
-
-// 近期活动和培训
-const activities = ref<Array<{ id: number; type: 'activity' | 'training' | 'workshop'; title: string; desc: string; date: string; location: string; image: string }>>([])
-
-
-// 加载活动列表
-const loadActivities = async () => {
-  try {
-    const response = await getActivities({
-      page: 1,
-      pageSize: 10
-    })
-    activities.value = response.data.list.map((a) => ({
-      id: a.id,
-      type: (a.type || 'activity') as 'activity' | 'training' | 'workshop',
-      title: a.title,
-      desc: a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : '',
-      date: typeof a.date === 'string' ? a.date : new Date(a.date).toLocaleDateString('zh-CN'),
-      location: a.location || '',
-      image: a.cover || ''
-    }))
-  } catch (error) {
-    console.error('加载活动列表失败:', error)
-    activities.value = []
   }
 }
 
@@ -390,13 +354,6 @@ const handlePostClick = (post: { id: number }) => {
   })
 }
 
-// 处理活动点击
-const handleActivityClick = (activity: { id: number }) => {
-  // 跳转到活动详情页
-  router.push(`/activity/${activity.id}`)
-}
-
-
 // 处理发帖
 const handlePostCreate = () => {
   router.push(ROUTES.POST_CREATE).catch((err) => {
@@ -423,7 +380,6 @@ const formatDate = (date: string | Date) => {
 onMounted(async () => {
   await checkToolOwnerPermission()
   await loadFeaturedPost()
-  await loadActivities()
   await loadPosts()
   await loadTags()
 })
