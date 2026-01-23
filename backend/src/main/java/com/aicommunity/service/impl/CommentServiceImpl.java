@@ -7,6 +7,7 @@ import com.aicommunity.entity.Reply;
 import com.aicommunity.entity.UserInfo;
 import com.aicommunity.mapper.*;
 import com.aicommunity.service.CommentService;
+import com.aicommunity.service.MessageService;
 import com.aicommunity.vo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private UserInfoMapper userInfoMapper;
+
+    @Autowired
+    private MessageService messageService;
+
+    @Autowired
+    private PostMapper postMapper;
 
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
@@ -109,6 +116,20 @@ public class CommentServiceImpl implements CommentService {
         int result = commentMapper.insertComment(comment);
         if (result <= 0) {
             throw new BusinessException(ErrorCodeEnum.DATABASE_ERROR.getCode(), "创建评论失败");
+        }
+
+        // 发送评论通知
+        try {
+            Post post = postMapper.selectByPostId(postId);
+            if (post != null) {
+                UserInfo commenter = userInfoMapper.selectByUserId(userId);
+                String commenterName = commenter != null ? commenter.getChnName() : "用户";
+                messageService.sendPostCommentNotification(postId, post.getTitle(), post.getAuthorId(),
+                                                         userId, commenterName, comment.getId());
+            }
+        } catch (Exception e) {
+            log.warn("发送评论通知失败", e);
+            // 不影响主流程
         }
 
         return convertToCommentVO(comment, userId);
@@ -205,8 +226,8 @@ public class CommentServiceImpl implements CommentService {
     private CommentVO convertToCommentVO(Comment comment, String userId) {
         CommentVO vo = new CommentVO();
         vo.setId(comment.getId());
-        vo.setPostId(Integer.parseInt(comment.getPostId()));
-        vo.setUserId(Integer.parseInt(comment.getUserId()));
+        vo.setPostId(comment.getPostId());
+        vo.setUserId(comment.getUserId());
 
         // 查询用户信息
         UserInfo user = userInfoMapper.selectByUserId(comment.getUserId());

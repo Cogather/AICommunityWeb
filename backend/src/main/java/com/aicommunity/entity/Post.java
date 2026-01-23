@@ -29,6 +29,9 @@ public class Post implements Serializable {
     @ApiModelProperty(value = "帖子标题")
     private String title;
 
+    @ApiModelProperty(value = "帖子描述")
+    private String description;
+
     @ApiModelProperty(value = "封面")
     private String frontCover;
 

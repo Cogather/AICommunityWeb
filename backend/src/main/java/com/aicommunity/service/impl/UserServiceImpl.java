@@ -536,6 +536,7 @@ public class UserServiceImpl implements UserService {
         PostItemVO vo = new PostItemVO();
         vo.setId(Integer.parseInt(post.getPostId()));
         vo.setTitle(post.getTitle());
+        vo.setDescription(post.getDescription());
         vo.setImage(post.getFrontCover());
         vo.setViews(post.getViewsNums() != null ? post.getViewsNums() : 0);
         vo.setFeatured("1".equals(post.getEssencePost()));

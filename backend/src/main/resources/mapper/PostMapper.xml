@@ -7,6 +7,7 @@
         <id column="post_id" property="postId" jdbcType="VARCHAR"/>
         <result column="author_id" property="authorId" jdbcType="VARCHAR"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
         <result column="front_cover" property="frontCover" jdbcType="VARCHAR"/>
         <result column="content" property="content" jdbcType="LONGVARCHAR"/>
         <result column="content_type" property="contentType" jdbcType="VARCHAR"/>
@@ -26,6 +27,7 @@
             p.post_id,
             p.author_id,
             p.title,
+            p.description,
             p.front_cover,
             p.content,
             p.content_type,
@@ -50,6 +52,7 @@
             post_id,
             author_id,
             title,
+            description,
             front_cover,
             content,
             content_type,
@@ -73,6 +76,7 @@
             post_id,
             author_id,
             title,
+            description,
             front_cover,
             content,
             content_type,
@@ -95,6 +99,7 @@
             post_id,
             author_id,
             title,
+            description,
             front_cover,
             content,
             content_type,
@@ -110,6 +115,7 @@
             #{postId},
             #{authorId},
             #{title},
+            #{description},
             #{frontCover},
             #{content},
             #{contentType},
@@ -128,6 +134,7 @@
         UPDATE t_new_posts
         <set>
             <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
             <if test="frontCover != null">front_cover = #{frontCover},</if>
             <if test="content != null">content = #{content},</if>
             <if test="updatedAt != null">updated_at = #{updatedAt},</if>
@@ -172,6 +179,7 @@
             post_id,
             author_id,
             title,
+            description,
             front_cover,
             content,
             content_type,
@@ -216,6 +224,7 @@
             post_id,
             author_id,
             title,
+            description,
             front_cover,
             content,
             content_type,
@@ -252,6 +261,7 @@
             post_id,
             author_id,
             title,
+            description,
             front_cover,
             content,
             content_type,
@@ -290,6 +300,7 @@
             post_id,
             author_id,
             title,
+            description,
             front_cover,
             content,
             content_type,

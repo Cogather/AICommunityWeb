@@ -29,4 +29,7 @@ public class LatestWinnerVO implements Serializable {
 
     @ApiModelProperty(value = "奖项名称", required = true)
     private String awardName;
+
+    @ApiModelProperty(value = "所属部门")
+    private String department;
 }

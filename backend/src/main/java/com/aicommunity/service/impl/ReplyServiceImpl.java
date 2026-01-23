@@ -4,8 +4,8 @@ import com.aicommunity.common.exception.BusinessException;
 import com.aicommunity.common.ErrorCodeEnum;
 import com.aicommunity.entity.Reply;
 import com.aicommunity.entity.UserInfo;
-import com.aicommunity.mapper.ReplyMapper;
-import com.aicommunity.mapper.UserInfoMapper;
+import com.aicommunity.mapper.*;
+import com.aicommunity.service.MessageService;
 import com.aicommunity.service.ReplyService;
 import com.aicommunity.vo.ReplyCreateRequestVO;
 import com.aicommunity.vo.ReplyVO;
@@ -35,6 +35,15 @@ public class ReplyServiceImpl implements ReplyService {
     @Autowired
     private UserInfoMapper userInfoMapper;
 
+    @Autowired
+    private MessageService messageService;
+
+    @Autowired
+    private PostMapper postMapper;
+
+    @Autowired
+    private CommentMapper commentMapper;
+
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     static {
@@ -52,9 +61,8 @@ public class ReplyServiceImpl implements ReplyService {
         Reply reply = new Reply();
         reply.setCommentId(commentId);
         reply.setUserId(userId);
-        reply.setReplyToUserId(request.getReplyToUserId() != null ? String.valueOf(request.getReplyToUserId()) : null);
-        // 注意：数据库表中暂时没有reply_to_id字段，需要添加
-        // reply.setReplyToId(request.getReplyToId());
+        reply.setReplyToUserId(request.getReplyToUserId());
+        reply.setReplyToId(request.getReplyToId());
         reply.setContent(request.getContent());
         reply.setLikes(0);
         reply.setStatus("0");
@@ -65,6 +73,21 @@ public class ReplyServiceImpl implements ReplyService {
         int result = replyMapper.insertReply(reply);
         if (result <= 0) {
             throw new BusinessException(ErrorCodeEnum.DATABASE_ERROR.getCode(), "创建回复失败");
+        }
+
+        // 发送回复通知
+        try {
+            // 获取评论信息
+            Comment comment = commentMapper.selectById(commentId);
+            if (comment != null) {
+                UserInfo replier = userInfoMapper.selectByUserId(userId);
+                String replierName = replier != null ? replier.getChnName() : "用户";
+                messageService.sendCommentReplyNotification(comment.getPostId(), comment.getUserId(),
+                                                         userId, replierName, commentId, reply.getId());
+            }
+        } catch (Exception e) {
+            log.warn("发送回复通知失败", e);
+            // 不影响主流程
         }
 
         return convertToReplyVO(reply);
@@ -98,12 +121,9 @@ public class ReplyServiceImpl implements ReplyService {
         ReplyVO vo = new ReplyVO();
         vo.setId(reply.getId());
         vo.setCommentId(reply.getCommentId());
-        vo.setUserId(Integer.parseInt(reply.getUserId()));
-        vo.setReplyToUserId(reply.getReplyToUserId() != null ? Integer.parseInt(reply.getReplyToUserId()) : null);
-        // 注意：数据库表中暂时没有reply_to_id字段，需要添加
-        // vo.setReplyToId(reply.getReplyToId());
-        // 临时方案：如果replyToId为空，使用commentId作为默认值（表示回复的是评论）
-        vo.setReplyToId(reply.getReplyToId() != null ? reply.getReplyToId() : reply.getCommentId());
+        vo.setUserId(reply.getUserId());
+        vo.setReplyToUserId(reply.getReplyToUserId());
+        vo.setReplyToId(reply.getReplyToId());
 
         // 查询用户信息
         UserInfo user = userInfoMapper.selectByUserId(reply.getUserId());

@@ -157,4 +157,79 @@ public class MessageServiceImpl implements MessageService {
 
         return messageVO;
     }
+
+    @Override
+    public void sendPostCommentNotification(String postId, String postTitle, String postAuthorId,
+                                          String commenterId, String commenterName, Integer commentId) {
+        log.info("发送帖子评论通知，帖子ID：{}，评论者：{}，帖子作者：{}", postId, commenterId, postAuthorId);
+
+        // 不给自己发通知
+        if (postAuthorId.equals(commenterId)) {
+            return;
+        }
+
+        Message message = new Message();
+        message.setUserId(postAuthorId);
+        message.setType("post_comment");
+        message.setTitle("帖子评论通知");
+        message.setContent(commenterName + " 评论了您的帖子《" + postTitle + "》");
+        message.setRelatedId(postId);
+        message.setRelatedType("post");
+        message.setCommentId(commentId);
+        message.setFromUserId(commenterId);
+        message.setFromUserName(commenterName);
+        message.setIsRead(false);
+
+        messageMapper.insertMessage(message);
+    }
+
+    @Override
+    public void sendCommentReplyNotification(String postId, String commentAuthorId, String replierId,
+                                           String replierName, Integer commentId, Integer replyId) {
+        log.info("发送评论回复通知，帖子ID：{}，回复者：{}，评论作者：{}", postId, replierId, commentAuthorId);
+
+        // 不给自己发通知
+        if (commentAuthorId.equals(replierId)) {
+            return;
+        }
+
+        Message message = new Message();
+        message.setUserId(commentAuthorId);
+        message.setType("comment_reply");
+        message.setTitle("评论回复通知");
+        message.setContent(replierName + " 回复了您的评论");
+        message.setRelatedId(postId);
+        message.setRelatedType("post");
+        message.setCommentId(commentId);
+        message.setReplyId(replyId);
+        message.setFromUserId(replierId);
+        message.setFromUserName(replierName);
+        message.setIsRead(false);
+
+        messageMapper.insertMessage(message);
+    }
+
+    @Override
+    public void sendPostLikeNotification(String postId, String postTitle, String postAuthorId,
+                                       String likerId, String likerName) {
+        log.info("发送帖子点赞通知，帖子ID：{}，点赞者：{}，帖子作者：{}", postId, likerId, postAuthorId);
+
+        // 不给自己发通知
+        if (postAuthorId.equals(likerId)) {
+            return;
+        }
+
+        Message message = new Message();
+        message.setUserId(postAuthorId);
+        message.setType("post_like");
+        message.setTitle("点赞通知");
+        message.setContent(likerName + " 赞了您的帖子《" + postTitle + "》");
+        message.setRelatedId(postId);
+        message.setRelatedType("post");
+        message.setFromUserId(likerId);
+        message.setFromUserName(likerName);
+        message.setIsRead(false);
+
+        messageMapper.insertMessage(message);
+    }
 }

@@ -326,11 +326,12 @@
 
     <!-- 查询最新获奖者列表（用于首页AI使用达人展示） -->
     <select id="selectLatestWinners" resultType="java.util.HashMap">
-        SELECT 
+        SELECT
             hd.id,
             COALESCE(ui.chn_name, ui.user_name, '') AS name,
             COALESCE(ui.user_name, '') AS avatar,
-            nh.honor_name AS awardName
+            nh.honor_name AS awardName,
+            COALESCE(NULLIF(ui.department_l5, ''), NULLIF(ui.department_l4, '')) AS department
         FROM t_new_honors_detail hd
         INNER JOIN t_new_honors nh ON hd.honor_id = nh.honor_id
         LEFT JOIN t_user_info ui ON hd.honor_user_id = ui.user_id

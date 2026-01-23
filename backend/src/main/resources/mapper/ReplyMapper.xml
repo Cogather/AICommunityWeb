@@ -8,6 +8,7 @@
         <result column="comment_id" property="commentId" jdbcType="INTEGER"/>
         <result column="user_id" property="userId" jdbcType="VARCHAR"/>
         <result column="reply_to_user_id" property="replyToUserId" jdbcType="VARCHAR"/>
+        <result column="reply_to_id" property="replyToId" jdbcType="INTEGER"/>
         <result column="content" property="content" jdbcType="LONGVARCHAR"/>
         <result column="likes" property="likes" jdbcType="INTEGER"/>
         <result column="status" property="status" jdbcType="VARCHAR"/>
@@ -16,11 +17,12 @@
     </resultMap>
 
     <select id="selectRepliesByCommentId" resultMap="BaseResultMap">
-        SELECT 
+        SELECT
             id,
             comment_id,
             user_id,
             reply_to_user_id,
+            reply_to_id,
             content,
             likes,
             status,
@@ -33,11 +35,12 @@
     </select>
 
     <select id="selectById" resultMap="BaseResultMap">
-        SELECT 
+        SELECT
             id,
             comment_id,
             user_id,
             reply_to_user_id,
+            reply_to_id,
             content,
             likes,
             status,
@@ -53,6 +56,7 @@
             comment_id,
             user_id,
             reply_to_user_id,
+            reply_to_id,
             content,
             likes,
             status,
@@ -62,6 +66,7 @@
             #{commentId},
             #{userId},
             #{replyToUserId},
+            #{replyToId},
             #{content},
             #{likes},
             #{status},

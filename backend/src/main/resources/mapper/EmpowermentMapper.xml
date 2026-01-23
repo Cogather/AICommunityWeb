@@ -48,7 +48,7 @@
         SELECT 
             CAST(p.post_id AS UNSIGNED) AS id,
             p.title,
-            SUBSTRING(p.content, 1, 200) AS description,
+            COALESCE(p.description, SUBSTRING(p.content, 1, 200)) AS description,
             p.front_cover AS cover,
             p.front_cover AS image,
             COALESCE(ui.chn_name, p.author_id) AS author,
@@ -75,7 +75,7 @@
         SELECT 
             CAST(p.post_id AS UNSIGNED) AS id,
             p.title,
-            SUBSTRING(p.content, 1, 200) AS description,
+            COALESCE(p.description, SUBSTRING(p.content, 1, 200)) AS description,
             p.front_cover AS cover,
             p.front_cover AS image,
             COALESCE(ui.chn_name, p.author_id) AS author,
@@ -201,6 +201,7 @@
             post_id AS postId,
             author_id AS authorId,
             title,
+            description,
             front_cover AS frontCover,
             content,
             content_type AS contentType,

@@ -24,7 +24,7 @@ public class ReplyCreateRequestVO implements Serializable {
     private String content;
 
     @ApiModelProperty(value = "被回复者用户ID（回复某人时需要）")
-    private Integer replyToUserId;
+    private String replyToUserId;
 
     @ApiModelProperty(value = "被回复的评论/回复ID（用于前端定位展示）")
     private Integer replyToId;

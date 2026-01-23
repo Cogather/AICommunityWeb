@@ -25,7 +25,7 @@ public class ReplyVO implements Serializable {
     private Integer commentId;
 
     @ApiModelProperty(value = "回复者用户ID")
-    private Integer userId;
+    private String userId;
 
     @ApiModelProperty(value = "回复者名称")
     private String userName;
@@ -40,7 +40,7 @@ public class ReplyVO implements Serializable {
     private String replyTo;
 
     @ApiModelProperty(value = "被回复者用户ID")
-    private Integer replyToUserId;
+    private String replyToUserId;
 
     @ApiModelProperty(value = "被回复的评论/回复ID（用于前端定位展示）")
     private Integer replyToId;

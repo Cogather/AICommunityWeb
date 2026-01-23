@@ -23,10 +23,10 @@ public class CommentVO implements Serializable {
     private Integer id;
 
     @ApiModelProperty(value = "帖子ID")
-    private Integer postId;
+    private String postId;
 
     @ApiModelProperty(value = "评论者用户ID")
-    private Integer userId;
+    private String userId;
 
     @ApiModelProperty(value = "评论者名称")
     private String userName;

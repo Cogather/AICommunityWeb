@@ -91,7 +91,7 @@
         SELECT 
             CAST(p.post_id AS UNSIGNED) AS id,
             p.title,
-            SUBSTRING(p.content, 1, 200) AS description,
+            COALESCE(p.description, SUBSTRING(p.content, 1, 200)) AS description,
             COALESCE(ui.chn_name, p.author_id) AS author,
             CAST(p.author_id AS UNSIGNED) AS author_id,
             COALESCE(ui.user_name, '') AS author_avatar,

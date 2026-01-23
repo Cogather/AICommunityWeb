@@ -41,6 +41,9 @@ public class PostCreateRequestVO implements Serializable {
     @ApiModelProperty(value = "关联工具ID（zone为tools或agent时需要）")
     private Integer toolId;
 
+    @ApiModelProperty(value = "帖子分类：guide-操作指导，excellent-优秀使用（不存储到数据库，仅用于业务逻辑判断）")
+    private String category;
+
     @ApiModelProperty(value = "标签数组")
     private List<String> tags;
 }

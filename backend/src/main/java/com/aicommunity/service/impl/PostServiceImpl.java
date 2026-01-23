@@ -6,6 +6,7 @@ import com.aicommunity.entity.Post;
 import com.aicommunity.entity.PostTag;
 import com.aicommunity.entity.UserInfo;
 import com.aicommunity.mapper.*;
+import com.aicommunity.service.MessageService;
 import com.aicommunity.service.PostService;
 import com.aicommunity.vo.*;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,9 @@ public class PostServiceImpl implements PostService {
 
     @Autowired
     private ReplyMapper replyMapper;
+
+    @Autowired
+    private MessageService messageService;
 
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
@@ -108,6 +112,7 @@ public class PostServiceImpl implements PostService {
         PostDetailVO vo = new PostDetailVO();
         vo.setId(postId);
         vo.setTitle(post.getTitle());
+        vo.setDescription(post.getDescription());
         vo.setContent(post.getContent());
         vo.setCover(post.getFrontCover());
         vo.setImage(post.getFrontCover());
@@ -131,9 +136,8 @@ public class PostServiceImpl implements PostService {
         vo.setCreateTime(formatDate(post.getCreatedAt()));
         vo.setUpdateTime(formatDate(post.getUpdatedAt()));
 
-        // 数据库表中没有summary和description字段，设置为null
+        // summary字段数据库表中没有，设置为null
         vo.setSummary(null);
-        vo.setDescription(null);
 
         return vo;
     }
@@ -153,6 +157,8 @@ public class PostServiceImpl implements PostService {
         post.setPostId(postId);
         post.setAuthorId(userId);
         post.setTitle(request.getTitle());
+        // description字段：优先使用请求中的description，如果没有则使用summary，都没有则为null
+        post.setDescription(StringUtils.hasText(request.getSummary()) ? request.getSummary() : null);
         post.setFrontCover(request.getCover());
         post.setContent(request.getContent());
         post.setContentType("richtext");
@@ -197,6 +203,10 @@ public class PostServiceImpl implements PostService {
         // 更新帖子
         if (StringUtils.hasText(request.getTitle())) {
             post.setTitle(request.getTitle());
+        }
+        // description字段：优先使用请求中的summary作为description
+        if (StringUtils.hasText(request.getSummary())) {
+            post.setDescription(request.getSummary());
         }
         if (StringUtils.hasText(request.getCover())) {
             post.setFrontCover(request.getCover());
@@ -264,6 +274,19 @@ public class PostServiceImpl implements PostService {
             Integer likeCount = postLikeMapper.selectLikeCount(postId, userId);
             if (likeCount == null || likeCount == 0) {
                 postLikeMapper.insertLike(postId, userId);
+
+                // 发送点赞通知
+                try {
+                    // 获取点赞者信息
+                    UserInfo liker = userInfoMapper.selectByUserId(userId);
+                    if (liker != null) {
+                        String likerName = StringUtils.hasText(liker.getChnName()) ? liker.getChnName() : liker.getUserName();
+                        messageService.sendPostLikeNotification(postId, post.getTitle(), post.getAuthorId(), userId, likerName);
+                    }
+                } catch (Exception e) {
+                    log.error("发送点赞通知失败", e);
+                    // 不影响主流程
+                }
             }
         } else if ("unlike".equals(action)) {
             postLikeMapper.deleteLike(postId, userId);

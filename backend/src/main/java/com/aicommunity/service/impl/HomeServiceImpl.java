@@ -361,6 +361,7 @@ public class HomeServiceImpl implements HomeService {
             vo.setName((String) winner.get("name"));
             vo.setAvatar((String) winner.get("avatar"));
             vo.setAwardName((String) winner.get("awardName"));
+            vo.setDepartment((String) winner.get("department"));
             return vo;
         }).collect(Collectors.toList());
     }

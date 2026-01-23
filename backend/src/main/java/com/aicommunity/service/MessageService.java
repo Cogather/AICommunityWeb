@@ -53,4 +53,42 @@ public interface MessageService {
      * @param messageId 消息ID
      */
     void deleteMessage(String userId, Long messageId);
+
+    /**
+     * 发送帖子评论通知
+     *
+     * @param postId         帖子ID
+     * @param postTitle      帖子标题
+     * @param postAuthorId   帖子作者ID
+     * @param commenterId    评论者ID
+     * @param commenterName  评论者姓名
+     * @param commentId      评论ID
+     */
+    void sendPostCommentNotification(String postId, String postTitle, String postAuthorId,
+                                   String commenterId, String commenterName, Integer commentId);
+
+    /**
+     * 发送评论回复通知
+     *
+     * @param postId          帖子ID
+     * @param commentAuthorId 评论作者ID
+     * @param replierId       回复者ID
+     * @param replierName     回复者姓名
+     * @param commentId       评论ID
+     * @param replyId         回复ID
+     */
+    void sendCommentReplyNotification(String postId, String commentAuthorId, String replierId,
+                                    String replierName, Integer commentId, Integer replyId);
+
+    /**
+     * 发送帖子点赞通知
+     *
+     * @param postId      帖子ID
+     * @param postTitle   帖子标题
+     * @param postAuthorId 帖子作者ID
+     * @param likerId     点赞者ID
+     * @param likerName   点赞者姓名
+     */
+    void sendPostLikeNotification(String postId, String postTitle, String postAuthorId,
+                                String likerId, String likerName);
 }
