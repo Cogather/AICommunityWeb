@@ -150,6 +150,10 @@ public class MessageServiceImpl implements MessageService {
             }
         }
 
+        // 设置前端兼容字段
+        messageVO.setUserId(message.getFromUserId());
+        messageVO.setUserName(message.getFromUserName());
+
         // 转换时间为ISO 8601格式
         if (message.getCreateTime() != null) {
             messageVO.setCreatedAt(ISO_DATE_FORMAT.format(message.getCreateTime()));
@@ -178,7 +182,7 @@ public class MessageServiceImpl implements MessageService {
         message.setCommentId(commentId);
         message.setFromUserId(commenterId);
         message.setFromUserName(commenterName);
-        message.setIsRead(false);
+        message.setIsRead(0);
 
         messageMapper.insertMessage(message);
     }
@@ -204,7 +208,7 @@ public class MessageServiceImpl implements MessageService {
         message.setReplyId(replyId);
         message.setFromUserId(replierId);
         message.setFromUserName(replierName);
-        message.setIsRead(false);
+        message.setIsRead(0);
 
         messageMapper.insertMessage(message);
     }
@@ -228,7 +232,7 @@ public class MessageServiceImpl implements MessageService {
         message.setRelatedType("post");
         message.setFromUserId(likerId);
         message.setFromUserName(likerName);
-        message.setIsRead(false);
+        message.setIsRead(0);
 
         messageMapper.insertMessage(message);
     }

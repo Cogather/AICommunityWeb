@@ -23,8 +23,8 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/messages")
-@Api(tags = "消息中心接口")
+@RequestMapping("/messages")
+@Api(tags = "消息中心接口", description = "提供消息相关的API接口，包括获取消息列表、标记已读、删除消息等功能")
 public class MessageController {
 
     @Autowired
@@ -32,10 +32,11 @@ public class MessageController {
 
     /**
      * 获取消息列表
-     * 获取当前登录用户的消息列表（分页）
+     * GET /messages
+     * 获取当前登录用户的消息列表（分页），支持按消息类型筛选
      *
      * @param userId   用户ID（从请求头获取）
-     * @param type     消息类型筛选（可选）
+     * @param type     消息类型筛选（可选）：post_comment-帖子评论，comment_reply-评论回复，post_like-点赞通知，award_notification-奖项通知
      * @param page     页码，默认1
      * @param pageSize 每页数量，默认15
      * @return 消息列表
@@ -68,10 +69,11 @@ public class MessageController {
 
     /**
      * 获取未读消息数量
+     * GET /messages/unread-count
      * 获取当前用户的未读消息数量，用于导航栏红点提示
      *
      * @param userId 用户ID（从请求头获取）
-     * @return 未读消息数量
+     * @return 未读消息数量 {count: number}
      */
     @GetMapping("/unread-count")
     @ApiOperation(value = "获取未读消息数量", notes = "获取当前用户的未读消息数量，用于导航栏红点提示")
@@ -94,6 +96,7 @@ public class MessageController {
 
     /**
      * 标记消息已读
+     * PUT /messages/{id}/read
      * 标记单条消息为已读状态
      *
      * @param userId    用户ID（从请求头获取）
@@ -130,10 +133,11 @@ public class MessageController {
 
     /**
      * 标记全部已读
+     * PUT /messages/read-all
      * 将当前用户所有未读消息标记为已读
      *
      * @param userId 用户ID（从请求头获取）
-     * @return 操作结果（包含本次标记为已读的消息数量）
+     * @return 操作结果（包含本次标记为已读的消息数量）{count: number}
      */
     @PutMapping("/read-all")
     @ApiOperation(value = "标记全部已读", notes = "将当前用户所有未读消息标记为已读")
@@ -156,6 +160,7 @@ public class MessageController {
 
     /**
      * 删除消息
+     * DELETE /messages/{id}
      * 删除单条消息
      *
      * @param userId    用户ID（从请求头获取）

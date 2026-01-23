@@ -21,7 +21,7 @@ import javax.validation.Valid;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/posts")
 @Api(tags = "帖子接口")
 public class PostController {
 
@@ -109,14 +109,15 @@ public class PostController {
 
     /**
      * 点赞/取消点赞帖子
+     * POST /posts/{id}/like
      *
      * @param id        帖子ID
-     * @param requestVO 点赞操作请求
+     * @param requestVO 点赞操作请求 {action: "like"|"unlike"}
      * @param request   HTTP请求对象
-     * @return 点赞响应
+     * @return 点赞响应 {liked: boolean, likes: number}
      */
     @PostMapping("/{id}/like")
-    @ApiOperation(value = "点赞/取消点赞帖子", notes = "对帖子进行点赞或取消点赞操作")
+    @ApiOperation(value = "点赞/取消点赞帖子", notes = "对帖子进行点赞或取消点赞操作，返回点赞状态和点赞数")
     public Result<LikeResponseVO> likePost(
             @ApiParam(value = "帖子ID", required = true, example = "1")
             @PathVariable String id,

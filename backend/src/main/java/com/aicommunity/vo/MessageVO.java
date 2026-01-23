@@ -48,6 +48,12 @@ public class MessageVO implements Serializable {
     @ApiModelProperty(value = "发送者用户名", example = "李四")
     private String fromUserName;
 
+    @ApiModelProperty(value = "用户ID（前端兼容字段）", example = "2")
+    private String userId;
+
+    @ApiModelProperty(value = "用户名（前端兼容字段）", example = "李四")
+    private String userName;
+
     @ApiModelProperty(value = "是否已读", example = "false")
     private Boolean read;
 

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.CommentMapper">
+
+    <resultMap id="BaseResultMap" type="com.aicommunity.entity.Comment">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="post_id" property="postId" jdbcType="VARCHAR"/>
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+        <result column="content" property="content" jdbcType="LONGVARCHAR"/>
+        <result column="likes" property="likes" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectCommentsByPostId" resultMap="BaseResultMap">
+        SELECT 
+            id,
+            post_id,
+            user_id,
+            content,
+            likes,
+            status,
+            create_time,
+            update_time
+        FROM t_new_post_comments
+        WHERE post_id = #{postId}
+          AND status = '0'
+        <choose>
+            <when test="sortBy == 'hot'">
+                ORDER BY likes DESC, create_time DESC
+            </when>
+            <otherwise>
+                ORDER BY create_time DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countCommentsByPostId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_new_post_comments
+        WHERE post_id = #{postId}
+          AND status = '0'
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+            id,
+            post_id,
+            user_id,
+            content,
+            likes,
+            status,
+            create_time,
+            update_time
+        FROM t_new_post_comments
+        WHERE id = #{id}
+          AND status = '0'
+    </select>
+
+    <insert id="insertComment" parameterType="com.aicommunity.entity.Comment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_new_post_comments (
+            post_id,
+            user_id,
+            content,
+            likes,
+            status,
+            create_time,
+            update_time
+        ) VALUES (
+            #{postId},
+            #{userId},
+            #{content},
+            #{likes},
+            #{status},
+            #{createTime},
+            #{updateTime}
+        )
+    </insert>
+
+    <update id="updateComment" parameterType="com.aicommunity.entity.Comment">
+        UPDATE t_new_post_comments
+        <set>
+            <if test="content != null">content = #{content},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        WHERE id = #{id}
+          AND status = '0'
+    </update>
+
+    <update id="deleteComment">
+        UPDATE t_new_post_comments
+        SET status = '1'
+        WHERE id = #{id}
+    </update>
+
+    <select id="countLikes" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM t_new_comment_likes
+        WHERE comment_id = #{commentId}
+    </select>
+
+    <!-- 查询用户发表的评论列表（分页） -->
+    <select id="selectUserComments" resultMap="BaseResultMap">
+        SELECT 
+            id,
+            post_id,
+            user_id,
+            content,
+            likes,
+            status,
+            create_time,
+            update_time
+        FROM t_new_post_comments
+        WHERE user_id = #{userId}
+          AND status = '0'
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计用户发表的评论总数 -->
+    <select id="countUserComments" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_new_post_comments
+        WHERE user_id = #{userId}
+          AND status = '0'
+    </select>
+
+</mapper>

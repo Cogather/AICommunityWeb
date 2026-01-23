@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aicommunity.mapper.PostTagMapper">
+
+    <resultMap id="BaseResultMap" type="com.aicommunity.entity.PostTag">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="label_id" property="labelId" jdbcType="INTEGER"/>
+        <result column="tag" property="tag" jdbcType="VARCHAR"/>
+        <result column="color" property="color" jdbcType="VARCHAR"/>
+        <result column="bg" property="bg" jdbcType="VARCHAR"/>
+        <result column="border_color" property="borderColor" jdbcType="VARCHAR"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <resultMap id="PostTagRelationMap" type="com.aicommunity.entity.PostTagRelation">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="post_id" property="postId" jdbcType="VARCHAR"/>
+        <result column="tag_id" property="tagId" jdbcType="INTEGER"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="tag" property="tag" jdbcType="VARCHAR"/>
+        <result column="color" property="color" jdbcType="VARCHAR"/>
+        <result column="bg" property="bg" jdbcType="VARCHAR"/>
+        <result column="border_color" property="borderColor" jdbcType="VARCHAR"/>
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="selectByLabelId" resultMap="BaseResultMap">
+        SELECT 
+            id,
+            label_id,
+            tag,
+            color,
+            bg,
+            border_color,
+            deleted,
+            user_id
+        FROM t_new_posts_tag
+        WHERE label_id = #{labelId}
+          AND (deleted IS NULL OR deleted = 0)
+        LIMIT 1
+    </select>
+
+    <select id="selectAllLabel" resultMap="BaseResultMap">
+        SELECT
+            id,
+            label_id,
+            tag,
+            color,
+            bg,
+            border_color,
+            deleted,
+            user_id
+        FROM t_new_posts_tag
+        WHERE (deleted IS NULL OR deleted = 0)
+    </select>
+
+    <select id="selectPostTagRelation" resultMap="PostTagRelationMap">
+        SELECT
+            t_new_posts_tag_relation.id,
+            t_new_posts_tag_relation.post_id,
+            t_new_posts_tag_relation.tag_id,
+            t_new_posts_tag_relation.deleted,
+            t_new_posts_tag.tag,
+            t_new_posts_tag.color,
+            t_new_posts_tag.bg,
+            t_new_posts_tag.border_color,
+            t_new_posts_tag.user_id
+        FROM t_new_posts_tag_relation
+        LEFT JOIN t_new_posts_tag
+        ON t_new_posts_tag.id = t_new_posts_tag_relation.tag_id
+        WHERE (t_new_posts_tag_relation.deleted IS NULL OR t_new_posts_tag_relation.deleted = 0)
+          AND (t_new_posts_tag.deleted IS NULL OR t_new_posts_tag.deleted = 0)
+    </select>
+
+    <!-- 根据帖子ID查询标签列表（通过关联表） -->
+    <select id="selectTagsByPostId" resultMap="BaseResultMap">
+        SELECT
+            pt.id,
+            pt.label_id,
+            pt.tag,
+            pt.color,
+            pt.bg,
+            pt.border_color,
+            pt.deleted,
+            pt.user_id
+        FROM t_new_posts_tag pt
+        INNER JOIN t_new_posts_tag_relation ptr ON pt.id = ptr.tag_id
+        WHERE ptr.post_id = #{postId}
+          AND (ptr.deleted IS NULL OR ptr.deleted = 0)
+          AND (pt.deleted IS NULL OR pt.deleted = 0)
+    </select>
+
+    <!-- 插入帖子标签关联关系 -->
+    <insert id="insertPostTagRelation">
+        INSERT INTO t_new_posts_tag_relation (post_id, tag_id, deleted)
+        VALUES (#{postId}, #{tagId}, 0)
+    </insert>
+
+    <!-- 删除帖子标签关联关系（逻辑删除） -->
+    <update id="deletePostTagRelationByPostId">
+        UPDATE t_new_posts_tag_relation
+        SET deleted = 1
+        WHERE post_id = #{postId}
+    </update>
+
+    <!-- 根据标签名称查询标签ID -->
+    <select id="selectTagIdByName" resultType="java.lang.Integer">
+        SELECT id
+        FROM t_new_posts_tag
+        WHERE tag = #{tagName}
+          AND (deleted IS NULL OR deleted = 0)
+        LIMIT 1
+    </select>
+
+</mapper>
